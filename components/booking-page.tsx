@@ -424,16 +424,6 @@ export default function BookingPage() {
               })}
               {showActionBubbles && (
                 <div className="action-bubbles flex flex-col gap-4 mt-4">
-                  {/* New Customer option with distinct styling */}
-                  <div className="new-customer-option">
-                    <button
-                      onClick={() => handleActionBubbleClick("new_customer")}
-                      className="action-bubble bg-[#e75837] hover:bg-[#d04e30] text-white px-4 py-2 rounded-full text-sm font-medium transition-colors"
-                    >
-                      New Customer
-                    </button>
-                  </div>
-
                   {/* Existing customer options */}
                   <div className="existing-customer-options">
                     <p className="text-sm text-gray-600 mb-2">Existing customer options:</p>
