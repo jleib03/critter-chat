@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Updated color palette based on the provided image */
+  --primary: #e75837; /* Orange as primary */
+  --primary-dark: #d04e30; /* Darker version of Orange */
+  --primary-light: #f07a5f; /* Lighter version of Orange */
+  --secondary: #745e25; /* Green as secondary */
+  --accent: #94abd6; /* Blue */
+  --accent-light: #b0c1e3; /* Lighter Blue */
+  --accent-dark: #7a90ba; /* Darker Blue */
+  --pink: #f4baea; /* Pink */
+  --maroon: #3f001d; /* Maroon */
+  --dark-blue: #17000b; /* Dark Blue */
+  --gray: #808b92; /* Gray tint 1 */
+  --background: #fbf8f3; /* Beige */
+  --text: #17000b; /* Dark Blue for text */
+  --text-light: #3f001d; /* Maroon for light text */
+  --card-bg: #ffffff;
+  --border: #e0e0e0;
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --radius: 12px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-poppins), sans-serif;
+  background-color: var(--background);
+  color: var(--text);
+  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+}
+
+.card-header {
+  background-color: var(--primary) !important;
+  color: white !important;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message {
+  animation: fadeIn 0.3s ease;
+}
+
+.typing-indicator span:nth-of-type(1) {
+  animation: 1s blink infinite 0.3333s;
+}
+
+.typing-indicator span:nth-of-type(2) {
+  animation: 1s blink infinite 0.6666s;
+}
+
+.typing-indicator span:nth-of-type(3) {
+  animation: 1s blink infinite 0.9999s;
+}
+
+/* Enhanced styling for HTML messages */
+.ai-message {
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.ai-message strong,
+.ai-message .font-bold {
+  font-weight: 600;
+}
+
+.ai-message .message-intro {
+  margin-bottom: 1rem;
+}
+
+.ai-message .message-footer {
+  margin-top: 1rem;
+  color: var(--text-light);
+  font-style: italic;
+}
+
+/* List styling */
+.ai-message .numbered-list,
+.ai-message .bullet-list,
+.ai-message ol,
+.ai-message ul {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.ai-message .numbered-list li,
+.ai-message .bullet-list li,
+.ai-message ol li,
+.ai-message ul li {
+  margin-bottom: 0.5rem;
+}
+
+/* Specific list types */
+.ai-message .professionals-list,
+.ai-message .invoices-list,
+.ai-message .bookings-list,
+.ai-message .dates-list,
+.ai-message .services-list {
+  margin-bottom: 1rem;
+}
+
+.ai-message .professional-details,
+.ai-message .invoice-details,
+.ai-message .booking-details,
+.ai-message .service-details {
+  margin-top: 0.25rem;
+  margin-left: 1.5rem;
+  margin-bottom: 0.5rem;
+  list-style-type: disc;
+}
+
+/* Replace the styling for these specific elements to remove the orange color */
+
+.ai-message .professional-name,
+.ai-message .category-title,
+.ai-message .booking-date {
+  font-weight: 600;
+  /* Removing the color: var(--primary); */
+}
+
+/* Service list specific */
+.ai-message .service-category {
+  margin-bottom: 1.5rem;
+}
+
+.ai-message .category-title {
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+  /* Color is already removed in the group selector above */
+}
