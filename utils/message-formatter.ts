@@ -59,10 +59,21 @@ function enhanceHtmlMessage(html: string): string {
   html = html.replace(/<ul>/g, '<ul class="bullet-list">')
 
   // Add classes to list items for better styling
-  html = html.replace(/<li>/g, '<li class="list-item">')
+  html = html.replace(/<li>/g, '<li class="list-item body-font">')
 
   // Enhance strong elements
   html = html.replace(/<strong>/g, '<strong class="font-bold">')
+
+  // Add font styling to headings
+  html = html.replace(/<h1/g, '<h1 class="title-font"')
+  html = html.replace(/<h2/g, '<h2 class="header-font"')
+  html = html.replace(/<h3/g, '<h3 class="header-font"')
+
+  // Add font styling to paragraphs
+  html = html.replace(/<p>/g, '<p class="body-font">')
+
+  // Add font styling to div elements
+  html = html.replace(/<div>/g, '<div class="body-font">')
 
   return html
 }
@@ -243,29 +254,29 @@ function formatDetailedBookingList(message: string, cleanText: string): { text: 
 // Common function to format booking output
 function formatBookingOutput(introText: string, bookings: any[], footerText: string): { text: string; html: string } {
   // Build HTML output
-  let htmlOutput = `<div>${markdownToHtml(introText)}</div><br><br>`
+  let htmlOutput = `<div class="body-font">${markdownToHtml(introText)}</div><br><br>`
 
   // Define how many bookings to show in detail
   const detailedBookingsCount = 20
   const totalBookings = bookings.length
 
   // Show the next X bookings in detail
-  htmlOutput += `<div>📆 <strong>Your next ${Math.min(detailedBookingsCount, totalBookings)} bookings:</strong></div><br>`
+  htmlOutput += `<div class="body-font">📆 <strong class="font-bold">Your next ${Math.min(detailedBookingsCount, totalBookings)} bookings:</strong></div><br>`
 
   // Create a list for the bookings
-  htmlOutput += '<ol class="bookings-list" style="margin-left: 20px; margin-top: 10px;">'
+  htmlOutput += '<ol class="bookings-list numbered-list" style="margin-left: 20px; margin-top: 10px;">'
   for (let i = 0; i < Math.min(detailedBookingsCount, bookings.length); i++) {
     const booking = bookings[i]
 
     if (booking.startTime && booking.endTime) {
       // Detailed format with start and end times
-      htmlOutput += `<li class="booking-item"><strong>${booking.date}</strong><ul class="booking-details" style="margin-top: 5px;">`
-      htmlOutput += `<li><strong>Start Time:</strong> ${booking.startTime}</li>`
-      htmlOutput += `<li><strong>End Time:</strong> ${booking.endTime}</li>`
+      htmlOutput += `<li class="booking-item list-item body-font"><strong class="font-bold header-font">${booking.date}</strong><ul class="booking-details bullet-list" style="margin-top: 5px;">`
+      htmlOutput += `<li class="list-item body-font"><strong class="font-bold">Start Time:</strong> ${booking.startTime}</li>`
+      htmlOutput += `<li class="list-item body-font"><strong class="font-bold">End Time:</strong> ${booking.endTime}</li>`
       htmlOutput += `</ul></li>`
     } else {
       // Simple format with combined time
-      htmlOutput += `<li class="booking-item"><strong>${booking.date}</strong>: ${booking.time}</li>`
+      htmlOutput += `<li class="booking-item list-item body-font"><strong class="font-bold header-font">${booking.date}</strong>: ${booking.time}</li>`
     }
   }
   htmlOutput += "</ol><br>"
@@ -285,23 +296,23 @@ function formatBookingOutput(introText: string, bookings: any[], footerText: str
     })
 
     // Add a summary section
-    htmlOutput += `<div>📅 <strong>Additional bookings by month:</strong></div><br>`
+    htmlOutput += `<div class="body-font">📅 <strong class="font-bold">Additional bookings by month:</strong></div><br>`
 
     // Add month sections as a list
-    htmlOutput += '<ul class="month-summary" style="margin-left: 20px; margin-top: 10px;">'
+    htmlOutput += '<ul class="month-summary bullet-list" style="margin-left: 20px; margin-top: 10px;">'
     Object.keys(bookingsByMonth).forEach((monthYear) => {
       const monthBookings = bookingsByMonth[monthYear]
-      htmlOutput += `<li>${monthYear}: ${monthBookings.length} bookings</li>`
+      htmlOutput += `<li class="list-item body-font">${monthYear}: ${monthBookings.length} bookings</li>`
     })
     htmlOutput += "</ul><br>"
   }
 
   // Add total count
-  htmlOutput += `<div><strong>You have a total of ${totalBookings} upcoming bookings.</strong></div>`
+  htmlOutput += `<div class="body-font"><strong class="font-bold">You have a total of ${totalBookings} upcoming bookings.</strong></div>`
 
   // Add footer if present
   if (footerText) {
-    htmlOutput += `<br><div class="message-footer">${markdownToHtml(footerText)}</div>`
+    htmlOutput += `<br><div class="message-footer body-font">${markdownToHtml(footerText)}</div>`
   }
 
   return {
@@ -332,10 +343,10 @@ function formatInvoiceList(message: string, cleanText: string): { text: string; 
     const footerText = footerMatch ? footerMatch[1].trim() : ""
 
     // Build HTML output
-    let htmlOutput = `<div>${markdownToHtml(introText)}</div><br>`
+    let htmlOutput = `<div class="body-font">${markdownToHtml(introText)}</div><br>`
 
     // Create a list for the invoices
-    htmlOutput += '<ol class="invoices-list" style="margin-left: 20px; margin-top: 10px;">'
+    htmlOutput += '<ol class="invoices-list numbered-list" style="margin-left: 20px; margin-top: 10px;">'
 
     // Extract all invoice entries using regex - updated for pipe-delimited format
     // Format: "1. **Invoice Number:** 240830-0002 | **Status:** Overdue | **Due Date:** August 31, 2024"
@@ -350,9 +361,9 @@ function formatInvoiceList(message: string, cleanText: string): { text: string; 
       const dueDate = match[4] // e.g., "August 31, 2024"
 
       // Add the invoice to the HTML output
-      htmlOutput += `<li class="invoice-item"><strong>Invoice Number:</strong> ${invoiceNumber}<ul class="invoice-details" style="margin-top: 5px;">`
-      htmlOutput += `<li><strong>Status:</strong> ${status}</li>`
-      htmlOutput += `<li><strong>Due Date:</strong> ${dueDate}</li>`
+      htmlOutput += `<li class="invoice-item list-item body-font"><strong class="font-bold header-font">Invoice Number:</strong> ${invoiceNumber}<ul class="invoice-details bullet-list" style="margin-top: 5px;">`
+      htmlOutput += `<li class="list-item body-font"><strong class="font-bold">Status:</strong> ${status}</li>`
+      htmlOutput += `<li class="list-item body-font"><strong class="font-bold">Due Date:</strong> ${dueDate}</li>`
       htmlOutput += `</ul></li>`
     }
 
@@ -361,7 +372,7 @@ function formatInvoiceList(message: string, cleanText: string): { text: string; 
 
     // Add footer if present
     if (footerText) {
-      htmlOutput += `<br><div class="message-footer">${markdownToHtml(footerText)}</div>`
+      htmlOutput += `<br><div class="message-footer body-font">${markdownToHtml(footerText)}</div>`
     }
 
     return {
