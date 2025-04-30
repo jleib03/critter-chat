@@ -1,3 +1,32 @@
+/* Add these font declarations at the top of the file, before the @tailwind directives */
+
+@font-face {
+  font-family: "SangBleuKingdom";
+  src: url("/fonts/sangbleu-kingdom/SangBleuKingdom-Light-WebS.woff") format("woff"),
+    url("/fonts/sangbleu-kingdom/SangBleuKingdom-Light-WebXL.woff") format("woff");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Suisse-Intl-Book";
+  src: url("/fonts/suisse-intl-book/Suisse-Intl-Book.woff") format("woff"),
+    url("/fonts/suisse-intl-book/Suisse-Intl-Book.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Suisse-Intl-Light";
+  src: url("/fonts/suisse-intl-light/Suisse-Intl-Light.woff") format("woff"),
+    url("/fonts/suisse-intl-light/Suisse-Intl-Light.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -22,16 +51,16 @@
   --border: #e0e0e0;
   --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   --radius: 12px;
+
+  /* Add font family variables */
+  --font-title: "SangBleuKingdom", serif;
+  --font-header: "Suisse-Intl-Book", sans-serif;
+  --font-body: "Suisse-Intl-Light", sans-serif;
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
+/* Update the body font to use the Suisse-Intl-Light as default */
 body {
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-body);
   background-color: var(--background);
   color: var(--text);
   line-height: 1.6;
@@ -39,116 +68,70 @@ body {
   padding: 0;
 }
 
-.card-header {
-  background-color: var(--primary) !important;
-  color: white !important;
+/* Add styles for titles */
+h1,
+.title {
+  font-family: var(--font-title);
 }
 
-@keyframes blink {
-  50% {
-    opacity: 1;
+/* Add styles for headers */
+h2,
+h3,
+h4,
+h5,
+h6,
+.header {
+  font-family: var(--font-header);
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
   }
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
+@layer base {
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+}
+
+@layer base {
+  * {
+    @apply border-border;
   }
-}
-
-.message {
-  animation: fadeIn 0.3s ease;
-}
-
-.typing-indicator span:nth-of-type(1) {
-  animation: 1s blink infinite 0.3333s;
-}
-
-.typing-indicator span:nth-of-type(2) {
-  animation: 1s blink infinite 0.6666s;
-}
-
-.typing-indicator span:nth-of-type(3) {
-  animation: 1s blink infinite 0.9999s;
-}
-
-/* Enhanced styling for HTML messages */
-.ai-message {
-  font-size: 0.95rem;
-  line-height: 1.5;
-}
-
-.ai-message strong,
-.ai-message .font-bold {
-  font-weight: 600;
-}
-
-.ai-message .message-intro {
-  margin-bottom: 1rem;
-}
-
-.ai-message .message-footer {
-  margin-top: 1rem;
-  color: var(--text-light);
-  font-style: italic;
-}
-
-/* List styling */
-.ai-message .numbered-list,
-.ai-message .bullet-list,
-.ai-message ol,
-.ai-message ul {
-  margin-left: 1.5rem;
-  margin-bottom: 1rem;
-}
-
-.ai-message .numbered-list li,
-.ai-message .bullet-list li,
-.ai-message ol li,
-.ai-message ul li {
-  margin-bottom: 0.5rem;
-}
-
-/* Specific list types */
-.ai-message .professionals-list,
-.ai-message .invoices-list,
-.ai-message .bookings-list,
-.ai-message .dates-list,
-.ai-message .services-list {
-  margin-bottom: 1rem;
-}
-
-.ai-message .professional-details,
-.ai-message .invoice-details,
-.ai-message .booking-details,
-.ai-message .service-details {
-  margin-top: 0.25rem;
-  margin-left: 1.5rem;
-  margin-bottom: 0.5rem;
-  list-style-type: disc;
-}
-
-/* Replace the styling for these specific elements to remove the orange color */
-
-.ai-message .professional-name,
-.ai-message .category-title,
-.ai-message .booking-date {
-  font-weight: 600;
-  /* Removing the color: var(--primary); */
-}
-
-/* Service list specific */
-.ai-message .service-category {
-  margin-bottom: 1.5rem;
-}
-
-.ai-message .category-title {
-  margin-bottom: 0.5rem;
-  font-size: 1.1rem;
-  /* Color is already removed in the group selector above */
+  body {
+    @apply bg-background text-foreground;
+  }
 }

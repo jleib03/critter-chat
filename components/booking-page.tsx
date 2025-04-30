@@ -297,7 +297,7 @@ export default function BookingPage() {
   return (
     <div className="container max-w-[1200px] mx-auto my-[30px] px-5">
       <div className="app-header text-center mb-[30px]">
-        <h1 className="text-primary text-[2.2rem] mb-[10px] font-bold">Critter - Booking & Info Service</h1>
+        <h1 className="text-primary text-[2.2rem] mb-[10px] font-bold title-font">Critter - Booking & Info Service</h1>
       </div>
 
       {/* Side-by-side layout - fixed to ensure it works properly */}
@@ -305,71 +305,73 @@ export default function BookingPage() {
         {/* Your Information Card - 4 columns on medium screens and up */}
         <div className="md:col-span-4 card bg-[var(--card-bg)] rounded-[var(--radius)] shadow-[var(--shadow)] overflow-hidden mb-[25px] transition-transform duration-300 hover:translate-y-[-5px)]">
           <div
-            className="card-header bg-primary text-white p-5 font-semibold text-[1.2rem]"
+            className="card-header bg-primary text-white p-5 font-semibold text-[1.2rem] header-font"
             style={{ backgroundColor: "#e75837" }}
           >
             Your Information
           </div>
           <div className="card-body p-6">
             <div className="form-group mb-5">
-              <label htmlFor="first-name" className="block mb-2 font-medium text-[var(--text)]">
+              <label htmlFor="first-name" className="block mb-2 font-medium text-[var(--text)] header-font">
                 First Name
               </label>
               <input
                 type="text"
                 id="first-name"
                 ref={firstNameRef}
-                className="w-full p-3 border border-[var(--border)] rounded-lg text-base font-[inherit] transition-all duration-300 focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)]"
+                className="w-full p-3 border border-[var(--border)] rounded-lg text-base body-font transition-all duration-300 focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)]"
                 placeholder="Enter your first name"
               />
             </div>
             <div className="form-group mb-5">
-              <label htmlFor="last-name" className="block mb-2 font-medium text-[var(--text)]">
+              <label htmlFor="last-name" className="block mb-2 font-medium text-[var(--text)] header-font">
                 Last Name
               </label>
               <input
                 type="text"
                 id="last-name"
                 ref={lastNameRef}
-                className="w-full p-3 border border-[var(--border)] rounded-lg text-base font-[inherit] transition-all duration-300 focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)]"
+                className="w-full p-3 border border-[var(--border)] rounded-lg text-base body-font transition-all duration-300 focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)]"
                 placeholder="Enter your last name"
               />
             </div>
             <div className="form-group mb-5">
-              <label htmlFor="email" className="block mb-2 font-medium text-[var(--text)]">
+              <label htmlFor="email" className="block mb-2 font-medium text-[var(--text)] header-font">
                 Email
               </label>
               <input
                 type="email"
                 id="email"
                 ref={emailRef}
-                className="w-full p-3 border border-[var(--border)] rounded-lg text-base font-[inherit] transition-all duration-300 focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)]"
+                className="w-full p-3 border border-[var(--border)] rounded-lg text-base body-font transition-all duration-300 focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)]"
                 placeholder="Enter your email address"
               />
             </div>
             <div className="form-group mb-3">
-              <label htmlFor="action-select" className="block mb-2 font-medium text-[var(--text)]">
+              <label htmlFor="action-select" className="block mb-2 font-medium text-[var(--text)] header-font">
                 Current Action
               </label>
               <div
-                className={`w-full p-3 border border-[var(--border)] rounded-lg text-base font-[inherit] bg-[#f5f5f5] ${selectedAction ? "text-[var(--text)]" : "text-[#6b7280] italic"}`}
+                className={`w-full p-3 border border-[var(--border)] rounded-lg text-base body-font bg-[#f5f5f5] ${selectedAction ? "text-[var(--text)]" : "text-[#6b7280] italic"}`}
               >
                 {selectedAction ? getActionDisplayName(selectedAction) : "No action selected yet"}
               </div>
               <input type="hidden" id="action-select" ref={actionSelectRef} value={selectedAction} />
-              <p className="mt-2 text-sm text-[#6b7280]">Please select an action from the chat options on the right</p>
+              <p className="mt-2 text-sm text-[#6b7280] body-font">
+                Please select an action from the chat options on the right
+              </p>
             </div>
 
             {selectedAction && (
               <div className="form-group mb-5">
                 <button
                   onClick={resetChat}
-                  className="flex items-center justify-center w-full p-2 mt-2 border border-[var(--border)] rounded-lg bg-[#f0f2f5] hover:bg-[#e4e6e8] text-[var(--text)] transition-colors"
+                  className="flex items-center justify-center w-full p-2 mt-2 border border-[var(--border)] rounded-lg bg-[#f0f2f5] hover:bg-[#e4e6e8] text-[var(--text)] transition-colors body-font"
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Do Something Else
                 </button>
-                <p className="mt-1 text-xs text-[#6b7280]">
+                <p className="mt-1 text-xs text-[#6b7280] body-font">
                   This will reset the chat and let you select a different action
                 </p>
               </div>
@@ -377,7 +379,7 @@ export default function BookingPage() {
 
             <div className="status-indicator flex items-center mt-[10px] text-[0.85rem] text-[var(--text-light)]">
               <div className="status-dot h-2 w-2 rounded-full mr-2" style={{ backgroundColor: statusColor }}></div>
-              <div className="status-text font-medium">{statusText}</div>
+              <div className="status-text font-medium body-font">{statusText}</div>
             </div>
           </div>
         </div>
@@ -385,7 +387,7 @@ export default function BookingPage() {
         {/* Chat Card - 8 columns on medium screens and up */}
         <div className="md:col-span-8 card bg-[var(--card-bg)] rounded-[var(--radius)] shadow-[var(--shadow)] overflow-hidden mb-[25px] transition-transform duration-300 hover:translate-y-[-5px)]">
           <div
-            className="card-header bg-primary text-white p-5 font-semibold text-[1.2rem]"
+            className="card-header bg-primary text-white p-5 font-semibold text-[1.2rem] header-font"
             style={{ backgroundColor: "#e75837" }}
           >
             Chat with Us
@@ -402,7 +404,7 @@ export default function BookingPage() {
                 return msg.htmlMessage ? (
                   <div
                     key={index}
-                    className={`message mb-[15px] p-3 rounded-[18px] max-w-[80%] relative leading-[1.5] text-[0.95rem] ${
+                    className={`message mb-[15px] p-3 rounded-[18px] max-w-[80%] relative leading-[1.5] text-[0.95rem] body-font ${
                       msg.isUser
                         ? "user-message bg-[#e75837] text-white ml-auto rounded-br-[4px]"
                         : "bot-message bg-[#f0f2f5] text-[var(--text)] mr-auto rounded-bl-[4px]"
@@ -412,7 +414,7 @@ export default function BookingPage() {
                 ) : (
                   <div
                     key={index}
-                    className={`message mb-[15px] p-3 rounded-[18px] max-w-[80%] relative leading-[1.5] text-[0.95rem] ${
+                    className={`message mb-[15px] p-3 rounded-[18px] max-w-[80%] relative leading-[1.5] text-[0.95rem] body-font ${
                       msg.isUser
                         ? "user-message bg-[#e75837] text-white ml-auto rounded-br-[4px]"
                         : "bot-message bg-[#f0f2f5] text-[var(--text)] mr-auto rounded-bl-[4px]"
@@ -426,35 +428,35 @@ export default function BookingPage() {
                 <div className="action-bubbles flex flex-col gap-4 mt-4">
                   {/* Existing customer options */}
                   <div className="existing-customer-options">
-                    <p className="text-sm text-gray-600 mb-2">Existing customer options:</p>
+                    <p className="text-sm text-gray-600 mb-2 body-font">Existing customer options:</p>
                     <div className="flex flex-wrap gap-2">
                       <button
                         onClick={() => handleActionBubbleClick("new_booking")}
-                        className="action-bubble bg-[#e75837] hover:bg-[#d04e30] text-white px-4 py-2 rounded-full text-sm font-medium transition-colors"
+                        className="action-bubble bg-[#e75837] hover:bg-[#d04e30] text-white px-4 py-2 rounded-full text-sm font-medium transition-colors body-font"
                       >
                         New Booking
                       </button>
                       <button
                         onClick={() => handleActionBubbleClick("change_booking")}
-                        className="action-bubble bg-[#e75837] hover:bg-[#d04e30] text-white px-4 py-2 rounded-full text-sm font-medium transition-colors"
+                        className="action-bubble bg-[#e75837] hover:bg-[#d04e30] text-white px-4 py-2 rounded-full text-sm font-medium transition-colors body-font"
                       >
                         Change Booking
                       </button>
                       <button
                         onClick={() => handleActionBubbleClick("cancel_booking")}
-                        className="action-bubble bg-[#e75837] hover:bg-[#d04e30] text-white px-4 py-2 rounded-full text-sm font-medium transition-colors"
+                        className="action-bubble bg-[#e75837] hover:bg-[#d04e30] text-white px-4 py-2 rounded-full text-sm font-medium transition-colors body-font"
                       >
                         Cancel Booking
                       </button>
                       <button
                         onClick={() => handleActionBubbleClick("list_bookings")}
-                        className="action-bubble bg-[#e75837] hover:bg-[#d04e30] text-white px-4 py-2 rounded-full text-sm font-medium transition-colors"
+                        className="action-bubble bg-[#e75837] hover:bg-[#d04e30] text-white px-4 py-2 rounded-full text-sm font-medium transition-colors body-font"
                       >
                         List Bookings
                       </button>
                       <button
                         onClick={() => handleActionBubbleClick("list_outstanding")}
-                        className="action-bubble bg-[#e75837] hover:bg-[#d04e30] text-white px-4 py-2 rounded-full text-sm font-medium transition-colors"
+                        className="action-bubble bg-[#e75837] hover:bg-[#d04e30] text-white px-4 py-2 rounded-full text-sm font-medium transition-colors body-font"
                       >
                         Outstanding Invoices
                       </button>
@@ -477,11 +479,11 @@ export default function BookingPage() {
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Type your message here..."
-                className="flex-1 p-3 border border-[var(--border)] rounded-[24px] text-base mr-[10px] focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)]"
+                className="flex-1 p-3 border border-[var(--border)] rounded-[24px] text-base mr-[10px] focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)] body-font"
               />
               <button
                 onClick={() => sendMessage()}
-                className="bg-secondary text-white border-none py-3 px-5 rounded-[24px] cursor-pointer font-medium text-base transition-colors duration-300 hover:bg-[#5d4b1e] focus:outline-none focus:shadow-[0_0_0_3px_rgba(116,94,37,0.3)] inline-flex items-center justify-center"
+                className="bg-secondary text-white border-none py-3 px-5 rounded-[24px] cursor-pointer font-medium text-base transition-colors duration-300 hover:bg-[#5d4b1e] focus:outline-none focus:shadow-[0_0_0_3px_rgba(116,94,37,0.3)] inline-flex items-center justify-center body-font"
               >
                 Send
                 <Send className="ml-2 h-4 w-4" />
@@ -493,7 +495,7 @@ export default function BookingPage() {
 
       {showDebug && (
         <div className="debug-panel bg-[var(--card-bg)] rounded-[var(--radius)] shadow-[var(--shadow)] p-5 mt-[25px]">
-          <h3 className="mt-0 text-primary mb-[15px] text-[1.2rem]">Debug Information</h3>
+          <h3 className="mt-0 text-primary mb-[15px] text-[1.2rem] header-font">Debug Information</h3>
           <div className="debug-log h-[200px] overflow-y-auto bg-[#f5f5f5] p-[15px] font-mono text-[0.85rem] rounded-lg border border-[var(--border)]">
             {debugLogs.map((log, index) => (
               <div key={index} className="mb-[5px] leading-[1.4]">
@@ -504,7 +506,7 @@ export default function BookingPage() {
           <div className="debug-controls flex justify-end mt-[15px]">
             <button
               onClick={clearDebugLogs}
-              className="bg-[#f0f2f5] text-[var(--text)] border border-[var(--border)] py-2 px-[15px] rounded-md cursor-pointer text-[0.9rem] transition-all duration-200 hover:bg-[#e4e6e8]"
+              className="bg-[#f0f2f5] text-[var(--text)] border border-[var(--border)] py-2 px-[15px] rounded-md cursor-pointer text-[0.9rem] transition-all duration-200 hover:bg-[#e4e6e8] body-font"
             >
               Clear Log
             </button>
@@ -515,7 +517,7 @@ export default function BookingPage() {
       <div className="flex justify-end mt-4">
         <button
           onClick={() => setShowDebug(!showDebug)}
-          className="bg-[#f0f2f5] text-[var(--text)] border border-[var(--border)] py-2 px-[15px] rounded-md cursor-pointer text-[0.9rem] transition-all duration-200 hover:bg-[#e4e6e8]"
+          className="bg-[#f0f2f5] text-[var(--text)] border border-[var(--border)] py-2 px-[15px] rounded-md cursor-pointer text-[0.9rem] transition-all duration-200 hover:bg-[#e4e6e8] body-font"
         >
           {showDebug ? "Hide Debug" : "Show Debug"}
         </button>
