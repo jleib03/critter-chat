@@ -27,7 +27,7 @@ export default function BookingPage() {
   const [selectedAction, setSelectedAction] = useState<string>("")
 
   const USER_ID = useRef(`web_user_${Math.random().toString(36).substring(2, 10)}`)
-  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/dcfe550a-6d48-40b7-a337-c062c0c36f63"
+  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/93c29983-1098-4ff9-a3c5-eae58e04fbab"
 
   const chatMessagesRef = useRef<HTMLDivElement>(null)
   const firstNameRef = useRef<HTMLInputElement>(null)
@@ -424,16 +424,6 @@ export default function BookingPage() {
               })}
               {showActionBubbles && (
                 <div className="action-bubbles flex flex-col gap-4 mt-4">
-                  {/* New Customer option with distinct styling */}
-                  <div className="new-customer-option">
-                    <button
-                      onClick={() => handleActionBubbleClick("new_customer")}
-                      className="action-bubble bg-[#e75837] hover:bg-[#d04e30] text-white px-4 py-2 rounded-full text-sm font-medium transition-colors"
-                    >
-                      New Customer
-                    </button>
-                  </div>
-
                   {/* Existing customer options */}
                   <div className="existing-customer-options">
                     <p className="text-sm text-gray-600 mb-2">Existing customer options:</p>
