@@ -314,7 +314,7 @@ export default function BookingPage() {
       </div>
 
       <div className="app-header text-center mb-[30px]">
-        <h1 className="text-primary text-[2.2rem] mb-[10px] font-bold title-font">Critter - Booking & Info Service</h1>
+        <h1 className="text-primary text-[2.2rem] mb-[10px] font-bold title-font">Critter Smart Booking Servicee</h1>
       </div>
 
       {/* Side-by-side layout - fixed to ensure it works properly */}
