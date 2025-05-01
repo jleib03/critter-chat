@@ -5,6 +5,8 @@ import type React from "react"
 import { useState, useRef, useEffect } from "react"
 import { Send, RefreshCw } from "lucide-react"
 import { formatMessage } from "@/utils/message-formatter"
+import Image from "next/image"
+import Link from "next/link"
 
 export default function BookingPage() {
   // Update the status colors to match the new primary color
@@ -296,6 +298,21 @@ export default function BookingPage() {
   // Fix the layout to ensure side-by-side display
   return (
     <div className="container max-w-[1200px] mx-auto my-[30px] px-5">
+      {/* Logo in the upper left corner */}
+      <div className="absolute top-4 left-4 z-10">
+        <Link href="https://critter.pet" target="_blank" rel="noopener noreferrer">
+          <div className="relative w-16 h-16 transition-transform hover:scale-110">
+            <Image
+              src="/images/critter-logo.png"
+              alt="Critter Logo"
+              width={64}
+              height={64}
+              className="rounded-lg shadow-md"
+            />
+          </div>
+        </Link>
+      </div>
+
       <div className="app-header text-center mb-[30px]">
         <h1 className="text-primary text-[2.2rem] mb-[10px] font-bold title-font">Critter - Booking & Info Service</h1>
       </div>
