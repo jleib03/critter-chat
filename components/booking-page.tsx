@@ -13,7 +13,7 @@ export default function BookingPage() {
   const [statusColor, setStatusColor] = useState("#E75837") // Updated to Orange (primary)
   const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; htmlMessage?: string }>>([
     {
-      text: "Welcome to Critter Pet Services! Please fill in your information to the left and select one of the below to get started. If you're an existing customer, select one of the service options. If you are a new customer, select New Customer.",
+      text: "Welcome to Critter Pet Services! Please fill in your information to the left and select one of the below to get started. If you're an existing customer, select one of the service options.",
       isUser: false,
     },
   ])
@@ -314,7 +314,14 @@ export default function BookingPage() {
       </div>
 
       <div className="app-header text-center mb-[30px]">
-        <h1 className="text-primary text-[2.2rem] mb-[10px] font-bold title-font">Critter - Booking & Info Service</h1>
+        <h1 className="text-primary text-[2.2rem] mb-[10px] font-bold title-font">Critter Smart Booking Service</h1>
+
+        {/* Sub-header with directions */}
+        <p className="text-[var(--text)] text-[1rem] max-w-[800px] mx-auto mb-[20px] body-font leading-relaxed">
+          Welcome to the Critter Online Booking Site. This chat experience is an extension of the Critter Platform. If
+          you have a Critter Pet Owner account, feel free to use this and the app in partnership. If you work with a
+          Critter professional and don't have an account, this is a great way to simplify your interactions.
+        </p>
       </div>
 
       {/* Side-by-side layout - fixed to ensure it works properly */}
