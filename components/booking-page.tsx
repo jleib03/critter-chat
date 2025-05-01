@@ -13,7 +13,7 @@ export default function BookingPage() {
   const [statusColor, setStatusColor] = useState("#E75837") // Updated to Orange (primary)
   const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; htmlMessage?: string }>>([
     {
-      text: "Welcome to Critter Pet Services! Please fill in your information to the left and select one of the below to get started. If you're an existing customer, select one of the service options. If you are a new customer, select New Customer.",
+      text: "Welcome to Critter Pet Services! Please fill in your information to the left and select one of the below to get started. If you're an existing customer, select one of the service options.",
       isUser: false,
     },
   ])
