@@ -58,14 +58,27 @@
   --font-body: "Suisse-Intl-Light", sans-serif;
 }
 
-/* Update the body font to use the Suisse-Intl-Light as default */
+/* Keep the existing body styles but update the font-family */
 body {
-  font-family: var(--font-body);
+  font-family: var(--font-body), var(--font-poppins), sans-serif;
   background-color: var(--background);
   color: var(--text);
   line-height: 1.6;
   margin: 0;
   padding: 0;
+}
+
+/* Add these new font class styles */
+.title-font {
+  font-family: var(--font-title);
+}
+
+.header-font {
+  font-family: var(--font-header);
+}
+
+.body-font {
+  font-family: var(--font-body);
 }
 
 /* Add styles for titles */
@@ -82,6 +95,303 @@ h5,
 h6,
 .header {
   font-family: var(--font-header);
+}
+
+/* Custom font styles */
+h1,
+.app-header h1,
+.card-header {
+  font-family: var(--font-title);
+}
+
+h2,
+h3,
+h4,
+h5,
+h6,
+.header,
+label,
+.form-group label {
+  font-family: var(--font-header);
+}
+
+.message,
+input,
+button,
+.status-text,
+p,
+div,
+.chat-input input::placeholder {
+  font-family: var(--font-body);
+}
+
+/* Add these styles to ensure proper formatting for lists and other elements */
+
+/* List styling */
+.ai-message .numbered-list,
+.ai-message .bullet-list,
+.ai-message ol,
+.ai-message ul {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+  font-family: var(--font-body);
+}
+
+.ai-message .numbered-list li,
+.ai-message .bullet-list li,
+.ai-message ol li,
+.ai-message ul li {
+  margin-bottom: 0.5rem;
+  font-family: var(--font-body);
+}
+
+/* Specific list types */
+.ai-message .professionals-list,
+.ai-message .invoices-list,
+.ai-message .bookings-list,
+.ai-message .dates-list,
+.ai-message .services-list {
+  margin-bottom: 1rem;
+  font-family: var(--font-body);
+}
+
+.ai-message .professional-details,
+.ai-message .invoice-details,
+.ai-message .booking-details,
+.ai-message .service-details {
+  margin-top: 0.25rem;
+  margin-left: 1.5rem;
+  margin-bottom: 0.5rem;
+  list-style-type: disc;
+  font-family: var(--font-body);
+}
+
+/* Styling for specific elements */
+.ai-message .professional-name,
+.ai-message .category-title,
+.ai-message .booking-date {
+  font-weight: 600;
+  font-family: var(--font-header);
+}
+
+/* Service list specific */
+.ai-message .service-category {
+  margin-bottom: 1.5rem;
+  font-family: var(--font-body);
+}
+
+.ai-message .category-title {
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+  font-family: var(--font-header);
+}
+
+/* Ensure strong elements use the header font */
+strong,
+.font-bold {
+  font-family: var(--font-header);
+  font-weight: 600;
+}
+
+/* Ensure list items have proper bullet points */
+.bullet-list li,
+ul.bullet-list li {
+  list-style-type: disc;
+  margin-left: 1.5rem;
+}
+
+.numbered-list li,
+ol.numbered-list li {
+  list-style-type: decimal;
+  margin-left: 1.5rem;
+}
+
+/* Booking and invoice specific styling */
+.booking-item,
+.invoice-item {
+  margin-bottom: 1rem;
+}
+
+.booking-details,
+.invoice-details {
+  margin-left: 1.5rem;
+  margin-top: 0.5rem;
+}
+
+/* Ensure message formatting is preserved */
+.message {
+  font-family: var(--font-body);
+}
+
+.message strong,
+.message .font-bold {
+  font-family: var(--font-header);
+  font-weight: 600;
+}
+
+.message h1,
+.message h2,
+.message h3,
+.message h4,
+.message h5,
+.message h6 {
+  font-family: var(--font-header);
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.message h1 {
+  font-family: var(--font-title);
+}
+
+/* Ensure emoji and icons display properly */
+.message [class^="emoji-"],
+.message [class*=" emoji-"] {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 0.25rem;
+}
+
+.card-header {
+  background-color: var(--primary) !important;
+  color: white !important;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message {
+  animation: fadeIn 0.3s ease;
+}
+
+.typing-indicator span:nth-of-type(1) {
+  animation: 1s blink infinite 0.3333s;
+}
+
+.typing-indicator span:nth-of-type(2) {
+  animation: 1s blink infinite 0.6666s;
+}
+
+.typing-indicator span:nth-of-type(3) {
+  animation: 1s blink infinite 0.9999s;
+}
+
+/* Enhanced styling for HTML messages */
+.ai-message {
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.ai-message strong,
+.ai-message .font-bold {
+  font-weight: 600;
+}
+
+.ai-message .message-intro {
+  margin-bottom: 1rem;
+}
+
+.ai-message .message-footer {
+  margin-top: 1rem;
+  color: var(--text-light);
+  font-style: italic;
+}
+
+/* List styling */
+.ai-message .numbered-list,
+.ai-message .bullet-list,
+.ai-message ol,
+.ai-message ul {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.ai-message .numbered-list li,
+.ai-message .bullet-list li,
+.ai-message ol li,
+.ai-message ul li {
+  margin-bottom: 0.5rem;
+}
+
+/* Specific list types */
+.ai-message .professionals-list,
+.ai-message .invoices-list,
+.ai-message .bookings-list,
+.ai-message .dates-list,
+.ai-message .services-list {
+  margin-bottom: 1rem;
+}
+
+.ai-message .professional-details,
+.ai-message .invoice-details,
+.ai-message .booking-details,
+.ai-message .service-details {
+  margin-top: 0.25rem;
+  margin-left: 1.5rem;
+  margin-bottom: 0.5rem;
+  list-style-type: disc;
+}
+
+/* Replace the styling for these specific elements to remove the orange color */
+
+.ai-message .professional-name,
+.ai-message .category-title,
+.ai-message .booking-date {
+  font-weight: 600;
+  /* Removing the color: var(--primary); */
+}
+
+/* Service list specific */
+.ai-message .service-category {
+  margin-bottom: 1.5rem;
+}
+
+.ai-message .category-title {
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+  /* Color is already removed in the group selector above */
+}
+
+/* New customer button styling */
+.new-customer-option {
+  animation: pulse 2s infinite;
+}
+
+.new-customer-option button {
+  transition: all 0.3s ease;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.new-customer-option button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 @layer utilities {
