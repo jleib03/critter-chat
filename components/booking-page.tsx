@@ -22,8 +22,6 @@ export default function BookingPage() {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [statusText, setStatusText] = useState("Ready to assist you")
-  const [showDebug, setShowDebug] = useState(false)
-  const [debugLogs, setDebugLogs] = useState<string[]>([])
   const [selectedAction, setSelectedAction] = useState<string>("")
   const [isAtBottom, setIsAtBottom] = useState(true)
 
@@ -69,24 +67,6 @@ export default function BookingPage() {
     }
   }, [messages, isTyping, isAtBottom])
 
-  const logDebug = (message: string, data?: any) => {
-    const timestamp = new Date().toISOString().split("T")[1].split(".")[0]
-    let logEntry = `[${timestamp}] ${message}`
-
-    if (data) {
-      logEntry += `: ${JSON.stringify(data)}`
-    }
-
-    setDebugLogs((prev) => [...prev, logEntry])
-
-    // Also log to console
-    console.log(message, data)
-  }
-
-  const clearDebugLogs = () => {
-    setDebugLogs([])
-    logDebug("Debug log cleared")
-  }
 
   // Reset the chat to its initial state
   const resetChat = () => {
@@ -524,36 +504,6 @@ export default function BookingPage() {
             </div>
           </div>
         </div>
-      </div>
-
-      {showDebug && (
-        <div className="debug-panel bg-white rounded-lg shadow-md p-5 mt-[25px]">
-          <h3 className="mt-0 text-primary mb-[15px] text-[1.2rem] header-font">Debug Information</h3>
-          <div className="debug-log h-[200px] overflow-y-auto bg-[#f5f5f5] p-[15px] font-mono text-[0.85rem] rounded-lg border border-[#e0e0e0]">
-            {debugLogs.map((log, index) => (
-              <div key={index} className="mb-[5px] leading-[1.4]">
-                {log}
-              </div>
-            ))}
-          </div>
-          <div className="debug-controls flex justify-end mt-[15px]">
-            <button
-              onClick={clearDebugLogs}
-              className="bg-[#f0f2f5] text-[var(--text)] border border-[#e0e0e0] py-2 px-[15px] rounded-md cursor-pointer text-[0.9rem] transition-all duration-200 hover:bg-[#e4e6e8] body-font"
-            >
-              Clear Log
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div className="flex justify-end mt-4">
-        <button
-          onClick={() => setShowDebug(!showDebug)}
-          className="bg-[#f0f2f5] text-[var(--text)] border border-[#e0e0e0] py-2 px-[15px] rounded-md cursor-pointer text-[0.9rem] transition-all duration-200 hover:bg-[#e4e6e8] body-font"
-        >
-          {showDebug ? "Hide Debug" : "Show Debug"}
-        </button>
       </div>
     </div>
   )
