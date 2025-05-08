@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-
+import Image from "next/image"
 import { useState, useRef, useEffect } from "react"
 import { Send, RefreshCw } from "lucide-react"
 import { formatMessage } from "@/utils/message-formatter"
@@ -307,21 +307,29 @@ export default function BookingPage() {
 
   // Fix the layout to ensure side-by-side display
   return (
-    <div className="container max-w-[1200px] mx-auto my-[10px] md:my-[30px] px-4 md:px-5">
-      <div className="app-header text-center mb-[30px] px-4">
-        <h1 className="text-primary text-[1.8rem] md:text-[2.2rem] mb-[10px] font-bold title-font">
-          Critter - Booking & Info Service
+    <div className="container max-w-[1200px] mx-auto my-[10px] md:my-[30px] px-4 md:px-5 bg-[#FBF8F3]">
+      <div className="flex items-center mb-6">
+        <div className="mr-4">
+          <Image src="/images/critter-logo.png" alt="Critter Logo" width={60} height={60} className="rounded-md" />
+        </div>
+        <h1 className="text-center text-[1.8rem] md:text-[2.2rem] font-bold title-font flex-grow">
+          Critter Smart Booking Service
         </h1>
+      </div>
+
+      <div className="text-center mb-8">
+        <p className="body-font">
+          Welcome to the Critter Online Booking Site. This chat experience is an extension of the Critter Platform. If
+          you have a Critter Pet Owner account, feel free to use this and the app in partnership. If you work with a
+          Critter professional and don't have an account, this is a great way to simplify your interactions.
+        </p>
       </div>
 
       {/* Side-by-side layout - fixed to ensure it works properly */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
         {/* Your Information Card - 4 columns on medium screens and up */}
-        <div className="md:col-span-4 card bg-[var(--card-bg)] rounded-[var(--radius)] shadow-[var(--shadow)] overflow-hidden mb-[25px] transition-transform duration-300 hover:translate-y-[-5px)]">
-          <div
-            className="card-header bg-primary text-white p-5 font-semibold text-[1.2rem] header-font"
-            style={{ backgroundColor: "#e75837" }}
-          >
+        <div className="md:col-span-5 card bg-white rounded-lg shadow-md overflow-hidden mb-[25px]">
+          <div className="card-header bg-[#E75837] text-white p-4 font-semibold text-[1.2rem] header-font">
             Your Information
           </div>
           <div className="card-body p-6 body-font">
@@ -333,7 +341,7 @@ export default function BookingPage() {
                 type="text"
                 id="first-name"
                 ref={firstNameRef}
-                className="w-full p-3 border border-[var(--border)] rounded-lg text-base font-[inherit] transition-all duration-300 focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)] body-font"
+                className="w-full p-3 border border-[#e0e0e0] rounded-lg text-base transition-all duration-300 focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)] body-font"
                 placeholder="Enter your first name"
               />
             </div>
@@ -345,7 +353,7 @@ export default function BookingPage() {
                 type="text"
                 id="last-name"
                 ref={lastNameRef}
-                className="w-full p-3 border border-[var(--border)] rounded-lg text-base font-[inherit] transition-all duration-300 focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)] body-font"
+                className="w-full p-3 border border-[#e0e0e0] rounded-lg text-base transition-all duration-300 focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)] body-font"
                 placeholder="Enter your last name"
               />
             </div>
@@ -357,7 +365,7 @@ export default function BookingPage() {
                 type="email"
                 id="email"
                 ref={emailRef}
-                className="w-full p-3 border border-[var(--border)] rounded-lg text-base font-[inherit] transition-all duration-300 focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)] body-font"
+                className="w-full p-3 border border-[#e0e0e0] rounded-lg text-base transition-all duration-300 focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)] body-font"
                 placeholder="Enter your email address"
               />
             </div>
@@ -366,7 +374,7 @@ export default function BookingPage() {
                 Current Action
               </label>
               <div
-                className={`w-full p-3 border border-[var(--border)] rounded-lg text-base font-[inherit] bg-[#f5f5f5] ${
+                className={`w-full p-3 border border-[#e0e0e0] rounded-lg text-base bg-[#f5f5f5] ${
                   selectedAction ? "text-[var(--text)]" : "text-[#6b7280] italic"
                 } body-font`}
               >
@@ -382,7 +390,7 @@ export default function BookingPage() {
               <div className="form-group mb-5">
                 <button
                   onClick={resetChat}
-                  className="flex items-center justify-center w-full p-2 mt-2 border border-[var(--border)] rounded-lg bg-[#f0f2f5] hover:bg-[#e4e6e8] text-[var(--text)] transition-colors body-font"
+                  className="flex items-center justify-center w-full p-2 mt-2 border border-[#e0e0e0] rounded-lg bg-[#f0f2f5] hover:bg-[#e4e6e8] text-[var(--text)] transition-colors body-font"
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Do Something Else
@@ -401,16 +409,13 @@ export default function BookingPage() {
         </div>
 
         {/* Chat Card - 8 columns on medium screens and up */}
-        <div className="md:col-span-8 card bg-[var(--card-bg)] rounded-[var(--radius)] shadow-[var(--shadow)] overflow-hidden mb-[25px] transition-transform duration-300 hover:translate-y-[-5px)]">
-          <div
-            className="card-header bg-primary text-white p-5 font-semibold text-[1.2rem] header-font"
-            style={{ backgroundColor: "#e75837" }}
-          >
+        <div className="md:col-span-7 card bg-white rounded-lg shadow-md overflow-hidden mb-[25px]">
+          <div className="card-header bg-[#E75837] text-white p-4 font-semibold text-[1.2rem] header-font">
             Chat with Us
           </div>
           <div className="chat-container flex flex-col h-[500px]">
             <div
-              className="chat-messages flex-1 overflow-y-auto p-5 bg-[var(--card-bg)] border-b border-[var(--border)]"
+              className="chat-messages flex-1 overflow-y-auto p-5 bg-white border-b border-[#e0e0e0]"
               ref={chatMessagesRef}
             >
               {messages.map((msg, index) => {
@@ -444,7 +449,7 @@ export default function BookingPage() {
                 <div className="action-bubbles flex flex-col gap-4 mt-4">
                   {/* Booking options */}
                   <div className="booking-options">
-                    <p className="text-sm text-gray-600 mb-2 body-font">Select an option:</p>
+                    <p className="text-sm text-gray-600 mb-2 body-font">Existing customer options:</p>
                     <div className="flex flex-wrap gap-2">
                       <button
                         onClick={() => handleActionBubbleClick("new_booking")}
@@ -488,7 +493,7 @@ export default function BookingPage() {
                 </div>
               )}
             </div>
-            <div className="chat-input flex p-[15px] bg-[var(--card-bg)]">
+            <div className="chat-input flex p-[15px] bg-white">
               <div className="flex-1 mr-[10px] relative">
                 <textarea
                   value={inputValue}
@@ -505,13 +510,13 @@ export default function BookingPage() {
                     }
                   }}
                   placeholder="Type your message here..."
-                  className="w-full p-3 border border-[var(--border)] rounded-[24px] text-base focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)] body-font resize-none min-h-[46px] max-h-[150px] overflow-y-auto"
+                  className="w-full p-3 border border-[#e0e0e0] rounded-[24px] text-base focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)] body-font resize-none min-h-[46px] max-h-[150px] overflow-y-auto"
                   style={{ height: "46px" }}
                 />
               </div>
               <button
                 onClick={() => sendMessage()}
-                className="bg-secondary text-white border-none py-3 px-5 rounded-[24px] cursor-pointer font-medium text-base transition-colors duration-300 hover:bg-[#5d4b1e] focus:outline-none focus:shadow-[0_0_0_3px_rgba(116,94,37,0.3)] inline-flex items-center justify-center body-font self-start"
+                className="bg-[#E75837] text-white border-none py-3 px-5 rounded-[24px] cursor-pointer font-medium text-base transition-colors duration-300 hover:bg-[#d04e30] focus:outline-none focus:shadow-[0_0_0_3px_rgba(231,88,55,0.3)] inline-flex items-center justify-center body-font self-start"
               >
                 Send
                 <Send className="ml-2 h-4 w-4" />
@@ -522,9 +527,9 @@ export default function BookingPage() {
       </div>
 
       {showDebug && (
-        <div className="debug-panel bg-[var(--card-bg)] rounded-[var(--radius)] shadow-[var(--shadow)] p-5 mt-[25px]">
+        <div className="debug-panel bg-white rounded-lg shadow-md p-5 mt-[25px]">
           <h3 className="mt-0 text-primary mb-[15px] text-[1.2rem] header-font">Debug Information</h3>
-          <div className="debug-log h-[200px] overflow-y-auto bg-[#f5f5f5] p-[15px] font-mono text-[0.85rem] rounded-lg border border-[var(--border)]">
+          <div className="debug-log h-[200px] overflow-y-auto bg-[#f5f5f5] p-[15px] font-mono text-[0.85rem] rounded-lg border border-[#e0e0e0]">
             {debugLogs.map((log, index) => (
               <div key={index} className="mb-[5px] leading-[1.4]">
                 {log}
@@ -534,7 +539,7 @@ export default function BookingPage() {
           <div className="debug-controls flex justify-end mt-[15px]">
             <button
               onClick={clearDebugLogs}
-              className="bg-[#f0f2f5] text-[var(--text)] border border-[var(--border)] py-2 px-[15px] rounded-md cursor-pointer text-[0.9rem] transition-all duration-200 hover:bg-[#e4e6e8] body-font"
+              className="bg-[#f0f2f5] text-[var(--text)] border border-[#e0e0e0] py-2 px-[15px] rounded-md cursor-pointer text-[0.9rem] transition-all duration-200 hover:bg-[#e4e6e8] body-font"
             >
               Clear Log
             </button>
@@ -545,7 +550,7 @@ export default function BookingPage() {
       <div className="flex justify-end mt-4">
         <button
           onClick={() => setShowDebug(!showDebug)}
-          className="bg-[#f0f2f5] text-[var(--text)] border border-[var(--border)] py-2 px-[15px] rounded-md cursor-pointer text-[0.9rem] transition-all duration-200 hover:bg-[#e4e6e8] body-font"
+          className="bg-[#f0f2f5] text-[var(--text)] border border-[#e0e0e0] py-2 px-[15px] rounded-md cursor-pointer text-[0.9rem] transition-all duration-200 hover:bg-[#e4e6e8] body-font"
         >
           {showDebug ? "Hide Debug" : "Show Debug"}
         </button>

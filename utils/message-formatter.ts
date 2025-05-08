@@ -43,15 +43,6 @@ export function formatMessage(message: string, htmlMessage?: string): { text: st
     return formatInvoiceList(message, cleanText)
   }
 
-  // Check if this is a services list message
-  if (
-    message.includes("services we offer") ||
-    message.includes("available services") ||
-    message.includes("service options")
-  ) {
-    return formatServicesList(message, cleanText)
-  }
-
   // For other messages, just convert markdown to HTML
   return {
     text: cleanText,
@@ -66,17 +57,6 @@ function enhanceHtmlMessage(html: string): string {
   // Add classes to lists for better styling
   html = html.replace(/<ol>/g, '<ol class="numbered-list">')
   html = html.replace(/<ul>/g, '<ul class="bullet-list">')
-
-  // Convert service lists to numbered lists
-  html = html.replace(/<ul class="services-list">/g, '<ol class="services-list numbered-list">')
-
-  // Make sure service items are in a numbered list
-  html = html.replace(/<div class="service-category">/g, '<div class="service-category"><ol class="numbered-list">')
-  html = html.replace(
-    /<\/div>(\s*)<div class="service-category">/g,
-    '</ol></div>$1<div class="service-category"><ol class="numbered-list">',
-  )
-  html = html.replace(/<\/div>(\s*)<\/div>(\s*)<\/div>/g, "</ol></div>$1</div>$2</div>")
 
   // Add classes to list items for better styling
   html = html.replace(/<li>/g, '<li class="list-item">')
@@ -101,14 +81,9 @@ function enhanceHtmlMessage(html: string): string {
   html = html.replace(/<div>📆 <strong>/g, '<div class="body-font">📆 <strong class="header-font">')
   html = html.replace(/<div>📅 <strong>/g, '<div class="body-font">📅 <strong class="header-font">')
 
-  // Add service list specific formatting
-  html = html.replace(/<div>🛠️ <strong>/g, '<div class="body-font">🛠️ <strong class="header-font">')
-  html = html.replace(/<div>📋 <strong>/g, '<div class="body-font">📋 <strong class="header-font">')
-
   // Ensure booking and invoice details have proper formatting
   html = html.replace(/<li class="booking-item">/g, '<li class="booking-item body-font">')
   html = html.replace(/<li class="invoice-item">/g, '<li class="invoice-item body-font">')
-  html = html.replace(/<li class="service-item">/g, '<li class="service-item body-font">')
 
   // Ensure strong tags within lists maintain header font
   html = html.replace(/<strong>(.*?)<\/strong>/g, '<strong class="header-font">$1</strong>')
@@ -421,106 +396,6 @@ function formatInvoiceList(message: string, cleanText: string): { text: string; 
     }
   } catch (error) {
     console.log("Error formatting invoice list:", error)
-    // If there's an error, just convert markdown to HTML and return
-    return {
-      text: cleanText,
-      html: markdownToHtml(message),
-    }
-  }
-}
-
-// New function to format services lists
-function formatServicesList(message: string, cleanText: string): { text: string; html: string } {
-  try {
-    // Extract the intro text (everything before the first category or service)
-    const introMatch = message.match(/(.*?)(?=\n\n\*\*)/s)
-    const introText = introMatch ? introMatch[1].trim() : "Here are our services:"
-
-    // Extract the footer text (everything after the last service item)
-    const footerMatch = message.match(/\n\n(Is there anything else.*?)$/s)
-    const footerText = footerMatch ? footerMatch[1].trim() : ""
-
-    // Build HTML output
-    let htmlOutput = `<div class="body-font">${markdownToHtml(introText)}</div><br>`
-
-    // Add a header for the services list
-    htmlOutput += `<div class="body-font">🛠️ <strong class="header-font">Our Services:</strong></div><br>`
-
-    // Split the message into sections by double newlines
-    const sections = message.split("\n\n")
-
-    // Skip the intro (first section) and footer (last section if it exists)
-    const serviceSections = sections.slice(1, footerMatch ? -1 : undefined)
-
-    // Track the current category
-    let currentCategory = ""
-    let serviceNumber = 1
-
-    // Create a container for the services
-    htmlOutput += '<div class="services-container">'
-
-    // Process each section
-    serviceSections.forEach((section) => {
-      // Check if this is a category header (starts with **)
-      if (section.startsWith("**") && section.includes("**:")) {
-        // If we were in a category, close its list
-        if (currentCategory) {
-          htmlOutput += "</ol></div>"
-        }
-
-        // Extract the category name
-        const categoryMatch = section.match(/\*\*(.*?)\*\*:/)
-        currentCategory = categoryMatch ? categoryMatch[1] : "Services"
-
-        // Start a new category section
-        htmlOutput += `<div class="service-category"><h3 class="category-title header-font">${currentCategory}</h3><ol class="numbered-list">`
-
-        // Reset service number for this category
-        serviceNumber = 1
-      }
-      // Otherwise, this is a service item
-      else if (section.trim()) {
-        // If we're not in a category yet, create a default one
-        if (!currentCategory) {
-          currentCategory = "Services"
-          htmlOutput += `<div class="service-category"><h3 class="category-title header-font">${currentCategory}</h3><ol class="numbered-list">`
-        }
-
-        // Format the service item
-        // Check if it's already numbered
-        const numberedItemMatch = section.match(/^\d+\.\s+(.*)/)
-
-        if (numberedItemMatch) {
-          // It's already numbered, just format it
-          const serviceText = numberedItemMatch[1]
-          htmlOutput += `<li class="service-item body-font">${markdownToHtml(serviceText)}</li>`
-        } else {
-          // It's not numbered, add our own number
-          htmlOutput += `<li class="service-item body-font">${markdownToHtml(section)}</li>`
-          serviceNumber++
-        }
-      }
-    })
-
-    // Close the last category if there was one
-    if (currentCategory) {
-      htmlOutput += "</ol></div>"
-    }
-
-    // Close the services container
-    htmlOutput += "</div>"
-
-    // Add footer if present
-    if (footerText) {
-      htmlOutput += `<br><div class="message-footer body-font">${markdownToHtml(footerText)}</div>`
-    }
-
-    return {
-      text: cleanText,
-      html: htmlOutput,
-    }
-  } catch (error) {
-    console.log("Error formatting services list:", error)
     // If there's an error, just convert markdown to HTML and return
     return {
       text: cleanText,
