@@ -307,11 +307,13 @@ export default function BookingPage() {
 
   // Fix the layout to ensure side-by-side display
   return (
-    <div className="container max-w-[1200px] mx-auto my-[10px] md:my-[30px] px-4 md:px-5">
+    <div className="container max-w-[1200px] mx-auto my-[10px] md:my-[30px] px-4 md:px-5 pt-[20px] md:pt-0">
       <div className="app-header text-center mb-[30px] px-4">
-        <h1 className="text-primary text-[1.8rem] md:text-[2.2rem] mb-[10px] font-bold title-font">
-          Critter - Booking & Info Service
-        </h1>
+        <div className="flex flex-col items-center justify-center">
+          <h1 className="text-primary text-[1.8rem] md:text-[2.2rem] mb-[10px] font-bold title-font">
+            Critter - Booking & Info Service
+          </h1>
+        </div>
       </div>
 
       {/* Side-by-side layout - fixed to ensure it works properly */}
