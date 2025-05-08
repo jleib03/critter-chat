@@ -186,24 +186,6 @@ div,
   font-family: var(--font-header);
 }
 
-/* Service item styling - ensure they're numbered */
-.ai-message .service-category ol {
-  list-style-type: decimal;
-  margin-left: 1.5rem;
-  counter-reset: service-counter;
-}
-
-.ai-message .service-category ol li {
-  list-style-type: decimal;
-  margin-bottom: 0.5rem;
-  position: relative;
-}
-
-.ai-message .services-list li {
-  list-style-type: decimal;
-  margin-left: 1.5rem;
-}
-
 /* Ensure strong elements use the header font */
 strong,
 .font-bold {
@@ -234,11 +216,6 @@ ol.numbered-list li {
 .invoice-details {
   margin-left: 1.5rem;
   margin-top: 0.5rem;
-}
-
-/* Service item styling */
-.service-item {
-  margin-bottom: 0.75rem;
 }
 
 /* Ensure message formatting is preserved */
