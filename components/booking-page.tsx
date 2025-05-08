@@ -5,15 +5,13 @@ import type React from "react"
 import { useState, useRef, useEffect } from "react"
 import { Send, RefreshCw } from "lucide-react"
 import { formatMessage } from "@/utils/message-formatter"
-import Image from "next/image"
-import Link from "next/link"
 
 export default function BookingPage() {
   // Update the status colors to match the new primary color
   const [statusColor, setStatusColor] = useState("#E75837") // Updated to Orange (primary)
   const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; htmlMessage?: string }>>([
     {
-      text: "Welcome to Critter Pet Services! Please fill in your information to the left and select one of the below to get started. If you're an existing customer, select one of the service options.",
+      text: "Welcome to Critter Pet Services! Please fill in your information to the left and select one of the below to get started. If you're an existing customer, select one of the service options. If you are a new customer, select New Customer.",
       isUser: false,
     },
   ])
@@ -27,6 +25,7 @@ export default function BookingPage() {
   const [showDebug, setShowDebug] = useState(false)
   const [debugLogs, setDebugLogs] = useState<string[]>([])
   const [selectedAction, setSelectedAction] = useState<string>("")
+  const [isAtBottom, setIsAtBottom] = useState(true)
 
   const USER_ID = useRef(`web_user_${Math.random().toString(36).substring(2, 10)}`)
   const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/93c29983-1098-4ff9-a3c5-eae58e04fbab"
@@ -44,19 +43,31 @@ export default function BookingPage() {
     }
   }, [])
 
-  useEffect(() => {
-    // Scroll to bottom when messages change
+  // Add a function to check if the user is at the bottom of the chat
+  const checkIfAtBottom = () => {
     if (chatMessagesRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = chatMessagesRef.current
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 50
+      setIsAtBottom(isAtBottom)
+    }
+  }
+
+  // Add an event listener to track scrolling
+  useEffect(() => {
+    const chatContainer = chatMessagesRef.current
+    if (chatContainer) {
+      chatContainer.addEventListener("scroll", checkIfAtBottom)
+      return () => chatContainer.removeEventListener("scroll", checkIfAtBottom)
+    }
+  }, [])
+
+  // Modify the scroll behavior when messages change
+  useEffect(() => {
+    // Only auto-scroll if the user was already at the bottom
+    if (chatMessagesRef.current && isAtBottom) {
       chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight
     }
-  }, [messages, isTyping])
-
-  // Update the hidden input when selectedAction changes
-  useEffect(() => {
-    if (actionSelectRef.current && selectedAction) {
-      actionSelectRef.current.value = selectedAction
-    }
-  }, [selectedAction])
+  }, [messages, isTyping, isAtBottom])
 
   const logDebug = (message: string, data?: any) => {
     const timestamp = new Date().toISOString().split("T")[1].split(".")[0]
@@ -91,7 +102,7 @@ export default function BookingPage() {
     // Reset the messages to just the welcome message
     setMessages([
       {
-        text: "Welcome to Critter Pet Services! Please fill in your information to the left and select one of the below to get started. If you're an existing customer, select one of the service options. If you are a new customer, select New Customer.",
+        text: "Welcome to Critter Pet Services! Please fill in your information to the left and select one of the options below to get started. 
         isUser: false,
       },
     ])
@@ -132,7 +143,6 @@ export default function BookingPage() {
       cancel_booking: "I want to cancel my booking",
       list_bookings: "Show me my existing bookings",
       list_outstanding: "What are my outstanding invoices?",
-      new_customer: "I'm a new customer and would like to get started",
     }
 
     const messageText = actionMessages[action]
@@ -297,31 +307,11 @@ export default function BookingPage() {
 
   // Fix the layout to ensure side-by-side display
   return (
-    <div className="container max-w-[1200px] mx-auto my-[30px] px-5">
-      {/* Logo in the upper left corner */}
-      <div className="absolute top-4 left-4 z-10">
-        <Link href="https://critter.pet" target="_blank" rel="noopener noreferrer">
-          <div className="relative w-16 h-16 transition-transform hover:scale-110">
-            <Image
-              src="/images/critter-logo.png"
-              alt="Critter Logo"
-              width={64}
-              height={64}
-              className="rounded-lg shadow-md"
-            />
-          </div>
-        </Link>
-      </div>
-
-      <div className="app-header text-center mb-[30px]">
-        <h1 className="text-primary text-[2.2rem] mb-[10px] font-bold title-font">Critter Smart Booking Service</h1>
-
-        {/* Sub-header with directions */}
-        <p className="text-[var(--text)] text-[1rem] max-w-[800px] mx-auto mb-[20px] body-font leading-relaxed">
-          Welcome to the Critter Online Booking Site. This chat experience is an extension of the Critter Platform. If
-          you have a Critter Pet Owner account, feel free to use this and the app in partnership. If you work with a
-          Critter professional and don't have an account, this is a great way to simplify your interactions.
-        </p>
+    <div className="container max-w-[1200px] mx-auto my-[10px] md:my-[30px] px-4 md:px-5">
+      <div className="app-header text-center mb-[30px] px-4">
+        <h1 className="text-primary text-[2.2rem] md:text-[2.2rem] text-[1.8rem] mb-[10px] font-bold title-font">
+          Critter - Booking & Info Service
+        </h1>
       </div>
 
       {/* Side-by-side layout - fixed to ensure it works properly */}
@@ -334,7 +324,7 @@ export default function BookingPage() {
           >
             Your Information
           </div>
-          <div className="card-body p-6">
+          <div className="card-body p-6 body-font">
             <div className="form-group mb-5">
               <label htmlFor="first-name" className="block mb-2 font-medium text-[var(--text)] header-font">
                 First Name
@@ -343,7 +333,7 @@ export default function BookingPage() {
                 type="text"
                 id="first-name"
                 ref={firstNameRef}
-                className="w-full p-3 border border-[var(--border)] rounded-lg text-base body-font transition-all duration-300 focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)]"
+                className="w-full p-3 border border-[var(--border)] rounded-lg text-base font-[inherit] transition-all duration-300 focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)] body-font"
                 placeholder="Enter your first name"
               />
             </div>
@@ -355,7 +345,7 @@ export default function BookingPage() {
                 type="text"
                 id="last-name"
                 ref={lastNameRef}
-                className="w-full p-3 border border-[var(--border)] rounded-lg text-base body-font transition-all duration-300 focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)]"
+                className="w-full p-3 border border-[var(--border)] rounded-lg text-base font-[inherit] transition-all duration-300 focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)] body-font"
                 placeholder="Enter your last name"
               />
             </div>
@@ -367,7 +357,7 @@ export default function BookingPage() {
                 type="email"
                 id="email"
                 ref={emailRef}
-                className="w-full p-3 border border-[var(--border)] rounded-lg text-base body-font transition-all duration-300 focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)]"
+                className="w-full p-3 border border-[var(--border)] rounded-lg text-base font-[inherit] transition-all duration-300 focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)] body-font"
                 placeholder="Enter your email address"
               />
             </div>
@@ -376,7 +366,9 @@ export default function BookingPage() {
                 Current Action
               </label>
               <div
-                className={`w-full p-3 border border-[var(--border)] rounded-lg text-base body-font bg-[#f5f5f5] ${selectedAction ? "text-[var(--text)]" : "text-[#6b7280] italic"}`}
+                className={`w-full p-3 border border-[var(--border)] rounded-lg text-base font-[inherit] bg-[#f5f5f5] ${
+                  selectedAction ? "text-[var(--text)]" : "text-[#6b7280] italic"
+                } body-font`}
               >
                 {selectedAction ? getActionDisplayName(selectedAction) : "No action selected yet"}
               </div>
@@ -428,20 +420,20 @@ export default function BookingPage() {
                 return msg.htmlMessage ? (
                   <div
                     key={index}
-                    className={`message mb-[15px] p-3 rounded-[18px] max-w-[80%] relative leading-[1.5] text-[0.95rem] body-font ${
+                    className={`message mb-[15px] p-3 rounded-[18px] max-w-[80%] relative leading-[1.5] text-[0.95rem] ${
                       msg.isUser
-                        ? "user-message bg-[#e75837] text-white ml-auto rounded-br-[4px]"
-                        : "bot-message bg-[#f0f2f5] text-[var(--text)] mr-auto rounded-bl-[4px]"
+                        ? "user-message bg-[#e75837] text-white ml-auto rounded-br-[4px] body-font"
+                        : "bot-message bg-[#f0f2f5] text-[var(--text)] mr-auto rounded-bl-[4px] ai-message body-font"
                     }`}
                     dangerouslySetInnerHTML={{ __html: msg.htmlMessage }}
                   />
                 ) : (
                   <div
                     key={index}
-                    className={`message mb-[15px] p-3 rounded-[18px] max-w-[80%] relative leading-[1.5] text-[0.95rem] body-font ${
+                    className={`message mb-[15px] p-3 rounded-[18px] max-w-[80%] relative leading-[1.5] text-[0.95rem] ${
                       msg.isUser
-                        ? "user-message bg-[#e75837] text-white ml-auto rounded-br-[4px]"
-                        : "bot-message bg-[#f0f2f5] text-[var(--text)] mr-auto rounded-bl-[4px]"
+                        ? "user-message bg-[#e75837] text-white ml-auto rounded-br-[4px] body-font"
+                        : "bot-message bg-[#f0f2f5] text-[var(--text)] mr-auto rounded-bl-[4px] body-font"
                     }`}
                   >
                     {msg.text}
@@ -450,6 +442,16 @@ export default function BookingPage() {
               })}
               {showActionBubbles && (
                 <div className="action-bubbles flex flex-col gap-4 mt-4">
+                  {/* New Customer option with distinct styling */}
+                  <div className="new-customer-option">
+                    <button
+                      onClick={() => handleActionBubbleClick("new_customer")}
+                      className="action-bubble bg-[#94abd6] hover:bg-[#7a90ba] text-white px-6 py-3 rounded-full text-base font-medium transition-colors shadow-md w-full body-font"
+                    >
+                      New Customer
+                    </button>
+                  </div>
+
                   {/* Existing customer options */}
                   <div className="existing-customer-options">
                     <p className="text-sm text-gray-600 mb-2 body-font">Existing customer options:</p>
@@ -497,17 +499,29 @@ export default function BookingPage() {
               )}
             </div>
             <div className="chat-input flex p-[15px] bg-[var(--card-bg)]">
-              <input
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Type your message here..."
-                className="flex-1 p-3 border border-[var(--border)] rounded-[24px] text-base mr-[10px] focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)] body-font"
-              />
+              <div className="flex-1 mr-[10px] relative">
+                <textarea
+                  value={inputValue}
+                  onChange={(e) => {
+                    setInputValue(e.target.value)
+                    // Auto-resize the textarea
+                    e.target.style.height = "auto"
+                    e.target.style.height = `${Math.min(e.target.scrollHeight, 150)}px`
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault()
+                      sendMessage()
+                    }
+                  }}
+                  placeholder="Type your message here..."
+                  className="w-full p-3 border border-[var(--border)] rounded-[24px] text-base focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)] body-font resize-none min-h-[46px] max-h-[150px] overflow-y-auto"
+                  style={{ height: "46px" }}
+                />
+              </div>
               <button
                 onClick={() => sendMessage()}
-                className="bg-secondary text-white border-none py-3 px-5 rounded-[24px] cursor-pointer font-medium text-base transition-colors duration-300 hover:bg-[#5d4b1e] focus:outline-none focus:shadow-[0_0_0_3px_rgba(116,94,37,0.3)] inline-flex items-center justify-center body-font"
+                className="bg-secondary text-white border-none py-3 px-5 rounded-[24px] cursor-pointer font-medium text-base transition-colors duration-300 hover:bg-[#5d4b1e] focus:outline-none focus:shadow-[0_0_0_3px_rgba(116,94,37,0.3)] inline-flex items-center justify-center body-font self-start"
               >
                 Send
                 <Send className="ml-2 h-4 w-4" />
@@ -558,7 +572,6 @@ function getActionDisplayName(action: string): string {
     cancel_booking: "Cancel Booking",
     list_bookings: "List Bookings",
     list_outstanding: "Outstanding Invoices",
-    new_customer: "New Customer",
   }
 
   return actionDisplayNames[action] || action
