@@ -11,7 +11,7 @@ export default function BookingPage() {
   const [statusColor, setStatusColor] = useState("#E75837") // Updated to Orange (primary)
   const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; htmlMessage?: string }>>([
     {
-      text: "Welcome to Critter Pet Services! Please fill in your information to the left and select one of the below to get started. If you're an existing customer, select one of the service options. If you are a new customer, select New Customer.",
+      text: "Welcome to Critter Pet Services! Please fill in your information to the left and select one of the options below to get started.",
       isUser: false,
     },
   ])
@@ -102,7 +102,7 @@ export default function BookingPage() {
     // Reset the messages to just the welcome message
     setMessages([
       {
-        text: "Welcome to Critter Pet Services! Please fill in your information to the left and select one of the options below to get started. 
+        text: "Welcome to Critter Pet Services! Please fill in your information to the left and select one of the options below to get started.",
         isUser: false,
       },
     ])
@@ -309,7 +309,7 @@ export default function BookingPage() {
   return (
     <div className="container max-w-[1200px] mx-auto my-[10px] md:my-[30px] px-4 md:px-5">
       <div className="app-header text-center mb-[30px] px-4">
-        <h1 className="text-primary text-[2.2rem] md:text-[2.2rem] text-[1.8rem] mb-[10px] font-bold title-font">
+        <h1 className="text-primary text-[1.8rem] md:text-[2.2rem] mb-[10px] font-bold title-font">
           Critter - Booking & Info Service
         </h1>
       </div>
@@ -442,19 +442,9 @@ export default function BookingPage() {
               })}
               {showActionBubbles && (
                 <div className="action-bubbles flex flex-col gap-4 mt-4">
-                  {/* New Customer option with distinct styling */}
-                  <div className="new-customer-option">
-                    <button
-                      onClick={() => handleActionBubbleClick("new_customer")}
-                      className="action-bubble bg-[#94abd6] hover:bg-[#7a90ba] text-white px-6 py-3 rounded-full text-base font-medium transition-colors shadow-md w-full body-font"
-                    >
-                      New Customer
-                    </button>
-                  </div>
-
-                  {/* Existing customer options */}
-                  <div className="existing-customer-options">
-                    <p className="text-sm text-gray-600 mb-2 body-font">Existing customer options:</p>
+                  {/* Booking options */}
+                  <div className="booking-options">
+                    <p className="text-sm text-gray-600 mb-2 body-font">Select an option:</p>
                     <div className="flex flex-wrap gap-2">
                       <button
                         onClick={() => handleActionBubbleClick("new_booking")}
