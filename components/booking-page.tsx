@@ -3,10 +3,57 @@
 import type React from "react"
 import Image from "next/image"
 import { useState, useRef, useEffect } from "react"
-import { Send, RefreshCw } from "lucide-react"
-import { formatMessage } from "@/utils/message-formatter"
+import { Send, RefreshCw, Check } from "lucide-react"
+
+// Define types for our selection options
+type SelectionOption = {
+  name: string
+  description?: string
+  details?: string[]
+  selected?: boolean
+  category?: string
+}
+
+type SelectionType = "professional" | "service" | "pet" | "confirmation" | null
 
 export default function BookingPage() {
+  // Simple message formatter function to handle HTML messages
+  const formatMessage = (message: string, htmlMessage?: string): { text: string; html: string } => {
+    // If we already have an HTML message from the backend, use it directly
+    if (htmlMessage) {
+      return {
+        text: removeMarkdown(message), // Provide plain text for accessibility
+        html: htmlMessage,
+      }
+    }
+
+    // Create a clean text version without markdown
+    const cleanText = removeMarkdown(message)
+
+    // For other messages, just convert markdown to HTML
+    return {
+      text: cleanText,
+      html: markdownToHtml(message),
+    }
+  }
+
+  // Function to convert markdown to HTML
+  const markdownToHtml = (text: string): string => {
+    // Convert bold markdown (**text**) to HTML <strong> tags
+    let html = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+
+    // Convert newlines to <br> tags
+    html = html.replace(/\n/g, "<br>")
+
+    return html
+  }
+
+  // Function to remove markdown formatting from text
+  const removeMarkdown = (text: string): string => {
+    // Remove bold markdown (**text**)
+    return text.replace(/\*\*(.*?)\*\*/g, "$1")
+  }
+
   // Update the status colors to match the new primary color
   const [statusColor, setStatusColor] = useState("#E75837") // Updated to Orange (primary)
   const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; htmlMessage?: string }>>([
@@ -17,6 +64,14 @@ export default function BookingPage() {
   ])
   const [inputValue, setInputValue] = useState("")
   const [showActionBubbles, setShowActionBubbles] = useState(true)
+
+  // New state for selection bubbles
+  const [selectionType, setSelectionType] = useState<SelectionType>(null)
+  const [selectionOptions, setSelectionOptions] = useState<SelectionOption[]>([])
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([])
+  const [showSelectionBubbles, setShowSelectionBubbles] = useState(false)
+  const [allowMultipleSelection, setAllowMultipleSelection] = useState(false)
+  const [selectedMainService, setSelectedMainService] = useState<string | null>(null)
 
   const [isTyping, setIsTyping] = useState(false)
   const [sessionId, setSessionId] = useState<string | null>(null)
@@ -65,40 +120,47 @@ export default function BookingPage() {
     if (chatMessagesRef.current && isAtBottom) {
       chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight
     }
-  }, [messages, isTyping, isAtBottom])
-
+  }, [messages, isTyping, isAtBottom, showSelectionBubbles])
 
   // Reset the chat to its initial state
-const resetChat = () => {
-  // Reset the selected action
-  setSelectedAction("")
-  if (actionSelectRef.current) {
-    actionSelectRef.current.value = ""
+  const resetChat = () => {
+    // Reset the selected action
+    setSelectedAction("")
+    if (actionSelectRef.current) {
+      actionSelectRef.current.value = ""
+    }
+
+    // Show the action bubbles again
+    setShowActionBubbles(true)
+
+    // Reset selection bubbles
+    setShowSelectionBubbles(false)
+    setSelectionOptions([])
+    setSelectedOptions([])
+    setSelectedMainService(null)
+    setSelectionType(null)
+
+    // Reset the messages to just the welcome message
+    setMessages([
+      {
+        text: "Welcome to Critter Pet Services! Please fill in your information to the left and select one of the options below to get started.",
+        isUser: false,
+      },
+    ])
+
+    // Reset the input value
+    setInputValue("")
+
+    // Reset the status
+    updateStatus("Ready to assist you", "#E75837")
+
+    // Log the reset
+    console.log("Chat reset by user")
+
+    // Note: We're keeping the user's personal information (name, email)
+    // and the user ID to maintain some continuity
   }
 
-  // Show the action bubbles again
-  setShowActionBubbles(true)
-
-  // Reset the messages to just the welcome message
-  setMessages([
-    {
-      text: "Welcome to Critter Pet Services! Please fill in your information to the left and select one of the options below to get started.",
-      isUser: false,
-    },
-  ])
-
-  // Reset the input value
-  setInputValue("")
-
-  // Reset the status
-  updateStatus("Ready to assist you", "#E75837")
-
-  // Log the reset
-  console.log("Chat reset by user")
-
-  // Note: We're keeping the user's personal information (name, email)
-  // and the user ID to maintain some continuity
-}
   // Update the getUserInfo function to include the selected action
   const getUserInfo = () => {
     return {
@@ -114,169 +176,698 @@ const resetChat = () => {
     setStatusColor(color)
   }
 
- const handleActionBubbleClick = (action: string) => {
-  // Get the message text for the selected action
-  const actionMessages: { [key: string]: string } = {
-    new_booking: "I'd like to make a new booking",
-    change_booking: "I need to change my existing booking",
-    cancel_booking: "I want to cancel my booking",
-    list_bookings: "Show me my existing bookings",
-    list_outstanding: "What are my outstanding invoices?",
+  const handleActionBubbleClick = (action: string) => {
+    // Get the message text for the selected action
+    const actionMessages: { [key: string]: string } = {
+      new_booking: "I'd like to make a new booking",
+      change_booking: "I need to change my existing booking",
+      cancel_booking: "I want to cancel my booking",
+      list_bookings: "Show me my existing bookings",
+      list_outstanding: "What are my outstanding invoices?",
+    }
+
+    const messageText = actionMessages[action]
+
+    // Set the selected action
+    setSelectedAction(action)
+    console.log("Action selected from bubble", { action })
+
+    // Update the hidden input value
+    if (actionSelectRef.current) {
+      actionSelectRef.current.value = action
+    }
+
+    // Hide the action bubbles after selection
+    setShowActionBubbles(false)
+
+    // Send the message
+    sendMessage(messageText)
   }
 
-  const messageText = actionMessages[action]
+  // Function to handle selection bubble clicks
+  const handleSelectionBubbleClick = (option: SelectionOption) => {
+    if (selectionType === "service") {
+      // For services, handle differently based on category
+      if (option.category === "Add-On") {
+        // For add-ons, toggle selection
+        setSelectedOptions((prev) => {
+          if (prev.includes(option.name)) {
+            return prev.filter((item) => item !== option.name)
+          } else {
+            return [...prev, option.name]
+          }
+        })
 
-  // Set the selected action
-  setSelectedAction(action)
-  console.log("Action selected from bubble", { action })
+        // Update the selection options to show which ones are selected
+        setSelectionOptions((prev) =>
+          prev.map((opt) => (opt.name === option.name ? { ...opt, selected: !opt.selected } : opt)),
+        )
+      } else {
+        // For main services, only allow one selection
+        // Deselect any previously selected main service
+        setSelectionOptions((prev) =>
+          prev.map((opt) => (opt.category !== "Add-On" ? { ...opt, selected: opt.name === option.name } : opt)),
+        )
 
-  // Update the hidden input value
-  if (actionSelectRef.current) {
-    actionSelectRef.current.value = action
+        // Update the selected main service
+        setSelectedMainService(option.name)
+      }
+    } else if (allowMultipleSelection) {
+      // For multi-select (like pets), toggle the selection
+      setSelectedOptions((prev) => {
+        if (prev.includes(option.name)) {
+          return prev.filter((item) => item !== option.name)
+        } else {
+          return [...prev, option.name]
+        }
+      })
+
+      // Update the selection options to show which ones are selected
+      setSelectionOptions((prev) =>
+        prev.map((opt) => (opt.name === option.name ? { ...opt, selected: !opt.selected } : opt)),
+      )
+    } else {
+      // For single select (like professionals), just select the option
+      setSelectedOptions([option.name])
+
+      // Update the selection options to show which one is selected
+      setSelectionOptions((prev) => prev.map((opt) => ({ ...opt, selected: opt.name === option.name })))
+
+      // Auto-submit for professionals only
+      if (selectionType === "professional") {
+        submitSelections(option.name)
+      }
+    }
   }
 
-  // Hide the action bubbles after selection
-  setShowActionBubbles(false)
+  // Function to submit the selected options
+  const submitSelections = (directOption?: string) => {
+    let options: string[] = []
 
-  // Send the message
-  sendMessage(messageText)
-}
+    if (directOption) {
+      options = [directOption]
+    } else if (selectionType === "service") {
+      // For services, combine the main service and add-ons
+      const mainService = selectedMainService
+      const addOns = selectedOptions
+
+      if (!mainService) {
+        // If no main service is selected, don't submit
+        return
+      }
+
+      options = [mainService, ...addOns]
+    } else {
+      options = selectedOptions
+    }
+
+    if (options.length === 0) return
+
+    // Format the message based on selection type
+    let messageText = ""
+
+    if (selectionType === "professional") {
+      messageText = options.join(", ")
+    } else if (selectionType === "service") {
+      messageText = options.join(", ")
+    } else if (selectionType === "pet") {
+      messageText = options.join(", ")
+    } else if (selectionType === "confirmation") {
+      messageText =
+        options[0] === "Yes, proceed" ? "Yes, I'd like to proceed with the booking." : "No, I need to make changes."
+    }
+
+    // Hide the selection bubbles
+    setShowSelectionBubbles(false)
+    setSelectionOptions([])
+    setSelectedOptions([])
+    setSelectedMainService(null)
+    setSelectionType(null)
+
+    // Send the message
+    sendMessage(messageText)
+  }
+
+  // Function to detect selection type from message
+  const detectSelectionType = (
+    message: string,
+  ): {
+    type: SelectionType
+    options: SelectionOption[]
+    allowMultiple: boolean
+  } => {
+    // Add this at the beginning of the detectSelectionType function
+    console.log("Analyzing message for selection type:", message)
+
+    // Convert to lowercase for case-insensitive matching
+    const lowerMessage = message.toLowerCase()
+
+    // Skip detection for open-ended questions about dates, times, etc.
+    if (
+      (message.includes("date") && message.includes("time")) ||
+      message.includes("when would you like") ||
+      message.includes("provide the date") ||
+      message.includes("what time") ||
+      message.includes("Looking forward to your details") ||
+      (message.includes("Please provide") && !message.includes("Please provide the name of")) ||
+      message.includes("recurring booking request") ||
+      // Skip detection for booking confirmation messages
+      message.includes("has been successfully submitted") ||
+      message.includes("confirmation email has been sent")
+    ) {
+      console.log("Detected open-ended question or confirmation message, skipping selection bubbles")
+      return { type: null, options: [], allowMultiple: false }
+    }
+
+    // Check for pet selection - this needs to come BEFORE confirmation check
+    // to ensure "confirm which pet" is handled correctly
+    if (
+      lowerMessage.includes("which pet") ||
+      lowerMessage.includes("confirm which pet") ||
+      lowerMessage.includes("please confirm which pet") ||
+      lowerMessage.includes("please specify the pet name") ||
+      (lowerMessage.includes("pet") && lowerMessage.includes("booking request is for")) ||
+      (lowerMessage.includes("pet") && lowerMessage.includes("this booking request is for"))
+    ) {
+      console.log("Detected pet selection request")
+      // Extract pet options
+      const options: SelectionOption[] = []
+
+      // First try to extract structured data if it looks like JSON
+      if (message.includes('"type":') || message.includes('"name":') || message.includes('"items":')) {
+        // This might be a JSON-like response, try to extract pet names
+        const nameMatches = message.match(/"name":\s*"([^"]+)"/g)
+        const typeMatches = message.match(/"type":\s*"([^"]+)"/g)
+
+        if (nameMatches && nameMatches.length > 0) {
+          nameMatches.forEach((match, index) => {
+            const name = match.replace(/"name":\s*"/, "").replace(/"/, "")
+
+            // Try to get the corresponding pet type
+            let petType = ""
+            if (typeMatches && typeMatches[index]) {
+              petType = typeMatches[index].replace(/"type":\s*"/, "").replace(/"/, "")
+            }
+
+            // Only add if it looks like a pet name (not JSON syntax)
+            if (!name.includes("{") && !name.includes("}") && !name.includes("[") && !name.includes("]")) {
+              options.push({
+                name: name,
+                description: petType,
+                selected: false,
+              })
+            }
+          })
+        }
+      }
+
+      // If we couldn't extract from JSON, try the regular approach
+      if (options.length === 0) {
+        // Look for numbered list format (1.: Pet Name (Type))
+        const numberedPetRegex = /\d+\.:\s*([A-Za-z]+)\s*$$([A-Za-z]+)$$/g
+        let match
+
+        while ((match = numberedPetRegex.exec(message)) !== null) {
+          options.push({
+            name: match[1],
+            description: match[2],
+            selected: false,
+          })
+        }
+
+        // If no numbered format, try the standard format
+        if (options.length === 0) {
+          const petRegex = /([A-Za-z]+):\s*([A-Za-z]+)/g
+          while ((match = petRegex.exec(message)) !== null) {
+            options.push({
+              name: match[1],
+              description: match[2],
+              selected: false,
+            })
+          }
+        }
+      }
+
+      // Add hardcoded fallbacks if needed
+      if (options.length === 0) {
+        if (message.includes("Panna")) {
+          options.push({
+            name: "Panna",
+            description: "Dog",
+            selected: false,
+          })
+        }
+        if (message.includes("Scooter")) {
+          options.push({
+            name: "Scooter",
+            description: "Fish",
+            selected: false,
+          })
+        }
+      }
+
+      return {
+        type: "pet",
+        options,
+        allowMultiple: true, // Allow multiple pet selection
+      }
+    }
+
+    // Check for professional selection
+    if (
+      (message.includes("professionals available") ||
+        message.includes("which professional") ||
+        message.includes("Please confirm which professional") ||
+        message.includes("Please specify the professional") ||
+        message.includes("Which one would you like") ||
+        message.includes("booking request with?")) &&
+      // Make sure we're not in a booking confirmation message
+      !message.includes("has been successfully submitted") &&
+      !message.includes("confirmation email has been sent")
+    ) {
+      // Extract professional options
+      const options: SelectionOption[] = []
+
+      // First try to extract structured data if it looks like JSON
+      if (message.includes('"type":') || message.includes('"name":') || message.includes('"items":')) {
+        // This might be a JSON-like response, try to extract just the professional names
+        const nameMatches = message.match(/"name":\s*"([^"]+)"/g)
+        if (nameMatches && nameMatches.length > 0) {
+          nameMatches.forEach((match) => {
+            const name = match.replace(/"name":\s*"/, "").replace(/"/, "")
+            if (
+              name.includes("Critter") ||
+              name.includes("Leib") ||
+              name.includes("Walking") ||
+              name.includes("STAGE")
+            ) {
+              // Only add if it looks like a professional name
+              options.push({
+                name: name,
+                selected: false,
+              })
+            }
+          })
+        }
+      }
+
+      // If we couldn't extract from JSON or didn't find any options, try the regular approach
+      if (options.length === 0) {
+        // Try to extract from plain text format
+        const lines = message.split("\n")
+        let inProfessionalSection = false
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim()
+
+          // Skip empty lines
+          if (!line) continue
+
+          // Check if we're entering the professional section
+          if (line.includes("professionals") || line.includes("Which one would you like")) {
+            inProfessionalSection = true
+            continue
+          }
+
+          // If we're in the professional section and find a line that looks like a professional name
+          if (inProfessionalSection) {
+            // If it's a professional name (not an email or instruction)
+            if (
+              (line.includes("Critter") ||
+                line.includes("Leib") ||
+                line.includes("Walking") ||
+                line.includes("Lumbers")) &&
+              !line.includes("Email:") &&
+              !line.includes("Professional") &&
+              !line.includes("Please let me know")
+            ) {
+              // Clean up the name (remove any trailing punctuation)
+              const name = line.replace(/\.$/, "")
+
+              // Check if this name is already in options
+              if (!options.some((opt) => opt.name === name)) {
+                options.push({
+                  name: name,
+                  selected: false,
+                })
+              }
+            }
+          }
+        }
+      }
+
+      // Add hardcoded fallbacks if needed
+      if (options.length === 0) {
+        if (message.includes("Critter Dog Walking STAGE")) {
+          options.push({
+            name: "Critter Dog Walking STAGE",
+            selected: false,
+          })
+        }
+
+        if (message.includes("Leib's Lively Lumbers")) {
+          options.push({
+            name: "Leib's Lively Lumbers",
+            selected: false,
+          })
+        }
+      }
+
+      return {
+        type: "professional",
+        options,
+        allowMultiple: false,
+      }
+    }
+
+    // Check for service selection
+    else if (
+      message.includes("services offered") ||
+      message.includes("which service") ||
+      message.includes("Please specify the name of the service")
+    ) {
+      // Extract service options
+      const options: SelectionOption[] = []
+
+      // First try to extract structured data if it looks like JSON
+      if (message.includes('"type":') || message.includes('"name":') || message.includes('"items":')) {
+        // This might be a JSON-like response, try to extract service names and categories
+        const nameMatches = message.match(/"name":\s*"([^"]+)"/g)
+        const categoryMatches = message.match(/"category":\s*"([^"]+)"/g)
+
+        if (nameMatches && nameMatches.length > 0) {
+          nameMatches.forEach((match, index) => {
+            const name = match.replace(/"name":\s*"/, "").replace(/"/, "")
+
+            // Try to get the corresponding category
+            let category = "Main Service" // Default
+            if (categoryMatches && categoryMatches[index]) {
+              category = categoryMatches[index].replace(/"category":\s*"/, "").replace(/"/, "")
+            }
+
+            // Only add if it looks like a service name (not JSON syntax)
+            if (!name.includes("{") && !name.includes("}") && !name.includes("[") && !name.includes("]")) {
+              options.push({
+                name: name,
+                category: category,
+                selected: false,
+              })
+            }
+          })
+        }
+      }
+
+      // If we couldn't extract from JSON or didn't find any options, try the regular approach
+      if (options.length === 0) {
+        const lines = message.split("\n")
+
+        let currentCategory = ""
+        let currentName = ""
+        let currentDetails: string[] = []
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim()
+
+          // Skip empty lines and lines with instructions
+          if (
+            !line ||
+            line.includes("Please specify") ||
+            line.includes("services offered") ||
+            line.includes("which service")
+          ) {
+            continue
+          }
+
+          // Check if it's a category line
+          if (
+            line.match(/^[A-Za-z\s]+$/) &&
+            !line.includes("Duration") &&
+            !line.includes("Price") &&
+            !line.includes("No description")
+          ) {
+            // If it's short and doesn't have common detail words, it might be a category
+            if (line.length < 30) {
+              currentCategory = line
+              continue
+            }
+          }
+
+          // If line contains Duration or Price, it's likely a detail
+          if (line.includes("Duration") || line.includes("Price") || line.includes("No description")) {
+            if (currentName) {
+              currentDetails.push(line)
+            }
+          }
+          // Otherwise it might be a service name
+          else if (!line.startsWith("Please") && !line.includes("offered by")) {
+            // If we already have a name, save the previous service
+            if (currentName) {
+              options.push({
+                name: currentName,
+                category: currentCategory,
+                details: currentDetails,
+                selected: false,
+              })
+              currentDetails = []
+            }
+            currentName = line
+          }
+        }
+
+        // Add the last service
+        if (currentName) {
+          options.push({
+            name: currentName,
+            category: currentCategory,
+            details: currentDetails,
+            selected: false,
+          })
+        }
+      }
+
+      // Add hardcoded fallbacks if needed
+      if (options.length === 0) {
+        if (message.includes("Dog Walking - 30")) {
+          options.push({
+            name: "Dog Walking - 30",
+            category: "Main Service",
+            selected: false,
+          })
+        }
+        if (message.includes("Dog Walking - 60")) {
+          options.push({
+            name: "Dog Walking - 60",
+            category: "Main Service",
+            selected: false,
+          })
+        }
+        if (message.includes("Overnight Board")) {
+          options.push({
+            name: "Overnight Board",
+            category: "Main Service",
+            selected: false,
+          })
+        }
+        if (message.includes("Transportation: Add On")) {
+          options.push({
+            name: "Transportation: Add On",
+            category: "Add-On",
+            selected: false,
+          })
+        }
+      }
+
+      return {
+        type: "service",
+        options,
+        allowMultiple: true, // We'll handle the main service vs add-on logic separately
+      }
+    }
+
+    // Check for confirmation - this should be very specific and only for final booking confirmation
+    // NOT for pet selection or other confirmations
+    else if (
+      (lowerMessage.includes("would you like to proceed") ||
+        lowerMessage.includes("confirm to finalize") ||
+        lowerMessage.includes("confirm your booking")) &&
+      !lowerMessage.includes("recurring booking request") &&
+      !lowerMessage.includes("confirm which pet") &&
+      !lowerMessage.includes("please confirm which pet") &&
+      !lowerMessage.includes("please specify") &&
+      !lowerMessage.includes("let me know the pet") &&
+      !lowerMessage.includes("could you please confirm") &&
+      !lowerMessage.includes("has been successfully submitted") &&
+      !lowerMessage.includes("confirmation email has been sent")
+    ) {
+      console.log("Detected final booking confirmation request")
+      return {
+        type: "confirmation",
+        options: [
+          { name: "Yes, proceed", selected: false },
+          { name: "No, I need to make changes", selected: false },
+        ],
+        allowMultiple: false,
+      }
+    }
+
+    // No selection type detected
+    console.log("No selection options detected")
+    return { type: null, options: [], allowMultiple: false }
+  }
 
   const sendMessage = async (messageText?: string) => {
-  // Get the message text from the parameter or the input value
-  const message = messageText || inputValue.trim()
-  if (!message) return
+    // Get the message text from the parameter or the input value
+    const message = messageText || inputValue.trim()
+    if (!message) return
 
-  setShowActionBubbles(false)
+    setShowActionBubbles(false)
 
-  // Log that we're sending a message
-  console.log("Sending message", { message })
+    // Log that we're sending a message
+    console.log("Sending message", { message })
 
-  // Add user message to chat immediately
-  setMessages((prev) => {
-    const newMessages = [...prev, { text: message, isUser: true }]
-    console.log("Updated messages array", { messageCount: newMessages.length })
-    return newMessages
-  })
-
-  // Clear input field
-  setInputValue("")
-
-  // Show typing indicator
-  setIsTyping(true)
-  // Update the status color in the sendMessage function
-  updateStatus("Thinking...", "#745E25") // Updated to Green (secondary)
-
-  try {
-    // Get user info
-    const userInfo = getUserInfo()
-
-    // Prepare request payload
-    const payload = {
-      message: {
-        text: message,
-        userId: USER_ID.current,
-        timestamp: new Date().toISOString(),
-        userInfo: userInfo,
-      },
-    } as any
-
-    // Add session and conversation IDs if available
-    if (sessionId) {
-      payload.message.sessionId = sessionId
-    }
-    if (conversationId) {
-      payload.message.conversationId = conversationId
-    }
-
-    // Log what we're sending
-    console.log("Sending message to webhook", payload)
-    // Update the status color in the sendMessage function
-    updateStatus("Connecting...", "#94ABD6") // Updated to Blue
-
-    // Send message to webhook
-    const response = await fetch(WEBHOOK_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
+    // Add user message to chat immediately
+    setMessages((prev) => {
+      const newMessages = [...prev, { text: message, isUser: true }]
+      console.log("Updated messages array", { messageCount: newMessages.length })
+      return newMessages
     })
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
+    // Clear input field
+    setInputValue("")
 
-    // Parse response
-    const data = await response.json()
-
-    // Log the response
-    console.log("Received response", data)
-
-    // Hide typing indicator
-    setIsTyping(false)
+    // Show typing indicator
+    setIsTyping(true)
     // Update the status color in the sendMessage function
-    updateStatus("Ready to assist you", "#E75837") // Updated to Orange (primary)
+    updateStatus("Thinking...", "#745E25") // Updated to Green (secondary)
 
-    // Process the response message if it exists
-    if (data.message) {
-      // Use our formatter to process the message
-      const formattedMessage = formatMessage(data.message, data.htmlMessage)
+    try {
+      // Get user info
+      const userInfo = getUserInfo()
 
-      // Add bot response to chat with the formatted HTML
+      // Prepare request payload
+      const payload = {
+        message: {
+          text: message,
+          userId: USER_ID.current,
+          timestamp: new Date().toISOString(),
+          userInfo: userInfo,
+        },
+      } as any
+
+      // Add session and conversation IDs if available
+      if (sessionId) {
+        payload.message.sessionId = sessionId
+      }
+      if (conversationId) {
+        payload.message.conversationId = conversationId
+      }
+
+      // Log what we're sending
+      console.log("Sending message to webhook", payload)
+      // Update the status color in the sendMessage function
+      updateStatus("Connecting...", "#94ABD6") // Updated to Blue
+
+      // Send message to webhook
+      const response = await fetch(WEBHOOK_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      // Parse response
+      const data = await response.json()
+
+      // Log the response
+      console.log("Received response", data)
+
+      // Hide typing indicator
+      setIsTyping(false)
+      // Update the status color in the sendMessage function
+      updateStatus("Ready to assist you", "#E75837") // Updated to Orange (primary)
+
+      // Process the response message if it exists
+      if (data.message) {
+        // Use our formatter to process the message
+        const formattedMessage = formatMessage(data.message, data.htmlMessage)
+
+        // Add bot response to chat with the formatted HTML
+        setMessages((prev) => [
+          ...prev,
+          {
+            text: formattedMessage.text,
+            isUser: false,
+            htmlMessage: formattedMessage.html,
+          },
+        ])
+
+        // Check if we need to show selection bubbles
+        const { type, options, allowMultiple } = detectSelectionType(data.message)
+
+        console.log("Selection detection in sendMessage:", { type, options, allowMultiple })
+
+        if (type && options.length > 0) {
+          console.log("Showing selection bubbles for:", type, options)
+          setSelectionType(type)
+          setSelectionOptions(options)
+          setSelectedOptions([])
+          setSelectedMainService(null)
+          setAllowMultipleSelection(allowMultiple)
+          setShowSelectionBubbles(true)
+        } else {
+          console.log("No selection options detected, hiding bubbles")
+          setShowSelectionBubbles(false)
+        }
+      } else {
+        // If no message, just use what we got
+        setMessages((prev) => [...prev, { text: JSON.stringify(data), isUser: false }])
+      }
+
+      // Store session and conversation IDs - defensive approach
+      if (data.sessionId) {
+        // Only update if we don't already have a session ID
+        if (!sessionId) {
+          setSessionId(data.sessionId)
+          console.log("Set initial sessionId", data.sessionId)
+        } else {
+          // Log that we're keeping the existing ID
+          console.log("Keeping existing sessionId", sessionId)
+        }
+      }
+
+      if (data.conversationId) {
+        // Only update if we don't already have a conversation ID
+        if (!conversationId) {
+          setConversationId(data.conversationId)
+          console.log("Set initial conversationId", data.conversationId)
+        } else {
+          // Log that we're keeping the existing ID
+          console.log("Keeping existing conversationId", conversationId)
+        }
+      }
+    } catch (error: any) {
+      console.error("Error sending message:", error)
+      console.log("Error", error.message)
+
+      // Hide typing indicator
+      setIsTyping(false)
+      updateStatus("Connection error", "#3F001D") // Updated to Maroon
+
+      // Add error message
       setMessages((prev) => [
         ...prev,
         {
-          text: formattedMessage.text,
+          text: "Sorry, there was an error processing your request. Please try again later.",
           isUser: false,
-          htmlMessage: formattedMessage.html,
         },
       ])
-    } else {
-      // If no message, just use what we got
-      setMessages((prev) => [...prev, { text: JSON.stringify(data), isUser: false }])
     }
-
-    // Store session and conversation IDs - defensive approach
-    if (data.sessionId) {
-      // Only update if we don't already have a session ID
-      if (!sessionId) {
-        setSessionId(data.sessionId)
-        console.log("Set initial sessionId", data.sessionId)
-      } else {
-        // Log that we're keeping the existing ID
-        console.log("Keeping existing sessionId", sessionId)
-      }
-    }
-
-    if (data.conversationId) {
-      // Only update if we don't already have a conversation ID
-      if (!conversationId) {
-        setConversationId(data.conversationId)
-        console.log("Set initial conversationId", data.conversationId)
-      } else {
-        // Log that we're keeping the existing ID
-        console.log("Keeping existing conversationId", conversationId)
-      }
-    }
-  } catch (error: any) {
-    console.error("Error sending message:", error)
-    console.log("Error", error.message)
-
-    // Hide typing indicator
-    setIsTyping(false)
-    updateStatus("Connection error", "#3F001D") // Updated to Maroon
-
-    // Add error message
-    setMessages((prev) => [
-      ...prev,
-      {
-        text: "Sorry, there was an error processing your request. Please try again later.",
-        isUser: false,
-      },
-    ])
   }
-}
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
@@ -398,9 +989,6 @@ const resetChat = () => {
               ref={chatMessagesRef}
             >
               {messages.map((msg, index) => {
-                // Log each message for debugging
-                console.log(`Rendering message ${index}:`, msg)
-
                 return msg.htmlMessage ? (
                   <div
                     key={index}
@@ -417,13 +1005,15 @@ const resetChat = () => {
                     className={`message mb-[15px] p-3 rounded-[18px] max-w-[80%] relative leading-[1.5] text-[0.95rem] ${
                       msg.isUser
                         ? "user-message bg-[#e75837] text-white ml-auto rounded-br-[4px] body-font"
-                        : "bot-message bg-[#f0f2f5] text-[var(--text)] mr-auto rounded-bl-[4px] body-font"
+                        : "bot-message bg-[#f0f2f5] text-[var(--text)] mr-auto rounded-bl-[4px] ai-message body-font"
                     }`}
                   >
                     {msg.text}
                   </div>
                 )
               })}
+
+              {/* Initial action bubbles */}
               {showActionBubbles && (
                 <div className="action-bubbles flex flex-col gap-4 mt-4">
                   {/* Booking options */}
@@ -464,6 +1054,125 @@ const resetChat = () => {
                   </div>
                 </div>
               )}
+
+              {/* Selection bubbles for professionals, services, pets, confirmation */}
+              {showSelectionBubbles && (
+                <div className="selection-bubbles flex flex-col gap-4 mt-4 mb-4">
+                  <div className="selection-options">
+                    <p className="text-sm text-gray-600 mb-2 body-font">
+                      {selectionType === "professional" && "Select a professional:"}
+                      {selectionType === "service" && "Select a service:"}
+                      {selectionType === "pet" && `Select ${allowMultipleSelection ? "pet(s)" : "a pet"}:`}
+                      {selectionType === "confirmation" && "Confirm your booking:"}
+                    </p>
+
+                    {/* Group options by category for services */}
+                    {selectionType === "service" && (
+                      <>
+                        {/* Main Services */}
+                        {selectionOptions.some((opt) => opt.category === "Main Service") && (
+                          <div className="mb-4">
+                            <p className="text-xs text-gray-500 mb-1 body-font">Main Services (select one):</p>
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              {selectionOptions
+                                .filter((opt) => opt.category === "Main Service")
+                                .map((option, index) => (
+                                  <button
+                                    key={index}
+                                    onClick={() => handleSelectionBubbleClick(option)}
+                                    className={`selection-bubble px-4 py-2 rounded-full text-sm font-medium transition-colors body-font flex items-center ${
+                                      option.selected
+                                        ? "bg-[#d04e30] text-white"
+                                        : "bg-[#e75837] hover:bg-[#d04e30] text-white"
+                                    }`}
+                                  >
+                                    {option.selected && <Check className="w-4 h-4 mr-1" />}
+                                    {option.name}
+                                  </button>
+                                ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Add-Ons */}
+                        {selectionOptions.some((opt) => opt.category === "Add-On") && (
+                          <div className="mb-4">
+                            <p className="text-xs text-gray-500 mb-1 body-font">Add-Ons (select any):</p>
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              {selectionOptions
+                                .filter((opt) => opt.category === "Add-On")
+                                .map((option, index) => (
+                                  <button
+                                    key={index}
+                                    onClick={() => handleSelectionBubbleClick(option)}
+                                    className={`selection-bubble px-4 py-2 rounded-full text-sm font-medium transition-colors body-font flex items-center ${
+                                      option.selected
+                                        ? "bg-[#745E25] text-white"
+                                        : "bg-[#94ABD6] hover:bg-[#7a8eb3] text-white"
+                                    }`}
+                                  >
+                                    {option.selected && <Check className="w-4 h-4 mr-1" />}
+                                    {option.name}
+                                  </button>
+                                ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {/* For non-service selections */}
+                    {selectionType !== "service" && (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {selectionOptions.map((option, index) => (
+                          <button
+                            key={index}
+                            onClick={() => handleSelectionBubbleClick(option)}
+                            className={`selection-bubble px-4 py-2 rounded-full text-sm font-medium transition-colors body-font flex items-center ${
+                              option.selected ? "bg-[#d04e30] text-white" : "bg-[#e75837] hover:bg-[#d04e30] text-white"
+                            }`}
+                          >
+                            {option.selected && <Check className="w-4 h-4 mr-1" />}
+                            {option.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Show details for the selected options */}
+                    {selectionOptions
+                      .filter((opt) => opt.selected)
+                      .map((option, index) => (
+                        <div key={index} className="selected-option-details mb-3 p-3 bg-[#f9f9f9] rounded-md">
+                          <div className="font-medium">{option.name}</div>
+                          {option.description && <div className="text-sm text-gray-600">{option.description}</div>}
+                          {option.details &&
+                            option.details.map((detail, i) => (
+                              <div key={i} className="text-sm text-gray-600">
+                                {detail}
+                              </div>
+                            ))}
+                        </div>
+                      ))}
+
+                    {/* Submit button for services (when main service is selected) or multiple selections */}
+                    {((selectionType === "service" && selectedMainService) ||
+                      (selectionType === "confirmation" && selectedOptions.length > 0) ||
+                      (selectionType === "pet" && selectedOptions.length > 0) ||
+                      (selectionType !== "service" &&
+                        selectionType !== "professional" &&
+                        selectedOptions.length > 0)) && (
+                      <button
+                        onClick={() => submitSelections()}
+                        className="bg-[#745E25] text-white border-none py-2 px-4 rounded-full cursor-pointer font-medium text-sm transition-colors duration-300 hover:bg-[#5d4b1e] focus:outline-none focus:shadow-[0_0_0_3px_rgba(116,94,37,0.3)] inline-flex items-center justify-center body-font"
+                      >
+                        Submit Selection
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {isTyping && (
                 <div className="typing-indicator p-3 bg-[#f0f2f5] rounded-[18px] mb-[15px] w-[70px] mr-auto rounded-bl-[4px]">
                   <span className="h-2 w-2 float-left mx-[1px] bg-[#9E9EA1] block rounded-full opacity-40"></span>
