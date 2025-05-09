@@ -1020,7 +1020,9 @@ export default function BookingPage() {
     <div className="container max-w-[1200px] mx-auto my-[10px] md:my-[30px] px-4 md:px-5 bg-[#FBF8F3]">
       <div className="flex items-center mb-6">
         <div className="mr-4">
-          <Image src="/images/critter-logo.png" alt="Critter Logo" width={60} height={60} className="rounded-md" />
+          <a href="https://critter.pet" target="_blank" rel="noopener noreferrer">
+            <Image src="/images/critter-logo.png" alt="Critter Logo" width={60} height={60} className="rounded-md" />
+          </a>
         </div>
         <h1 className="text-center text-[1.8rem] md:text-[2.2rem] font-bold title-font flex-grow">
           Critter Smart Booking Service
