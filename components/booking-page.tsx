@@ -34,10 +34,16 @@ type PetItem = {
   type: string
 }
 
+// Add a new type for list items
+type ListItem = {
+  title: string
+  content: string
+}
+
 type StructuredMessage = {
   type: string
   intro?: string
-  items?: ServiceItem[] | ProfessionalItem[] | PetItem[]
+  items?: ServiceItem[] | ProfessionalItem[] | PetItem[] | ListItem[]
   footer?: string
   text?: string
 }
@@ -391,6 +397,81 @@ export default function BookingPage() {
       if (structuredData.type === "text_only") {
         console.log("Message type is text_only, skipping selection bubbles")
         return { type: null, options: [], allowMultiple: false }
+      }
+
+      // Handle text_with_list type that contains pet options
+      if (structuredData.type === "text_with_list" && Array.isArray(structuredData.items)) {
+        console.log("Processing text_with_list items:", structuredData.items)
+
+        // Check if this is a pet selection list (look for pet-related text)
+        const isPetList =
+          (structuredData.intro &&
+            (structuredData.intro.toLowerCase().includes("which pet") ||
+              structuredData.intro.toLowerCase().includes("confirm which pet") ||
+              structuredData.intro.toLowerCase().includes("pet(s) you'd like") ||
+              structuredData.intro.toLowerCase().includes("confirm if you want to proceed with") ||
+              structuredData.intro.toLowerCase().includes("add any other pets"))) ||
+          (structuredData.footer &&
+            (structuredData.footer.toLowerCase().includes("specify the pet") ||
+              structuredData.footer.toLowerCase().includes("pet(s) by name") ||
+              structuredData.footer.toLowerCase().includes("confirm the pet") ||
+              structuredData.footer.toLowerCase().includes("pets for this booking")))
+
+        if (isPetList) {
+          console.log("Detected pet list in text_with_list")
+          const options: SelectionOption[] = structuredData.items.map((item: any) => {
+            let petName = ""
+            let petType = ""
+
+            // Special case: If title is "Pet Name", use the content as the pet name
+            if (item.title === "Pet Name") {
+              petName = item.content
+              console.log(`Extracted pet from "Pet Name" title: ${petName}`)
+            }
+            // Check if the content contains pet name and type in format "Name (Type)"
+            else if (item.content.match(/([A-Za-z]+)\s*$$([A-Za-z]+)$$/)) {
+              const contentMatch = item.content.match(/([A-Za-z]+)\s*$$([A-Za-z]+)$$/)
+              petName = contentMatch[1]
+              petType = contentMatch[2]
+              console.log(`Extracted pet from content: ${petName} (${petType})`)
+            }
+            // If not found in content, try to extract from title
+            else {
+              petName = item.title
+                .replace(/^\d+\.\s*/, "")
+                .replace(/^[^a-zA-Z]+/, "")
+                .replace(/^Pet option \d+/, "")
+              petType = item.content
+
+              // If title starts with "Pet option", it's not the actual pet name
+              if (item.title.startsWith("Pet option")) {
+                // Try to extract from content again with a different pattern
+                const parts = item.content.split(/[(:]/)
+                if (parts.length > 0) {
+                  petName = parts[0].trim()
+                  if (parts.length > 1) {
+                    petType = parts[1].replace(/\)$/, "").trim()
+                  }
+                }
+              }
+            }
+
+            return {
+              name: petName,
+              description: petType,
+              selected: false,
+            }
+          })
+
+          // Filter out any options with empty names
+          const validOptions = options.filter((opt) => opt.name.length > 0)
+
+          return {
+            type: "pet",
+            options: validOptions,
+            allowMultiple: true,
+          }
+        }
       }
 
       // Handle different types of structured data
