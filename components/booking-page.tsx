@@ -69,37 +69,36 @@ export default function BookingPage() {
 
 
   // Reset the chat to its initial state
-  const resetChat = () => {
-    // Reset the selected action
-    setSelectedAction("")
-    if (actionSelectRef.current) {
-      actionSelectRef.current.value = ""
-    }
-
-    // Show the action bubbles again
-    setShowActionBubbles(true)
-
-    // Reset the messages to just the welcome message
-    setMessages([
-      {
-        text: "Welcome to Critter Pet Services! Please fill in your information to the left and select one of the options below to get started.",
-        isUser: false,
-      },
-    ])
-
-    // Reset the input value
-    setInputValue("")
-
-    // Reset the status
-    updateStatus("Ready to assist you", "#E75837")
-
-    // Log the reset
-    logDebug("Chat reset by user")
-
-    // Note: We're keeping the user's personal information (name, email)
-    // and the user ID to maintain some continuity
+const resetChat = () => {
+  // Reset the selected action
+  setSelectedAction("")
+  if (actionSelectRef.current) {
+    actionSelectRef.current.value = ""
   }
 
+  // Show the action bubbles again
+  setShowActionBubbles(true)
+
+  // Reset the messages to just the welcome message
+  setMessages([
+    {
+      text: "Welcome to Critter Pet Services! Please fill in your information to the left and select one of the options below to get started.",
+      isUser: false,
+    },
+  ])
+
+  // Reset the input value
+  setInputValue("")
+
+  // Reset the status
+  updateStatus("Ready to assist you", "#E75837")
+
+  // Log the reset
+  console.log("Chat reset by user")
+
+  // Note: We're keeping the user's personal information (name, email)
+  // and the user ID to maintain some continuity
+}
   // Update the getUserInfo function to include the selected action
   const getUserInfo = () => {
     return {
@@ -115,169 +114,169 @@ export default function BookingPage() {
     setStatusColor(color)
   }
 
-  const handleActionBubbleClick = (action: string) => {
-    // Get the message text for the selected action
-    const actionMessages: { [key: string]: string } = {
-      new_booking: "I'd like to make a new booking",
-      change_booking: "I need to change my existing booking",
-      cancel_booking: "I want to cancel my booking",
-      list_bookings: "Show me my existing bookings",
-      list_outstanding: "What are my outstanding invoices?",
-    }
-
-    const messageText = actionMessages[action]
-
-    // Set the selected action
-    setSelectedAction(action)
-    logDebug("Action selected from bubble", { action })
-
-    // Update the hidden input value
-    if (actionSelectRef.current) {
-      actionSelectRef.current.value = action
-    }
-
-    // Hide the action bubbles after selection
-    setShowActionBubbles(false)
-
-    // Send the message
-    sendMessage(messageText)
+ const handleActionBubbleClick = (action: string) => {
+  // Get the message text for the selected action
+  const actionMessages: { [key: string]: string } = {
+    new_booking: "I'd like to make a new booking",
+    change_booking: "I need to change my existing booking",
+    cancel_booking: "I want to cancel my booking",
+    list_bookings: "Show me my existing bookings",
+    list_outstanding: "What are my outstanding invoices?",
   }
 
+  const messageText = actionMessages[action]
+
+  // Set the selected action
+  setSelectedAction(action)
+  console.log("Action selected from bubble", { action })
+
+  // Update the hidden input value
+  if (actionSelectRef.current) {
+    actionSelectRef.current.value = action
+  }
+
+  // Hide the action bubbles after selection
+  setShowActionBubbles(false)
+
+  // Send the message
+  sendMessage(messageText)
+}
+
   const sendMessage = async (messageText?: string) => {
-    // Get the message text from the parameter or the input value
-    const message = messageText || inputValue.trim()
-    if (!message) return
+  // Get the message text from the parameter or the input value
+  const message = messageText || inputValue.trim()
+  if (!message) return
 
-    setShowActionBubbles(false)
+  setShowActionBubbles(false)
 
-    // Log that we're sending a message
-    logDebug("Sending message", { message })
+  // Log that we're sending a message
+  console.log("Sending message", { message })
 
-    // Add user message to chat immediately
-    setMessages((prev) => {
-      const newMessages = [...prev, { text: message, isUser: true }]
-      logDebug("Updated messages array", { messageCount: newMessages.length })
-      return newMessages
+  // Add user message to chat immediately
+  setMessages((prev) => {
+    const newMessages = [...prev, { text: message, isUser: true }]
+    console.log("Updated messages array", { messageCount: newMessages.length })
+    return newMessages
+  })
+
+  // Clear input field
+  setInputValue("")
+
+  // Show typing indicator
+  setIsTyping(true)
+  // Update the status color in the sendMessage function
+  updateStatus("Thinking...", "#745E25") // Updated to Green (secondary)
+
+  try {
+    // Get user info
+    const userInfo = getUserInfo()
+
+    // Prepare request payload
+    const payload = {
+      message: {
+        text: message,
+        userId: USER_ID.current,
+        timestamp: new Date().toISOString(),
+        userInfo: userInfo,
+      },
+    } as any
+
+    // Add session and conversation IDs if available
+    if (sessionId) {
+      payload.message.sessionId = sessionId
+    }
+    if (conversationId) {
+      payload.message.conversationId = conversationId
+    }
+
+    // Log what we're sending
+    console.log("Sending message to webhook", payload)
+    // Update the status color in the sendMessage function
+    updateStatus("Connecting...", "#94ABD6") // Updated to Blue
+
+    // Send message to webhook
+    const response = await fetch(WEBHOOK_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
     })
 
-    // Clear input field
-    setInputValue("")
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
 
-    // Show typing indicator
-    setIsTyping(true)
+    // Parse response
+    const data = await response.json()
+
+    // Log the response
+    console.log("Received response", data)
+
+    // Hide typing indicator
+    setIsTyping(false)
     // Update the status color in the sendMessage function
-    updateStatus("Thinking...", "#745E25") // Updated to Green (secondary)
+    updateStatus("Ready to assist you", "#E75837") // Updated to Orange (primary)
 
-    try {
-      // Get user info
-      const userInfo = getUserInfo()
+    // Process the response message if it exists
+    if (data.message) {
+      // Use our formatter to process the message
+      const formattedMessage = formatMessage(data.message, data.htmlMessage)
 
-      // Prepare request payload
-      const payload = {
-        message: {
-          text: message,
-          userId: USER_ID.current,
-          timestamp: new Date().toISOString(),
-          userInfo: userInfo,
-        },
-      } as any
-
-      // Add session and conversation IDs if available
-      if (sessionId) {
-        payload.message.sessionId = sessionId
-      }
-      if (conversationId) {
-        payload.message.conversationId = conversationId
-      }
-
-      // Log what we're sending
-      logDebug("Sending message to webhook", payload)
-      // Update the status color in the sendMessage function
-      updateStatus("Connecting...", "#94ABD6") // Updated to Blue
-
-      // Send message to webhook
-      const response = await fetch(WEBHOOK_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      // Parse response
-      const data = await response.json()
-
-      // Log the response
-      logDebug("Received response", data)
-
-      // Hide typing indicator
-      setIsTyping(false)
-      // Update the status color in the sendMessage function
-      updateStatus("Ready to assist you", "#E75837") // Updated to Orange (primary)
-
-      // Process the response message if it exists
-      if (data.message) {
-        // Use our formatter to process the message
-        const formattedMessage = formatMessage(data.message, data.htmlMessage)
-
-        // Add bot response to chat with the formatted HTML
-        setMessages((prev) => [
-          ...prev,
-          {
-            text: formattedMessage.text,
-            isUser: false,
-            htmlMessage: formattedMessage.html,
-          },
-        ])
-      } else {
-        // If no message, just use what we got
-        setMessages((prev) => [...prev, { text: JSON.stringify(data), isUser: false }])
-      }
-
-      // Store session and conversation IDs - defensive approach
-      if (data.sessionId) {
-        // Only update if we don't already have a session ID
-        if (!sessionId) {
-          setSessionId(data.sessionId)
-          logDebug("Set initial sessionId", data.sessionId)
-        } else {
-          // Log that we're keeping the existing ID
-          logDebug("Keeping existing sessionId", sessionId)
-        }
-      }
-
-      if (data.conversationId) {
-        // Only update if we don't already have a conversation ID
-        if (!conversationId) {
-          setConversationId(data.conversationId)
-          logDebug("Set initial conversationId", data.conversationId)
-        } else {
-          // Log that we're keeping the existing ID
-          logDebug("Keeping existing conversationId", conversationId)
-        }
-      }
-    } catch (error: any) {
-      console.error("Error sending message:", error)
-      logDebug("Error", error.message)
-
-      // Hide typing indicator
-      setIsTyping(false)
-      updateStatus("Connection error", "#3F001D") // Updated to Maroon
-
-      // Add error message
+      // Add bot response to chat with the formatted HTML
       setMessages((prev) => [
         ...prev,
         {
-          text: "Sorry, there was an error processing your request. Please try again later.",
+          text: formattedMessage.text,
           isUser: false,
+          htmlMessage: formattedMessage.html,
         },
       ])
+    } else {
+      // If no message, just use what we got
+      setMessages((prev) => [...prev, { text: JSON.stringify(data), isUser: false }])
     }
+
+    // Store session and conversation IDs - defensive approach
+    if (data.sessionId) {
+      // Only update if we don't already have a session ID
+      if (!sessionId) {
+        setSessionId(data.sessionId)
+        console.log("Set initial sessionId", data.sessionId)
+      } else {
+        // Log that we're keeping the existing ID
+        console.log("Keeping existing sessionId", sessionId)
+      }
+    }
+
+    if (data.conversationId) {
+      // Only update if we don't already have a conversation ID
+      if (!conversationId) {
+        setConversationId(data.conversationId)
+        console.log("Set initial conversationId", data.conversationId)
+      } else {
+        // Log that we're keeping the existing ID
+        console.log("Keeping existing conversationId", conversationId)
+      }
+    }
+  } catch (error: any) {
+    console.error("Error sending message:", error)
+    console.log("Error", error.message)
+
+    // Hide typing indicator
+    setIsTyping(false)
+    updateStatus("Connection error", "#3F001D") // Updated to Maroon
+
+    // Add error message
+    setMessages((prev) => [
+      ...prev,
+      {
+        text: "Sorry, there was an error processing your request. Please try again later.",
+        isUser: false,
+      },
+    ])
   }
+}
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
