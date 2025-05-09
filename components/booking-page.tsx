@@ -49,6 +49,7 @@ type StructuredMessage = {
 }
 
 // Define actions that should never show selection bubbles
+// Make sure these match EXACTLY what's being set in handleActionBubbleClick
 const NO_BUBBLES_ACTIONS = ["list_bookings", "list_outstanding"]
 
 export default function BookingPage() {
@@ -115,6 +116,9 @@ export default function BookingPage() {
   const [selectedAction, setSelectedAction] = useState<string>("")
   const [isAtBottom, setIsAtBottom] = useState(true)
 
+  // Add debug state to track action values
+  const [debugInfo, setDebugInfo] = useState<string>("")
+
   const USER_ID = useRef(`web_user_${Math.random().toString(36).substring(2, 10)}`)
   const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/93c29983-1098-4ff9-a3c5-eae58e04fbab"
 
@@ -126,7 +130,11 @@ export default function BookingPage() {
 
   // Helper function to check if the current action should show bubbles
   const shouldShowBubbles = () => {
-    return !NO_BUBBLES_ACTIONS.includes(selectedAction)
+    const result = !NO_BUBBLES_ACTIONS.includes(selectedAction)
+    console.log(`shouldShowBubbles check: action=${selectedAction}, result=${result}`)
+    // Update debug info
+    setDebugInfo(`Action: "${selectedAction}", Should show bubbles: ${result}`)
+    return result
   }
 
   useEffect(() => {
@@ -161,6 +169,14 @@ export default function BookingPage() {
       chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight
     }
   }, [messages, isTyping, isAtBottom, showSelectionBubbles])
+
+  // Add effect to log selectedAction changes
+  useEffect(() => {
+    console.log("selectedAction changed:", selectedAction)
+    // Check if this action should show bubbles
+    const shouldShow = !NO_BUBBLES_ACTIONS.includes(selectedAction)
+    console.log(`Action ${selectedAction} should show bubbles: ${shouldShow}`)
+  }, [selectedAction])
 
   // Reset the chat to its initial state
   const resetChat = () => {
@@ -229,12 +245,13 @@ export default function BookingPage() {
     const messageText = actionMessages[action]
 
     // Set the selected action
+    console.log(`Setting selectedAction to: "${action}"`)
     setSelectedAction(action)
-    console.log("Action selected from bubble", { action })
 
     // Update the hidden input value
     if (actionSelectRef.current) {
       actionSelectRef.current.value = action
+      console.log(`Updated actionSelectRef.current.value to: "${action}"`)
     }
 
     // Hide the action bubbles after selection
@@ -1069,11 +1086,20 @@ export default function BookingPage() {
           },
         ])
 
-        // Check if we need to show selection bubbles
-        // Only show selection bubbles if the current action allows it
-        if (shouldShowBubbles()) {
-          console.log("Current selected action before detection:", selectedAction)
-          console.log("Should show bubbles?", shouldShowBubbles())
+        // SIMPLIFIED APPROACH: Check if the current action should NEVER show bubbles
+        // If it's list_bookings or list_outstanding, never show bubbles regardless of message content
+        console.log(`Before bubble check - selectedAction: "${selectedAction}"`)
+        console.log(`NO_BUBBLES_ACTIONS includes selectedAction: ${NO_BUBBLES_ACTIONS.includes(selectedAction)}`)
+
+        // Force a check of the current action from the input field
+        const currentAction = actionSelectRef.current?.value || selectedAction
+        console.log(`Current action from ref: "${currentAction}"`)
+
+        if (NO_BUBBLES_ACTIONS.includes(currentAction)) {
+          console.log(`Action ${currentAction} is in NO_BUBBLES_ACTIONS list, skipping all selection bubbles`)
+          setShowSelectionBubbles(false)
+        } else {
+          // Only try to detect selection options for actions that can show bubbles
           const { type, options, allowMultiple } = detectSelectionType(data.message)
 
           console.log("Selection detection in sendMessage:", { type, options, allowMultiple })
@@ -1090,9 +1116,6 @@ export default function BookingPage() {
             console.log("No selection options detected, hiding bubbles")
             setShowSelectionBubbles(false)
           }
-        } else {
-          console.log(`Bubbles disabled for action: ${selectedAction}, skipping selection bubbles`)
-          setShowSelectionBubbles(false)
         }
       } else {
         // If no message, just use what we got
@@ -1227,6 +1250,13 @@ export default function BookingPage() {
               <p className="mt-2 text-sm text-[#6b7280] body-font">
                 Please select an action from the chat options on the right
               </p>
+            </div>
+
+            {/* Debug info display */}
+            <div className="mt-2 p-2 bg-gray-100 rounded text-xs text-gray-700">
+              <div>
+                <strong>Debug:</strong> {debugInfo}
+              </div>
             </div>
 
             {selectedAction && (
