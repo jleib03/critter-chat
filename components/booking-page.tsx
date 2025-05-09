@@ -381,6 +381,12 @@ export default function BookingPage() {
     // Add this at the beginning of the detectSelectionType function
     console.log("Analyzing message for selection type:", message)
 
+    // Skip detection for list_bookings and list_outstanding actions
+    if (selectedAction === "list_bookings" || selectedAction === "list_outstanding") {
+      console.log(`Skipping selection detection for ${selectedAction} action`)
+      return { type: null, options: [], allowMultiple: false }
+    }
+
     // Skip detection for booking confirmation messages
     if (message.includes("has been successfully submitted") || message.includes("confirmation email has been sent")) {
       console.log("Detected confirmation message, skipping selection bubbles")
@@ -1054,20 +1060,26 @@ export default function BookingPage() {
         ])
 
         // Check if we need to show selection bubbles
-        const { type, options, allowMultiple } = detectSelectionType(data.message)
+        // Skip selection bubble detection for list_bookings and list_outstanding actions
+        if (selectedAction !== "list_bookings" && selectedAction !== "list_outstanding") {
+          const { type, options, allowMultiple } = detectSelectionType(data.message)
 
-        console.log("Selection detection in sendMessage:", { type, options, allowMultiple })
+          console.log("Selection detection in sendMessage:", { type, options, allowMultiple })
 
-        if (type && options.length > 0) {
-          console.log("Showing selection bubbles for:", type, options)
-          setSelectionType(type)
-          setSelectionOptions(options)
-          setSelectedOptions([])
-          setSelectedMainService(null)
-          setAllowMultipleSelection(allowMultiple)
-          setShowSelectionBubbles(true)
+          if (type && options.length > 0) {
+            console.log("Showing selection bubbles for:", type, options)
+            setSelectionType(type)
+            setSelectionOptions(options)
+            setSelectedOptions([])
+            setSelectedMainService(null)
+            setAllowMultipleSelection(allowMultiple)
+            setShowSelectionBubbles(true)
+          } else {
+            console.log("No selection options detected, hiding bubbles")
+            setShowSelectionBubbles(false)
+          }
         } else {
-          console.log("No selection options detected, hiding bubbles")
+          console.log(`Skipping selection bubbles for ${selectedAction} action`)
           setShowSelectionBubbles(false)
         }
       } else {
