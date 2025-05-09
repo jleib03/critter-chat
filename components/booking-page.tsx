@@ -37,8 +37,9 @@ type PetItem = {
 type StructuredMessage = {
   type: string
   intro?: string
-  items: ServiceItem[] | ProfessionalItem[] | PetItem[]
+  items?: ServiceItem[] | ProfessionalItem[] | PetItem[]
   footer?: string
+  text?: string
 }
 
 export default function BookingPage() {
@@ -341,6 +342,7 @@ export default function BookingPage() {
 
       // If it has a type field, it might be our structured message
       if (jsonData.type && typeof jsonData.type === "string") {
+        console.log("Successfully parsed structured data:", jsonData.type, jsonData)
         return jsonData as StructuredMessage
       }
 
@@ -350,6 +352,7 @@ export default function BookingPage() {
       if (jsonMatch) {
         jsonData = JSON.parse(jsonMatch[0])
         if (jsonData.type && typeof jsonData.type === "string") {
+          console.log("Successfully parsed embedded structured data:", jsonData.type, jsonData)
           return jsonData as StructuredMessage
         }
       }
@@ -384,19 +387,42 @@ export default function BookingPage() {
     if (structuredData) {
       console.log("Detected structured data with type:", structuredData.type)
 
+      // If the type is text_only, don't show any selection bubbles
+      if (structuredData.type === "text_only") {
+        console.log("Message type is text_only, skipping selection bubbles")
+        return { type: null, options: [], allowMultiple: false }
+      }
+
       // Handle different types of structured data
       if (structuredData.type === "service_list" && Array.isArray(structuredData.items)) {
-        const options: SelectionOption[] = structuredData.items.map((item: any) => ({
-          name: item.name,
-          category: item.category,
-          details: item.details,
-          selected: false,
-        }))
+        console.log("Processing service_list items:", structuredData.items)
+
+        const options: SelectionOption[] = structuredData.items.map((item: any) => {
+          // Ensure category is properly normalized
+          let category = item.category || "Main Service"
+
+          // Normalize "Add-On" category variations
+          if (category.includes("Add") && category.includes("On")) {
+            category = "Add-On"
+          }
+
+          console.log(`Service item: ${item.name}, Category: ${category}`)
+
+          return {
+            name: item.name,
+            category: category,
+            details: item.details || [],
+            selected: false,
+          }
+        })
+
+        // Log the processed options
+        console.log("Processed service options:", options)
 
         return {
           type: "service",
           options,
-          allowMultiple: true,
+          allowMultiple: true, // This ensures we can select multiple items (for add-ons)
         }
       }
 
@@ -1212,12 +1238,12 @@ export default function BookingPage() {
                     {selectionType === "service" && (
                       <>
                         {/* Main Services */}
-                        {selectionOptions.some((opt) => opt.category === "Main Service") && (
+                        {selectionOptions.some((opt) => opt.category !== "Add-On") && (
                           <div className="mb-4">
                             <p className="text-xs text-gray-500 mb-1 body-font">Main Services (select one):</p>
                             <div className="flex flex-wrap gap-2 mb-3">
                               {selectionOptions
-                                .filter((opt) => opt.category === "Main Service")
+                                .filter((opt) => opt.category !== "Add-On")
                                 .map((option, index) => (
                                   <button
                                     key={index}
