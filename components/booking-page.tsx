@@ -16,6 +16,31 @@ type SelectionOption = {
 
 type SelectionType = "professional" | "service" | "pet" | "confirmation" | null
 
+// Define types for the structured data we might receive
+type ServiceItem = {
+  name: string
+  category: string
+  details: string[]
+}
+
+type ProfessionalItem = {
+  name: string
+  email?: string
+  details?: string[]
+}
+
+type PetItem = {
+  name: string
+  type: string
+}
+
+type StructuredMessage = {
+  type: string
+  intro?: string
+  items: ServiceItem[] | ProfessionalItem[] | PetItem[]
+  footer?: string
+}
+
 export default function BookingPage() {
   // Simple message formatter function to handle HTML messages
   const formatMessage = (message: string, htmlMessage?: string): { text: string; html: string } => {
@@ -308,6 +333,34 @@ export default function BookingPage() {
     sendMessage(messageText)
   }
 
+  // Function to try parsing JSON from a message
+  const tryParseJSON = (message: string): StructuredMessage | null => {
+    try {
+      // First, check if the message is already a valid JSON
+      let jsonData = JSON.parse(message)
+
+      // If it has a type field, it might be our structured message
+      if (jsonData.type && typeof jsonData.type === "string") {
+        return jsonData as StructuredMessage
+      }
+
+      // If not, look for JSON within the message
+      // This handles cases where the message might contain other text before/after the JSON
+      const jsonMatch = message.match(/\{[\s\S]*"type"[\s\S]*\}/m)
+      if (jsonMatch) {
+        jsonData = JSON.parse(jsonMatch[0])
+        if (jsonData.type && typeof jsonData.type === "string") {
+          return jsonData as StructuredMessage
+        }
+      }
+
+      return null
+    } catch (error) {
+      console.log("Failed to parse JSON from message:", error)
+      return null
+    }
+  }
+
   // Function to detect selection type from message
   const detectSelectionType = (
     message: string,
@@ -318,6 +371,75 @@ export default function BookingPage() {
   } => {
     // Add this at the beginning of the detectSelectionType function
     console.log("Analyzing message for selection type:", message)
+
+    // Skip detection for booking confirmation messages
+    if (message.includes("has been successfully submitted") || message.includes("confirmation email has been sent")) {
+      console.log("Detected confirmation message, skipping selection bubbles")
+      return { type: null, options: [], allowMultiple: false }
+    }
+
+    // First, try to parse structured JSON data
+    const structuredData = tryParseJSON(message)
+
+    if (structuredData) {
+      console.log("Detected structured data with type:", structuredData.type)
+
+      // Handle different types of structured data
+      if (structuredData.type === "service_list" && Array.isArray(structuredData.items)) {
+        const options: SelectionOption[] = structuredData.items.map((item: any) => ({
+          name: item.name,
+          category: item.category,
+          details: item.details,
+          selected: false,
+        }))
+
+        return {
+          type: "service",
+          options,
+          allowMultiple: true,
+        }
+      }
+
+      if (structuredData.type === "professional_list" && Array.isArray(structuredData.items)) {
+        const options: SelectionOption[] = structuredData.items.map((item: any) => ({
+          name: item.name,
+          description: item.email,
+          details: item.details,
+          selected: false,
+        }))
+
+        return {
+          type: "professional",
+          options,
+          allowMultiple: false,
+        }
+      }
+
+      if (structuredData.type === "pet_list" && Array.isArray(structuredData.items)) {
+        const options: SelectionOption[] = structuredData.items.map((item: any) => ({
+          name: item.name,
+          description: item.type,
+          selected: false,
+        }))
+
+        return {
+          type: "pet",
+          options,
+          allowMultiple: true,
+        }
+      }
+
+      if (structuredData.type === "confirmation") {
+        return {
+          type: "confirmation",
+          options: [
+            { name: "Yes, proceed", selected: false },
+            { name: "No, I need to make changes", selected: false },
+          ],
+          allowMultiple: false,
+        }
+      }
+    }
 
     // Convert to lowercase for case-insensitive matching
     const lowerMessage = message.toLowerCase()
@@ -330,12 +452,9 @@ export default function BookingPage() {
       message.includes("what time") ||
       message.includes("Looking forward to your details") ||
       (message.includes("Please provide") && !message.includes("Please provide the name of")) ||
-      message.includes("recurring booking request") ||
-      // Skip detection for booking confirmation messages
-      message.includes("has been successfully submitted") ||
-      message.includes("confirmation email has been sent")
+      message.includes("recurring booking request")
     ) {
-      console.log("Detected open-ended question or confirmation message, skipping selection bubbles")
+      console.log("Detected open-ended question, skipping selection bubbles")
       return { type: null, options: [], allowMultiple: false }
     }
 
@@ -437,10 +556,17 @@ export default function BookingPage() {
     if (
       (message.includes("professionals available") ||
         message.includes("which professional") ||
+        message.includes("Which professional") ||
         message.includes("Please confirm which professional") ||
         message.includes("Please specify the professional") ||
         message.includes("Which one would you like") ||
-        message.includes("booking request with?")) &&
+        message.includes("booking request with?") ||
+        message.includes("professional would you like to adjust") ||
+        message.includes("professional associated with your account") ||
+        message.includes("found the following professional") ||
+        message.includes("adjust a booking with") ||
+        message.includes("cancel a booking with") ||
+        message.includes("change a booking with")) &&
       // Make sure we're not in a booking confirmation message
       !message.includes("has been successfully submitted") &&
       !message.includes("confirmation email has been sent")
@@ -513,6 +639,20 @@ export default function BookingPage() {
               }
             }
           }
+        }
+      }
+
+      // Try to extract professionals from the format shown in the change/cancel flow
+      if (options.length === 0) {
+        // Look for a professional name followed by "Email:" pattern
+        const professionalEmailPattern = /([A-Za-z\s']+STAGE)\s+Email:/
+        const professionalMatch = message.match(professionalEmailPattern)
+
+        if (professionalMatch && professionalMatch[1]) {
+          options.push({
+            name: professionalMatch[1].trim(),
+            selected: false,
+          })
         }
       }
 
