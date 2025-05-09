@@ -48,6 +48,9 @@ type StructuredMessage = {
   text?: string
 }
 
+// Define actions that should never show selection bubbles
+const NO_BUBBLES_ACTIONS = ["list_bookings", "list_outstanding"]
+
 export default function BookingPage() {
   // Simple message formatter function to handle HTML messages
   const formatMessage = (message: string, htmlMessage?: string): { text: string; html: string } => {
@@ -112,9 +115,6 @@ export default function BookingPage() {
   const [selectedAction, setSelectedAction] = useState<string>("")
   const [isAtBottom, setIsAtBottom] = useState(true)
 
-  // Add a new state variable to track "no bubbles" mode
-  const [noBubblesMode, setNoBubblesMode] = useState(false)
-
   const USER_ID = useRef(`web_user_${Math.random().toString(36).substring(2, 10)}`)
   const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/93c29983-1098-4ff9-a3c5-eae58e04fbab"
 
@@ -123,6 +123,11 @@ export default function BookingPage() {
   const lastNameRef = useRef<HTMLInputElement>(null)
   const emailRef = useRef<HTMLInputElement>(null)
   const actionSelectRef = useRef<HTMLInputElement>(null)
+
+  // Helper function to check if the current action should show bubbles
+  const shouldShowBubbles = () => {
+    return !NO_BUBBLES_ACTIONS.includes(selectedAction)
+  }
 
   useEffect(() => {
     // Focus on first name input if empty
@@ -157,53 +162,13 @@ export default function BookingPage() {
     }
   }, [messages, isTyping, isAtBottom, showSelectionBubbles])
 
-  // Update the handleActionBubbleClick function to set noBubblesMode for specific actions
-  const handleActionBubbleClick = (action: string) => {
-    // Get the message text for the selected action
-    const actionMessages: { [key: string]: string } = {
-      new_booking: "I'd like to make a new booking",
-      change_booking: "I need to change my existing booking",
-      cancel_booking: "I want to cancel my booking",
-      list_bookings: "Show me my existing bookings",
-      list_outstanding: "What are my outstanding invoices?",
-    }
-
-    const messageText = actionMessages[action]
-
-    // Set the selected action
-    setSelectedAction(action)
-    console.log("Action selected from bubble", { action })
-
-    // Set noBubblesMode for list_bookings and list_outstanding
-    if (action === "list_bookings" || action === "list_outstanding") {
-      console.log(`Enabling no bubbles mode for ${action}`)
-      setNoBubblesMode(true)
-    } else {
-      setNoBubblesMode(false)
-    }
-
-    // Update the hidden input value
-    if (actionSelectRef.current) {
-      actionSelectRef.current.value = action
-    }
-
-    // Hide the action bubbles after selection
-    setShowActionBubbles(false)
-
-    // Send the message
-    sendMessage(messageText)
-  }
-
-  // Update the resetChat function to reset noBubblesMode
+  // Reset the chat to its initial state
   const resetChat = () => {
     // Reset the selected action
     setSelectedAction("")
     if (actionSelectRef.current) {
       actionSelectRef.current.value = ""
     }
-
-    // Reset noBubblesMode
-    setNoBubblesMode(false)
 
     // Show the action bubbles again
     setShowActionBubbles(true)
@@ -249,6 +214,34 @@ export default function BookingPage() {
   const updateStatus = (text: string, color: string) => {
     setStatusText(text)
     setStatusColor(color)
+  }
+
+  const handleActionBubbleClick = (action: string) => {
+    // Get the message text for the selected action
+    const actionMessages: { [key: string]: string } = {
+      new_booking: "I'd like to make a new booking",
+      change_booking: "I need to change my existing booking",
+      cancel_booking: "I want to cancel my booking",
+      list_bookings: "Show me my existing bookings",
+      list_outstanding: "What are my outstanding invoices?",
+    }
+
+    const messageText = actionMessages[action]
+
+    // Set the selected action
+    setSelectedAction(action)
+    console.log("Action selected from bubble", { action })
+
+    // Update the hidden input value
+    if (actionSelectRef.current) {
+      actionSelectRef.current.value = action
+    }
+
+    // Hide the action bubbles after selection
+    setShowActionBubbles(false)
+
+    // Send the message
+    sendMessage(messageText)
   }
 
   // Function to handle selection bubble clicks
@@ -385,7 +378,7 @@ export default function BookingPage() {
     }
   }
 
-  // Update the detectSelectionType function to check noBubblesMode first
+  // Function to detect selection type from message
   const detectSelectionType = (
     message: string,
   ): {
@@ -393,12 +386,14 @@ export default function BookingPage() {
     options: SelectionOption[]
     allowMultiple: boolean
   } => {
-    // Add this at the beginning of the detectSelectionType function
+    // Log the current state for debugging
     console.log("Analyzing message for selection type:", message)
+    console.log("Current selected action:", selectedAction)
 
-    // Skip detection if noBubblesMode is enabled
-    if (noBubblesMode) {
-      console.log("No bubbles mode is enabled, skipping selection detection")
+    // FIRST AND FOREMOST: Check if the current action should never show bubbles
+    // This check takes precedence over everything else
+    if (NO_BUBBLES_ACTIONS.includes(selectedAction)) {
+      console.log(`Action ${selectedAction} is in NO_BUBBLES_ACTIONS list, skipping all selection bubbles`)
       return { type: null, options: [], allowMultiple: false }
     }
 
@@ -406,6 +401,167 @@ export default function BookingPage() {
     if (message.includes("has been successfully submitted") || message.includes("confirmation email has been sent")) {
       console.log("Detected confirmation message, skipping selection bubbles")
       return { type: null, options: [], allowMultiple: false }
+    }
+
+    // First, try to parse structured JSON data
+    const structuredData = tryParseJSON(message)
+
+    if (structuredData) {
+      console.log("Detected structured data with type:", structuredData.type)
+
+      // If the type is text_only, don't show any selection bubbles
+      if (structuredData.type === "text_only") {
+        console.log("Message type is text_only, skipping selection bubbles")
+        return { type: null, options: [], allowMultiple: false }
+      }
+
+      // Handle text_with_list type that contains pet options
+      if (structuredData.type === "text_with_list" && Array.isArray(structuredData.items)) {
+        console.log("Processing text_with_list items:", structuredData.items)
+
+        // Check if this is a pet selection list (look for pet-related text)
+        const isPetList =
+          (structuredData.intro &&
+            (structuredData.intro.toLowerCase().includes("which pet") ||
+              structuredData.intro.toLowerCase().includes("confirm which pet") ||
+              structuredData.intro.toLowerCase().includes("pet(s) you'd like") ||
+              structuredData.intro.toLowerCase().includes("confirm if you want to proceed with") ||
+              structuredData.intro.toLowerCase().includes("add any other pets"))) ||
+          (structuredData.footer &&
+            (structuredData.footer.toLowerCase().includes("specify the pet") ||
+              structuredData.footer.toLowerCase().includes("pet(s) by name") ||
+              structuredData.footer.toLowerCase().includes("confirm the pet") ||
+              structuredData.footer.toLowerCase().includes("pets for this booking")))
+
+        if (isPetList) {
+          console.log("Detected pet list in text_with_list")
+          const options: SelectionOption[] = structuredData.items.map((item: any) => {
+            let petName = ""
+            let petType = ""
+
+            // Special case: If title is "Pet Name", use the content as the pet name
+            if (item.title === "Pet Name") {
+              petName = item.content
+              console.log(`Extracted pet from "Pet Name" title: ${petName}`)
+            }
+            // Check if the content contains pet name and type in format "Name (Type)"
+            else if (item.content.match(/([A-Za-z]+)\s*$$([A-Za-z]+)$$/)) {
+              const contentMatch = item.content.match(/([A-Za-z]+)\s*$$([A-Za-z]+)$$/)
+              petName = contentMatch[1]
+              petType = contentMatch[2]
+              console.log(`Extracted pet from content: ${petName} (${petType})`)
+            }
+            // If not found in content, try to extract from title
+            else {
+              petName = item.title
+                .replace(/^\d+\.\s*/, "")
+                .replace(/^[^a-zA-Z]+/, "")
+                .replace(/^Pet option \d+/, "")
+              petType = item.content
+
+              // If title starts with "Pet option", it's not the actual pet name
+              if (item.title.startsWith("Pet option")) {
+                // Try to extract from content again with a different pattern
+                const parts = item.content.split(/[(:]/)
+                if (parts.length > 0) {
+                  petName = parts[0].trim()
+                  if (parts.length > 1) {
+                    petType = parts[1].replace(/\)$/, "").trim()
+                  }
+                }
+              }
+            }
+
+            return {
+              name: petName,
+              description: petType,
+              selected: false,
+            }
+          })
+
+          // Filter out any options with empty names
+          const validOptions = options.filter((opt) => opt.name.length > 0)
+
+          return {
+            type: "pet",
+            options: validOptions,
+            allowMultiple: true,
+          }
+        }
+      }
+
+      // Handle different types of structured data
+      if (structuredData.type === "service_list" && Array.isArray(structuredData.items)) {
+        console.log("Processing service_list items:", structuredData.items)
+
+        const options: SelectionOption[] = structuredData.items.map((item: any) => {
+          // Ensure category is properly normalized
+          let category = item.category || "Main Service"
+
+          // Normalize "Add-On" category variations
+          if (category.includes("Add") && category.includes("On")) {
+            category = "Add-On"
+          }
+
+          console.log(`Service item: ${item.name}, Category: ${category}`)
+
+          return {
+            name: item.name,
+            category: category,
+            details: item.details || [],
+            selected: false,
+          }
+        })
+
+        // Log the processed options
+        console.log("Processed service options:", options)
+
+        return {
+          type: "service",
+          options,
+          allowMultiple: true, // This ensures we can select multiple items (for add-ons)
+        }
+      }
+
+      if (structuredData.type === "professional_list" && Array.isArray(structuredData.items)) {
+        const options: SelectionOption[] = structuredData.items.map((item: any) => ({
+          name: item.name,
+          description: item.email,
+          details: item.details,
+          selected: false,
+        }))
+
+        return {
+          type: "professional",
+          options,
+          allowMultiple: false,
+        }
+      }
+
+      if (structuredData.type === "pet_list" && Array.isArray(structuredData.items)) {
+        const options: SelectionOption[] = structuredData.items.map((item: any) => ({
+          name: item.name,
+          description: item.type,
+          selected: false,
+        }))
+
+        return {
+          type: "pet",
+          options,
+          allowMultiple: true,
+        }
+      }
+
+      if (structuredData.type === "confirmation") {
+        return {
+          type: "confirmation",
+          options: [
+            { name: "Yes, proceed", selected: false },
+            { name: "No, I need to make changes", selected: false },
+          ],
+          allowMultiple: false,
+        }
+      }
     }
 
     // Convert to lowercase for case-insensitive matching
@@ -822,7 +978,6 @@ export default function BookingPage() {
     return { type: null, options: [], allowMultiple: false }
   }
 
-  // Update the sendMessage function to check noBubblesMode
   const sendMessage = async (messageText?: string) => {
     // Get the message text from the parameter or the input value
     const message = messageText || inputValue.trim()
@@ -915,8 +1070,10 @@ export default function BookingPage() {
         ])
 
         // Check if we need to show selection bubbles
-        // Skip selection bubble detection if noBubblesMode is enabled
-        if (!noBubblesMode) {
+        // Only show selection bubbles if the current action allows it
+        if (shouldShowBubbles()) {
+          console.log("Current selected action before detection:", selectedAction)
+          console.log("Should show bubbles?", shouldShowBubbles())
           const { type, options, allowMultiple } = detectSelectionType(data.message)
 
           console.log("Selection detection in sendMessage:", { type, options, allowMultiple })
@@ -934,7 +1091,7 @@ export default function BookingPage() {
             setShowSelectionBubbles(false)
           }
         } else {
-          console.log("No bubbles mode is enabled, skipping selection bubbles")
+          console.log(`Bubbles disabled for action: ${selectedAction}, skipping selection bubbles`)
           setShowSelectionBubbles(false)
         }
       } else {
