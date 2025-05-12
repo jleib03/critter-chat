@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ChevronLeft, ChevronRight, Clock, Globe, Repeat, CalendarRange, ChevronUp, ChevronDown } from "lucide-react"
+import { ChevronLeft, ChevronRight, Clock, Globe, Repeat, CalendarRange, ChevronUp, ChevronDown, X } from "lucide-react"
 
 type BookingCalendarProps = {
   onSubmit: (bookingInfo: BookingInfo) => void
@@ -218,6 +218,14 @@ export default function BookingCalendar({ onSubmit, onCancel }: BookingCalendarP
 
   return (
     <div className="booking-calendar bg-white rounded-lg shadow-md p-4 max-w-md mx-auto">
+      {/* "I don't need the calendar" button at the top */}
+      <div className="flex justify-end mb-4">
+        <button onClick={onCancel} className="flex items-center text-gray-600 hover:text-gray-800 text-sm font-medium">
+          <span>I don't need the calendar</span>
+          <X className="h-4 w-4 ml-1" />
+        </button>
+      </div>
+
       {/* Calendar Header */}
       <div className="flex justify-between items-center mb-4">
         <button onClick={prevMonth} className="p-2 rounded-full hover:bg-gray-100" aria-label="Previous month">
@@ -421,15 +429,9 @@ export default function BookingCalendar({ onSubmit, onCancel }: BookingCalendarP
         )}
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex justify-between">
-        <button
-          onClick={onCancel}
-          className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100"
-        >
-          Cancel
-        </button>
-        <button onClick={handleSubmit} className="px-4 py-2 bg-[#E75837] text-white rounded-md hover:bg-[#d04e30]">
+      {/* Submit Button */}
+      <div className="flex justify-center">
+        <button onClick={handleSubmit} className="px-6 py-2 bg-[#E75837] text-white rounded-md hover:bg-[#d04e30]">
           Submit
         </button>
       </div>
