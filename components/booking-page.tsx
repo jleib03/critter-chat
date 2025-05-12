@@ -1109,24 +1109,22 @@ export default function BookingPage() {
     const displayHours = hours % 12 || 12
     const timeString = `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`
 
-    // Create the message text
-    let messageText = `I'd like to book on ${date} at ${timeString} (${bookingInfo.timezone}).`
+    // Create a more neutral message text without the "I'd like to book" prefix
+    let messageText = `Date: ${date}, Time: ${timeString}, Timezone: ${bookingInfo.timezone}`
 
     // Add recurring information if applicable
     if (bookingInfo.isRecurring && bookingInfo.recurringFrequency) {
-      messageText += ` This should be a ${bookingInfo.recurringFrequency} recurring booking`
+      messageText += `, Recurring: ${bookingInfo.recurringFrequency}`
 
       // Add recurring end date if available
       if (bookingInfo.recurringEndDate) {
-        messageText += ` ending on ${bookingInfo.recurringEndDate.toLocaleDateString()}.`
-      } else {
-        messageText += `.`
+        messageText += `, Ends on: ${bookingInfo.recurringEndDate.toLocaleDateString()}`
       }
     }
 
     // Add multi-day information if applicable
     if (bookingInfo.isMultiDay && bookingInfo.endDate) {
-      messageText += ` This is a multi-day booking ending on ${bookingInfo.endDate.toLocaleDateString()}.`
+      messageText += `, Multi-day booking ending on: ${bookingInfo.endDate.toLocaleDateString()}`
     }
 
     // Hide the calendar
