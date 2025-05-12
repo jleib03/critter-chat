@@ -5,6 +5,9 @@ import Image from "next/image"
 import { useState, useRef, useEffect } from "react"
 import { Send, RefreshCw, Check } from "lucide-react"
 
+// Add the import for the BookingCalendar component at the top of the file
+import BookingCalendar, { type BookingInfo } from "./booking-calendar"
+
 // Define types for our selection options
 type SelectionOption = {
   name: string
@@ -127,6 +130,9 @@ export default function BookingPage() {
   const lastNameRef = useRef<HTMLInputElement>(null)
   const emailRef = useRef<HTMLInputElement>(null)
   const actionSelectRef = useRef<HTMLInputElement>(null)
+
+  // Add a new state for showing the calendar widget
+  const [showCalendar, setShowCalendar] = useState(false)
 
   // Helper function to check if the current action should show bubbles
   const shouldShowBubbles = () => {
@@ -995,6 +1001,141 @@ export default function BookingPage() {
     return { type: null, options: [], allowMultiple: false }
   }
 
+  // Add a function to detect if we should show the calendar
+  const shouldShowCalendar = (message: string): boolean => {
+    const lowerMessage = message.toLowerCase()
+    return (
+      (lowerMessage.includes("date") && lowerMessage.includes("time")) ||
+      lowerMessage.includes("when would you like") ||
+      lowerMessage.includes("provide the date") ||
+      lowerMessage.includes("what time") ||
+      lowerMessage.includes("schedule") ||
+      lowerMessage.includes("when do you want") ||
+      (lowerMessage.includes("please provide") && lowerMessage.includes("date"))
+    )
+  }
+
+  // Add a function to detect if we should show the calendar
+  const shouldShowCalendarLogic = (message: string): boolean => {
+    console.log("Checking if calendar should show for message:", message)
+
+    // First try to parse the message as JSON
+    try {
+      const jsonData = JSON.parse(message)
+
+      // If it's a text_only message, check its content
+      if (jsonData.type === "text_only") {
+        console.log("Found text_only message, checking content")
+
+        // Combine intro and footer for checking
+        const fullText = [jsonData.intro || "", jsonData.footer || ""].join(" ").toLowerCase()
+
+        // Check for date/time related keywords
+        const hasDateTimeKeywords =
+          (fullText.includes("date") || fullText.includes("when")) &&
+          (fullText.includes("time") || fullText.includes("schedule"))
+
+        // Check for scheduling request indicators
+        const isSchedulingRequest =
+          fullText.includes("provide") ||
+          fullText.includes("when would you like") ||
+          fullText.includes("when you'd like") ||
+          fullText.includes("schedule") ||
+          fullText.includes("booking")
+
+        const result = hasDateTimeKeywords && isSchedulingRequest
+        console.log(
+          `Calendar detection for text_only: hasDateTimeKeywords=${hasDateTimeKeywords}, isSchedulingRequest=${isSchedulingRequest}, result=${result}`,
+        )
+        return result
+      }
+
+      // For other structured message types, don't show calendar
+      if (jsonData.type) {
+        console.log(`Message is structured data with type: ${jsonData.type}, not showing calendar`)
+        return false
+      }
+    } catch (error) {
+      // Not valid JSON, continue with text analysis
+      console.log("Message is not valid JSON, analyzing as text")
+    }
+
+    // For plain text messages, check content
+    const lowerMessage = message.toLowerCase()
+
+    // Check for specific scheduling phrases
+    const schedulingPhrases = [
+      "when would you like to schedule",
+      "when you'd like to schedule",
+      "what date and time",
+      "what time would you like",
+      "please provide a date",
+      "provide the date",
+      "provide date",
+      "when do you want this service",
+      "when should we schedule",
+      "preferred date and time",
+      "what day works for you",
+      "schedule these services",
+      "schedule this service",
+      "date, time, and your timezone",
+    ]
+
+    // Check if any scheduling phrase is in the message
+    const containsSchedulingPhrase = schedulingPhrases.some((phrase) => lowerMessage.includes(phrase))
+
+    // Only show calendar if it contains scheduling phrases AND date/time keywords
+    const hasDateTimeKeywords =
+      (lowerMessage.includes("date") || lowerMessage.includes("when")) &&
+      (lowerMessage.includes("time") || lowerMessage.includes("schedule"))
+
+    const result = containsSchedulingPhrase || (hasDateTimeKeywords && lowerMessage.includes("provide"))
+
+    console.log(
+      `Calendar detection result for plain text: ${result}, containsSchedulingPhrase: ${containsSchedulingPhrase}, hasDateTimeKeywords: ${hasDateTimeKeywords}`,
+    )
+    return result
+  }
+
+  // Add a function to handle calendar submission
+  const handleCalendarSubmit = (bookingInfo: BookingInfo) => {
+    // Format the date and time for the message
+    const date = bookingInfo.date.toLocaleDateString()
+    const time = bookingInfo.time
+    const formattedTime = time.split(":").map(Number)
+    const hours = formattedTime[0]
+    const minutes = formattedTime[1]
+    const period = hours >= 12 ? "PM" : "AM"
+    const displayHours = hours % 12 || 12
+    const timeString = `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`
+
+    // Create the message text
+    let messageText = `I'd like to book on ${date} at ${timeString} (${bookingInfo.timezone}).`
+
+    // Add recurring information if applicable
+    if (bookingInfo.isRecurring && bookingInfo.recurringFrequency) {
+      messageText += ` This should be a ${bookingInfo.recurringFrequency} recurring booking`
+
+      // Add recurring end date if available
+      if (bookingInfo.recurringEndDate) {
+        messageText += ` ending on ${bookingInfo.recurringEndDate.toLocaleDateString()}.`
+      } else {
+        messageText += `.`
+      }
+    }
+
+    // Add multi-day information if applicable
+    if (bookingInfo.isMultiDay && bookingInfo.endDate) {
+      messageText += ` This is a multi-day booking ending on ${bookingInfo.endDate.toLocaleDateString()}.`
+    }
+
+    // Hide the calendar
+    setShowCalendar(false)
+
+    // Send the message
+    sendMessage(messageText)
+  }
+
   const sendMessage = async (messageText?: string) => {
     // Get the message text from the parameter or the input value
     const message = messageText || inputValue.trim()
@@ -1085,6 +1226,13 @@ export default function BookingPage() {
             htmlMessage: formattedMessage.html,
           },
         ])
+
+        // Check if we should show the calendar
+        if (shouldShowCalendarLogic(data.message)) {
+          console.log("Showing calendar for date/time selection")
+          setShowCalendar(true)
+          return // Early return to prevent showing selection bubbles
+        }
 
         // SIMPLIFIED APPROACH: Check if the current action should NEVER show bubbles
         // If it's list_bookings or list_outstanding, never show bubbles regardless of message content
@@ -1473,6 +1621,13 @@ export default function BookingPage() {
                       </button>
                     )}
                   </div>
+                </div>
+              )}
+
+              {/* Calendar widget for date/time selection */}
+              {showCalendar && (
+                <div className="calendar-widget mt-4 mb-4">
+                  <BookingCalendar onSubmit={handleCalendarSubmit} onCancel={() => setShowCalendar(false)} />
                 </div>
               )}
 
