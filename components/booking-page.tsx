@@ -5,7 +5,7 @@ import Image from "next/image"
 import { useState, useRef, useEffect } from "react"
 import { Send, RefreshCw } from "lucide-react"
 
-// Add the import for the BookingCalendar component at the top of the files
+// Add the import for the BookingCalendar component at the top of the file
 import BookingCalendar, { type BookingInfo } from "./booking-calendar"
 
 // Define types for our selection options
@@ -905,6 +905,7 @@ export default function BookingPage() {
             }
           }
           // Otherwise it might be a service name
+          // Otherwise it might be a service name
           else if (!line.startsWith("Please") && !line.includes("offered by")) {
             // If we already have a name, save the previous service
             if (currentName) {
@@ -914,9 +915,10 @@ export default function BookingPage() {
                 details: currentDetails,
                 selected: false,
               })
-              currentName = line
+            }
+            currentName = line
           }
-        }
+        } // Close the for loop
 
         // Add the last service
         if (currentName) {
@@ -927,7 +929,7 @@ export default function BookingPage() {
             selected: false,
           })
         }
-      }
+      } // Close the if (options.length === 0) block
 
       // Add hardcoded fallbacks if needed
       if (options.length === 0) {
