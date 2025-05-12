@@ -5,7 +5,7 @@ import Image from "next/image"
 import { useState, useRef, useEffect } from "react"
 import { Send, RefreshCw } from "lucide-react"
 
-// Add the import for the BookingCalendar component at the top of the file
+// Add the import for the BookingCalendar component at the top of the files
 import BookingCalendar, { type BookingInfo } from "./booking-calendar"
 
 // Define types for our selection options
