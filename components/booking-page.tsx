@@ -3,7 +3,7 @@
 import type React from "react"
 import Image from "next/image"
 import { useState, useRef, useEffect } from "react"
-import { Send, RefreshCw } from "lucide-react"
+import { Send, RefreshCw, Check } from "lucide-react"
 
 // Add the import for the BookingCalendar component at the top of the file
 import BookingCalendar, { type BookingInfo } from "./booking-calendar"
@@ -521,8 +521,8 @@ export default function BookingPage() {
           // Ensure category is properly normalized
           let category = item.category || "Main Service"
 
-          // Normalize "Add-On" category variations - use case-insensitive check
-          if (category.toLowerCase().includes("add") && category.toLowerCase().includes("on")) {
+          // Normalize "Add-On" category variations
+          if (category.includes("Add") && category.includes("On")) {
             category = "Add-On"
           }
 
@@ -869,7 +869,7 @@ export default function BookingPage() {
 
         let currentCategory = ""
         let currentName = ""
-        const currentDetails: string[] = []
+        let currentDetails: string[] = []
 
         for (let i = 0; i < lines.length; i++) {
           const line = lines[i].trim()
@@ -905,7 +905,6 @@ export default function BookingPage() {
             }
           }
           // Otherwise it might be a service name
-          // Otherwise it might be a service name
           else if (!line.startsWith("Please") && !line.includes("offered by")) {
             // If we already have a name, save the previous service
             if (currentName) {
@@ -915,10 +914,11 @@ export default function BookingPage() {
                 details: currentDetails,
                 selected: false,
               })
+              currentDetails = []
             }
             currentName = line
           }
-        } // Close the for loop
+        }
 
         // Add the last service
         if (currentName) {
@@ -929,7 +929,7 @@ export default function BookingPage() {
             selected: false,
           })
         }
-      } // Close the if (options.length === 0) block
+      }
 
       // Add hardcoded fallbacks if needed
       if (options.length === 0) {
@@ -1315,24 +1315,6 @@ export default function BookingPage() {
     }
   }
 
-  // Helper function to display action name
-  const getActionDisplayName = (action: string): string => {
-    switch (action) {
-      case "new_booking":
-        return "New Booking"
-      case "change_booking":
-        return "Change Booking"
-      case "cancel_booking":
-        return "Cancel Booking"
-      case "list_bookings":
-        return "List Bookings"
-      case "list_outstanding":
-        return "List Outstanding Invoices"
-      default:
-        return "No action selected yet"
-    }
-  }
-
   // Fix the layout to ensure side-by-side display
   return (
     <div className="container max-w-[1200px] mx-auto my-[10px] md:my-[30px] px-4 md:px-5 bg-[#FBF8F3]">
@@ -1522,174 +1504,184 @@ export default function BookingPage() {
                 </div>
               )}
 
-              {/* Selection bubbles */}
+              {/* Selection bubbles for professionals, services, pets, confirmation */}
               {showSelectionBubbles && (
-                <div className="selection-bubbles flex flex-col gap-4 mt-4">
-                  {selectionType === "service" && (
-                    <>
-                      {selectionOptions.some((option) => option.category !== "Add-On") && (
-                        <div className="main-service-options">
-                          <p className="text-sm text-gray-600 mb-2 body-font">Select a main service:</p>
-                          <div className="flex flex-wrap gap-2">
-                            {selectionOptions
-                              .filter((option) => option.category !== "Add-On")
-                              .map((option) => (
-                                <button
-                                  key={option.name}
-                                  onClick={() => handleSelectionBubbleClick(option)}
-                                  className={`action-bubble px-4 py-2 rounded-full text-sm font-medium transition-colors body-font ${
-                                    option.name === selectedMainService
-                                      ? "bg-[#d04e30] text-white"
-                                      : "bg-[#e75837] hover:bg-[#d04e30] text-white"
-                                  }`}
-                                >
-                                  {option.name}
-                                </button>
-                              ))}
+                <div className="selection-bubbles flex flex-col gap-4 mt-4 mb-4">
+                  <div className="selection-options">
+                    <p className="text-sm text-gray-600 mb-2 body-font">
+                      {selectionType === "professional" && "Select a professional:"}
+                      {selectionType === "service" && "Select a service:"}
+                      {selectionType === "pet" && `Select ${allowMultipleSelection ? "pet(s)" : "a pet"}:`}
+                      {selectionType === "confirmation" && "Confirm your booking:"}
+                    </p>
+
+                    {/* Group options by category for services */}
+                    {selectionType === "service" && (
+                      <>
+                        {/* Main Services */}
+                        {selectionOptions.some((opt) => opt.category !== "Add-On") && (
+                          <div className="mb-4">
+                            <p className="text-xs text-gray-500 mb-1 body-font">Main Services (select one):</p>
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              {selectionOptions
+                                .filter((opt) => opt.category !== "Add-On")
+                                .map((option, index) => (
+                                  <button
+                                    key={index}
+                                    onClick={() => handleSelectionBubbleClick(option)}
+                                    className={`selection-bubble px-4 py-2 rounded-full text-sm font-medium transition-colors body-font flex items-center ${
+                                      option.selected
+                                        ? "bg-[#d04e30] text-white"
+                                        : "bg-[#e75837] hover:bg-[#d04e30] text-white"
+                                    }`}
+                                  >
+                                    {option.selected && <Check className="w-4 h-4 mr-1" />}
+                                    {option.name}
+                                  </button>
+                                ))}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
 
-                      {selectionOptions.some((option) => option.category === "Add-On") && (
-                        <div className="add-on-options">
-                          <p className="text-sm text-gray-600 mb-2 body-font">Select add-ons:</p>
-                          <div className="flex flex-wrap gap-2">
-                            {selectionOptions
-                              .filter((option) => option.category === "Add-On")
-                              .map((option) => (
-                                <button
-                                  key={option.name}
-                                  onClick={() => handleSelectionBubbleClick(option)}
-                                  className={`action-bubble px-4 py-2 rounded-full text-sm font-medium transition-colors body-font ${
-                                    selectedOptions.includes(option.name)
-                                      ? "bg-[#d04e30] text-white"
-                                      : "bg-[#e75837] hover:bg-[#d04e30] text-white"
-                                  }`}
-                                >
-                                  {option.name}
-                                </button>
-                              ))}
+                        {/* Add-Ons */}
+                        {selectionOptions.some((opt) => opt.category === "Add-On") && (
+                          <div className="mb-4">
+                            <p className="text-xs text-gray-500 mb-1 body-font">Add-Ons (select any):</p>
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              {selectionOptions
+                                .filter((opt) => opt.category === "Add-On")
+                                .map((option, index) => (
+                                  <button
+                                    key={index}
+                                    onClick={() => handleSelectionBubbleClick(option)}
+                                    className={`selection-bubble px-4 py-2 rounded-full text-sm font-medium transition-colors body-font flex items-center ${
+                                      option.selected
+                                        ? "bg-[#745E25] text-white"
+                                        : "bg-[#94ABD6] hover:bg-[#7a8eb3] text-white"
+                                    }`}
+                                  >
+                                    {option.selected && <Check className="w-4 h-4 mr-1" />}
+                                    {option.name}
+                                  </button>
+                                ))}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </>
+                    )}
 
-                      {selectedMainService && (
-                        <button
-                          onClick={submitSelections}
-                          className="action-bubble bg-[#28a745] hover:bg-[#218838] text-white px-4 py-2 rounded-full text-sm font-medium transition-colors body-font"
-                        >
-                          Submit Selections
-                        </button>
-                      )}
-                    </>
-                  )}
-
-                  {selectionType === "professional" && (
-                    <div className="professional-options">
-                      <p className="text-sm text-gray-600 mb-2 body-font">Select a professional:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {selectionOptions.map((option) => (
+                    {/* For non-service selections */}
+                    {selectionType !== "service" && (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {selectionOptions.map((option, index) => (
                           <button
-                            key={option.name}
+                            key={index}
                             onClick={() => handleSelectionBubbleClick(option)}
-                            className={`action-bubble px-4 py-2 rounded-full text-sm font-medium transition-colors body-font ${
-                              selectedOptions.includes(option.name)
-                                ? "bg-[#d04e30] text-white"
-                                : "bg-[#e75837] hover:bg-[#d04e30] text-white"
+                            className={`selection-bubble px-4 py-2 rounded-full text-sm font-medium transition-colors body-font flex items-center ${
+                              option.selected ? "bg-[#d04e30] text-white" : "bg-[#e75837] hover:bg-[#d04e30] text-white"
                             }`}
                           >
+                            {option.selected && <Check className="w-4 h-4 mr-1" />}
                             {option.name}
                           </button>
                         ))}
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {selectionType === "pet" && (
-                    <div className="pet-options">
-                      <p className="text-sm text-gray-600 mb-2 body-font">Select pet(s):</p>
-                      <div className="flex flex-wrap gap-2">
-                        {selectionOptions.map((option) => (
-                          <button
-                            key={option.name}
-                            onClick={() => handleSelectionBubbleClick(option)}
-                            className={`action-bubble px-4 py-2 rounded-full text-sm font-medium transition-colors body-font ${
-                              selectedOptions.includes(option.name)
-                                ? "bg-[#d04e30] text-white"
-                                : "bg-[#e75837] hover:bg-[#d04e30] text-white"
-                            }`}
-                          >
-                            {option.name}
-                          </button>
-                        ))}
-                      </div>
+                    {/* Show details for the selected options */}
+                    {selectionOptions
+                      .filter((opt) => opt.selected)
+                      .map((option, index) => (
+                        <div key={index} className="selected-option-details mb-3 p-3 bg-[#f9f9f9] rounded-md">
+                          <div className="font-medium">{option.name}</div>
+                          {option.description && <div className="text-sm text-gray-600">{option.description}</div>}
+                          {option.details &&
+                            option.details.map((detail, i) => (
+                              <div key={i} className="text-sm text-gray-600">
+                                {detail}
+                              </div>
+                            ))}
+                        </div>
+                      ))}
+
+                    {/* Submit button for services (when main service is selected) or multiple selections */}
+                    {((selectionType === "service" && selectedMainService) ||
+                      (selectionType === "confirmation" && selectedOptions.length > 0) ||
+                      (selectionType === "pet" && selectedOptions.length > 0) ||
+                      (selectionType !== "service" &&
+                        selectionType !== "professional" &&
+                        selectedOptions.length > 0)) && (
                       <button
-                        onClick={submitSelections}
-                        className="action-bubble bg-[#28a745] hover:bg-[#218838] text-white px-4 py-2 rounded-full text-sm font-medium transition-colors body-font"
+                        onClick={() => submitSelections()}
+                        className="bg-[#745E25] text-white border-none py-2 px-4 rounded-full cursor-pointer font-medium text-sm transition-colors duration-300 hover:bg-[#5d4b1e] focus:outline-none focus:shadow-[0_0_0_3px_rgba(116,94,37,0.3)] inline-flex items-center justify-center body-font"
                       >
-                        Submit Selections
+                        Submit Selection
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
+                </div>
+              )}
 
-                  {selectionType === "confirmation" && (
-                    <div className="confirmation-options">
-                      <p className="text-sm text-gray-600 mb-2 body-font">Confirm your booking:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {selectionOptions.map((option) => (
-                          <button
-                            key={option.name}
-                            onClick={() => handleSelectionBubbleClick(option)}
-                            className={`action-bubble px-4 py-2 rounded-full text-sm font-medium transition-colors body-font ${
-                              selectedOptions.includes(option.name)
-                                ? "bg-[#d04e30] text-white"
-                                : "bg-[#e75837] hover:bg-[#d04e30] text-white"
-                            }`}
-                          >
-                            {option.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+              {/* Calendar widget for date/time selection */}
+              {showCalendar && (
+                <div className="calendar-widget mt-4 mb-4">
+                  <BookingCalendar onSubmit={handleCalendarSubmit} onCancel={() => setShowCalendar(false)} />
                 </div>
               )}
 
               {isTyping && (
-                <div className="typing-indicator message bot-message mb-[15px] p-3 rounded-[18px] max-w-[80%] relative leading-[1.5] text-[0.95rem] bg-[#f0f2f5] text-[var(--text)] mr-auto rounded-bl-[4px] ai-message body-font">
-                  Typing...
+                <div className="typing-indicator p-3 bg-[#f0f2f5] rounded-[18px] mb-[15px] w-[70px] mr-auto rounded-bl-[4px]">
+                  <span className="h-2 w-2 float-left mx-[1px] bg-[#9E9EA1] block rounded-full opacity-40"></span>
+                  <span className="h-2 w-2 float-left mx-[1px] bg-[#9E9EA1] block rounded-full opacity-40"></span>
+                  <span className="h-2 w-2 float-left mx-[1px] bg-[#9E9EA1] block rounded-full opacity-40"></span>
                 </div>
               )}
             </div>
-
-            {/* Calendar Widget */}
-            {showCalendar && (
-              <div className="calendar-widget p-4 bg-white border-b border-[#e0e0e0]">
-                <BookingCalendar onSubmit={handleCalendarSubmit} />
-              </div>
-            )}
-
-            <div className="chat-input p-4">
-              <div className="flex items-center">
-                <input
-                  type="text"
-                  className="flex-grow p-3 border border-[#e0e0e0] rounded-lg text-base transition-all duration-300 focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)] body-font"
-                  placeholder="Type your message here..."
+            <div className="chat-input flex p-[15px] bg-white">
+              <div className="flex-1 mr-[10px] relative">
+                <textarea
                   value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyPress={handleKeyPress}
+                  onChange={(e) => {
+                    setInputValue(e.target.value)
+                    // Auto-resize the textarea
+                    e.target.style.height = "auto"
+                    e.target.style.height = `${Math.min(e.target.scrollHeight, 150)}px`
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault()
+                      sendMessage()
+                    }
+                  }}
+                  placeholder="Type your message here..."
+                  className="w-full p-3 border border-[#e0e0e0] rounded-[24px] text-base focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)] body-font resize-none min-h-[46px] max-h-[150px] overflow-y-auto"
+                  style={{ height: "46px" }}
                 />
-                <button
-                  onClick={sendMessage}
-                  className="ml-3 p-3 bg-[#e75837] hover:bg-[#d04e30] text-white rounded-lg transition-colors"
-                >
-                  <Send className="w-5 h-5" />
-                </button>
               </div>
+              <button
+                onClick={() => sendMessage()}
+                className="bg-[#E75837] text-white border-none py-3 px-5 rounded-[24px] cursor-pointer font-medium text-base transition-colors duration-300 hover:bg-[#d04e30] focus:outline-none focus:shadow-[0_0_0_3px_rgba(231,88,55,0.3)] inline-flex items-center justify-center body-font self-start"
+              >
+                Send
+                <Send className="ml-2 h-4 w-4" />
+              </button>
             </div>
           </div>
         </div>
       </div>
     </div>
   )
+}
+
+// Helper function to get a user-friendly display name for the action
+function getActionDisplayName(action: string): string {
+  const actionDisplayNames: { [key: string]: string } = {
+    new_booking: "New Booking",
+    change_booking: "Change Existing Booking",
+    cancel_booking: "Cancel Booking",
+    list_bookings: "List Bookings",
+    list_outstanding: "Outstanding Invoices",
+  }
+
+  return actionDisplayNames[action] || action
 }
