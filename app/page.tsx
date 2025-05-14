@@ -49,7 +49,7 @@ export default function Page() {
 
       {/* Main content with increased spacing */}
       <main className="pt-12 flex-1 flex flex-col">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col">
+        <div className="max-w-6xl mx-auto px-4 flex flex-col page-content">
           <h1 className="text-5xl title-font text-center mb-6 font-sangbleu">Book pet care with Critter</h1>
 
           <p className="text-center text-gray-700 mb-12 max-w-3xl mx-auto body-font">
