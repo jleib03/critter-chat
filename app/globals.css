@@ -1,5 +1,3 @@
-/* Add these font declarations at the top of the file, before the @tailwind directives */
-
 @font-face {
   font-family: "SangBleuKingdom";
   src: url("/fonts/sangbleu-kingdom/SangBleuKingdom-Light-WebS.woff") format("woff"),
@@ -60,7 +58,7 @@
 
 /* Keep the existing body styles but update the font-family */
 body {
-  font-family: var(--font-body), var(--font-poppins), sans-serif;
+  font-family: var(--font-body), system-ui, sans-serif;
   background-color: var(--background);
   color: var(--text);
   line-height: 1.6;
@@ -97,128 +95,8 @@ h6,
   font-family: var(--font-header);
 }
 
-/* Custom font styles */
-h1,
-.app-header h1,
-.card-header {
-  font-family: var(--font-title);
-}
-
-h2,
-h3,
-h4,
-h5,
-h6,
-.header,
-label,
-.form-group label {
-  font-family: var(--font-header);
-}
-
-.message,
-input,
-button,
-.status-text,
-p,
-div,
-.chat-input input::placeholder {
-  font-family: var(--font-body);
-}
-
-/* Add these styles to ensure proper formatting for lists and other elements */
-
-/* List styling */
-.ai-message .numbered-list,
-.ai-message .bullet-list,
-.ai-message ol,
-.ai-message ul {
-  margin-left: 1.5rem;
-  margin-bottom: 1rem;
-  font-family: var(--font-body);
-}
-
-.ai-message .numbered-list li,
-.ai-message .bullet-list li,
-.ai-message ol li,
-.ai-message ul li {
-  margin-bottom: 0.5rem;
-  font-family: var(--font-body);
-}
-
-/* Specific list types */
-.ai-message .professionals-list,
-.ai-message .invoices-list,
-.ai-message .bookings-list,
-.ai-message .dates-list,
-.ai-message .services-list {
-  margin-bottom: 1rem;
-  font-family: var(--font-body);
-}
-
-.ai-message .professional-details,
-.ai-message .invoice-details,
-.ai-message .booking-details,
-.ai-message .service-details {
-  margin-top: 0.25rem;
-  margin-left: 1.5rem;
-  margin-bottom: 0.5rem;
-  list-style-type: disc;
-  font-family: var(--font-body);
-}
-
-/* Styling for specific elements */
-.ai-message .professional-name,
-.ai-message .category-title,
-.ai-message .booking-date {
-  font-weight: 600;
-  font-family: var(--font-header);
-}
-
-/* Service list specific */
-.ai-message .service-category {
-  margin-bottom: 1.5rem;
-  font-family: var(--font-body);
-}
-
-.ai-message .category-title {
-  margin-bottom: 0.5rem;
-  font-size: 1.1rem;
-  font-family: var(--font-header);
-}
-
-/* Ensure strong elements use the header font */
-strong,
-.font-bold {
-  font-family: var(--font-header);
-  font-weight: 600;
-}
-
-/* Ensure list items have proper bullet points */
-.bullet-list li,
-ul.bullet-list li {
-  list-style-type: disc;
-  margin-left: 1.5rem;
-}
-
-.numbered-list li,
-ol.numbered-list li {
-  list-style-type: decimal;
-  margin-left: 1.5rem;
-}
-
-/* Booking and invoice specific styling */
-.booking-item,
-.invoice-item {
-  margin-bottom: 1rem;
-}
-
-.booking-details,
-.invoice-details {
-  margin-left: 1.5rem;
-  margin-top: 0.5rem;
-}
-
-/* Ensure message formatting is preserved */
+/* The rest of the CSS from the user's file */
+/* Additional styles for messages and UI elements */
 .message {
   font-family: var(--font-body);
 }
@@ -245,25 +123,6 @@ ol.numbered-list li {
   font-family: var(--font-title);
 }
 
-/* Ensure emoji and icons display properly */
-.message [class^="emoji-"],
-.message [class*=" emoji-"] {
-  display: inline-block;
-  vertical-align: middle;
-  margin-right: 0.25rem;
-}
-
-.card-header {
-  background-color: var(--primary) !important;
-  color: white !important;
-}
-
-@keyframes blink {
-  50% {
-    opacity: 1;
-  }
-}
-
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -279,128 +138,42 @@ ol.numbered-list li {
   animation: fadeIn 0.3s ease;
 }
 
-.typing-indicator span:nth-of-type(1) {
-  animation: 1s blink infinite 0.3333s;
-}
-
-.typing-indicator span:nth-of-type(2) {
-  animation: 1s blink infinite 0.6666s;
-}
-
-.typing-indicator span:nth-of-type(3) {
-  animation: 1s blink infinite 0.9999s;
-}
-
-/* Enhanced styling for HTML messages */
-.ai-message {
-  font-size: 0.95rem;
-  line-height: 1.5;
-}
-
-.ai-message strong,
-.ai-message .font-bold {
-  font-weight: 600;
-}
-
-.ai-message .message-intro {
-  margin-bottom: 1rem;
-}
-
-.ai-message .message-footer {
-  margin-top: 1rem;
-  color: var(--text-light);
-  font-style: italic;
-}
-
-/* List styling */
-.ai-message .numbered-list,
-.ai-message .bullet-list,
-.ai-message ol,
-.ai-message ul {
-  margin-left: 1.5rem;
-  margin-bottom: 1rem;
-}
-
-.ai-message .numbered-list li,
-.ai-message .bullet-list li,
-.ai-message ol li,
-.ai-message ul li {
-  margin-bottom: 0.5rem;
-}
-
-/* Specific list types */
-.ai-message .professionals-list,
-.ai-message .invoices-list,
-.ai-message .bookings-list,
-.ai-message .dates-list,
-.ai-message .services-list {
-  margin-bottom: 1rem;
-}
-
-.ai-message .professional-details,
-.ai-message .invoice-details,
-.ai-message .booking-details,
-.ai-message .service-details {
-  margin-top: 0.25rem;
-  margin-left: 1.5rem;
-  margin-bottom: 0.5rem;
-  list-style-type: disc;
-}
-
-/* Replace the styling for these specific elements to remove the orange color */
-
-.ai-message .professional-name,
-.ai-message .category-title,
-.ai-message .booking-date {
-  font-weight: 600;
-  /* Removing the color: var(--primary); */
-}
-
-/* Service list specific */
-.ai-message .service-category {
-  margin-bottom: 1.5rem;
-}
-
-.ai-message .category-title {
-  margin-bottom: 0.5rem;
-  font-size: 1.1rem;
-  /* Color is already removed in the group selector above */
-}
-
-/* New customer button styling */
-.new-customer-option {
-  animation: pulse 2s infinite;
-}
-
-.new-customer-option button {
-  transition: all 0.3s ease;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-}
-
-.new-customer-option button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.03);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-}
-
 @layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
   .dark {
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
