@@ -893,6 +893,7 @@ export default function BookingPage() {
       !lowerMessage.includes("please confirm which pet") &&
       !lowerMessage.includes("please specify") &&
       !lowerMessage.includes("confirm which pet") &&
+      !lowerMessage.includes("confirm which pet") &&
       !lowerMessage.includes("let me know the pet") &&
       !lowerMessage.includes("could you please confirm") &&
       !lowerMessage.includes("has been successfully submitted") &&
@@ -1252,10 +1253,10 @@ export default function BookingPage() {
       {/* Left Column - User Info */}
       <div className="md:col-span-5">
         <div className="bg-[#E75837] text-white p-4 rounded-t-lg">
-          <h2 className="text-xl font-medium">Tell us about you</h2>
+          <h2 className="text-xl font-medium header-font">Tell us about you</h2>
         </div>
         <div className="bg-white border border-gray-200 rounded-b-lg p-6 shadow-sm">
-          <p className="text-gray-700 mb-4">
+          <p className="text-gray-700 mb-4 body-font">
             Let's start by telling us a little bit about yourself, with first/last name and/or email. This lets Critter
             match you to the services providers you already work with.
           </p>
@@ -1266,7 +1267,7 @@ export default function BookingPage() {
                 type="email"
                 ref={emailRef}
                 placeholder="Email"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837]"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
               />
             </div>
             <div>
@@ -1274,7 +1275,7 @@ export default function BookingPage() {
                 type="text"
                 ref={firstNameRef}
                 placeholder="First Name"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837]"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
               />
             </div>
             <div>
@@ -1282,34 +1283,36 @@ export default function BookingPage() {
                 type="text"
                 ref={lastNameRef}
                 placeholder="Last Name"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837]"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
               />
             </div>
 
             {/* Current Action Section */}
             <div className="mt-6">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Current Action</h3>
+              <h3 className="text-sm font-medium text-gray-700 mb-2 header-font">Current Action</h3>
               <div
-                className={`w-full p-3 border border-gray-300 rounded-lg text-base bg-gray-50 ${
+                className={`w-full p-3 border border-gray-300 rounded-lg text-base bg-gray-50 body-font ${
                   selectedAction ? "text-gray-800" : "text-gray-500 italic"
                 }`}
               >
                 {selectedAction ? getActionDisplayName(selectedAction) : "No action selected yet"}
               </div>
               <input type="hidden" id="action-select" ref={actionSelectRef} value={selectedAction} />
-              <p className="mt-2 text-xs text-gray-500">Please select an action from the chat options on the right</p>
+              <p className="mt-2 text-xs text-gray-500 body-font">
+                Please select an action from the chat options on the right
+              </p>
             </div>
 
             {selectedAction && (
               <div className="mt-4">
                 <button
                   onClick={resetChat}
-                  className="flex items-center justify-center w-full p-2 border border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors"
+                  className="flex items-center justify-center w-full p-2 border border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors body-font"
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Do Something Else
                 </button>
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-gray-500 body-font">
                   This will reset the chat and let you select a different action
                 </p>
               </div>
@@ -1321,11 +1324,11 @@ export default function BookingPage() {
       {/* Right Column - Chat */}
       <div className="md:col-span-7">
         <div className="bg-[#E75837] text-white p-4 rounded-t-lg">
-          <h2 className="text-xl font-medium">What can Critter do for you?</h2>
+          <h2 className="text-xl font-medium header-font">What can Critter do for you?</h2>
         </div>
         <div className="bg-white border border-gray-200 rounded-b-lg shadow-sm flex flex-col h-[500px]">
-          <div className="flex-1 overflow-y-auto p-5 border-b border-gray-200" ref={chatMessagesRef}>
-            <p className="text-gray-700 mb-4">
+          <div className="flex-1 overflow-y-auto p-5 border-b border-gray-200 body-font" ref={chatMessagesRef}>
+            <p className="text-gray-700 mb-4 body-font">
               Let's get you started! First thing's first, share some details to the left so can match you to the right
               businesses on Critter.
             </p>
@@ -1338,7 +1341,7 @@ export default function BookingPage() {
                     msg.isUser
                       ? "bg-[#E75837] text-white ml-auto rounded-br-sm"
                       : "bg-gray-100 text-gray-800 mr-auto rounded-bl-sm"
-                  }`}
+                  } body-font`}
                   dangerouslySetInnerHTML={{ __html: msg.htmlMessage }}
                 />
               ) : (
@@ -1348,7 +1351,7 @@ export default function BookingPage() {
                     msg.isUser
                       ? "bg-[#E75837] text-white ml-auto rounded-br-sm"
                       : "bg-gray-100 text-gray-800 mr-auto rounded-bl-sm"
-                  }`}
+                  } body-font`}
                 >
                   {msg.text}
                 </div>
@@ -1358,37 +1361,37 @@ export default function BookingPage() {
             {/* Initial action bubbles */}
             {showActionBubbles && (
               <div className="mt-6">
-                <p className="text-sm text-gray-600 mb-2">
+                <p className="text-sm text-gray-600 mb-2 body-font">
                   Then, pick from the options below to get started on your request:
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => handleActionBubbleClick("new_booking")}
-                    className="px-4 py-2 bg-[#E75837] hover:bg-[#d04e30] text-white rounded-full text-sm font-medium transition-colors"
+                    className="px-4 py-2 bg-[#E75837] hover:bg-[#d04e30] text-white rounded-full text-sm font-medium transition-colors body-font"
                   >
                     Request a new booking
                   </button>
                   <button
                     onClick={() => handleActionBubbleClick("change_booking")}
-                    className="px-4 py-2 bg-[#E75837] hover:bg-[#d04e30] text-white rounded-full text-sm font-medium transition-colors"
+                    className="px-4 py-2 bg-[#E75837] hover:bg-[#d04e30] text-white rounded-full text-sm font-medium transition-colors body-font"
                   >
                     Make a change to an existing booking
                   </button>
                   <button
                     onClick={() => handleActionBubbleClick("cancel_booking")}
-                    className="px-4 py-2 bg-[#E75837] hover:bg-[#d04e30] text-white rounded-full text-sm font-medium transition-colors"
+                    className="px-4 py-2 bg-[#E75837] hover:bg-[#d04e30] text-white rounded-full text-sm font-medium transition-colors body-font"
                   >
                     Cancel an existing booking
                   </button>
                   <button
                     onClick={() => handleActionBubbleClick("list_bookings")}
-                    className="px-4 py-2 bg-[#E75837] hover:bg-[#d04e30] text-white rounded-full text-sm font-medium transition-colors"
+                    className="px-4 py-2 bg-[#E75837] hover:bg-[#d04e30] text-white rounded-full text-sm font-medium transition-colors body-font"
                   >
                     See upcoming bookings
                   </button>
                   <button
                     onClick={() => handleActionBubbleClick("list_outstanding")}
-                    className="px-4 py-2 bg-[#E75837] hover:bg-[#d04e30] text-white rounded-full text-sm font-medium transition-colors"
+                    className="px-4 py-2 bg-[#E75837] hover:bg-[#d04e30] text-white rounded-full text-sm font-medium transition-colors body-font"
                   >
                     Review open invoices
                   </button>
@@ -1400,7 +1403,7 @@ export default function BookingPage() {
             {showSelectionBubbles && (
               <div className="selection-bubbles flex flex-col gap-4 mt-4 mb-4">
                 <div className="selection-options">
-                  <p className="text-sm text-gray-600 mb-2">
+                  <p className="text-sm text-gray-600 mb-2 body-font">
                     {selectionType === "professional" && "Select a professional:"}
                     {selectionType === "service" && "Select a service:"}
                     {selectionType === "pet" && `Select ${allowMultipleSelection ? "pet(s)" : "a pet"}:`}
@@ -1413,7 +1416,7 @@ export default function BookingPage() {
                       {/* Main Services */}
                       {selectionOptions.some((opt) => opt.category !== "Add-On") && (
                         <div className="mb-4">
-                          <p className="text-xs text-gray-500 mb-1">Main Services (select one):</p>
+                          <p className="text-xs text-gray-500 mb-1 body-font">Main Services (select one):</p>
                           <div className="flex flex-wrap gap-2 mb-3">
                             {selectionOptions
                               .filter((opt) => opt.category !== "Add-On")
@@ -1421,7 +1424,7 @@ export default function BookingPage() {
                                 <button
                                   key={index}
                                   onClick={() => handleSelectionBubbleClick(option)}
-                                  className={`selection-bubble px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center ${
+                                  className={`selection-bubble px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center body-font ${
                                     option.selected
                                       ? "bg-[#d04e30] text-white"
                                       : "bg-[#e75837] hover:bg-[#d04e30] text-white"
@@ -1438,7 +1441,7 @@ export default function BookingPage() {
                       {/* Add-Ons */}
                       {selectionOptions.some((opt) => opt.category === "Add-On") && (
                         <div className="mb-4">
-                          <p className="text-xs text-gray-500 mb-1">Add-Ons (select any):</p>
+                          <p className="text-xs text-gray-500 mb-1 body-font">Add-Ons (select any):</p>
                           <div className="flex flex-wrap gap-2 mb-3">
                             {selectionOptions
                               .filter((opt) => opt.category === "Add-On")
@@ -1446,7 +1449,7 @@ export default function BookingPage() {
                                 <button
                                   key={index}
                                   onClick={() => handleSelectionBubbleClick(option)}
-                                  className={`selection-bubble px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center ${
+                                  className={`selection-bubble px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center body-font ${
                                     option.selected
                                       ? "bg-[#745E25] text-white"
                                       : "bg-[#94ABD6] hover:bg-[#7a8eb3] text-white"
@@ -1469,7 +1472,7 @@ export default function BookingPage() {
                         <button
                           key={index}
                           onClick={() => handleSelectionBubbleClick(option)}
-                          className={`selection-bubble px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center ${
+                          className={`selection-bubble px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center body-font ${
                             option.selected ? "bg-[#d04e30] text-white" : "bg-[#e75837] hover:bg-[#d04e30] text-white"
                           }`}
                         >
@@ -1484,12 +1487,14 @@ export default function BookingPage() {
                   {selectionOptions
                     .filter((opt) => opt.selected)
                     .map((option, index) => (
-                      <div key={index} className="selected-option-details mb-3 p-3 bg-[#f9f9f9] rounded-md">
-                        <div className="font-medium">{option.name}</div>
-                        {option.description && <div className="text-sm text-gray-600">{option.description}</div>}
+                      <div key={index} className="selected-option-details mb-3 p-3 bg-[#f9f9f9] rounded-md body-font">
+                        <div className="font-medium header-font">{option.name}</div>
+                        {option.description && (
+                          <div className="text-sm text-gray-600 body-font">{option.description}</div>
+                        )}
                         {option.details &&
                           option.details.map((detail, i) => (
-                            <div key={i} className="text-sm text-gray-600">
+                            <div key={i} className="text-sm text-gray-600 body-font">
                               {detail}
                             </div>
                           ))}
@@ -1505,7 +1510,7 @@ export default function BookingPage() {
                       selectedOptions.length > 0)) && (
                     <button
                       onClick={() => submitSelections()}
-                      className="bg-[#745E25] text-white border-none py-2 px-4 rounded-full cursor-pointer font-medium text-sm transition-colors duration-300 hover:bg-[#5d4b1e] focus:outline-none focus:shadow-[0_0_0_3px_rgba(116,94,37,0.3)] inline-flex items-center justify-center"
+                      className="bg-[#745E25] text-white border-none py-2 px-4 rounded-full cursor-pointer font-medium text-sm transition-colors duration-300 hover:bg-[#5d4b1e] focus:outline-none focus:shadow-[0_0_0_3px_rgba(116,94,37,0.3)] inline-flex items-center justify-center body-font"
                     >
                       Submit Selection
                     </button>
@@ -1540,12 +1545,12 @@ export default function BookingPage() {
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyPress}
               placeholder="Type your message here..."
-              className="flex-1 p-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-[#E75837]"
+              className="flex-1 p-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
             />
 
             <button
               onClick={() => sendMessage()}
-              className="bg-[#E75837] text-white px-4 py-3 rounded-r-lg hover:bg-[#d04e30] transition-colors flex items-center"
+              className="bg-[#E75837] text-white px-4 py-3 rounded-r-lg hover:bg-[#d04e30] transition-colors flex items-center header-font"
             >
               <span className="mr-2">Send</span>
               <Send className="h-4 w-4" />
