@@ -68,10 +68,10 @@ export default function ChatInterface({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-[#E75837] text-white py-2 px-4 rounded-t-lg">
+      <div className="bg-[#E75837] text-white py-3 px-4 rounded-t-lg">
         <h2 className="text-xl font-medium header-font">What can Critter do for you?</h2>
       </div>
-      <div className="bg-white border border-gray-200 rounded-b-lg shadow-sm flex flex-col flex-1">
+      <div className="bg-white rounded-b-lg shadow-sm flex flex-col flex-1">
         <div className="flex-1 overflow-y-auto p-5 border-b border-gray-200 body-font" ref={chatMessagesRef}>
           <p className="text-gray-700 mb-4 body-font">
             Let's get you started! First thing's first, share some details to the left so can match you to the right
@@ -138,7 +138,7 @@ export default function ChatInterface({
         </div>
 
         {/* Chat input */}
-        <div className="p-4 border-t border-gray-200 flex">
+        <div className="p-4 flex">
           <input
             type="text"
             value={inputValue}
