@@ -54,9 +54,14 @@
   --font-title: "SangBleuKingdom", serif;
   --font-header: "Suisse-Intl-Book", sans-serif;
   --font-body: "Suisse-Intl-Light", sans-serif;
+
+  /* Chat container sizing variables - reduce height */
+  --chat-height: 500px;
+  --chat-max-height: calc(100vh - 350px);
 }
 
-/* Keep the existing body styles but update the font-family */
+/* Fix for scrolling issues */
+html,
 body {
   font-family: var(--font-body), system-ui, sans-serif;
   background-color: var(--background);
@@ -64,6 +69,16 @@ body {
   line-height: 1.6;
   margin: 0;
   padding: 0;
+  height: 100%;
+  overflow-x: hidden;
+}
+
+/* Ensure the app takes up the full height */
+#__next,
+main {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Add these new font class styles */
@@ -123,6 +138,30 @@ h6,
   font-family: var(--font-title);
 }
 
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+/* Add smooth scrolling */
+.overflow-y-auto {
+  scroll-behavior: smooth;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -136,6 +175,21 @@ h6,
 
 .message {
   animation: fadeIn 0.3s ease;
+}
+
+/* Chat container styling */
+.chat-container,
+.user-info-container {
+  height: var(--chat-height);
+  max-height: var(--chat-max-height);
+  min-height: var(--chat-height);
+  overflow-y: auto;
+  flex: 0 0 auto; /* Prevent flex growth */
+}
+
+/* Ensure content doesn't get cut off at the bottom */
+.page-content {
+  margin-bottom: 4rem;
 }
 
 @layer base {

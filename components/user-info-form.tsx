@@ -54,7 +54,7 @@ const UserInfoForm = forwardRef<UserInfoFormHandle, UserInfoFormProps>(({ select
       <div className="bg-[#E75837] text-white py-3 px-4 rounded-t-lg">
         <h2 className="text-xl font-medium header-font">Tell us about you</h2>
       </div>
-      <div className="bg-white rounded-b-lg p-6 shadow-sm flex-1 flex flex-col">
+      <div className="bg-white rounded-b-lg p-6 shadow-sm flex-1 flex flex-col overflow-y-auto user-info-container">
         <p className="text-gray-700 mb-4 body-font">
           Let's start by telling us a little bit about yourself, with first/last name and/or email. This lets Critter
           match you to the services providers you already work with.
