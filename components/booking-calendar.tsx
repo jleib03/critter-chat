@@ -217,10 +217,13 @@ export default function BookingCalendar({ onSubmit, onCancel }: BookingCalendarP
   }
 
   return (
-    <div className="booking-calendar bg-white rounded-lg shadow-md p-4 max-w-md mx-auto">
+    <div className="booking-calendar bg-white rounded-lg shadow-md p-4 max-w-md mx-auto body-font">
       {/* "I don't need the calendar" button at the top */}
       <div className="flex justify-end mb-4">
-        <button onClick={onCancel} className="flex items-center text-gray-600 hover:text-gray-800 text-sm font-medium">
+        <button
+          onClick={onCancel}
+          className="flex items-center text-gray-600 hover:text-gray-800 text-sm font-medium body-font"
+        >
           <span>I don't need the calendar</span>
           <X className="h-4 w-4 ml-1" />
         </button>
@@ -231,7 +234,7 @@ export default function BookingCalendar({ onSubmit, onCancel }: BookingCalendarP
         <button onClick={prevMonth} className="p-2 rounded-full hover:bg-gray-100" aria-label="Previous month">
           <ChevronLeft className="h-5 w-5 text-gray-600" />
         </button>
-        <h2 className="text-lg font-semibold">
+        <h2 className="text-lg font-semibold header-font">
           {MONTHS[currentMonth]} {currentYear}
         </h2>
         <button onClick={nextMonth} className="p-2 rounded-full hover:bg-gray-100" aria-label="Next month">
@@ -431,7 +434,10 @@ export default function BookingCalendar({ onSubmit, onCancel }: BookingCalendarP
 
       {/* Submit Button */}
       <div className="flex justify-center">
-        <button onClick={handleSubmit} className="px-6 py-2 bg-[#E75837] text-white rounded-md hover:bg-[#d04e30]">
+        <button
+          onClick={handleSubmit}
+          className="px-6 py-2 bg-[#E75837] text-white rounded-md hover:bg-[#d04e30] header-font"
+        >
           Submit
         </button>
       </div>
