@@ -5,7 +5,7 @@ import BookingPage from "../components/booking-page"
 
 export default function Page() {
   return (
-    <div className="min-h-screen bg-[#FBF8F3]">
+    <div className="min-h-screen bg-[#FBF8F3] flex flex-col">
       {/* Header without border */}
       <header className="w-full py-5 px-6 flex justify-between items-center relative">
         <div className="flex space-x-6">
@@ -48,8 +48,8 @@ export default function Page() {
       </header>
 
       {/* Main content with increased spacing */}
-      <main className="pt-12">
-        <div className="max-w-6xl mx-auto px-4">
+      <main className="pt-12 flex-1 flex flex-col">
+        <div className="max-w-6xl mx-auto px-4 flex flex-col">
           <h1 className="text-5xl title-font text-center mb-6 font-sangbleu">Book pet care with Critter</h1>
 
           <p className="text-center text-gray-700 mb-12 max-w-3xl mx-auto body-font">
@@ -59,7 +59,9 @@ export default function Page() {
           </p>
 
           {/* Booking page with adjusted columns */}
-          <BookingPage />
+          <div className="flex-1 flex flex-col mb-16">
+            <BookingPage />
+          </div>
         </div>
       </main>
     </div>
