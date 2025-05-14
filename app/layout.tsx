@@ -1,31 +1,36 @@
 import type React from "react"
-import type { Metadata } from "next"
 import "./globals.css"
 
-// Remove the Poppins import
-// import { Poppins } from 'next/font/google'
-
-// Remove the poppins configuration
-// const poppins = Poppins({
-//   subsets: ["latin"],
-//   weight: ["300", "400", "500", "600", "700"],
-//   variable: "--font-poppins",
-// })
-
-// Update the title in the metadata
-export const metadata: Metadata = {
-  title: "Critter - Booking & Info Service",
-  description: "Book pet services with Critter Pet Services",
+export const metadata = {
+  title: "Critter Pet Services",
+  description: "Book pet care services with Critter",
 }
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <head>
+        <style>
+          {`
+          @font-face {
+            font-family: 'Sangbleu Kingdom';
+            src: url('/fonts/SangBleuKingdom-Regular.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+          }
+          
+          .title-font, .header-font {
+            font-family: 'Sangbleu Kingdom', serif;
+          }
+          
+          .body-font {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          }
+          `}
+        </style>
+      </head>
+      <body className="bg-[#FBF8F3]">{children}</body>
     </html>
   )
 }
