@@ -1,9 +1,8 @@
 "use client"
 
 import type React from "react"
-import Image from "next/image"
 import { useState, useRef, useEffect } from "react"
-import { Send, RefreshCw, Check } from "lucide-react"
+import { RefreshCw, Check, Send } from "lucide-react"
 
 // Add the import for the BookingCalendar component at the top of the file
 import BookingCalendar, { type BookingInfo } from "./booking-calendar"
@@ -97,7 +96,7 @@ export default function BookingPage() {
   const [statusColor, setStatusColor] = useState("#E75837") // Updated to Orange (primary)
   const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; htmlMessage?: string }>>([
     {
-      text: "Welcome to Critter Pet Services! Please fill in your information to the left and select one of the options below to get started.",
+      text: "Let's get you started! First thing's first, share some details to the left so can match you to the right businesses on Critter.",
       isUser: false,
     },
   ])
@@ -205,7 +204,7 @@ export default function BookingPage() {
     // Reset the messages to just the welcome message
     setMessages([
       {
-        text: "Welcome to Critter Pet Services! Please fill in your information to the left and select one of the options below to get started.",
+        text: "Let's get you started! First thing's first, share some details to the left so can match you to the right businesses on Critter.",
         isUser: false,
       },
     ])
@@ -673,20 +672,20 @@ export default function BookingPage() {
         }
       }
 
-      // Add hardcoded fallbacks if needed
+      // Remove the hardcoded fallbacks section
       if (options.length === 0) {
-        if (message.includes("Panna")) {
-          options.push({
-            name: "Panna",
-            description: "Dog",
-            selected: false,
-          })
-        }
-        if (message.includes("Scooter")) {
-          options.push({
-            name: "Scooter",
-            description: "Fish",
-            selected: false,
+        // Instead of hardcoded values, try to extract any pet-like names from the message
+        const petNameMatches = message.match(/([A-Z][a-z]+)(?:\s*$$([A-Za-z]+)$$)?/g)
+        if (petNameMatches) {
+          petNameMatches.forEach((match) => {
+            const nameParts = match.match(/([A-Z][a-z]+)(?:\s*$$([A-Za-z]+)$$)?/)
+            if (nameParts && nameParts[1] && !options.some((opt) => opt.name === nameParts[1])) {
+              options.push({
+                name: nameParts[1],
+                description: nameParts[2] || "",
+                selected: false,
+              })
+            }
           })
         }
       }
@@ -727,13 +726,8 @@ export default function BookingPage() {
         if (nameMatches && nameMatches.length > 0) {
           nameMatches.forEach((match) => {
             const name = match.replace(/"name":\s*"/, "").replace(/"/, "")
-            if (
-              name.includes("Critter") ||
-              name.includes("Leib") ||
-              name.includes("Walking") ||
-              name.includes("STAGE")
-            ) {
-              // Only add if it looks like a professional name
+            // Add all extracted names without filtering for specific keywords
+            if (name && !name.includes("{") && !name.includes("}") && !name.includes("[") && !name.includes("]")) {
               options.push({
                 name: name,
                 selected: false,
@@ -765,13 +759,13 @@ export default function BookingPage() {
           if (inProfessionalSection) {
             // If it's a professional name (not an email or instruction)
             if (
-              (line.includes("Critter") ||
-                line.includes("Leib") ||
-                line.includes("Walking") ||
-                line.includes("Lumbers")) &&
               !line.includes("Email:") &&
               !line.includes("Professional") &&
-              !line.includes("Please let me know")
+              !line.includes("Please let me know") &&
+              !line.includes("please") &&
+              !line.includes("select") &&
+              line.length > 3 &&
+              line.length < 50
             ) {
               // Clean up the name (remove any trailing punctuation)
               const name = line.replace(/\.$/, "")
@@ -790,30 +784,13 @@ export default function BookingPage() {
 
       // Try to extract professionals from the format shown in the change/cancel flow
       if (options.length === 0) {
-        // Look for a professional name followed by "Email:" pattern
-        const professionalEmailPattern = /([A-Za-z\s']+STAGE)\s+Email:/
+        // Look for a professional name followed by "Email:" pattern - more generic pattern
+        const professionalEmailPattern = /([A-Za-z\s']+)\s+Email:/
         const professionalMatch = message.match(professionalEmailPattern)
 
         if (professionalMatch && professionalMatch[1]) {
           options.push({
             name: professionalMatch[1].trim(),
-            selected: false,
-          })
-        }
-      }
-
-      // Add hardcoded fallbacks if needed
-      if (options.length === 0) {
-        if (message.includes("Critter Dog Walking STAGE")) {
-          options.push({
-            name: "Critter Dog Walking STAGE",
-            selected: false,
-          })
-        }
-
-        if (message.includes("Leib's Lively Lumbers")) {
-          options.push({
-            name: "Leib's Lively Lumbers",
             selected: false,
           })
         }
@@ -865,101 +842,36 @@ export default function BookingPage() {
 
       // If we couldn't extract from JSON or didn't find any options, try the regular approach
       if (options.length === 0) {
-        const lines = message.split("\n")
+        // Try to extract service names from the message using a more generic pattern
+        const serviceLines = message
+          .split("\n")
+          .filter(
+            (line) =>
+              line.trim().length > 0 &&
+              !line.includes("Please") &&
+              !line.includes("services offered") &&
+              !line.includes("which service"),
+          )
 
-        let currentCategory = ""
-        let currentName = ""
-        let currentDetails: string[] = []
-
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i].trim()
-
-          // Skip empty lines and lines with instructions
+        for (const line of serviceLines) {
+          // Look for lines that might be service names
           if (
-            !line ||
-            line.includes("Please specify") ||
-            line.includes("services offered") ||
-            line.includes("which service")
-          ) {
-            continue
-          }
-
-          // Check if it's a category line
-          if (
-            line.match(/^[A-Za-z\s]+$/) &&
+            line.length > 3 &&
+            line.length < 50 &&
             !line.includes("Duration") &&
             !line.includes("Price") &&
-            !line.includes("No description")
+            !line.includes("Email") &&
+            !line.includes("description")
           ) {
-            // If it's short and doesn't have common detail words, it might be a category
-            if (line.length < 30) {
-              currentCategory = line
-              continue
-            }
-          }
+            // Determine if it's a main service or add-on
+            const isAddOn = line.toLowerCase().includes("add") && line.toLowerCase().includes("on")
 
-          // If line contains Duration or Price, it's likely a detail
-          if (line.includes("Duration") || line.includes("Price") || line.includes("No description")) {
-            if (currentName) {
-              currentDetails.push(line)
-            }
+            options.push({
+              name: line.trim(),
+              category: isAddOn ? "Add-On" : "Main Service",
+              selected: false,
+            })
           }
-          // Otherwise it might be a service name
-          else if (!line.startsWith("Please") && !line.includes("offered by")) {
-            // If we already have a name, save the previous service
-            if (currentName) {
-              options.push({
-                name: currentName,
-                category: currentCategory,
-                details: currentDetails,
-                selected: false,
-              })
-              currentDetails = []
-            }
-            currentName = line
-          }
-        }
-
-        // Add the last service
-        if (currentName) {
-          options.push({
-            name: currentName,
-            category: currentCategory,
-            details: currentDetails,
-            selected: false,
-          })
-        }
-      }
-
-      // Add hardcoded fallbacks if needed
-      if (options.length === 0) {
-        if (message.includes("Dog Walking - 30")) {
-          options.push({
-            name: "Dog Walking - 30",
-            category: "Main Service",
-            selected: false,
-          })
-        }
-        if (message.includes("Dog Walking - 60")) {
-          options.push({
-            name: "Dog Walking - 60",
-            category: "Main Service",
-            selected: false,
-          })
-        }
-        if (message.includes("Overnight Board")) {
-          options.push({
-            name: "Overnight Board",
-            category: "Main Service",
-            selected: false,
-          })
-        }
-        if (message.includes("Transportation: Add On")) {
-          options.push({
-            name: "Transportation: Add On",
-            category: "Add-On",
-            selected: false,
-          })
         }
       }
 
@@ -980,6 +892,7 @@ export default function BookingPage() {
       !lowerMessage.includes("confirm which pet") &&
       !lowerMessage.includes("please confirm which pet") &&
       !lowerMessage.includes("please specify") &&
+      !lowerMessage.includes("confirm which pet") &&
       !lowerMessage.includes("let me know the pet") &&
       !lowerMessage.includes("could you please confirm") &&
       !lowerMessage.includes("has been successfully submitted") &&
@@ -1315,357 +1228,328 @@ export default function BookingPage() {
     }
   }
 
+  // Helper function to display action name
+  const getActionDisplayName = (action: string): string => {
+    switch (action) {
+      case "new_booking":
+        return "New Booking"
+      case "change_booking":
+        return "Change Booking"
+      case "cancel_booking":
+        return "Cancel Booking"
+      case "list_bookings":
+        return "List Bookings"
+      case "list_outstanding":
+        return "List Outstanding Invoices"
+      default:
+        return "No action selected yet"
+    }
+  }
+
   // Fix the layout to ensure side-by-side display
   return (
-    <div className="container max-w-[1200px] mx-auto my-[10px] md:my-[30px] px-4 md:px-5 bg-[#FBF8F3]">
-      <div className="flex items-center mb-6">
-        <div className="mr-4">
-          <a href="https://critter.pet" target="_blank" rel="noopener noreferrer">
-            <Image src="/images/critter-logo.png" alt="Critter Logo" width={60} height={60} className="rounded-md" />
-          </a>
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+      {/* Left Column - User Info */}
+      <div className="md:col-span-5">
+        <div className="bg-[#E75837] text-white p-4 rounded-t-lg">
+          <h2 className="text-xl font-medium">Tell us about you</h2>
         </div>
-        <h1 className="text-center text-[1.8rem] md:text-[2.2rem] font-bold title-font flex-grow">
-          Critter Smart Booking Service
-        </h1>
-      </div>
+        <div className="bg-white border border-gray-200 rounded-b-lg p-6 shadow-sm">
+          <p className="text-gray-700 mb-4">
+            Let's start by telling us a little bit about yourself, with first/last name and/or email. This lets Critter
+            match you to the services providers you already work with.
+          </p>
 
-      <div className="text-center mb-8">
-        <p className="body-font">
-          Welcome to the Critter Online Booking Site. This chat experience is an extension of the Critter Platform. If
-          you have a Critter Pet Owner account, feel free to use this and the app in partnership. If you work with a
-          Critter professional and don't have an account, this is a great way to simplify your interactions.
-        </p>
-      </div>
-
-      {/* Side-by-side layout - fixed to ensure it works properly */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-        {/* Your Information Card - 4 columns on medium screens and up */}
-        <div className="md:col-span-5 card bg-white rounded-lg shadow-md overflow-hidden mb-[25px]">
-          <div className="card-header bg-[#E75837] text-white p-4 font-semibold text-[1.2rem] header-font">
-            Your Information
-          </div>
-          <div className="card-body p-6 body-font">
-            <div className="form-group mb-5">
-              <label htmlFor="first-name" className="block mb-2 font-medium text-[var(--text)] header-font">
-                First Name
-              </label>
-              <input
-                type="text"
-                id="first-name"
-                ref={firstNameRef}
-                className="w-full p-3 border border-[#e0e0e0] rounded-lg text-base transition-all duration-300 focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)] body-font"
-                placeholder="Enter your first name"
-              />
-            </div>
-            <div className="form-group mb-5">
-              <label htmlFor="last-name" className="block mb-2 font-medium text-[var(--text)] header-font">
-                Last Name
-              </label>
-              <input
-                type="text"
-                id="last-name"
-                ref={lastNameRef}
-                className="w-full p-3 border border-[#e0e0e0] rounded-lg text-base transition-all duration-300 focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)] body-font"
-                placeholder="Enter your last name"
-              />
-            </div>
-            <div className="form-group mb-5">
-              <label htmlFor="email" className="block mb-2 font-medium text-[var(--text)] header-font">
-                Email
-              </label>
+          <div className="space-y-4">
+            <div>
               <input
                 type="email"
-                id="email"
                 ref={emailRef}
-                className="w-full p-3 border border-[#e0e0e0] rounded-lg text-base transition-all duration-300 focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)] body-font"
-                placeholder="Enter your email address"
+                placeholder="Email"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837]"
               />
             </div>
-            <div className="form-group mb-3">
-              <label htmlFor="action-select" className="block mb-2 font-medium text-[var(--text)] header-font">
-                Current Action
-              </label>
+            <div>
+              <input
+                type="text"
+                ref={firstNameRef}
+                placeholder="First Name"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837]"
+              />
+            </div>
+            <div>
+              <input
+                type="text"
+                ref={lastNameRef}
+                placeholder="Last Name"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837]"
+              />
+            </div>
+
+            {/* Current Action Section */}
+            <div className="mt-6">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Current Action</h3>
               <div
-                className={`w-full p-3 border border-[#e0e0e0] rounded-lg text-base bg-[#f5f5f5] ${
-                  selectedAction ? "text-[var(--text)]" : "text-[#6b7280] italic"
-                } body-font`}
+                className={`w-full p-3 border border-gray-300 rounded-lg text-base bg-gray-50 ${
+                  selectedAction ? "text-gray-800" : "text-gray-500 italic"
+                }`}
               >
                 {selectedAction ? getActionDisplayName(selectedAction) : "No action selected yet"}
               </div>
               <input type="hidden" id="action-select" ref={actionSelectRef} value={selectedAction} />
-              <p className="mt-2 text-sm text-[#6b7280] body-font">
-                Please select an action from the chat options on the right
-              </p>
-            </div>
-
-            {/* Debug info display */}
-            <div className="mt-2 p-2 bg-gray-100 rounded text-xs text-gray-700">
-              <div>
-                <strong>Debug:</strong> {debugInfo}
-              </div>
+              <p className="mt-2 text-xs text-gray-500">Please select an action from the chat options on the right</p>
             </div>
 
             {selectedAction && (
-              <div className="form-group mb-5">
+              <div className="mt-4">
                 <button
                   onClick={resetChat}
-                  className="flex items-center justify-center w-full p-2 mt-2 border border-[#e0e0e0] rounded-lg bg-[#f0f2f5] hover:bg-[#e4e6e8] text-[var(--text)] transition-colors body-font"
+                  className="flex items-center justify-center w-full p-2 border border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors"
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Do Something Else
                 </button>
-                <p className="mt-1 text-xs text-[#6b7280] body-font">
+                <p className="mt-1 text-xs text-gray-500">
                   This will reset the chat and let you select a different action
                 </p>
               </div>
             )}
-
-            <div className="status-indicator flex items-center mt-[10px] text-[0.85rem] text-[var(--text-light)]">
-              <div className="status-dot h-2 w-2 rounded-full mr-2" style={{ backgroundColor: statusColor }}></div>
-              <div className="status-text font-medium body-font">{statusText}</div>
-            </div>
           </div>
         </div>
+      </div>
 
-        {/* Chat Card - 8 columns on medium screens and up */}
-        <div className="md:col-span-7 card bg-white rounded-lg shadow-md overflow-hidden mb-[25px]">
-          <div className="card-header bg-[#E75837] text-white p-4 font-semibold text-[1.2rem] header-font">
-            Chat with Us
-          </div>
-          <div className="chat-container flex flex-col h-[500px]">
-            <div
-              className="chat-messages flex-1 overflow-y-auto p-5 bg-white border-b border-[#e0e0e0]"
-              ref={chatMessagesRef}
-            >
-              {messages.map((msg, index) => {
-                return msg.htmlMessage ? (
-                  <div
-                    key={index}
-                    className={`message mb-[15px] p-3 rounded-[18px] max-w-[80%] relative leading-[1.5] text-[0.95rem] ${
-                      msg.isUser
-                        ? "user-message bg-[#e75837] text-white ml-auto rounded-br-[4px] body-font"
-                        : "bot-message bg-[#f0f2f5] text-[var(--text)] mr-auto rounded-bl-[4px] ai-message body-font"
-                    }`}
-                    dangerouslySetInnerHTML={{ __html: msg.htmlMessage }}
-                  />
-                ) : (
-                  <div
-                    key={index}
-                    className={`message mb-[15px] p-3 rounded-[18px] max-w-[80%] relative leading-[1.5] text-[0.95rem] ${
-                      msg.isUser
-                        ? "user-message bg-[#e75837] text-white ml-auto rounded-br-[4px] body-font"
-                        : "bot-message bg-[#f0f2f5] text-[var(--text)] mr-auto rounded-bl-[4px] ai-message body-font"
-                    }`}
-                  >
-                    {msg.text}
-                  </div>
-                )
-              })}
+      {/* Right Column - Chat */}
+      <div className="md:col-span-7">
+        <div className="bg-[#E75837] text-white p-4 rounded-t-lg">
+          <h2 className="text-xl font-medium">What can Critter do for you?</h2>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-b-lg shadow-sm flex flex-col h-[500px]">
+          <div className="flex-1 overflow-y-auto p-5 border-b border-gray-200" ref={chatMessagesRef}>
+            <p className="text-gray-700 mb-4">
+              Let's get you started! First thing's first, share some details to the left so can match you to the right
+              businesses on Critter.
+            </p>
 
-              {/* Initial action bubbles */}
-              {showActionBubbles && (
-                <div className="action-bubbles flex flex-col gap-4 mt-4">
-                  {/* Booking options */}
-                  <div className="booking-options">
-                    <p className="text-sm text-gray-600 mb-2 body-font">Existing customer options:</p>
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        onClick={() => handleActionBubbleClick("new_booking")}
-                        className="action-bubble bg-[#e75837] hover:bg-[#d04e30] text-white px-4 py-2 rounded-full text-sm font-medium transition-colors body-font"
-                      >
-                        New Booking
-                      </button>
-                      <button
-                        onClick={() => handleActionBubbleClick("change_booking")}
-                        className="action-bubble bg-[#e75837] hover:bg-[#d04e30] text-white px-4 py-2 rounded-full text-sm font-medium transition-colors body-font"
-                      >
-                        Change Booking
-                      </button>
-                      <button
-                        onClick={() => handleActionBubbleClick("cancel_booking")}
-                        className="action-bubble bg-[#e75837] hover:bg-[#d04e30] text-white px-4 py-2 rounded-full text-sm font-medium transition-colors body-font"
-                      >
-                        Cancel Booking
-                      </button>
-                      <button
-                        onClick={() => handleActionBubbleClick("list_bookings")}
-                        className="action-bubble bg-[#e75837] hover:bg-[#d04e30] text-white px-4 py-2 rounded-full text-sm font-medium transition-colors body-font"
-                      >
-                        List Bookings
-                      </button>
-                      <button
-                        onClick={() => handleActionBubbleClick("list_outstanding")}
-                        className="action-bubble bg-[#e75837] hover:bg-[#d04e30] text-white px-4 py-2 rounded-full text-sm font-medium transition-colors body-font"
-                      >
-                        Outstanding Invoices
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Selection bubbles for professionals, services, pets, confirmation */}
-              {showSelectionBubbles && (
-                <div className="selection-bubbles flex flex-col gap-4 mt-4 mb-4">
-                  <div className="selection-options">
-                    <p className="text-sm text-gray-600 mb-2 body-font">
-                      {selectionType === "professional" && "Select a professional:"}
-                      {selectionType === "service" && "Select a service:"}
-                      {selectionType === "pet" && `Select ${allowMultipleSelection ? "pet(s)" : "a pet"}:`}
-                      {selectionType === "confirmation" && "Confirm your booking:"}
-                    </p>
-
-                    {/* Group options by category for services */}
-                    {selectionType === "service" && (
-                      <>
-                        {/* Main Services */}
-                        {selectionOptions.some((opt) => opt.category !== "Add-On") && (
-                          <div className="mb-4">
-                            <p className="text-xs text-gray-500 mb-1 body-font">Main Services (select one):</p>
-                            <div className="flex flex-wrap gap-2 mb-3">
-                              {selectionOptions
-                                .filter((opt) => opt.category !== "Add-On")
-                                .map((option, index) => (
-                                  <button
-                                    key={index}
-                                    onClick={() => handleSelectionBubbleClick(option)}
-                                    className={`selection-bubble px-4 py-2 rounded-full text-sm font-medium transition-colors body-font flex items-center ${
-                                      option.selected
-                                        ? "bg-[#d04e30] text-white"
-                                        : "bg-[#e75837] hover:bg-[#d04e30] text-white"
-                                    }`}
-                                  >
-                                    {option.selected && <Check className="w-4 h-4 mr-1" />}
-                                    {option.name}
-                                  </button>
-                                ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Add-Ons */}
-                        {selectionOptions.some((opt) => opt.category === "Add-On") && (
-                          <div className="mb-4">
-                            <p className="text-xs text-gray-500 mb-1 body-font">Add-Ons (select any):</p>
-                            <div className="flex flex-wrap gap-2 mb-3">
-                              {selectionOptions
-                                .filter((opt) => opt.category === "Add-On")
-                                .map((option, index) => (
-                                  <button
-                                    key={index}
-                                    onClick={() => handleSelectionBubbleClick(option)}
-                                    className={`selection-bubble px-4 py-2 rounded-full text-sm font-medium transition-colors body-font flex items-center ${
-                                      option.selected
-                                        ? "bg-[#745E25] text-white"
-                                        : "bg-[#94ABD6] hover:bg-[#7a8eb3] text-white"
-                                    }`}
-                                  >
-                                    {option.selected && <Check className="w-4 h-4 mr-1" />}
-                                    {option.name}
-                                  </button>
-                                ))}
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    )}
-
-                    {/* For non-service selections */}
-                    {selectionType !== "service" && (
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        {selectionOptions.map((option, index) => (
-                          <button
-                            key={index}
-                            onClick={() => handleSelectionBubbleClick(option)}
-                            className={`selection-bubble px-4 py-2 rounded-full text-sm font-medium transition-colors body-font flex items-center ${
-                              option.selected ? "bg-[#d04e30] text-white" : "bg-[#e75837] hover:bg-[#d04e30] text-white"
-                            }`}
-                          >
-                            {option.selected && <Check className="w-4 h-4 mr-1" />}
-                            {option.name}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Show details for the selected options */}
-                    {selectionOptions
-                      .filter((opt) => opt.selected)
-                      .map((option, index) => (
-                        <div key={index} className="selected-option-details mb-3 p-3 bg-[#f9f9f9] rounded-md">
-                          <div className="font-medium">{option.name}</div>
-                          {option.description && <div className="text-sm text-gray-600">{option.description}</div>}
-                          {option.details &&
-                            option.details.map((detail, i) => (
-                              <div key={i} className="text-sm text-gray-600">
-                                {detail}
-                              </div>
-                            ))}
-                        </div>
-                      ))}
-
-                    {/* Submit button for services (when main service is selected) or multiple selections */}
-                    {((selectionType === "service" && selectedMainService) ||
-                      (selectionType === "confirmation" && selectedOptions.length > 0) ||
-                      (selectionType === "pet" && selectedOptions.length > 0) ||
-                      (selectionType !== "service" &&
-                        selectionType !== "professional" &&
-                        selectedOptions.length > 0)) && (
-                      <button
-                        onClick={() => submitSelections()}
-                        className="bg-[#745E25] text-white border-none py-2 px-4 rounded-full cursor-pointer font-medium text-sm transition-colors duration-300 hover:bg-[#5d4b1e] focus:outline-none focus:shadow-[0_0_0_3px_rgba(116,94,37,0.3)] inline-flex items-center justify-center body-font"
-                      >
-                        Submit Selection
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Calendar widget for date/time selection */}
-              {showCalendar && (
-                <div className="calendar-widget mt-4 mb-4">
-                  <BookingCalendar onSubmit={handleCalendarSubmit} onCancel={() => setShowCalendar(false)} />
-                </div>
-              )}
-
-              {isTyping && (
-                <div className="typing-indicator p-3 bg-[#f0f2f5] rounded-[18px] mb-[15px] w-[70px] mr-auto rounded-bl-[4px]">
-                  <span className="h-2 w-2 float-left mx-[1px] bg-[#9E9EA1] block rounded-full opacity-40"></span>
-                  <span className="h-2 w-2 float-left mx-[1px] bg-[#9E9EA1] block rounded-full opacity-40"></span>
-                  <span className="h-2 w-2 float-left mx-[1px] bg-[#9E9EA1] block rounded-full opacity-40"></span>
-                </div>
-              )}
-            </div>
-            <div className="chat-input flex p-[15px] bg-white">
-              <div className="flex-1 mr-[10px] relative">
-                <textarea
-                  value={inputValue}
-                  onChange={(e) => {
-                    setInputValue(e.target.value)
-                    // Auto-resize the textarea
-                    e.target.style.height = "auto"
-                    e.target.style.height = `${Math.min(e.target.scrollHeight, 150)}px`
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault()
-                      sendMessage()
-                    }
-                  }}
-                  placeholder="Type your message here..."
-                  className="w-full p-3 border border-[#e0e0e0] rounded-[24px] text-base focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(231,88,55,0.2)] body-font resize-none min-h-[46px] max-h-[150px] overflow-y-auto"
-                  style={{ height: "46px" }}
+            {messages.slice(1).map((msg, index) => {
+              return msg.htmlMessage ? (
+                <div
+                  key={index}
+                  className={`message mb-4 p-3 rounded-lg max-w-[80%] relative ${
+                    msg.isUser
+                      ? "bg-[#E75837] text-white ml-auto rounded-br-sm"
+                      : "bg-gray-100 text-gray-800 mr-auto rounded-bl-sm"
+                  }`}
+                  dangerouslySetInnerHTML={{ __html: msg.htmlMessage }}
                 />
+              ) : (
+                <div
+                  key={index}
+                  className={`message mb-4 p-3 rounded-lg max-w-[80%] relative ${
+                    msg.isUser
+                      ? "bg-[#E75837] text-white ml-auto rounded-br-sm"
+                      : "bg-gray-100 text-gray-800 mr-auto rounded-bl-sm"
+                  }`}
+                >
+                  {msg.text}
+                </div>
+              )
+            })}
+
+            {/* Initial action bubbles */}
+            {showActionBubbles && (
+              <div className="mt-6">
+                <p className="text-sm text-gray-600 mb-2">
+                  Then, pick from the options below to get started on your request:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => handleActionBubbleClick("new_booking")}
+                    className="px-4 py-2 bg-[#E75837] hover:bg-[#d04e30] text-white rounded-full text-sm font-medium transition-colors"
+                  >
+                    Request a new booking
+                  </button>
+                  <button
+                    onClick={() => handleActionBubbleClick("change_booking")}
+                    className="px-4 py-2 bg-[#E75837] hover:bg-[#d04e30] text-white rounded-full text-sm font-medium transition-colors"
+                  >
+                    Make a change to an existing booking
+                  </button>
+                  <button
+                    onClick={() => handleActionBubbleClick("cancel_booking")}
+                    className="px-4 py-2 bg-[#E75837] hover:bg-[#d04e30] text-white rounded-full text-sm font-medium transition-colors"
+                  >
+                    Cancel an existing booking
+                  </button>
+                  <button
+                    onClick={() => handleActionBubbleClick("list_bookings")}
+                    className="px-4 py-2 bg-[#E75837] hover:bg-[#d04e30] text-white rounded-full text-sm font-medium transition-colors"
+                  >
+                    See upcoming bookings
+                  </button>
+                  <button
+                    onClick={() => handleActionBubbleClick("list_outstanding")}
+                    className="px-4 py-2 bg-[#E75837] hover:bg-[#d04e30] text-white rounded-full text-sm font-medium transition-colors"
+                  >
+                    Review open invoices
+                  </button>
+                </div>
               </div>
-              <button
-                onClick={() => sendMessage()}
-                className="bg-[#E75837] text-white border-none py-3 px-5 rounded-[24px] cursor-pointer font-medium text-base transition-colors duration-300 hover:bg-[#d04e30] focus:outline-none focus:shadow-[0_0_0_3px_rgba(231,88,55,0.3)] inline-flex items-center justify-center body-font self-start"
-              >
-                Send
-                <Send className="ml-2 h-4 w-4" />
-              </button>
-            </div>
+            )}
+
+            {/* Selection bubbles for professionals, services, pets, confirmation */}
+            {showSelectionBubbles && (
+              <div className="selection-bubbles flex flex-col gap-4 mt-4 mb-4">
+                <div className="selection-options">
+                  <p className="text-sm text-gray-600 mb-2">
+                    {selectionType === "professional" && "Select a professional:"}
+                    {selectionType === "service" && "Select a service:"}
+                    {selectionType === "pet" && `Select ${allowMultipleSelection ? "pet(s)" : "a pet"}:`}
+                    {selectionType === "confirmation" && "Confirm your booking:"}
+                  </p>
+
+                  {/* Group options by category for services */}
+                  {selectionType === "service" && (
+                    <>
+                      {/* Main Services */}
+                      {selectionOptions.some((opt) => opt.category !== "Add-On") && (
+                        <div className="mb-4">
+                          <p className="text-xs text-gray-500 mb-1">Main Services (select one):</p>
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {selectionOptions
+                              .filter((opt) => opt.category !== "Add-On")
+                              .map((option, index) => (
+                                <button
+                                  key={index}
+                                  onClick={() => handleSelectionBubbleClick(option)}
+                                  className={`selection-bubble px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center ${
+                                    option.selected
+                                      ? "bg-[#d04e30] text-white"
+                                      : "bg-[#e75837] hover:bg-[#d04e30] text-white"
+                                  }`}
+                                >
+                                  {option.selected && <Check className="w-4 h-4 mr-1" />}
+                                  {option.name}
+                                </button>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Add-Ons */}
+                      {selectionOptions.some((opt) => opt.category === "Add-On") && (
+                        <div className="mb-4">
+                          <p className="text-xs text-gray-500 mb-1">Add-Ons (select any):</p>
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {selectionOptions
+                              .filter((opt) => opt.category === "Add-On")
+                              .map((option, index) => (
+                                <button
+                                  key={index}
+                                  onClick={() => handleSelectionBubbleClick(option)}
+                                  className={`selection-bubble px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center ${
+                                    option.selected
+                                      ? "bg-[#745E25] text-white"
+                                      : "bg-[#94ABD6] hover:bg-[#7a8eb3] text-white"
+                                  }`}
+                                >
+                                  {option.selected && <Check className="w-4 h-4 mr-1" />}
+                                  {option.name}
+                                </button>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* For non-service selections */}
+                  {selectionType !== "service" && (
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {selectionOptions.map((option, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleSelectionBubbleClick(option)}
+                          className={`selection-bubble px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center ${
+                            option.selected ? "bg-[#d04e30] text-white" : "bg-[#e75837] hover:bg-[#d04e30] text-white"
+                          }`}
+                        >
+                          {option.selected && <Check className="w-4 h-4 mr-1" />}
+                          {option.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Show details for the selected options */}
+                  {selectionOptions
+                    .filter((opt) => opt.selected)
+                    .map((option, index) => (
+                      <div key={index} className="selected-option-details mb-3 p-3 bg-[#f9f9f9] rounded-md">
+                        <div className="font-medium">{option.name}</div>
+                        {option.description && <div className="text-sm text-gray-600">{option.description}</div>}
+                        {option.details &&
+                          option.details.map((detail, i) => (
+                            <div key={i} className="text-sm text-gray-600">
+                              {detail}
+                            </div>
+                          ))}
+                      </div>
+                    ))}
+
+                  {/* Submit button for services (when main service is selected) or multiple selections */}
+                  {((selectionType === "service" && selectedMainService) ||
+                    (selectionType === "confirmation" && selectedOptions.length > 0) ||
+                    (selectionType === "pet" && selectedOptions.length > 0) ||
+                    (selectionType !== "service" &&
+                      selectionType !== "professional" &&
+                      selectedOptions.length > 0)) && (
+                    <button
+                      onClick={() => submitSelections()}
+                      className="bg-[#745E25] text-white border-none py-2 px-4 rounded-full cursor-pointer font-medium text-sm transition-colors duration-300 hover:bg-[#5d4b1e] focus:outline-none focus:shadow-[0_0_0_3px_rgba(116,94,37,0.3)] inline-flex items-center justify-center"
+                    >
+                      Submit Selection
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Calendar widget for date/time selection */}
+            {showCalendar && (
+              <div className="calendar-widget mt-4 mb-4">
+                <BookingCalendar onSubmit={handleCalendarSubmit} onCancel={() => setShowCalendar(false)} />
+              </div>
+            )}
+
+            {isTyping && (
+              <div className="typing-indicator p-3 bg-gray-100 rounded-lg mb-4 w-16 mr-auto rounded-bl-sm">
+                <div className="flex space-x-1">
+                  <div className="h-2 w-2 bg-gray-400 rounded-full animate-bounce"></div>
+                  <div className="h-2 w-2 bg-gray-400 rounded-full animate-bounce delay-75"></div>
+                  <div className="h-2 w-2 bg-gray-400 rounded-full animate-bounce delay-150"></div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Chat input */}
+          <div className="p-4 border-t border-gray-200 flex">
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyPress}
+              placeholder="Type your message here..."
+              className="flex-1 p-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-[#E75837]"
+            />
+
+            <button
+              onClick={() => sendMessage()}
+              className="bg-[#E75837] text-white px-4 py-3 rounded-r-lg hover:bg-[#d04e30] transition-colors flex items-center"
+            >
+              <span className="mr-2">Send</span>
+              <Send className="h-4 w-4" />
+            </button>
           </div>
         </div>
       </div>
