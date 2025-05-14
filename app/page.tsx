@@ -6,8 +6,8 @@ import BookingPage from "../components/booking-page"
 export default function Page() {
   return (
     <div className="min-h-screen bg-[#FBF8F3]">
-      {/* Header with app links */}
-      <header className="w-full py-4 px-6 flex justify-between items-center relative">
+      {/* Header with app links - reduced height */}
+      <header className="w-full py-3 px-6 flex justify-between items-center relative border-b border-gray-200">
         <div className="flex space-x-4">
           <Link
             href="https://apps.apple.com/us/app/critter-pet-owners-pros/id1630023733"
@@ -28,9 +28,14 @@ export default function Page() {
           </Link>
         </div>
 
-        <div className="absolute left-1/2 transform -translate-x-1/2">
-          <Image src="/images/critter-logo.png" alt="Critter" width={180} height={60} className="h-12 w-auto" />
-        </div>
+        <Link
+          href="https://critter.pet"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="absolute left-1/2 transform -translate-x-1/2"
+        >
+          <Image src="/images/critter-logo.png" alt="Critter" width={120} height={40} className="h-8 w-auto" />
+        </Link>
 
         <Link
           href="https://critter.pet"
@@ -44,8 +49,8 @@ export default function Page() {
 
       {/* Main content */}
       <main>
-        <div className="max-w-5xl mx-auto px-4 py-8">
-          <h1 className="text-4xl title-font text-center mb-6">Book pet care with Critter</h1>
+        <div className="max-w-6xl mx-auto px-4 py-6">
+          <h1 className="text-4xl title-font text-center mb-4">Book pet care with Critter</h1>
 
           <p className="text-center text-gray-700 mb-8 max-w-3xl mx-auto body-font">
             Welcome to Critter's online booking portal, an extension of Critter's mobile app designed for fast and
@@ -53,6 +58,7 @@ export default function Page() {
             answer questions about upcoming care and invoices.
           </p>
 
+          {/* Booking page with equal columns */}
           <BookingPage />
         </div>
       </main>
