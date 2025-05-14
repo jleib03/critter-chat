@@ -513,6 +513,9 @@ export default function BookingPage() {
   }
 
   // Fix the layout to ensure side-by-side display with fixed height
+  // Ensure the chat container has a fixed height in the grid layout
+  // Update the grid layout in the return statement:
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
       {/* Left Column - User Info */}
