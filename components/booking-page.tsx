@@ -512,7 +512,7 @@ export default function BookingPage() {
     }
   }
 
-  // Fix the layout to ensure side-by-side display
+  // Fix the layout to ensure side-by-side display with fixed height
   return (
     <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
       {/* Left Column - User Info */}
