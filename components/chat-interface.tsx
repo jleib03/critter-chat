@@ -80,11 +80,7 @@ export default function ChatInterface({
       </div>
       <div className="bg-white rounded-b-lg shadow-sm flex flex-col flex-1">
         {/* Fixed height chat messages container with overflow */}
-        <div
-          className="flex-1 overflow-y-auto p-5 body-font"
-          style={{ height: "650px", maxHeight: "calc(100vh - 250px)", overflowY: "auto" }}
-          ref={chatMessagesRef}
-        >
+        <div className="flex-1 overflow-y-auto p-5 body-font chat-container" ref={chatMessagesRef}>
           <p className="text-gray-700 mb-4 body-font">
             Let's get you started! First thing's first, share some details to the left so can match you to the right
             businesses on Critter.
