@@ -66,6 +66,45 @@ body {
   padding: 0;
 }
 
+/* Fix for scrolling issues */
+html,
+body {
+  height: 100%;
+  overflow-x: hidden;
+}
+
+/* Ensure the app takes up the full height */
+#__next,
+main {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+/* Add smooth scrolling behavior */
+* {
+  scroll-behavior: smooth;
+}
+
 /* Add these new font class styles */
 .title-font {
   font-family: var(--font-title);
@@ -136,6 +175,19 @@ h6,
 
 .message {
   animation: fadeIn 0.3s ease;
+}
+
+/* Chat container styles */
+.chat-container {
+  height: 650px;
+  max-height: calc(100vh - 250px);
+  overflow-y: auto;
+}
+
+.user-info-container {
+  height: 650px;
+  max-height: calc(100vh - 250px);
+  overflow-y: auto;
 }
 
 @layer base {
