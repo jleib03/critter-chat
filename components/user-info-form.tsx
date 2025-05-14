@@ -1,6 +1,6 @@
 "use client"
 import { RefreshCw } from "lucide-react"
-import { useRef, forwardRef, useImperativeHandle } from "react"
+import { useRef, forwardRef, useImperativeHandle, useEffect } from "react"
 
 type UserInfoFormProps = {
   selectedAction: string
@@ -20,6 +20,13 @@ const UserInfoForm = forwardRef<UserInfoFormHandle, UserInfoFormProps>(({ select
   const lastNameRef = useRef<HTMLInputElement>(null)
   const emailRef = useRef<HTMLInputElement>(null)
   const actionSelectRef = useRef<HTMLInputElement>(null)
+
+  // Update the hidden input when selectedAction changes
+  useEffect(() => {
+    if (actionSelectRef.current) {
+      actionSelectRef.current.value = selectedAction
+    }
+  }, [selectedAction])
 
   // Expose the form values to the parent component
   useImperativeHandle(ref, () => ({
