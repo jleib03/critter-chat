@@ -1,6 +1,5 @@
 import type React from "react"
 import "./globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
 
 export const metadata = {
   title: "Critter Pet Services",
@@ -11,10 +10,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
-        <link
-          rel="stylesheet"
-          href="https://use.typekit.net/xxxxxxx.css" // Replace with your actual Typekit ID if you have one
-        />
         <style>
           {`
           @font-face {
@@ -35,11 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           `}
         </style>
       </head>
-      <body>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-          {children}
-        </ThemeProvider>
-      </body>
+      <body className="bg-[#FBF8F3]">{children}</body>
     </html>
   )
 }
