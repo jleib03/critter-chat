@@ -1,5 +1,5 @@
 "use client"
-import { useRef } from "react"
+import { useRef, useEffect } from "react"
 import type React from "react"
 
 import { Send } from "lucide-react"
@@ -60,6 +60,13 @@ export default function ChatInterface({
 }: ChatInterfaceProps) {
   const chatMessagesRef = useRef<HTMLDivElement>(null)
 
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (chatMessagesRef.current) {
+      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight
+    }
+  }, [messages, isTyping, showActionBubbles, showSelectionBubbles, showCalendar])
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       onSendMessage()
@@ -72,7 +79,12 @@ export default function ChatInterface({
         <h2 className="text-xl font-medium header-font">What can Critter do for you?</h2>
       </div>
       <div className="bg-white rounded-b-lg shadow-sm flex flex-col flex-1">
-        <div className="flex-1 overflow-y-auto p-5 border-b border-gray-200 body-font" ref={chatMessagesRef}>
+        {/* Fixed height chat messages container with overflow */}
+        <div
+          className="flex-1 overflow-y-auto p-5 body-font"
+          style={{ height: "650px", maxHeight: "calc(100vh - 250px)", overflowY: "auto" }}
+          ref={chatMessagesRef}
+        >
           <p className="text-gray-700 mb-4 body-font">
             Let's get you started! First thing's first, share some details to the left so can match you to the right
             businesses on Critter.
@@ -138,7 +150,7 @@ export default function ChatInterface({
         </div>
 
         {/* Chat input */}
-        <div className="p-4 flex">
+        <div className="p-4 border-t border-gray-200 flex">
           <input
             type="text"
             value={inputValue}
