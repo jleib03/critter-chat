@@ -517,7 +517,7 @@ export default function BookingPage() {
   // Update the grid layout in the return statement:
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 max-h-[calc(100vh-350px)]">
       {/* Left Column - User Info */}
       <div className="md:col-span-4 h-full flex flex-col">
         <UserInfoForm ref={userInfoFormRef} selectedAction={selectedAction} resetChat={resetChat} />
