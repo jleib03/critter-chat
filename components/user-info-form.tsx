@@ -1,17 +1,41 @@
 "use client"
 import { RefreshCw } from "lucide-react"
-import { useRef } from "react"
+import { useRef, forwardRef, useImperativeHandle, useEffect } from "react"
 
 type UserInfoFormProps = {
   selectedAction: string
   resetChat: () => void
 }
 
-export default function UserInfoForm({ selectedAction, resetChat }: UserInfoFormProps) {
+export type UserInfoFormHandle = {
+  getValues: () => {
+    firstName: string
+    lastName: string
+    email: string
+  }
+}
+
+const UserInfoForm = forwardRef<UserInfoFormHandle, UserInfoFormProps>(({ selectedAction, resetChat }, ref) => {
   const firstNameRef = useRef<HTMLInputElement>(null)
   const lastNameRef = useRef<HTMLInputElement>(null)
   const emailRef = useRef<HTMLInputElement>(null)
   const actionSelectRef = useRef<HTMLInputElement>(null)
+
+  // Update the hidden input when selectedAction changes
+  useEffect(() => {
+    if (actionSelectRef.current) {
+      actionSelectRef.current.value = selectedAction
+    }
+  }, [selectedAction])
+
+  // Expose the form values to the parent component
+  useImperativeHandle(ref, () => ({
+    getValues: () => ({
+      firstName: firstNameRef.current?.value.trim() || "",
+      lastName: lastNameRef.current?.value.trim() || "",
+      email: emailRef.current?.value.trim() || "",
+    }),
+  }))
 
   // Helper function to display action name
   const getActionDisplayName = (action: string): string => {
@@ -96,4 +120,8 @@ export default function UserInfoForm({ selectedAction, resetChat }: UserInfoForm
       </div>
     </div>
   )
-}
+})
+
+UserInfoForm.displayName = "UserInfoForm"
+
+export default UserInfoForm
