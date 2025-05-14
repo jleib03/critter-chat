@@ -1,6 +1,6 @@
 "use client"
 import { useState, useRef } from "react"
-import UserInfoForm from "./user-info-form"
+import UserInfoForm, { type UserInfoFormHandle } from "./user-info-form"
 import ChatInterface from "./chat-interface"
 import { formatMessage } from "../utils/message-formatter"
 import type { BookingInfo } from "./booking-calendar"
@@ -42,9 +42,7 @@ export default function BookingPage() {
   // Refs
   const USER_ID = useRef(`web_user_${Math.random().toString(36).substring(2, 10)}`)
   const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/93c29983-1098-4ff9-a3c5-eae58e04fbab"
-  const firstNameRef = useRef<HTMLInputElement>(null)
-  const lastNameRef = useRef<HTMLInputElement>(null)
-  const emailRef = useRef<HTMLInputElement>(null)
+  const userInfoFormRef = useRef<UserInfoFormHandle>(null)
   const actionSelectRef = useRef<HTMLInputElement>(null)
   const chatMessagesRef = useRef<HTMLDivElement>(null)
 
@@ -71,13 +69,12 @@ export default function BookingPage() {
     console.log("Chat reset by user")
   }
 
-  // Update the getUserInfo function to include the selected action
+  // Update the getUserInfo function to get values from the UserInfoForm component
   const getUserInfo = () => {
+    const formValues = userInfoFormRef.current?.getValues() || { firstName: "", lastName: "", email: "" }
     return {
-      firstName: firstNameRef.current?.value.trim() || "",
-      lastName: lastNameRef.current?.value.trim() || "",
-      email: emailRef.current?.value.trim() || "",
-      selectedAction: selectedAction || actionSelectRef.current?.value || "",
+      ...formValues,
+      selectedAction: selectedAction,
     }
   }
 
@@ -368,7 +365,10 @@ export default function BookingPage() {
     const displayHours = hours % 12 || 12
     const timeString = `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`
 
-    let messageText = `Date: ${date}, Time: ${timeString}, Timezone: ${bookingInfo.timezone}`
+    // Format the timezone for display (replace underscores with spaces)
+    const displayTimezone = bookingInfo.timezone.replace(/_/g, " ")
+
+    let messageText = `Date: ${date}, Time: ${timeString}, Timezone: ${displayTimezone}`
 
     if (bookingInfo.isRecurring && bookingInfo.recurringFrequency) {
       messageText += `, Recurring: ${bookingInfo.recurringFrequency}`
@@ -403,7 +403,10 @@ export default function BookingPage() {
     updateStatus("Thinking...", "#745E25")
 
     try {
+      // Get user info from the form
       const userInfo = getUserInfo()
+      console.log("Sending user info:", userInfo)
+
       const payload = {
         message: {
           text: message,
@@ -462,8 +465,8 @@ export default function BookingPage() {
         console.log(`Before bubble check - selectedAction: "${selectedAction}"`)
         console.log(`NO_BUBBLES_ACTIONS includes selectedAction: ${NO_BUBBLES_ACTIONS.includes(selectedAction)}`)
 
-        const currentAction = actionSelectRef.current?.value || selectedAction
-        console.log(`Current action from ref: "${currentAction}"`)
+        const currentAction = selectedAction
+        console.log(`Current action: "${currentAction}"`)
 
         if (NO_BUBBLES_ACTIONS.includes(currentAction)) {
           console.log(`Action ${currentAction} is in NO_BUBBLES_ACTIONS list, skipping all selection bubbles`)
@@ -520,7 +523,7 @@ export default function BookingPage() {
     <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
       {/* Left Column - User Info */}
       <div className="md:col-span-4 h-full flex flex-col">
-        <UserInfoForm selectedAction={selectedAction} resetChat={resetChat} />
+        <UserInfoForm ref={userInfoFormRef} selectedAction={selectedAction} resetChat={resetChat} />
       </div>
 
       {/* Right Column - Chat */}
