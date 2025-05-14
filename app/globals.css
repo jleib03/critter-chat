@@ -182,7 +182,9 @@ h6,
 .user-info-container {
   height: var(--chat-height);
   max-height: var(--chat-max-height);
+  min-height: var(--chat-height);
   overflow-y: auto;
+  flex: 0 0 auto; /* Prevent flex growth */
 }
 
 /* Ensure content doesn't get cut off at the bottom */
