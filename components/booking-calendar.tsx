@@ -12,7 +12,69 @@ export type BookingInfo = {
   endDate: Date | null
 }
 
-const timezones = ["America/Los_Angeles", "America/Denver", "America/Chicago", "America/New_York", "UTC"]
+// Timezone data with display names and actual timezone values
+const timezones = [
+  // North America
+  { display: "Pacific Time (Los Angeles)", value: "America/Los_Angeles" },
+  { display: "Mountain Time (Denver)", value: "America/Denver" },
+  { display: "Central Time (Chicago)", value: "America/Chicago" },
+  { display: "Eastern Time (New York)", value: "America/New_York" },
+
+  // Europe
+  { display: "London, UK (GMT/BST)", value: "Europe/London" },
+  { display: "Paris, France (CET/CEST)", value: "Europe/Paris" },
+  { display: "Berlin, Germany (CET/CEST)", value: "Europe/Berlin" },
+  { display: "Rome, Italy (CET/CEST)", value: "Europe/Rome" },
+  { display: "Madrid, Spain (CET/CEST)", value: "Europe/Madrid" },
+  { display: "Amsterdam, Netherlands (CET/CEST)", value: "Europe/Amsterdam" },
+  { display: "Zurich, Switzerland (CET/CEST)", value: "Europe/Zurich" },
+  { display: "Stockholm, Sweden (CET/CEST)", value: "Europe/Stockholm" },
+  { display: "Dublin, Ireland (GMT/IST)", value: "Europe/Dublin" },
+  { display: "Edinburgh, UK (GMT/BST)", value: "Europe/London" },
+  { display: "Manchester, UK (GMT/BST)", value: "Europe/London" },
+
+  // Africa
+  { display: "Johannesburg, South Africa (SAST)", value: "Africa/Johannesburg" },
+  { display: "Cape Town, South Africa (SAST)", value: "Africa/Johannesburg" },
+  { display: "Durban, South Africa (SAST)", value: "Africa/Johannesburg" },
+  { display: "Cairo, Egypt (EET/EEST)", value: "Africa/Cairo" },
+
+  // Asia
+  { display: "Dubai, UAE (GST)", value: "Asia/Dubai" },
+  { display: "Mumbai, India (IST)", value: "Asia/Kolkata" },
+  { display: "Singapore (SGT)", value: "Asia/Singapore" },
+  { display: "Tokyo, Japan (JST)", value: "Asia/Tokyo" },
+
+  // Australia
+  { display: "Sydney, Australia (AEST/AEDT)", value: "Australia/Sydney" },
+  { display: "Melbourne, Australia (AEST/AEDT)", value: "Australia/Melbourne" },
+  { display: "Brisbane, Australia (AEST)", value: "Australia/Brisbane" },
+  { display: "Perth, Australia (AWST)", value: "Australia/Perth" },
+  { display: "Adelaide, Australia (ACST/ACDT)", value: "Australia/Adelaide" },
+  { display: "Hobart, Australia (AEST/AEDT)", value: "Australia/Hobart" },
+  { display: "Darwin, Australia (ACST)", value: "Australia/Darwin" },
+
+  // New Zealand
+  { display: "Auckland, New Zealand (NZST/NZDT)", value: "Pacific/Auckland" },
+  { display: "Wellington, New Zealand (NZST/NZDT)", value: "Pacific/Auckland" },
+  { display: "Christchurch, New Zealand (NZST/NZDT)", value: "Pacific/Auckland" },
+
+  // UTC
+  { display: "UTC (Coordinated Universal Time)", value: "UTC" },
+]
+
+// Generate time options in 30-minute intervals
+const generateTimeOptions = () => {
+  const options = []
+  for (let hour = 0; hour < 24; hour++) {
+    const hourStr = hour.toString().padStart(2, "0")
+    options.push(`${hourStr}:00`)
+    options.push(`${hourStr}:30`)
+  }
+  return options
+}
+
+const timeOptions = generateTimeOptions()
 
 export default function BookingCalendar({
   onSubmit,
@@ -41,6 +103,12 @@ export default function BookingCalendar({
     onSubmit(bookingInfo)
   }
 
+  // Find the display name for the current timezone value
+  const getTimezoneDisplay = (value: string) => {
+    const tz = timezones.find((t) => t.value === value)
+    return tz ? tz.display : value.replace(/_/g, " ")
+  }
+
   return (
     <div className="booking-calendar">
       <h3 className="text-lg font-medium mb-4 header-font">Select Date and Time</h3>
@@ -62,13 +130,18 @@ export default function BookingCalendar({
         <label htmlFor="time" className="block text-sm font-medium text-gray-700 body-font">
           Time:
         </label>
-        <input
-          type="time"
+        <select
           id="time"
           className="mt-1 p-2 border border-gray-300 rounded-md w-full focus:ring-2 focus:ring-[#E75837] focus:outline-none body-font"
           value={time}
           onChange={(e) => setTime(e.target.value)}
-        />
+        >
+          {timeOptions.map((timeOption) => (
+            <option key={timeOption} value={timeOption}>
+              {timeOption}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="mb-4">
@@ -82,8 +155,8 @@ export default function BookingCalendar({
           onChange={(e) => setTimezone(e.target.value)}
         >
           {timezones.map((tz) => (
-            <option key={tz} value={tz}>
-              {tz}
+            <option key={tz.value} value={tz.value}>
+              {tz.display}
             </option>
           ))}
         </select>
