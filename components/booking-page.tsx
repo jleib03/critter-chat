@@ -9,6 +9,18 @@ import type { Message, SelectionOption, SelectionType, StructuredMessage } from 
 // Define actions that should never show selection bubbles
 const NO_BUBBLES_ACTIONS = ["list_bookings", "list_outstanding"]
 
+const timezones = [
+  { value: "America/Los_Angeles", display: "Pacific Time (US & Canada)" },
+  { value: "America/Denver", display: "Mountain Time (US & Canada)" },
+  { value: "America/Chicago", display: "Central Time (US & Canada)" },
+  { value: "America/New_York", display: "Eastern Time (US & Canada)" },
+  { value: "UTC", display: "UTC" },
+  { value: "Europe/London", display: "London" },
+  { value: "Europe/Berlin", display: "Berlin" },
+  { value: "Asia/Tokyo", display: "Tokyo" },
+  { value: "Australia/Sydney", display: "Sydney" },
+]
+
 export default function BookingPage() {
   // State for messages and UI
   const [statusColor, setStatusColor] = useState("#E75837")
@@ -359,8 +371,9 @@ export default function BookingPage() {
     const displayHours = hours % 12 || 12
     const timeString = `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`
 
-    // Format the timezone for display (replace underscores with spaces)
-    const displayTimezone = bookingInfo.timezone.replace(/_/g, " ")
+    // Get the display name for the timezone (with spaces instead of underscores)
+    const displayTimezone =
+      timezones.find((tz) => tz.value === bookingInfo.timezone)?.display || bookingInfo.timezone.replace(/_/g, " ")
 
     let messageText = `Date: ${date}, Time: ${timeString}, Timezone: ${displayTimezone}`
 
