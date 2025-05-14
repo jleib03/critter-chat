@@ -43,15 +43,11 @@ export default function BookingPage() {
   const USER_ID = useRef(`web_user_${Math.random().toString(36).substring(2, 10)}`)
   const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/93c29983-1098-4ff9-a3c5-eae58e04fbab"
   const userInfoFormRef = useRef<UserInfoFormHandle>(null)
-  const actionSelectRef = useRef<HTMLInputElement>(null)
   const chatMessagesRef = useRef<HTMLDivElement>(null)
 
   // Reset the chat to its initial state
   const resetChat = () => {
     setSelectedAction("")
-    if (actionSelectRef.current) {
-      actionSelectRef.current.value = ""
-    }
     setShowActionBubbles(true)
     setShowSelectionBubbles(false)
     setSelectionOptions([])
@@ -70,11 +66,11 @@ export default function BookingPage() {
   }
 
   // Update the getUserInfo function to get values from the UserInfoForm component
-  const getUserInfo = () => {
+  const getUserInfo = (actionOverride?: string) => {
     const formValues = userInfoFormRef.current?.getValues() || { firstName: "", lastName: "", email: "" }
     return {
       ...formValues,
-      selectedAction: selectedAction,
+      selectedAction: actionOverride || selectedAction,
     }
   }
 
@@ -94,15 +90,13 @@ export default function BookingPage() {
 
     const messageText = actionMessages[action]
     console.log(`Setting selectedAction to: "${action}"`)
+
+    // Update the state
     setSelectedAction(action)
-
-    if (actionSelectRef.current) {
-      actionSelectRef.current.value = action
-      console.log(`Updated actionSelectRef.current.value to: "${action}"`)
-    }
-
     setShowActionBubbles(false)
-    sendMessage(messageText)
+
+    // Send the message with the action explicitly passed
+    sendMessage(messageText, action)
   }
 
   // Function to handle selection bubble clicks
@@ -385,7 +379,7 @@ export default function BookingPage() {
     sendMessage(messageText)
   }
 
-  const sendMessage = async (messageText?: string) => {
+  const sendMessage = async (messageText?: string, actionOverride?: string) => {
     const message = messageText || inputValue.trim()
     if (!message) return
 
@@ -403,8 +397,8 @@ export default function BookingPage() {
     updateStatus("Thinking...", "#745E25")
 
     try {
-      // Get user info from the form
-      const userInfo = getUserInfo()
+      // Get user info from the form, with optional action override
+      const userInfo = getUserInfo(actionOverride)
       console.log("Sending user info:", userInfo)
 
       const payload = {
@@ -423,7 +417,7 @@ export default function BookingPage() {
         payload.message.conversationId = conversationId
       }
 
-      console.log("Sending message to webhook", payload)
+      console.log("Sending message to webhook with payload:", payload)
       updateStatus("Connecting...", "#94ABD6")
 
       const response = await fetch(WEBHOOK_URL, {
@@ -465,7 +459,7 @@ export default function BookingPage() {
         console.log(`Before bubble check - selectedAction: "${selectedAction}"`)
         console.log(`NO_BUBBLES_ACTIONS includes selectedAction: ${NO_BUBBLES_ACTIONS.includes(selectedAction)}`)
 
-        const currentAction = selectedAction
+        const currentAction = actionOverride || selectedAction
         console.log(`Current action: "${currentAction}"`)
 
         if (NO_BUBBLES_ACTIONS.includes(currentAction)) {
