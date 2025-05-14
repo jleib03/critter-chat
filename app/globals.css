@@ -55,9 +55,9 @@
   --font-header: "Suisse-Intl-Book", sans-serif;
   --font-body: "Suisse-Intl-Light", sans-serif;
 
-  /* Chat container sizing variables */
-  --chat-height: 650px;
-  --chat-max-height: calc(100vh - 250px);
+  /* Chat container sizing variables - reduce height */
+  --chat-height: 500px;
+  --chat-max-height: calc(100vh - 350px);
 }
 
 /* Fix for scrolling issues */
