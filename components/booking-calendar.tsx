@@ -63,13 +63,25 @@ const timezones = [
   { display: "UTC (Coordinated Universal Time)", value: "UTC" },
 ]
 
-// Generate time options in 30-minute intervals
+// Generate time options in 30-minute intervals with AM/PM format
 const generateTimeOptions = () => {
   const options = []
   for (let hour = 0; hour < 24; hour++) {
+    const period = hour < 12 ? "AM" : "PM"
+    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour
     const hourStr = hour.toString().padStart(2, "0")
-    options.push(`${hourStr}:00`)
-    options.push(`${hourStr}:30`)
+
+    // Add the option for the hour (e.g., "9:00 AM")
+    options.push({
+      value: `${hourStr}:00`,
+      display: `${displayHour}:00 ${period}`,
+    })
+
+    // Add the option for the half hour (e.g., "9:30 AM")
+    options.push({
+      value: `${hourStr}:30`,
+      display: `${displayHour}:30 ${period}`,
+    })
   }
   return options
 }
@@ -137,8 +149,8 @@ export default function BookingCalendar({
           onChange={(e) => setTime(e.target.value)}
         >
           {timeOptions.map((timeOption) => (
-            <option key={timeOption} value={timeOption}>
-              {timeOption}
+            <option key={timeOption.value} value={timeOption.value}>
+              {timeOption.display}
             </option>
           ))}
         </select>
