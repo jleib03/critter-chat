@@ -63,20 +63,48 @@ function enhancedMarkdownToHtml(text: string): string {
   // Convert bold markdown (**text**) to HTML <strong> tags
   let html = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
 
+  // Convert list-like items to bullet points
+  html = convertListsToBullets(html)
+
   // Add spacing after questions
   html = html.replace(/(\?)\s*(\n|$)/g, "$1<br><br>$2")
 
   // Add spacing around selection prompts
   html = html.replace(/(please\s+(?:let\s+me\s+know|select|choose|pick)\s+(?:which|what).*?\.)/gi, "<br>$1<br>")
 
-  // Add spacing before lists
-  html = html.replace(/(\n)([A-Za-z0-9].*?)(\n- |\n\* |\n[0-9]+\. )/g, "$1$2<br>$3")
-
-  // Add spacing after lists
-  html = html.replace(/(\n- .*?\n|\n\* .*?\n|\n[0-9]+\. .*?\n)(?=[A-Za-z])/g, "$1<br>")
-
   // Convert newlines to <br> tags
   html = html.replace(/\n/g, "<br>")
+
+  return html
+}
+
+// Function to convert list-like items to bullet points
+function convertListsToBullets(html: string): string {
+  // First, handle explicit lists (lines starting with - or *)
+  html = html.replace(/\n([-*]) (.*?)(?=\n|$)/g, '\n<ul class="bullet-list"><li class="body-font">$2</li></ul>')
+
+  // Combine adjacent list items
+  html = html.replace(/<\/ul>\n<ul class="bullet-list">/g, "")
+
+  // Handle numbered lists (lines starting with 1., 2., etc.)
+  html = html.replace(/\n(\d+)\. (.*?)(?=\n|$)/g, '\n<ol class="numbered-list"><li class="body-font">$2</li></ol>')
+
+  // Combine adjacent numbered list items
+  html = html.replace(/<\/ol>\n<ol class="numbered-list">/g, "")
+
+  // Convert list-like patterns (e.g., "Name: value" on separate lines)
+  const listPatterns = [
+    {
+      pattern: /\n([A-Za-z0-9 ]+):\s*(.*?)(?=\n|$)/g,
+      replacement: '\n<ul class="bullet-list"><li class="body-font"><strong>$1:</strong> $2</li></ul>',
+    },
+  ]
+
+  listPatterns.forEach(({ pattern, replacement }) => {
+    html = html.replace(pattern, replacement)
+    // Combine adjacent items
+    html = html.replace(/<\/ul>\n<ul class="bullet-list">/g, "")
+  })
 
   return html
 }
@@ -120,27 +148,32 @@ function formatStructuredContent(message: string, cleanText: string): { text: st
   }
 }
 
-// Function to format professional listings with better spacing
+// Update the formatProfessionalListings function to ensure proper font weight hierarchy
+
 function formatProfessionalListings(html: string): string {
   // Match patterns like "Name\nEmail: email@example.com\nDescription"
   const professionalPattern =
     /([A-Za-z0-9][A-Za-z0-9\s']+)\n(Email:.*?)\n(.*?)(?=\n[A-Za-z0-9][A-Za-z0-9\s']+\nEmail:|\n(?:Please|Which|Select|Choose)|$)/gs
 
   return html.replace(professionalPattern, (match, name, email, description) => {
+    const emailValue = email.replace(/Email:\s*/, "").trim()
     return `<div class="professional-listing mb-4">
-      <div class="font-medium">${name}</div>
-      <div class="text-sm text-gray-600">${email}</div>
-      <div class="text-sm text-gray-600">${description}</div>
+      <div class="font-medium header-font">${name}</div>
+      <ul class="bullet-list ml-4 mt-2">
+        <li class="body-font"><strong class="header-font">Email:</strong> ${emailValue}</li>
+        <li class="body-font">${description}</li>
+      </ul>
     </div>`
   })
 }
 
-// Function to format service listings with better spacing
+// Update the formatServiceListings function to ensure proper font weight hierarchy
+
 function formatServiceListings(html: string): string {
   // First, identify service categories
   html = html.replace(
     /(Main Service|Add-On Service|Add-Ons)(\n)/g,
-    '<div class="service-category font-medium mt-4 mb-2">$1</div>$2',
+    '<div class="service-category font-medium mt-4 mb-2 header-font">$1</div>$2',
   )
 
   // Then format individual services
@@ -148,25 +181,37 @@ function formatServiceListings(html: string): string {
     /([A-Za-z0-9][A-Za-z0-9\s'-]+)\n(Duration:.*?)\n(Price:.*?)(?:\n(.*?))?(?=\n[A-Za-z0-9][A-Za-z0-9\s'-]+\nDuration:|\n(?:Which|Please|Select|Choose)|$)/gs
 
   return html.replace(servicePattern, (match, name, duration, price, description = "") => {
+    const durationValue = duration.replace(/Duration:\s*/, "").trim()
+    const priceValue = price.replace(/Price:\s*/, "").trim()
+
     return `<div class="service-listing mb-4">
-      <div class="font-medium">${name}</div>
-      <div class="text-sm text-gray-600">${duration}</div>
-      <div class="text-sm text-gray-600">${price}</div>
-      ${description ? `<div class="text-sm text-gray-600">${description}</div>` : ""}
+      <div class="font-medium header-font">${name}</div>
+      <ul class="bullet-list ml-4 mt-2">
+        <li class="body-font"><strong class="header-font">Duration:</strong> ${durationValue}</li>
+        <li class="body-font"><strong class="header-font">Price:</strong> ${priceValue}</li>
+        ${description ? `<li class="body-font">${description}</li>` : ""}
+      </ul>
     </div>`
   })
 }
 
-// Function to enhance HTML messages with additional styling
+// Update the enhanceHtmlMessage function to handle font weights for different bullet levels
+
 function enhanceHtmlMessage(html: string): string {
   // Add any additional styling or modifications to the HTML here
 
   // Add classes to lists for better styling
-  html = html.replace(/<ol>/g, '<ol class="numbered-list">')
-  html = html.replace(/<ul>/g, '<ul class="bullet-list">')
+  html = html.replace(/<ol>/g, '<ol class="numbered-list ml-4">')
+  html = html.replace(/<ul>/g, '<ul class="bullet-list ml-4">')
+  html = html.replace(/<ul class="professionals-list">/g, '<ul class="professionals-list bullet-list ml-2">')
+  html = html.replace(/<ul class="services-list">/g, '<ul class="services-list bullet-list ml-2">')
+  html = html.replace(/<ul class="pets-list">/g, '<ul class="pets-list bullet-list ml-2">')
 
   // Add classes to list items for better styling
-  html = html.replace(/<li>/g, '<li class="list-item">')
+  html = html.replace(/<li>/g, '<li class="list-item body-font">')
+  html = html.replace(/<li class="professional-item">/g, '<li class="professional-item list-item body-font">')
+  html = html.replace(/<li class="service-item">/g, '<li class="service-item list-item body-font">')
+  html = html.replace(/<li class="pet-item">/g, '<li class="pet-item list-item body-font">')
 
   // Enhance strong elements
   html = html.replace(/<strong>/g, '<strong class="font-bold header-font">')
@@ -183,6 +228,13 @@ function enhanceHtmlMessage(html: string): string {
   // Add font styling to specific div elements that contain text
   html = html.replace(/<div class="message-intro">/g, '<div class="message-intro body-font">')
   html = html.replace(/<div class="message-footer">/g, '<div class="message-footer body-font">')
+  html = html.replace(/<div class="professional-email">/g, '<div class="professional-email body-font ml-2">')
+  html = html.replace(
+    /<div class="professional-description">/g,
+    '<div class="professional-description body-font ml-2">',
+  )
+  html = html.replace(/<div class="service-details">/g, '<div class="service-details body-font ml-2">')
+  html = html.replace(/<div class="service-description">/g, '<div class="service-description body-font ml-2">')
 
   // Preserve specific formatting for booking lists and invoice lists
   html = html.replace(/<div>📆 <strong>/g, '<div class="body-font">📆 <strong class="header-font">')
@@ -211,8 +263,8 @@ function formatSimpleBookingList(message: string, cleanText: string): { text: st
 
     // Extract all booking entries using regex
     const bookingRegex = /\d+\. \*\*(.*?)\*\*: (.*?)(?=\n|$)/g
-    const bookings: any[] = []
     let match
+    const bookings: any[] = []
 
     while ((match = bookingRegex.exec(message)) !== null) {
       const date = match[1] // e.g., "Thursday, April 3, 2025"
@@ -275,7 +327,7 @@ function formatDetailedBookingList(message: string, cleanText: string): { text: 
   try {
     // Extract the intro text (everything before the first numbered item)
     const introMatch = message.match(/(.*?)(?=\n\n1\.)/s)
-    const introText = introMatch ? introText[1].trim() : "Here are your existing bookings:"
+    const introText = introMatch ? introMatch[1].trim() : "Here are your existing bookings:"
 
     // Extract the footer text (everything after the last booking)
     const footerMatch = message.match(/\n\n(Is there anything else.*?)$/s)
@@ -384,13 +436,13 @@ function formatBookingOutput(introText: string, bookings: any[], footerText: str
   htmlOutput += `<div class="body-font">📆 <strong class="header-font">Your next ${Math.min(detailedBookingsCount, totalBookings)} bookings:</strong></div><br>`
 
   // Create a list for the bookings
-  htmlOutput += '<ol class="bookings-list numbered-list" style="margin-left: 20px; margin-top: 10px;">'
+  htmlOutput += '<ul class="bookings-list bullet-list ml-4 mt-3">'
   for (let i = 0; i < Math.min(detailedBookingsCount, bookings.length); i++) {
     const booking = bookings[i]
 
     if (booking.startTime && booking.endTime) {
       // Detailed format with start and end times
-      htmlOutput += `<li class="booking-item body-font"><strong class="header-font">${booking.date}</strong><ul class="booking-details bullet-list" style="margin-top: 5px;">`
+      htmlOutput += `<li class="booking-item body-font"><strong class="header-font">${booking.date}</strong><ul class="booking-details bullet-list ml-4 mt-2">`
       htmlOutput += `<li class="body-font"><strong class="header-font">Start Time:</strong> ${booking.startTime}</li>`
       htmlOutput += `<li class="body-font"><strong class="header-font">End Time:</strong> ${booking.endTime}</li>`
       htmlOutput += `</ul></li>`
@@ -399,7 +451,7 @@ function formatBookingOutput(introText: string, bookings: any[], footerText: str
       htmlOutput += `<li class="booking-item body-font"><strong class="header-font">${booking.date}</strong>: ${booking.time}</li>`
     }
   }
-  htmlOutput += "</ol><br>"
+  htmlOutput += "</ul><br>"
 
   // If there are more bookings, show month summaries
   if (bookings.length > detailedBookingsCount) {
@@ -419,7 +471,7 @@ function formatBookingOutput(introText: string, bookings: any[], footerText: str
     htmlOutput += `<div class="body-font">📅 <strong class="header-font">Additional bookings by month:</strong></div><br>`
 
     // Add month sections as a list
-    htmlOutput += '<ul class="month-summary bullet-list" style="margin-left: 20px; margin-top: 10px;">'
+    htmlOutput += '<ul class="month-summary bullet-list ml-4 mt-3">'
     Object.keys(bookingsByMonth).forEach((monthYear) => {
       const monthBookings = bookingsByMonth[monthYear]
       htmlOutput += `<li class="body-font">${monthYear}: ${monthBookings.length} bookings</li>`
@@ -458,7 +510,7 @@ function formatInvoiceList(message: string, cleanText: string): { text: string; 
   try {
     // Extract the intro text (everything before the first numbered item)
     const introMatch = message.match(/(.*?)(?=\n\n1\. \*\*)/s)
-    const introText = introMatch ? introMatch[1].trim() : "Here are your outstanding invoices:"
+    const introText = introMatch ? introText[1].trim() : "Here are your outstanding invoices:"
 
     // Extract the footer text (everything after the last invoice item)
     const footerMatch = message.match(/\n\n(Is there anything else.*?)$/s)
@@ -468,7 +520,7 @@ function formatInvoiceList(message: string, cleanText: string): { text: string; 
     let htmlOutput = `<div class="body-font">${markdownToHtml(introText)}</div><br>`
 
     // Create a list for the invoices
-    htmlOutput += '<ol class="invoices-list numbered-list" style="margin-left: 20px; margin-top: 10px;">'
+    htmlOutput += '<ul class="invoices-list bullet-list ml-4 mt-3">'
 
     // Extract all invoice entries using regex - updated for pipe-delimited format
     // Format: "1. **Invoice Number:** 240830-0002 | **Status:** Overdue | **Due Date:** August 31, 2024"
@@ -483,14 +535,14 @@ function formatInvoiceList(message: string, cleanText: string): { text: string; 
       const dueDate = match[4] // e.g., "August 31, 2024"
 
       // Add the invoice to the HTML output
-      htmlOutput += `<li class="invoice-item body-font"><strong class="header-font">Invoice Number:</strong> ${invoiceNumber}<ul class="invoice-details bullet-list" style="margin-top: 5px;">`
+      htmlOutput += `<li class="invoice-item body-font"><strong class="header-font">Invoice Number:</strong> ${invoiceNumber}<ul class="invoice-details bullet-list ml-4 mt-2">`
       htmlOutput += `<li class="body-font"><strong class="header-font">Status:</strong> ${status}</li>`
       htmlOutput += `<li class="body-font"><strong class="header-font">Due Date:</strong> ${dueDate}</li>`
       htmlOutput += `</ul></li>`
     }
 
     // Close the main list
-    htmlOutput += "</ol>"
+    htmlOutput += "</ul>"
 
     // Add footer if present
     if (footerText) {
