@@ -291,14 +291,15 @@ export default function BookingCalendar({
         </div>
       )}
 
-      <div className="flex justify-end">
+      <div className="flex justify-between items-center mt-6">
         <button
           type="button"
-          className="bg-gray-200 text-gray-700 border-none py-2 px-4 rounded-full cursor-pointer font-medium text-sm transition-colors duration-300 hover:bg-gray-300 focus:outline-none focus:shadow-[0_0_0_3px_rgba(156,163,175,0.3)] mr-2 body-font"
+          className="text-gray-500 hover:text-gray-700 text-sm underline focus:outline-none body-font"
           onClick={onCancel}
         >
-          Cancel
+          I don't need a calendar
         </button>
+
         <button
           type="button"
           className="bg-[#745E25] text-white border-none py-2 px-4 rounded-full cursor-pointer font-medium text-sm transition-colors duration-300 hover:bg-[#5d4b1e] focus:outline-none focus:shadow-[0_0_0_3px_rgba(116,94,37,0.3)] body-font"
