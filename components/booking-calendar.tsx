@@ -1,5 +1,6 @@
 "use client"
 import { useState } from "react"
+import type React from "react"
 
 export type BookingInfo = {
   date: Date
@@ -101,6 +102,45 @@ export default function BookingCalendar({
   const [isMultiDay, setIsMultiDay] = useState<boolean>(false)
   const [endDate, setEndDate] = useState<Date | null>(null)
 
+  // Handle date input change to ensure we get the correct date
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Create a date object from the input value (which is in YYYY-MM-DD format)
+    // This ensures we get the date as selected without timezone issues
+    const inputDate = e.target.value // Format: YYYY-MM-DD
+    const [year, month, day] = inputDate.split("-").map(Number)
+
+    // Create a new date using local components to avoid timezone issues
+    // Month is 0-indexed in JavaScript Date, so subtract 1
+    const newDate = new Date(year, month - 1, day)
+    setDate(newDate)
+  }
+
+  // Handle recurring end date change
+  const handleRecurringEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.value) {
+      setRecurringEndDate(null)
+      return
+    }
+
+    const inputDate = e.target.value
+    const [year, month, day] = inputDate.split("-").map(Number)
+    const newDate = new Date(year, month - 1, day)
+    setRecurringEndDate(newDate)
+  }
+
+  // Handle multi-day end date change
+  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.value) {
+      setEndDate(null)
+      return
+    }
+
+    const inputDate = e.target.value
+    const [year, month, day] = inputDate.split("-").map(Number)
+    const newDate = new Date(year, month - 1, day)
+    setEndDate(newDate)
+  }
+
   const handleSubmit = () => {
     const bookingInfo: BookingInfo = {
       date,
@@ -115,10 +155,15 @@ export default function BookingCalendar({
     onSubmit(bookingInfo)
   }
 
-  // Find the display name for the current timezone value
-  const getTimezoneDisplay = (value: string) => {
-    const tz = timezones.find((t) => t.value === value)
-    return tz ? tz.display : value.replace(/_/g, " ")
+  // Format date to YYYY-MM-DD for input value
+  const formatDateForInput = (date: Date | null): string => {
+    if (!date) return ""
+
+    const year = date.getFullYear()
+    const month = (date.getMonth() + 1).toString().padStart(2, "0")
+    const day = date.getDate().toString().padStart(2, "0")
+
+    return `${year}-${month}-${day}`
   }
 
   return (
@@ -133,8 +178,8 @@ export default function BookingCalendar({
           type="date"
           id="date"
           className="mt-1 p-2 border border-gray-300 rounded-md w-full focus:ring-2 focus:ring-[#E75837] focus:outline-none body-font"
-          value={date.toISOString().split("T")[0]}
-          onChange={(e) => setDate(new Date(e.target.value))}
+          value={formatDateForInput(date)}
+          onChange={handleDateChange}
         />
       </div>
 
@@ -212,8 +257,8 @@ export default function BookingCalendar({
               type="date"
               id="recurringEndDate"
               className="mt-1 p-2 border border-gray-300 rounded-md w-full focus:ring-2 focus:ring-[#E75837] focus:outline-none body-font"
-              value={recurringEndDate ? recurringEndDate.toISOString().split("T")[0] : ""}
-              onChange={(e) => setRecurringEndDate(new Date(e.target.value))}
+              value={formatDateForInput(recurringEndDate)}
+              onChange={handleRecurringEndDateChange}
             />
           </div>
         </>
@@ -240,8 +285,8 @@ export default function BookingCalendar({
             type="date"
             id="endDate"
             className="mt-1 p-2 border border-gray-300 rounded-md w-full focus:ring-2 focus:ring-[#E75837] focus:outline-none body-font"
-            value={endDate ? endDate.toISOString().split("T")[0] : ""}
-            onChange={(e) => setEndDate(new Date(e.target.value))}
+            value={formatDateForInput(endDate)}
+            onChange={handleEndDateChange}
           />
         </div>
       )}
