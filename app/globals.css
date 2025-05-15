@@ -138,6 +138,24 @@ h6,
   font-family: var(--font-title);
 }
 
+/* Custom styling for professional and service listings */
+.professional-listing,
+.service-listing {
+  margin-bottom: 1rem;
+  padding: 0.5rem 0;
+}
+
+.professional-listing:not(:last-child),
+.service-listing:not(:last-child) {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.service-category {
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
 /* Custom scrollbar styling */
 ::-webkit-scrollbar {
   width: 8px;
