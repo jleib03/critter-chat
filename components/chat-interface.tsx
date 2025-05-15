@@ -87,10 +87,22 @@ export default function ChatInterface({
           </p>
 
           {messages.slice(1).map((msg, index) => {
+            // Add extra spacing for non-user messages that might contain options
+            const messageContent = msg.htmlMessage || msg.text
+            const hasOptions =
+              !msg.isUser &&
+              (messageContent.includes("select") ||
+                messageContent.includes("option") ||
+                messageContent.includes("choose") ||
+                messageContent.includes("?"))
+
+            // Add extra margin for messages that likely contain options
+            const extraSpacing = hasOptions ? "mb-6" : "mb-4"
+
             return msg.htmlMessage ? (
               <div
                 key={index}
-                className={`message mb-4 p-3 rounded-lg max-w-[80%] relative ${
+                className={`message ${extraSpacing} p-3 rounded-lg max-w-[80%] relative ${
                   msg.isUser
                     ? "bg-[#E75837] text-white ml-auto rounded-br-sm"
                     : "bg-gray-100 text-gray-800 mr-auto rounded-bl-sm"
@@ -100,7 +112,7 @@ export default function ChatInterface({
             ) : (
               <div
                 key={index}
-                className={`message mb-4 p-3 rounded-lg max-w-[80%] relative ${
+                className={`message ${extraSpacing} p-3 rounded-lg max-w-[80%] relative ${
                   msg.isUser
                     ? "bg-[#E75837] text-white ml-auto rounded-br-sm"
                     : "bg-gray-100 text-gray-800 mr-auto rounded-bl-sm"
