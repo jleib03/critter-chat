@@ -6,8 +6,8 @@ type ActionBubblesProps = {
 
 export default function ActionBubbles({ onActionSelect }: ActionBubblesProps) {
   return (
-    <div className="mt-6">
-      <p className="text-sm text-gray-600 mb-2 body-font">
+    <div className="mt-8 mb-4">
+      <p className="text-sm text-gray-600 mb-4 body-font">
         Then, pick from the options below to get started on your request:
       </p>
       <div className="flex flex-wrap gap-2">
