@@ -242,9 +242,23 @@ export default function BookingPage() {
         return { type: null, options: [], allowMultiple: false }
       }
 
+      // Add this new condition to handle text_with_list format for pets
+      if (
+        structuredData.type === "text_with_list" &&
+        structuredData.intro &&
+        structuredData.intro.toLowerCase().includes("which pet") &&
+        Array.isArray(structuredData.items)
+      ) {
+        console.log("Detected pet list in text_with_list format")
+        const options: SelectionOption[] = structuredData.items.map((item: any) => ({
+          name: item.title,
+          description: item.content,
+          selected: false,
+        }))
+        return { type: "pet", options, allowMultiple: true }
+      }
+
       // Handle different structured data types
-      // This is a simplified version - the full implementation would include all the logic
-      // from the original component
       if (structuredData.type === "service_list" && Array.isArray(structuredData.items)) {
         const options: SelectionOption[] = structuredData.items.map((item: any) => {
           let category = item.category || "Main Service"
@@ -292,8 +306,61 @@ export default function BookingPage() {
       }
     }
 
+    // Add text-based detection for pet selection
+    if (
+      message.toLowerCase().includes("which pet") ||
+      message.toLowerCase().includes("confirm which pet") ||
+      message.toLowerCase().includes("pet's name or names")
+    ) {
+      console.log("Detected pet selection request in text")
+
+      // Try to extract pet names and types from the message
+      const petOptions: SelectionOption[] = []
+
+      // Look for patterns like "Name: Type" or "Name (Type)"
+      const petPattern1 = /\*\*([^*]+)\*\*:\s*([^,\n]+)/g
+      const petPattern2 = /\b([A-Z][a-z]+)\s*:\s*([A-Z][a-z]+)/g
+      const petPattern3 = /\b([A-Z][a-z]+)\s*$$([A-Z][a-z]+)$$/g
+
+      let match
+
+      // Try the first pattern (with bold formatting)
+      while ((match = petPattern1.exec(message)) !== null) {
+        petOptions.push({
+          name: match[1].trim(),
+          description: match[2].trim(),
+          selected: false,
+        })
+      }
+
+      // If no matches, try the second pattern
+      if (petOptions.length === 0) {
+        while ((match = petPattern2.exec(message)) !== null) {
+          petOptions.push({
+            name: match[1].trim(),
+            description: match[2].trim(),
+            selected: false,
+          })
+        }
+      }
+
+      // If still no matches, try the third pattern
+      if (petOptions.length === 0) {
+        while ((match = petPattern3.exec(message)) !== null) {
+          petOptions.push({
+            name: match[1].trim(),
+            description: match[2].trim(),
+            selected: false,
+          })
+        }
+      }
+
+      if (petOptions.length > 0) {
+        return { type: "pet", options: petOptions, allowMultiple: true }
+      }
+    }
+
     // For simplicity, we're returning a default value
-    // The full implementation would include all the text-based detection logic
     console.log("No selection options detected")
     return { type: null, options: [], allowMultiple: false }
   }
