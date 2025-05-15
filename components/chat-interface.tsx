@@ -81,16 +81,34 @@ export default function ChatInterface({
       <div className="bg-white rounded-b-lg shadow-sm flex flex-col flex-1">
         {/* Fixed height chat messages container with overflow */}
         <div className="overflow-y-auto p-5 body-font chat-container flex-none" ref={chatMessagesRef}>
-          <p className="text-gray-700 mb-4 body-font">
+          <p className="text-gray-700 mb-6 body-font">
             Let's get you started! First thing's first, share some details to the left so can match you to the right
             businesses on Critter.
           </p>
 
           {messages.slice(1).map((msg, index) => {
+            // Add extra spacing for non-user messages that might contain options
+            const messageContent = msg.htmlMessage || msg.text
+            const hasOptions =
+              !msg.isUser &&
+              (messageContent.includes("select") ||
+                messageContent.includes("option") ||
+                messageContent.includes("choose") ||
+                messageContent.includes("?") ||
+                messageContent.includes("Email:") ||
+                messageContent.includes("Duration:") ||
+                messageContent.includes("Price:"))
+
+            // Add extra margin for messages that likely contain options
+            const extraSpacing = hasOptions ? "mb-8" : "mb-5"
+
+            // Add extra padding for messages with structured content
+            const extraPadding = hasOptions ? "p-4" : "p-3"
+
             return msg.htmlMessage ? (
               <div
                 key={index}
-                className={`message mb-4 p-3 rounded-lg max-w-[80%] relative ${
+                className={`message ${extraSpacing} ${extraPadding} rounded-lg max-w-[85%] relative ${
                   msg.isUser
                     ? "bg-[#E75837] text-white ml-auto rounded-br-sm"
                     : "bg-gray-100 text-gray-800 mr-auto rounded-bl-sm"
@@ -100,11 +118,11 @@ export default function ChatInterface({
             ) : (
               <div
                 key={index}
-                className={`message mb-4 p-3 rounded-lg max-w-[80%] relative ${
+                className={`message ${extraSpacing} ${extraPadding} rounded-lg max-w-[85%] relative ${
                   msg.isUser
                     ? "bg-[#E75837] text-white ml-auto rounded-br-sm"
                     : "bg-gray-100 text-gray-800 mr-auto rounded-bl-sm"
-                } body-font`}
+                } body-font whitespace-pre-line`}
               >
                 {msg.text}
               </div>
@@ -129,7 +147,7 @@ export default function ChatInterface({
 
           {/* Calendar widget for date/time selection */}
           {showCalendar && (
-            <div className="calendar-widget mt-4 mb-4">
+            <div className="calendar-widget mt-6 mb-6">
               <BookingCalendar onSubmit={onCalendarSubmit} onCancel={onCalendarCancel} />
             </div>
           )}
