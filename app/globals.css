@@ -140,20 +140,127 @@ h6,
 
 /* Custom styling for professional and service listings */
 .professional-listing,
-.service-listing {
-  margin-bottom: 1rem;
-  padding: 0.5rem 0;
+.service-listing,
+.professional-item,
+.service-item,
+.pet-item {
+  margin-bottom: 0.5rem;
+  padding: 0.25rem 0;
 }
 
 .professional-listing:not(:last-child),
-.service-listing:not(:last-child) {
+.service-listing:not(:last-child),
+.professional-item:not(:last-child),
+.service-item:not(:last-child),
+.pet-item:not(:last-child) {
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.service-category {
-  margin-top: 1.5rem;
-  margin-bottom: 0.5rem;
+.service-category,
+.professional-name,
+.service-name,
+.pet-name {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
   font-weight: 600;
+}
+
+/* Styling for message sections */
+.message-intro {
+  margin-bottom: 0.5rem;
+}
+
+.message-footer {
+  margin-top: 0.5rem;
+}
+
+/* Update the bullet list styling section to differentiate between primary and secondary bullets */
+
+/* Bullet list styling */
+.bullet-list {
+  list-style-type: disc;
+  padding-left: 0.5rem;
+  margin-left: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.bullet-list li {
+  margin-bottom: 0.25rem;
+  position: relative;
+  padding-left: 0.25rem;
+}
+
+.bullet-list li::before {
+  content: "•";
+  position: absolute;
+  left: -0.75rem;
+  color: inherit; /* Use the text color instead of primary color */
+}
+
+/* Make only primary bullets bold */
+.bullet-list > li {
+  font-weight: 500; /* Primary bullets are semi-bold */
+}
+
+/* Secondary bullets use normal font weight */
+.bullet-list > li > ul > li,
+.bullet-list > li > ol > li,
+.booking-details li,
+.invoice-details li {
+  font-weight: normal;
+}
+
+/* Special styling for professionals list */
+.professionals-list,
+.services-list,
+.pets-list {
+  list-style-type: none;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.professionals-list > li,
+.services-list > li,
+.pets-list > li {
+  position: relative;
+  padding-left: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-weight: 500; /* Primary bullets are semi-bold */
+}
+
+.professionals-list > li > ul > li,
+.services-list > li > ul > li,
+.pets-list > li > ul > li {
+  font-weight: normal; /* Secondary bullets use normal font weight */
+}
+
+.professionals-list li::before,
+.services-list li::before,
+.pets-list li::before {
+  content: "•";
+  position: absolute;
+  left: -0.5rem;
+  color: inherit; /* Use the text color instead of primary color */
+}
+
+.professional-email,
+.professional-description,
+.service-details,
+.service-description {
+  margin-top: 0.125rem;
+  margin-left: 0.5rem;
+}
+
+/* Numbered list styling */
+.numbered-list {
+  list-style-type: decimal;
+  padding-left: 0.5rem;
+  margin-left: 0.5rem;
+}
+
+.numbered-list li {
+  margin-bottom: 0.25rem;
+  padding-left: 0.25rem;
 }
 
 /* Custom scrollbar styling */
