@@ -195,13 +195,14 @@ function formatServiceListings(html: string): string {
   })
 }
 
-// Update the enhanceHtmlMessage function to handle font weights for different bullet levels
+// Update the enhanceHtmlMessage function to properly handle general-list class
 
 function enhanceHtmlMessage(html: string): string {
   // Add any additional styling or modifications to the HTML here
 
   // Add classes to lists for better styling
   html = html.replace(/<ol>/g, '<ol class="numbered-list ml-4">')
+  html = html.replace(/<ol class="general-list">/g, '<ol class="general-list bullet-list ml-4">')
   html = html.replace(/<ul>/g, '<ul class="bullet-list ml-4">')
   html = html.replace(/<ul class="professionals-list">/g, '<ul class="professionals-list bullet-list ml-2">')
   html = html.replace(/<ul class="services-list">/g, '<ul class="services-list bullet-list ml-2">')
@@ -209,6 +210,7 @@ function enhanceHtmlMessage(html: string): string {
 
   // Add classes to list items for better styling
   html = html.replace(/<li>/g, '<li class="list-item body-font">')
+  html = html.replace(/<li class="list-item">/g, '<li class="list-item body-font">')
   html = html.replace(/<li class="professional-item">/g, '<li class="professional-item list-item body-font">')
   html = html.replace(/<li class="service-item">/g, '<li class="service-item list-item body-font">')
   html = html.replace(/<li class="pet-item">/g, '<li class="pet-item list-item body-font">')
@@ -510,7 +512,7 @@ function formatInvoiceList(message: string, cleanText: string): { text: string; 
   try {
     // Extract the intro text (everything before the first numbered item)
     const introMatch = message.match(/(.*?)(?=\n\n1\. \*\*)/s)
-    const introText = introMatch ? introText[1].trim() : "Here are your outstanding invoices:"
+    const introText = introMatch ? introMatch[1].trim() : "Here are your outstanding invoices:"
 
     // Extract the footer text (everything after the last invoice item)
     const footerMatch = message.match(/\n\n(Is there anything else.*?)$/s)
