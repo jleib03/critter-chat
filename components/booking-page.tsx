@@ -350,7 +350,14 @@ export default function BookingPage() {
 
   // Function to handle calendar submission
   const handleCalendarSubmit = (bookingInfo: BookingInfo) => {
-    const date = bookingInfo.date.toLocaleDateString()
+    // Format the date correctly to avoid timezone issues
+    // Use the date parts directly to create a date string in local timezone
+    const dateObj = bookingInfo.date
+    const year = dateObj.getFullYear()
+    const month = dateObj.getMonth() + 1 // getMonth() is zero-based
+    const day = dateObj.getDate()
+    const formattedDate = `${month}/${day}/${year}`
+
     const time = bookingInfo.time
     const formattedTime = time.split(":").map(Number)
     const hours = formattedTime[0]
@@ -362,17 +369,29 @@ export default function BookingPage() {
     // Format the timezone for display (replace underscores with spaces)
     const displayTimezone = bookingInfo.timezone.replace(/_/g, " ")
 
-    let messageText = `Date: ${date}, Time: ${timeString}, Timezone: ${displayTimezone}`
+    let messageText = `Date: ${formattedDate}, Time: ${timeString}, Timezone: ${displayTimezone}`
 
     if (bookingInfo.isRecurring && bookingInfo.recurringFrequency) {
       messageText += `, Recurring: ${bookingInfo.recurringFrequency}`
       if (bookingInfo.recurringEndDate) {
-        messageText += `, Ends on: ${bookingInfo.recurringEndDate.toLocaleDateString()}`
+        // Format recurring end date the same way to avoid timezone issues
+        const endDateObj = bookingInfo.recurringEndDate
+        const endYear = endDateObj.getFullYear()
+        const endMonth = endDateObj.getMonth() + 1
+        const endDay = endDateObj.getDate()
+        const formattedEndDate = `${endMonth}/${endDay}/${endYear}`
+        messageText += `, Ends on: ${formattedEndDate}`
       }
     }
 
     if (bookingInfo.isMultiDay && bookingInfo.endDate) {
-      messageText += `, Multi-day booking ending on: ${bookingInfo.endDate.toLocaleDateString()}`
+      // Format multi-day end date the same way
+      const endDateObj = bookingInfo.endDate
+      const endYear = endDateObj.getFullYear()
+      const endMonth = endDateObj.getMonth() + 1
+      const endDay = endDateObj.getDate()
+      const formattedEndDate = `${endMonth}/${endDay}/${endYear}`
+      messageText += `, Multi-day booking ending on: ${formattedEndDate}`
     }
 
     setShowCalendar(false)
