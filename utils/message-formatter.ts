@@ -43,11 +43,118 @@ export function formatMessage(message: string, htmlMessage?: string): { text: st
     return formatInvoiceList(message, cleanText)
   }
 
-  // For other messages, just convert markdown to HTML
+  // Check if this is a professional or service listing
+  if (
+    (message.includes("professionals you work with") || message.includes("services offered by")) &&
+    (message.includes("Email:") || message.includes("Duration:") || message.includes("Price:"))
+  ) {
+    return formatStructuredContent(message, cleanText)
+  }
+
+  // For other messages, just convert markdown to HTML with enhanced spacing
   return {
     text: cleanText,
-    html: markdownToHtml(message),
+    html: enhancedMarkdownToHtml(message),
   }
+}
+
+// Enhanced function to convert markdown to HTML with better formatting
+function enhancedMarkdownToHtml(text: string): string {
+  // Convert bold markdown (**text**) to HTML <strong> tags
+  let html = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+
+  // Add spacing after questions
+  html = html.replace(/(\?)\s*(\n|$)/g, "$1<br><br>$2")
+
+  // Add spacing around selection prompts
+  html = html.replace(/(please\s+(?:let\s+me\s+know|select|choose|pick)\s+(?:which|what).*?\.)/gi, "<br>$1<br>")
+
+  // Add spacing before lists
+  html = html.replace(/(\n)([A-Za-z0-9].*?)(\n- |\n\* |\n[0-9]+\. )/g, "$1$2<br>$3")
+
+  // Add spacing after lists
+  html = html.replace(/(\n- .*?\n|\n\* .*?\n|\n[0-9]+\. .*?\n)(?=[A-Za-z])/g, "$1<br>")
+
+  // Convert newlines to <br> tags
+  html = html.replace(/\n/g, "<br>")
+
+  return html
+}
+
+// Function to format structured content like professional or service listings
+function formatStructuredContent(message: string, cleanText: string): { text: string; html: string } {
+  try {
+    // Extract the intro text
+    const introMatch = message.match(/(.*?)(?=\n\n)/s)
+    const introText = introMatch ? introMatch[1].trim() : ""
+
+    // Format professional listings
+    let formattedHtml = formatProfessionalListings(message)
+
+    // Format service listings
+    formattedHtml = formatServiceListings(formattedHtml)
+
+    // Add spacing after questions
+    formattedHtml = formattedHtml.replace(/(\?)\s*(\n|$)/g, "$1<br><br>$2")
+
+    // Add spacing around selection prompts
+    formattedHtml = formattedHtml.replace(
+      /(please\s+(?:let\s+me\s+know|select|choose|pick)\s+(?:which|what).*?\.)/gi,
+      "<br>$1<br>",
+    )
+
+    // Convert newlines to <br> tags
+    formattedHtml = formattedHtml.replace(/\n/g, "<br>")
+
+    return {
+      text: cleanText,
+      html: formattedHtml,
+    }
+  } catch (error) {
+    console.log("Error formatting structured content:", error)
+    // If there's an error, just convert markdown to HTML and return
+    return {
+      text: cleanText,
+      html: enhancedMarkdownToHtml(message),
+    }
+  }
+}
+
+// Function to format professional listings with better spacing
+function formatProfessionalListings(html: string): string {
+  // Match patterns like "Name\nEmail: email@example.com\nDescription"
+  const professionalPattern =
+    /([A-Za-z0-9][A-Za-z0-9\s']+)\n(Email:.*?)\n(.*?)(?=\n[A-Za-z0-9][A-Za-z0-9\s']+\nEmail:|\n(?:Please|Which|Select|Choose)|$)/gs
+
+  return html.replace(professionalPattern, (match, name, email, description) => {
+    return `<div class="professional-listing mb-4">
+      <div class="font-medium">${name}</div>
+      <div class="text-sm text-gray-600">${email}</div>
+      <div class="text-sm text-gray-600">${description}</div>
+    </div>`
+  })
+}
+
+// Function to format service listings with better spacing
+function formatServiceListings(html: string): string {
+  // First, identify service categories
+  html = html.replace(
+    /(Main Service|Add-On Service|Add-Ons)(\n)/g,
+    '<div class="service-category font-medium mt-4 mb-2">$1</div>$2',
+  )
+
+  // Then format individual services
+  const servicePattern =
+    /([A-Za-z0-9][A-Za-z0-9\s'-]+)\n(Duration:.*?)\n(Price:.*?)(?:\n(.*?))?(?=\n[A-Za-z0-9][A-Za-z0-9\s'-]+\nDuration:|\n(?:Which|Please|Select|Choose)|$)/gs
+
+  return html.replace(servicePattern, (match, name, duration, price, description = "") => {
+    return `<div class="service-listing mb-4">
+      <div class="font-medium">${name}</div>
+      <div class="text-sm text-gray-600">${duration}</div>
+      <div class="text-sm text-gray-600">${price}</div>
+      ${description ? `<div class="text-sm text-gray-600">${description}</div>` : ""}
+    </div>`
+  })
 }
 
 // Function to enhance HTML messages with additional styling
@@ -100,7 +207,7 @@ function formatSimpleBookingList(message: string, cleanText: string): { text: st
 
     // Extract the footer text (everything after the last booking)
     const footerMatch = message.match(/\n\n(If you need.*?)$/s)
-    const footerText = footerMatch ? footerMatch[1].trim() : ""
+    const footerText = footerMatch ? footerText[1].trim() : ""
 
     // Extract all booking entries using regex
     const bookingRegex = /\d+\. \*\*(.*?)\*\*: (.*?)(?=\n|$)/g
@@ -168,11 +275,11 @@ function formatDetailedBookingList(message: string, cleanText: string): { text: 
   try {
     // Extract the intro text (everything before the first numbered item)
     const introMatch = message.match(/(.*?)(?=\n\n1\.)/s)
-    const introText = introMatch ? introMatch[1].trim() : "Here are your existing bookings:"
+    const introText = introMatch ? introText[1].trim() : "Here are your existing bookings:"
 
     // Extract the footer text (everything after the last booking)
     const footerMatch = message.match(/\n\n(Is there anything else.*?)$/s)
-    const footerText = footerMatch ? footerMatch[1].trim() : ""
+    const footerText = footerMatch ? footerText[1].trim() : ""
 
     // Split the message into sections by double newlines
     const sections = message.split("\n\n")
@@ -355,7 +462,7 @@ function formatInvoiceList(message: string, cleanText: string): { text: string; 
 
     // Extract the footer text (everything after the last invoice item)
     const footerMatch = message.match(/\n\n(Is there anything else.*?)$/s)
-    const footerText = footerMatch ? footerMatch[1].trim() : ""
+    const footerText = footerMatch ? footerText[1].trim() : ""
 
     // Build HTML output
     let htmlOutput = `<div class="body-font">${markdownToHtml(introText)}</div><br>`
