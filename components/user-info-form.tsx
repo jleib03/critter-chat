@@ -40,6 +40,7 @@ const UserInfoForm = forwardRef<UserInfoFormHandle, UserInfoFormProps>(({ select
   // Helper function to display action name
   const getActionDisplayName = (action: string): string => {
     const actionDisplayNames: { [key: string]: string } = {
+      new_customer: "New Customer",
       new_booking: "New Booking",
       change_booking: "Change Existing Booking",
       cancel_booking: "Cancel Booking",
@@ -56,7 +57,7 @@ const UserInfoForm = forwardRef<UserInfoFormHandle, UserInfoFormProps>(({ select
       </div>
       <div className="bg-white rounded-b-lg p-6 shadow-sm flex-1 flex flex-col overflow-y-auto user-info-container">
         <p className="text-gray-700 mb-4 body-font">
-          Let's start by telling us a little bit about yourself, with your first name, last name, and email. This lets Critter
+          Let's start by telling us a little bit about yourself, with first/last name and/or email. This lets Critter
           match you to the services providers you already work with.
         </p>
 
