@@ -41,7 +41,7 @@ export default function BookingPage() {
 
   // Refs
   const USER_ID = useRef(`web_user_${Math.random().toString(36).substring(2, 10)}`)
-  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/93c29983-1098-4ff9-a3c5-eae58e04fbab"
+  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/93c29983-1098-4ff9-a3c5-eae58e04fbab"
   const userInfoFormRef = useRef<UserInfoFormHandle>(null)
   const chatMessagesRef = useRef<HTMLDivElement>(null)
 
@@ -81,6 +81,7 @@ export default function BookingPage() {
 
   const handleActionBubbleClick = (action: string) => {
     const actionMessages: { [key: string]: string } = {
+      new_customer: "I'm a new customer",
       new_booking: "I'd like to make a new booking",
       change_booking: "I need to change my existing booking",
       cancel_booking: "I want to cancel my booking",
