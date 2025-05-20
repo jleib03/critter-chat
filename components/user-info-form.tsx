@@ -41,6 +41,8 @@ const UserInfoForm = forwardRef<UserInfoFormHandle, UserInfoFormProps>(({ select
   const getActionDisplayName = (action: string): string => {
     const actionDisplayNames: { [key: string]: string } = {
       new_customer: "New Customer",
+      new_customer_onboarding: "New Customer (Has Professional)",
+      new_customer_lead: "New Customer (Needs Professional)",
       new_booking: "New Booking",
       change_booking: "Change Existing Booking",
       cancel_booking: "Cancel Booking",
