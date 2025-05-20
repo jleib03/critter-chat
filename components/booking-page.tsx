@@ -41,7 +41,7 @@ export default function BookingPage() {
 
   // Refs
   const USER_ID = useRef(`web_user_${Math.random().toString(36).substring(2, 10)}`)
-  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/93c29983-1098-4ff9-a3c5-eae58e04fbab"
+  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/216e36c3-4fe2-4f2e-80c3-d9ce6524f445"
   const userInfoFormRef = useRef<UserInfoFormHandle>(null)
   const chatMessagesRef = useRef<HTMLDivElement>(null)
 
