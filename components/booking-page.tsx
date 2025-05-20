@@ -21,6 +21,9 @@ export default function BookingPage() {
   const [inputValue, setInputValue] = useState("")
   const [showActionBubbles, setShowActionBubbles] = useState(true)
 
+  // New state for secondary new customer selection
+  const [showNewCustomerSelection, setShowNewCustomerSelection] = useState(false)
+
   // State for selection bubbles
   const [selectionType, setSelectionType] = useState<SelectionType>(null)
   const [selectionOptions, setSelectionOptions] = useState<SelectionOption[]>([])
@@ -41,7 +44,7 @@ export default function BookingPage() {
 
   // Refs
   const USER_ID = useRef(`web_user_${Math.random().toString(36).substring(2, 10)}`)
-  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/216e36c3-4fe2-4f2e-80c3-d9ce6524f445"
+  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/93c29983-1098-4ff9-a3c5-eae58e04fbab"
   const userInfoFormRef = useRef<UserInfoFormHandle>(null)
   const chatMessagesRef = useRef<HTMLDivElement>(null)
 
@@ -50,6 +53,7 @@ export default function BookingPage() {
     setSelectedAction("")
     setShowActionBubbles(true)
     setShowSelectionBubbles(false)
+    setShowNewCustomerSelection(false)
     setSelectionOptions([])
     setSelectedOptions([])
     setSelectedMainService(null)
@@ -80,8 +84,18 @@ export default function BookingPage() {
   }
 
   const handleActionBubbleClick = (action: string) => {
+    console.log(`Action bubble clicked: "${action}"`)
+
+    // Handle "new_customer" action differently
+    if (action === "new_customer") {
+      setShowActionBubbles(false)
+      setShowNewCustomerSelection(true)
+      // Add a message from the user indicating they're a new customer
+      setMessages((prev) => [...prev, { text: "I'm a new customer", isUser: true }])
+      return
+    }
+
     const actionMessages: { [key: string]: string } = {
-      new_customer: "I'm a new customer",
       new_booking: "I'd like to make a new booking",
       change_booking: "I need to change my existing booking",
       cancel_booking: "I want to cancel my booking",
@@ -98,6 +112,26 @@ export default function BookingPage() {
 
     // Send the message with the action explicitly passed
     sendMessage(messageText, action)
+  }
+
+  // New handler for the secondary new customer selection
+  const handleNewCustomerSelection = (selection: "new_customer_onboarding" | "new_customer_lead") => {
+    console.log(`New customer selection made: "${selection}"`)
+
+    // Set appropriate action based on selection
+    setSelectedAction(selection)
+    setShowNewCustomerSelection(false)
+
+    // Display different messages based on selection
+    let messageText = ""
+    if (selection === "new_customer_onboarding") {
+      messageText = "I know my Critter professional"
+    } else {
+      messageText = "I am looking for a new pet professional"
+    }
+
+    // Send the message
+    sendMessage(messageText, selection)
   }
 
   // Function to handle selection bubble clicks
@@ -471,6 +505,7 @@ export default function BookingPage() {
     if (!message) return
 
     setShowActionBubbles(false)
+    setShowNewCustomerSelection(false)
     console.log("Sending message", { message })
 
     setMessages((prev) => {
@@ -616,6 +651,8 @@ export default function BookingPage() {
           messages={messages}
           isTyping={isTyping}
           showActionBubbles={showActionBubbles}
+          showNewCustomerSelection={showNewCustomerSelection}
+          onNewCustomerSelection={handleNewCustomerSelection}
           showSelectionBubbles={showSelectionBubbles}
           selectionType={selectionType}
           selectionOptions={selectionOptions}
