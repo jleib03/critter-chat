@@ -1,15 +1,99 @@
 "use client"
 import { useState } from "react"
 import Link from "next/link"
-import { ArrowRight, Construction, Users, UserPlus, User } from "lucide-react"
+import { ArrowRight, Construction, Users, UserPlus, User, Check, AlertCircle, Loader2 } from "lucide-react"
 
 type LandingPageProps = {
   onExistingCustomer: () => void
   onNewCustomer: () => void
+  webhookUrl: string
 }
 
-export default function LandingPage({ onExistingCustomer, onNewCustomer }: LandingPageProps) {
+export default function LandingPage({ onExistingCustomer, onNewCustomer, webhookUrl }: LandingPageProps) {
   const [showComingSoon, setShowComingSoon] = useState(false)
+  const [notifyEmail, setNotifyEmail] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle")
+  const [errorMessage, setErrorMessage] = useState("")
+
+  // Function to validate email format
+  const isValidEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  }
+
+  // Function to handle the notify me submission
+  const handleNotifySubmit = async () => {
+    // Reset states
+    setSubmitStatus("idle")
+    setErrorMessage("")
+
+    // Validate email
+    if (!notifyEmail) {
+      setErrorMessage("Please enter your email address")
+      return
+    }
+
+    if (!isValidEmail(notifyEmail)) {
+      setErrorMessage("Please enter a valid email address")
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      // Create a unique user ID for this submission
+      const userId = `web_user_${Math.random().toString(36).substring(2, 10)}`
+
+      // Prepare the payload
+      const payload = {
+        message: {
+          text: "Notification request for professional matching service",
+          userId: userId,
+          timestamp: new Date().toISOString(),
+          userInfo: {
+            email: notifyEmail,
+            selectedAction: "notify_me",
+          },
+          source: "critter_booking_site",
+        },
+      }
+
+      console.log("Sending notification request to webhook:", webhookUrl)
+      console.log("Payload:", payload)
+
+      // Send the webhook
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      // Handle successful response
+      console.log("Notification request sent successfully")
+      setSubmitStatus("success")
+      setNotifyEmail("") // Clear the email field
+    } catch (error) {
+      console.error("Error sending notification request:", error)
+      setSubmitStatus("error")
+      setErrorMessage("There was an error submitting your request. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Function to close the modal and reset states
+  const handleCloseModal = () => {
+    setShowComingSoon(false)
+    setNotifyEmail("")
+    setSubmitStatus("idle")
+    setErrorMessage("")
+  }
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
@@ -146,7 +230,7 @@ export default function LandingPage({ onExistingCustomer, onNewCustomer }: Landi
       {showComingSoon && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-          onClick={() => setShowComingSoon(false)}
+          onClick={handleCloseModal}
         >
           <div className="bg-white p-8 rounded-xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-center mb-6">
@@ -159,18 +243,40 @@ export default function LandingPage({ onExistingCustomer, onNewCustomer }: Landi
               We're working hard to bring you a professional matching service. Sign up for our newsletter to be the
               first to know when it launches.
             </p>
-            <div className="flex mb-4">
-              <input
-                type="email"
-                placeholder="Your email address"
-                className="flex-1 p-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-[#94ABD6] body-font"
-              />
-              <button className="bg-[#94ABD6] text-white px-4 py-3 rounded-r-lg hover:bg-[#7a90ba] transition-colors">
-                Notify Me
-              </button>
-            </div>
+
+            {submitStatus === "success" ? (
+              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 flex items-center">
+                <Check className="w-5 h-5 mr-2 flex-shrink-0" />
+                <p className="body-font">Thank you! We'll notify you when this feature launches.</p>
+              </div>
+            ) : (
+              <>
+                {errorMessage && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 flex items-center">
+                    <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+                    <p className="body-font">{errorMessage}</p>
+                  </div>
+                )}
+                <div className="flex mb-4">
+                  <input
+                    type="email"
+                    placeholder="Your email address"
+                    value={notifyEmail}
+                    onChange={(e) => setNotifyEmail(e.target.value)}
+                    className="flex-1 p-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-[#94ABD6] body-font"
+                  />
+                  <button
+                    onClick={handleNotifySubmit}
+                    disabled={isSubmitting}
+                    className="bg-[#94ABD6] text-white px-4 py-3 rounded-r-lg hover:bg-[#7a90ba] transition-colors flex items-center justify-center min-w-[100px]"
+                  >
+                    {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : "Notify Me"}
+                  </button>
+                </div>
+              </>
+            )}
             <button
-              onClick={() => setShowComingSoon(false)}
+              onClick={handleCloseModal}
               className="w-full text-gray-600 text-sm hover:text-gray-800 transition-colors body-font"
             >
               Close
