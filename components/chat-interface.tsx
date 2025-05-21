@@ -5,7 +5,6 @@ import type React from "react"
 import { Send } from "lucide-react"
 import ActionBubbles from "./action-bubbles"
 import SelectionBubbles from "./selection-bubbles"
-import NewCustomerSelection from "./new-customer-selection"
 import BookingCalendar, { type BookingInfo } from "./booking-calendar"
 
 type SelectionOption = {
@@ -28,8 +27,6 @@ type ChatInterfaceProps = {
   messages: Array<{ text: string; isUser: boolean; htmlMessage?: string }>
   isTyping: boolean
   showActionBubbles: boolean
-  showNewCustomerSelection: boolean
-  onNewCustomerSelection: (selection: "new_customer_onboarding" | "new_customer_lead") => void
   showSelectionBubbles: boolean
   selectionType: SelectionType
   selectionOptions: SelectionOption[]
@@ -51,8 +48,6 @@ export default function ChatInterface({
   messages,
   isTyping,
   showActionBubbles,
-  showNewCustomerSelection,
-  onNewCustomerSelection,
   showSelectionBubbles,
   selectionType,
   selectionOptions,
@@ -81,7 +76,7 @@ export default function ChatInterface({
     if (chatMessagesRef.current) {
       chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight
     }
-  }, [messages, isTyping, showActionBubbles, showSelectionBubbles, showNewCustomerSelection, showCalendar])
+  }, [messages, isTyping, showActionBubbles, showSelectionBubbles, showCalendar])
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
@@ -159,9 +154,6 @@ export default function ChatInterface({
 
           {/* Initial action bubbles */}
           {showActionBubbles && <ActionBubbles onActionSelect={onActionSelect} />}
-
-          {/* New customer secondary selection */}
-          {showNewCustomerSelection && <NewCustomerSelection onSelectionMade={onNewCustomerSelection} />}
 
           {/* Selection bubbles for professionals, services, pets, confirmation */}
           {showSelectionBubbles && (
