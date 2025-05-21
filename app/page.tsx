@@ -1,9 +1,26 @@
 "use client"
+import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import BookingPage from "../components/booking-page"
+import NewCustomerOnboarding from "../components/new-customer-onboarding"
 
 export default function Page() {
+  const [showOnboarding, setShowOnboarding] = useState(false)
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
+  // Use a more reliable webhook URL for testing
+  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/216e36c3-4fe2-4f2e-80c3-d9ce6524f445"
+
+  // Handler to start onboarding with a session ID and userId
+  const handleStartOnboarding = (currentSessionId: string | null, currentUserId: string | null) => {
+    console.log("Starting onboarding with session ID:", currentSessionId)
+    console.log("Starting onboarding with user ID:", currentUserId)
+    setSessionId(currentSessionId)
+    setUserId(currentUserId)
+    setShowOnboarding(true)
+  }
+
   return (
     <div className="min-h-screen bg-[#FBF8F3] flex flex-col">
       {/* Header without border */}
@@ -58,9 +75,19 @@ export default function Page() {
             answer questions about upcoming care and invoices.
           </p>
 
-          {/* Booking page with adjusted columns */}
+          {/* Conditionally render either the booking page or the onboarding flow */}
           <div className="flex-1 flex flex-col mb-12">
-            <BookingPage />
+            {showOnboarding ? (
+              <NewCustomerOnboarding
+                onCancel={() => setShowOnboarding(false)}
+                onComplete={() => setShowOnboarding(false)}
+                webhookUrl={WEBHOOK_URL}
+                initialSessionId={sessionId}
+                initialUserId={userId}
+              />
+            ) : (
+              <BookingPage onStartOnboarding={handleStartOnboarding} />
+            )}
           </div>
         </div>
       </main>
