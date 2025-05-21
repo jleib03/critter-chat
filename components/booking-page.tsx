@@ -9,7 +9,12 @@ import type { Message, SelectionOption, SelectionType, StructuredMessage } from 
 // Define actions that should never show selection bubbles
 const NO_BUBBLES_ACTIONS = ["list_bookings", "list_outstanding"]
 
-export default function BookingPage() {
+// Update the prop type definition
+type BookingPageProps = {
+  onStartOnboarding?: (sessionId: string | null, userId: string | null) => void
+}
+
+export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
   // State for messages and UI
   const [statusColor, setStatusColor] = useState("#E75837")
   const [messages, setMessages] = useState<Message[]>([
@@ -114,13 +119,20 @@ export default function BookingPage() {
     sendMessage(messageText, action)
   }
 
-  // New handler for the secondary new customer selection
+  // Update the handleNewCustomerSelection function
   const handleNewCustomerSelection = (selection: "new_customer_onboarding" | "new_customer_lead") => {
     console.log(`New customer selection made: "${selection}"`)
 
     // Set appropriate action based on selection
     setSelectedAction(selection)
     setShowNewCustomerSelection(false)
+
+    // If the user selected "I know my Critter professional" and we have an onStartOnboarding handler,
+    // start the onboarding flow with the current session ID and user ID
+    if (selection === "new_customer_onboarding" && onStartOnboarding) {
+      onStartOnboarding(sessionId, USER_ID.current)
+      return
+    }
 
     // Display different messages based on selection
     let messageText = ""
@@ -521,7 +533,7 @@ export default function BookingPage() {
     try {
       // Get user info from the form, with optional action override
       const userInfo = getUserInfo(actionOverride)
-      console.log("Sending user info:", userInfo)
+      console.log("Sending user info with action:", userInfo)
 
       const payload = {
         message: {
