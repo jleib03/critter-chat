@@ -27,7 +27,7 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
   const [showActionBubbles, setShowActionBubbles] = useState(true)
 
   // New state for secondary new customer selection
-  const [showNewCustomerSelection, setShowNewCustomerSelection] = useState(false)
+  // const [showNewCustomerSelection, setShowNewCustomerSelection] = useState(false)
 
   // State for selection bubbles
   const [selectionType, setSelectionType] = useState<SelectionType>(null)
@@ -58,7 +58,7 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
     setSelectedAction("")
     setShowActionBubbles(true)
     setShowSelectionBubbles(false)
-    setShowNewCustomerSelection(false)
+    // setShowNewCustomerSelection(false)
     setSelectionOptions([])
     setSelectedOptions([])
     setSelectedMainService(null)
@@ -91,15 +91,6 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
   const handleActionBubbleClick = (action: string) => {
     console.log(`Action bubble clicked: "${action}"`)
 
-    // Handle "new_customer" action differently
-    if (action === "new_customer") {
-      setShowActionBubbles(false)
-      setShowNewCustomerSelection(true)
-      // Add a message from the user indicating they're a new customer
-      setMessages((prev) => [...prev, { text: "I'm a new customer", isUser: true }])
-      return
-    }
-
     const actionMessages: { [key: string]: string } = {
       new_booking: "I'd like to make a new booking",
       change_booking: "I need to change my existing booking",
@@ -120,31 +111,31 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
   }
 
   // Update the handleNewCustomerSelection function
-  const handleNewCustomerSelection = (selection: "new_customer_onboarding" | "new_customer_lead") => {
-    console.log(`New customer selection made: "${selection}"`)
+  // const handleNewCustomerSelection = (selection: "new_customer_onboarding" | "new_customer_lead") => {
+  //   console.log(`New customer selection made: "${selection}"`)
 
-    // Set appropriate action based on selection
-    setSelectedAction(selection)
-    setShowNewCustomerSelection(false)
+  //   // Set appropriate action based on selection
+  //   setSelectedAction(selection)
+  //   setShowNewCustomerSelection(false)
 
-    // If the user selected "I know my Critter professional" and we have an onStartOnboarding handler,
-    // start the onboarding flow with the current session ID and user ID
-    if (selection === "new_customer_onboarding" && onStartOnboarding) {
-      onStartOnboarding(sessionId, USER_ID.current)
-      return
-    }
+  //   // If the user selected "I know my Critter professional" and we have an onStartOnboarding handler,
+  //   // start the onboarding flow with the current session ID and user ID
+  //   if (selection === "new_customer_onboarding" && onStartOnboarding) {
+  //     onStartOnboarding(sessionId, USER_ID.current)
+  //     return
+  //   }
 
-    // Display different messages based on selection
-    let messageText = ""
-    if (selection === "new_customer_onboarding") {
-      messageText = "I know my Critter professional"
-    } else {
-      messageText = "I am looking for a new pet professional"
-    }
+  //   // Display different messages based on selection
+  //   let messageText = ""
+  //   if (selection === "new_customer_onboarding") {
+  //     messageText = "I know my Critter professional"
+  //   } else {
+  //     messageText = "I am looking for a new pet professional"
+  //   }
 
-    // Send the message
-    sendMessage(messageText, selection)
-  }
+  //   // Send the message
+  //   sendMessage(messageText, selection)
+  // }
 
   // Function to handle selection bubble clicks
   const handleSelectionBubbleClick = (option: SelectionOption) => {
@@ -517,7 +508,7 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
     if (!message) return
 
     setShowActionBubbles(false)
-    setShowNewCustomerSelection(false)
+    // setShowNewCustomerSelection(false)
     console.log("Sending message", { message })
 
     setMessages((prev) => {
@@ -663,8 +654,8 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
           messages={messages}
           isTyping={isTyping}
           showActionBubbles={showActionBubbles}
-          showNewCustomerSelection={showNewCustomerSelection}
-          onNewCustomerSelection={handleNewCustomerSelection}
+          // showNewCustomerSelection={showNewCustomerSelection}
+          // onNewCustomerSelection={handleNewCustomerSelection}
           showSelectionBubbles={showSelectionBubbles}
           selectionType={selectionType}
           selectionOptions={selectionOptions}
