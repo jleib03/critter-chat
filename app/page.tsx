@@ -86,7 +86,11 @@ export default function Page() {
       <main className="pt-8 flex-1 flex flex-col">
         <div className="max-w-6xl mx-auto px-4 flex flex-col page-content">
           {currentView === "landing" && (
-            <LandingPage onExistingCustomer={handleExistingCustomer} onNewCustomer={handleNewCustomer} />
+            <LandingPage
+              onExistingCustomer={handleExistingCustomer}
+              onNewCustomer={handleNewCustomer}
+              webhookUrl={WEBHOOK_URL}
+            />
           )}
 
           {currentView === "chat" && (
