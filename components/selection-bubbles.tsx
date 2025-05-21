@@ -33,7 +33,7 @@ export default function SelectionBubbles({
   return (
     <div className="selection-bubbles flex flex-col gap-4 mt-4 mb-4">
       <div className="selection-options">
-        <p className="text-sm text-gray-600 mb-2 body-font">
+        <p className="text-sm text-gray-600 mb-4 body-font">
           {selectionType === "professional" && "Select a professional:"}
           {selectionType === "service" && "Select a service:"}
           {selectionType === "pet" && `Select ${allowMultipleSelection ? "pet(s)" : "a pet"}:`}
@@ -45,9 +45,9 @@ export default function SelectionBubbles({
           <>
             {/* Main Services */}
             {selectionOptions.some((opt) => opt.category !== "Add-On") && (
-              <div className="mb-4">
-                <p className="text-xs text-gray-500 mb-1 body-font">Main Services (select one):</p>
-                <div className="flex flex-wrap gap-2 mb-3">
+              <div className="mb-6">
+                <p className="text-xs text-gray-500 mb-2 body-font">Main Services (select one):</p>
+                <div className="flex flex-wrap gap-2 mb-4">
                   {selectionOptions
                     .filter((opt) => opt.category !== "Add-On")
                     .map((option, index) => (
@@ -68,9 +68,9 @@ export default function SelectionBubbles({
 
             {/* Add-Ons */}
             {selectionOptions.some((opt) => opt.category === "Add-On") && (
-              <div className="mb-4">
-                <p className="text-xs text-gray-500 mb-1 body-font">Add-Ons (select any):</p>
-                <div className="flex flex-wrap gap-2 mb-3">
+              <div className="mb-6">
+                <p className="text-xs text-gray-500 mb-2 body-font">Add-Ons (select any):</p>
+                <div className="flex flex-wrap gap-2 mb-4">
                   {selectionOptions
                     .filter((opt) => opt.category === "Add-On")
                     .map((option, index) => (
@@ -113,7 +113,7 @@ export default function SelectionBubbles({
         {selectionOptions
           .filter((opt) => opt.selected)
           .map((option, index) => (
-            <div key={index} className="selected-option-details mb-3 p-3 bg-[#f9f9f9] rounded-md body-font">
+            <div key={index} className="selected-option-details mb-5 p-3 bg-[#f9f9f9] rounded-md body-font">
               <div className="font-medium header-font">{option.name}</div>
               {option.description && <div className="text-sm text-gray-600 body-font">{option.description}</div>}
               {option.details &&
