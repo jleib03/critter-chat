@@ -1,15 +1,15 @@
 "use client"
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { ArrowRight, Construction, Users, UserPlus, User, Check, AlertCircle, Loader2 } from "lucide-react"
 
 type LandingPageProps = {
-  onExistingCustomer: () => void
-  onNewCustomer: () => void
   webhookUrl: string
 }
 
-export default function LandingPage({ onExistingCustomer, onNewCustomer, webhookUrl }: LandingPageProps) {
+export default function LandingPage({ webhookUrl }: LandingPageProps) {
+  const router = useRouter()
   const [showComingSoon, setShowComingSoon] = useState(false)
   const [notifyEmail, setNotifyEmail] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -108,64 +108,61 @@ export default function LandingPage({ onExistingCustomer, onNewCustomer, webhook
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
         {/* Option 1: Existing Customer */}
-        <div
-          onClick={onExistingCustomer}
-          className="bg-white rounded-xl shadow-md overflow-hidden transition-transform hover:transform hover:scale-105 cursor-pointer border border-gray-100"
-        >
-          <div className="bg-[#E75837] h-2 w-full"></div>
-          <div className="p-6">
-            <div className="w-12 h-12 bg-[#fff8f6] rounded-full flex items-center justify-center mb-4">
-              <User className="h-6 w-6 text-[#E75837]" />
+        <Link href="/existing" className="block">
+          <div className="bg-white rounded-xl shadow-md overflow-hidden transition-transform hover:transform hover:scale-105 cursor-pointer border border-gray-100 h-full">
+            <div className="bg-[#E75837] h-2 w-full"></div>
+            <div className="p-6">
+              <div className="w-12 h-12 bg-[#fff8f6] rounded-full flex items-center justify-center mb-4">
+                <User className="h-6 w-6 text-[#E75837]" />
+              </div>
+              <h3 className="text-xl font-bold mb-3 header-font">Existing Customer</h3>
+              <p className="text-gray-600 mb-4 body-font">
+                Already use Critter? Book services, manage appointments, and check invoices.
+              </p>
+              <div className="flex items-center text-[#E75837] font-medium header-font">
+                Continue <ArrowRight className="ml-2 h-4 w-4" />
+              </div>
             </div>
-            <h3 className="text-xl font-bold mb-3 header-font">Existing Customer</h3>
-            <p className="text-gray-600 mb-4 body-font">
-              Already use Critter? Book services, manage appointments, and check invoices.
-            </p>
-            <button className="flex items-center text-[#E75837] font-medium header-font">
-              Continue <ArrowRight className="ml-2 h-4 w-4" />
-            </button>
           </div>
-        </div>
+        </Link>
 
         {/* Option 2: New Customer with Professional */}
-        <div
-          onClick={onNewCustomer}
-          className="bg-white rounded-xl shadow-md overflow-hidden transition-transform hover:transform hover:scale-105 cursor-pointer border border-gray-100"
-        >
-          <div className="bg-[#745E25] h-2 w-full"></div>
-          <div className="p-6">
-            <div className="w-12 h-12 bg-[#f9f7f2] rounded-full flex items-center justify-center mb-4">
-              <UserPlus className="h-6 w-6 text-[#745E25]" />
+        <Link href="/newcustomer" className="block">
+          <div className="bg-white rounded-xl shadow-md overflow-hidden transition-transform hover:transform hover:scale-105 cursor-pointer border border-gray-100 h-full">
+            <div className="bg-[#745E25] h-2 w-full"></div>
+            <div className="p-6">
+              <div className="w-12 h-12 bg-[#f9f7f2] rounded-full flex items-center justify-center mb-4">
+                <UserPlus className="h-6 w-6 text-[#745E25]" />
+              </div>
+              <h3 className="text-xl font-bold mb-3 header-font">New Customer</h3>
+              <p className="text-gray-600 mb-4 body-font">
+                Know your Critter professional? Get the onboarding and booking request process started.
+              </p>
+              <div className="flex items-center text-[#745E25] font-medium header-font">
+                Get Started <ArrowRight className="ml-2 h-4 w-4" />
+              </div>
             </div>
-            <h3 className="text-xl font-bold mb-3 header-font">New Customer</h3>
-            <p className="text-gray-600 mb-4 body-font">
-              Know your Critter professional? Get the onboarding and booking request process started.
-            </p>
-            <button className="flex items-center text-[#745E25] font-medium header-font">
-              Get Started <ArrowRight className="ml-2 h-4 w-4" />
-            </button>
           </div>
-        </div>
+        </Link>
 
         {/* Option 3: Looking for Professional (Coming Soon) */}
-        <div
-          onClick={() => setShowComingSoon(true)}
-          className="bg-white rounded-xl shadow-md overflow-hidden transition-transform hover:transform hover:scale-105 cursor-pointer border border-gray-100"
-        >
-          <div className="bg-[#94ABD6] h-2 w-full"></div>
-          <div className="p-6">
-            <div className="w-12 h-12 bg-[#f5f8fd] rounded-full flex items-center justify-center mb-4">
-              <Users className="h-6 w-6 text-[#94ABD6]" />
+        <Link href="/findprofessional" className="block">
+          <div className="bg-white rounded-xl shadow-md overflow-hidden transition-transform hover:transform hover:scale-105 cursor-pointer border border-gray-100 h-full">
+            <div className="bg-[#94ABD6] h-2 w-full"></div>
+            <div className="p-6">
+              <div className="w-12 h-12 bg-[#f5f8fd] rounded-full flex items-center justify-center mb-4">
+                <Users className="h-6 w-6 text-[#94ABD6]" />
+              </div>
+              <h3 className="text-xl font-bold mb-3 header-font">Find a Professional</h3>
+              <p className="text-gray-600 mb-4 body-font">
+                Looking for pet care services? We'll help you find the perfect match.
+              </p>
+              <div className="flex items-center text-[#94ABD6] font-medium header-font">
+                Explore <ArrowRight className="ml-2 h-4 w-4" />
+              </div>
             </div>
-            <h3 className="text-xl font-bold mb-3 header-font">Find a Professional</h3>
-            <p className="text-gray-600 mb-4 body-font">
-              Looking for pet care services? We'll help you find the perfect match.
-            </p>
-            <button className="flex items-center text-[#94ABD6] font-medium header-font">
-              Explore <ArrowRight className="ml-2 h-4 w-4" />
-            </button>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* App Store Links */}
@@ -226,7 +223,7 @@ export default function LandingPage({ onExistingCustomer, onNewCustomer, webhook
         </div>
       </div>
 
-      {/* Coming Soon Modal */}
+      {/* Coming Soon Modal - Keep this for users who click from the landing page */}
       {showComingSoon && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
