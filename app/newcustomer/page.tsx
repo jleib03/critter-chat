@@ -1,87 +1,14 @@
 "use client"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Construction, Loader2, Check, AlertCircle } from "lucide-react"
+import NewCustomerOnboarding from "../../components/new-customer-onboarding"
 import Header from "../../components/header"
 
-export default function FindProfessionalPage() {
+export default function NewCustomerPage() {
   const router = useRouter()
-  const [notifyEmail, setNotifyEmail] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle")
-  const [errorMessage, setErrorMessage] = useState("")
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
   const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/216e36c3-4fe2-4f2e-80c3-d9ce6524f445"
-
-  // Function to validate email format
-  const isValidEmail = (email: string) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-  }
-
-  // Function to handle the notify me submission
-  const handleNotifySubmit = async () => {
-    // Reset states
-    setSubmitStatus("idle")
-    setErrorMessage("")
-
-    // Validate email
-    if (!notifyEmail) {
-      setErrorMessage("Please enter your email address")
-      return
-    }
-
-    if (!isValidEmail(notifyEmail)) {
-      setErrorMessage("Please enter a valid email address")
-      return
-    }
-
-    setIsSubmitting(true)
-
-    try {
-      // Create a unique user ID for this submission
-      const userId = `web_user_${Math.random().toString(36).substring(2, 10)}`
-
-      // Prepare the payload
-      const payload = {
-        message: {
-          text: "Notification request for professional matching service",
-          userId: userId,
-          timestamp: new Date().toISOString(),
-          userInfo: {
-            email: notifyEmail,
-            selectedAction: "notify_me",
-          },
-          source: "critter_booking_site",
-        },
-      }
-
-      console.log("Sending notification request to webhook:", WEBHOOK_URL)
-      console.log("Payload:", payload)
-
-      // Send the webhook
-      const response = await fetch(WEBHOOK_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      // Handle successful response
-      console.log("Notification request sent successfully")
-      setSubmitStatus("success")
-      setNotifyEmail("") // Clear the email field
-    } catch (error) {
-      console.error("Error sending notification request:", error)
-      setSubmitStatus("error")
-      setErrorMessage("There was an error submitting your request. Please try again.")
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
 
   // Handler to go back to landing page
   const handleBackToLanding = () => {
@@ -94,55 +21,18 @@ export default function FindProfessionalPage() {
 
       <main className="pt-8 flex-1 flex flex-col">
         <div className="max-w-6xl mx-auto px-4 flex flex-col page-content">
-          <div className="max-w-md mx-auto bg-white p-8 rounded-xl shadow-md mt-8">
-            <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 bg-[#f5f8fd] rounded-full flex items-center justify-center">
-                <Construction className="h-8 w-8 text-[#94ABD6]" />
-              </div>
-            </div>
-            <h1 className="text-2xl font-bold text-center mb-4 header-font">Coming Soon!</h1>
-            <p className="text-gray-600 text-center mb-6 body-font">
-              We're working hard to bring you a professional matching service. Sign up for our newsletter to be the
-              first to know when it launches.
-            </p>
-
-            {submitStatus === "success" ? (
-              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 flex items-center">
-                <Check className="w-5 h-5 mr-2 flex-shrink-0" />
-                <p className="body-font">Thank you! We'll notify you when this feature launches.</p>
-              </div>
-            ) : (
-              <>
-                {errorMessage && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 flex items-center">
-                    <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
-                    <p className="body-font">{errorMessage}</p>
-                  </div>
-                )}
-                <div className="flex mb-4">
-                  <input
-                    type="email"
-                    placeholder="Your email address"
-                    value={notifyEmail}
-                    onChange={(e) => setNotifyEmail(e.target.value)}
-                    className="flex-1 p-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-[#94ABD6] body-font"
-                  />
-                  <button
-                    onClick={handleNotifySubmit}
-                    disabled={isSubmitting}
-                    className="bg-[#94ABD6] text-white px-4 py-3 rounded-r-lg hover:bg-[#7a90ba] transition-colors flex items-center justify-center min-w-[100px]"
-                  >
-                    {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : "Notify Me"}
-                  </button>
-                </div>
-              </>
-            )}
-            <button
-              onClick={handleBackToLanding}
-              className="w-full text-gray-600 text-sm hover:text-gray-800 transition-colors body-font mt-4"
-            >
-              Back to Home
-            </button>
+          <h1 className="text-4xl title-font text-center mb-4 font-sangbleu">New Customer Onboarding</h1>
+          <p className="text-center text-gray-700 mb-8 max-w-3xl mx-auto body-font">
+            Complete the form below to set up your account with your Critter professional.
+          </p>
+          <div className="flex-1 flex flex-col mb-12">
+            <NewCustomerOnboarding
+              onCancel={handleBackToLanding}
+              onComplete={handleBackToLanding}
+              webhookUrl={WEBHOOK_URL}
+              initialSessionId={sessionId}
+              initialUserId={userId}
+            />
           </div>
         </div>
       </main>
