@@ -21,7 +21,7 @@ export default function OnboardingForm({ onSubmit, onCancel }: OnboardingFormPro
     city?: string
     state?: string
     zipCode?: string
-    pets?: { [key: number]: { name?: string; breed?: string; age?: string } }
+    pets?: { [key: number]: { name?: string; type?: string; breed?: string; age?: string } }
   }>({})
 
   const [formData, setFormData] = useState<OnboardingFormData>({
@@ -37,6 +37,7 @@ export default function OnboardingForm({ onSubmit, onCancel }: OnboardingFormPro
     pets: [
       {
         name: "",
+        type: "",
         breed: "",
         age: "",
         isSpayedOrNeutered: false,
@@ -99,6 +100,7 @@ export default function OnboardingForm({ onSubmit, onCancel }: OnboardingFormPro
         ...prev.pets,
         {
           name: "",
+          type: "",
           breed: "",
           age: "",
           isSpayedOrNeutered: false,
@@ -170,14 +172,19 @@ export default function OnboardingForm({ onSubmit, onCancel }: OnboardingFormPro
       if (!formData.state.trim()) errors.state = "State is required"
       if (!formData.zipCode.trim()) errors.zipCode = "ZIP code is required"
     } else if (currentStep === 3) {
-      const petErrors: { [key: number]: { name?: string; breed?: string; age?: string } } = {}
+      const petErrors: { [key: number]: { name?: string; type?: string; breed?: string; age?: string } } = {}
       let hasPetErrors = false
 
       formData.pets.forEach((pet, index) => {
-        const petError: { name?: string; breed?: string; age?: string } = {}
+        const petError: { name?: string; type?: string; breed?: string; age?: string } = {}
 
         if (!pet.name.trim()) {
           petError.name = "Pet name is required"
+          hasPetErrors = true
+        }
+
+        if (!pet.type) {
+          petError.type = "Pet type is required"
           hasPetErrors = true
         }
 
@@ -467,22 +474,29 @@ export default function OnboardingForm({ onSubmit, onCancel }: OnboardingFormPro
                 </div>
                 <div>
                   <label
-                    htmlFor={`petBreed-${index}`}
+                    htmlFor={`petType-${index}`}
                     className="block text-sm font-medium text-gray-700 mb-1 header-font"
                   >
-                    Breed/Species*
+                    Pet Type*
                   </label>
-                  <input
-                    type="text"
-                    id={`petBreed-${index}`}
-                    value={pet.breed}
-                    onChange={(e) => updatePetData(index, "breed", e.target.value)}
-                    className={`w-full p-3 border ${formErrors.pets?.[index]?.breed ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
-                    placeholder="e.g., Labrador, Siamese Cat"
+                  <select
+                    id={`petType-${index}`}
+                    value={pet.type}
+                    onChange={(e) => updatePetData(index, "type", e.target.value)}
+                    className={`w-full p-3 border ${formErrors.pets?.[index]?.type ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
                     required
-                  />
-                  {formErrors.pets?.[index]?.breed && (
-                    <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].breed}</p>
+                  >
+                    <option value="">Select type</option>
+                    <option value="Dog">Dog</option>
+                    <option value="Cat">Cat</option>
+                    <option value="Bird">Bird</option>
+                    <option value="Fish">Fish</option>
+                    <option value="Reptile">Reptile</option>
+                    <option value="Small Animal">Small Animal</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  {formErrors.pets?.[index]?.type && (
+                    <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].type}</p>
                   )}
                 </div>
               </div>
@@ -490,34 +504,56 @@ export default function OnboardingForm({ onSubmit, onCancel }: OnboardingFormPro
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                   <label
-                    htmlFor={`petAge-${index}`}
+                    htmlFor={`petBreed-${index}`}
                     className="block text-sm font-medium text-gray-700 mb-1 header-font"
                   >
-                    Age*
+                    Breed/Variety*
                   </label>
                   <input
                     type="text"
-                    id={`petAge-${index}`}
-                    value={pet.age}
-                    onChange={(e) => updatePetData(index, "age", e.target.value)}
-                    className={`w-full p-3 border ${formErrors.pets?.[index]?.age ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
-                    placeholder="e.g., 3 years"
+                    id={`petBreed-${index}`}
+                    value={pet.breed}
+                    onChange={(e) => updatePetData(index, "breed", e.target.value)}
+                    className={`w-full p-3 border ${formErrors.pets?.[index]?.breed ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
+                    placeholder="e.g., Labrador, Siamese"
                     required
                   />
-                  {formErrors.pets?.[index]?.age && (
-                    <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].age}</p>
+                  {formErrors.pets?.[index]?.breed && (
+                    <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].breed}</p>
                   )}
                 </div>
-                <div className="flex items-center h-full pt-8">
-                  <label className="flex items-center body-font">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label
+                      htmlFor={`petAge-${index}`}
+                      className="block text-sm font-medium text-gray-700 mb-1 header-font"
+                    >
+                      Age*
+                    </label>
                     <input
-                      type="checkbox"
-                      checked={pet.isSpayedOrNeutered}
-                      onChange={(e) => updatePetData(index, "isSpayedOrNeutered", e.target.checked)}
-                      className="mr-2 h-4 w-4 text-[#E75837] focus:ring-2 focus:ring-[#E75837] border-gray-300 rounded"
+                      type="text"
+                      id={`petAge-${index}`}
+                      value={pet.age}
+                      onChange={(e) => updatePetData(index, "age", e.target.value)}
+                      className={`w-full p-3 border ${formErrors.pets?.[index]?.age ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
+                      placeholder="e.g., 3 years"
+                      required
                     />
-                    Spayed/Neutered
-                  </label>
+                    {formErrors.pets?.[index]?.age && (
+                      <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].age}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center h-full pt-8">
+                    <label className="flex items-center body-font">
+                      <input
+                        type="checkbox"
+                        checked={pet.isSpayedOrNeutered}
+                        onChange={(e) => updatePetData(index, "isSpayedOrNeutered", e.target.checked)}
+                        className="mr-2 h-4 w-4 text-[#E75837] focus:ring-2 focus:ring-[#E75837] border-gray-300 rounded"
+                      />
+                      Spayed/Neutered
+                    </label>
+                  </div>
                 </div>
               </div>
 
