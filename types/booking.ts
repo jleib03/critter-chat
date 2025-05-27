@@ -59,6 +59,7 @@ export type OnboardingFormData = {
 
 export type PetFormData = {
   name: string
+  type: string
   breed: string
   age: string
   isSpayedOrNeutered: boolean
