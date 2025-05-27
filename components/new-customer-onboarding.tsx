@@ -82,13 +82,22 @@ export default function NewCustomerOnboarding({
                 }
               }
 
+              // Normalize category - handle "Add On", "Add-On", "Add On Service", etc.
+              let category = "Main Service"
+              if (item.category) {
+                const categoryLower = item.category.toLowerCase()
+                if (categoryLower.includes("add") && (categoryLower.includes("on") || categoryLower.includes("-on"))) {
+                  category = "Add-On"
+                }
+              }
+
               return {
                 id: `service-${index}`,
                 name: item.name || `Service ${index + 1}`,
                 description: description,
                 duration: duration,
                 price: price,
-                category: item.category || "Main Service",
+                category: category,
                 selected: false,
               }
             })
