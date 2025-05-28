@@ -2,6 +2,8 @@
 import { useState, useRef } from "react"
 import UserInfoForm, { type UserInfoFormHandle } from "./user-info-form"
 import ChatInterface from "./chat-interface"
+import DynamicSelectionPanel from "./dynamic-selection-panel"
+import DateTimePanel from "./date-time-panel"
 import { formatMessage } from "../utils/message-formatter"
 import type { BookingInfo } from "./booking-calendar"
 import type { Message, SelectionOption, SelectionType, StructuredMessage } from "../types/booking"
@@ -26,16 +28,19 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
   const [inputValue, setInputValue] = useState("")
   const [showActionBubbles, setShowActionBubbles] = useState(true)
 
-  // New state for secondary new customer selection
-  // const [showNewCustomerSelection, setShowNewCustomerSelection] = useState(false)
+  // State for form validation
+  const [isFormValid, setIsFormValid] = useState(false)
 
-  // State for selection bubbles
+  // State for selection panel
   const [selectionType, setSelectionType] = useState<SelectionType>(null)
   const [selectionOptions, setSelectionOptions] = useState<SelectionOption[]>([])
   const [selectedOptions, setSelectedOptions] = useState<string[]>([])
-  const [showSelectionBubbles, setShowSelectionBubbles] = useState(false)
+  const [showSelectionPanel, setShowSelectionPanel] = useState(false)
   const [allowMultipleSelection, setAllowMultipleSelection] = useState(false)
   const [selectedMainService, setSelectedMainService] = useState<string | null>(null)
+
+  // State for date/time panel
+  const [showDateTimePanel, setShowDateTimePanel] = useState(false)
 
   // State for UI status
   const [isTyping, setIsTyping] = useState(false)
@@ -53,12 +58,17 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
   const userInfoFormRef = useRef<UserInfoFormHandle>(null)
   const chatMessagesRef = useRef<HTMLDivElement>(null)
 
+  // Handle validation changes from UserInfoForm
+  const handleValidationChange = (isValid: boolean) => {
+    setIsFormValid(isValid)
+  }
+
   // Reset the chat to its initial state
   const resetChat = () => {
     setSelectedAction("")
     setShowActionBubbles(true)
-    setShowSelectionBubbles(false)
-    // setShowNewCustomerSelection(false)
+    setShowSelectionPanel(false)
+    setShowDateTimePanel(false)
     setSelectionOptions([])
     setSelectedOptions([])
     setSelectedMainService(null)
@@ -89,6 +99,8 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
   }
 
   const handleActionBubbleClick = (action: string) => {
+    if (!isFormValid) return
+
     console.log(`Action bubble clicked: "${action}"`)
 
     const actionMessages: { [key: string]: string } = {
@@ -110,42 +122,33 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
     sendMessage(messageText, action)
   }
 
-  // Update the handleNewCustomerSelection function
-  // const handleNewCustomerSelection = (selection: "new_customer_onboarding" | "new_customer_lead") => {
-  //   console.log(`New customer selection made: "${selection}"`)
-
-  //   // Set appropriate action based on selection
-  //   setSelectedAction(selection)
-  //   setShowNewCustomerSelection(false)
-
-  //   // If the user selected "I know my Critter professional" and we have an onStartOnboarding handler,
-  //   // start the onboarding flow with the current session ID and user ID
-  //   if (selection === "new_customer_onboarding" && onStartOnboarding) {
-  //     onStartOnboarding(sessionId, USER_ID.current)
-  //     return
-  //   }
-
-  //   // Display different messages based on selection
-  //   let messageText = ""
-  //   if (selection === "new_customer_onboarding") {
-  //     messageText = "I know my Critter professional"
-  //   } else {
-  //     messageText = "I am looking for a new pet professional"
-  //   }
-
-  //   // Send the message
-  //   sendMessage(messageText, selection)
-  // }
-
   // Function to handle selection bubble clicks
-  const handleSelectionBubbleClick = (option: SelectionOption) => {
+  const handleSelectionClick = (option: SelectionOption) => {
+    if (!isFormValid) return
+
+    console.log("Selection clicked:", {
+      option,
+      selectionType,
+      optionName: option.name,
+      optionNameType: typeof option.name,
+      fullOption: JSON.stringify(option),
+    })
+
     if (selectionType === "service") {
       if (option.category === "Add-On") {
         setSelectedOptions((prev) => {
-          if (prev.includes(option.name)) {
-            return prev.filter((item) => item !== option.name)
+          const optionName = option.name
+          console.log("Add-on toggle:", {
+            optionName,
+            optionNameType: typeof optionName,
+            prev,
+            prevTypes: prev.map((item) => typeof item),
+          })
+
+          if (prev.includes(optionName)) {
+            return prev.filter((item) => item !== optionName)
           } else {
-            return [...prev, option.name]
+            return [...prev, optionName]
           }
         })
 
@@ -153,6 +156,12 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
           prev.map((opt) => (opt.name === option.name ? { ...opt, selected: !opt.selected } : opt)),
         )
       } else {
+        // Main service selection
+        console.log("Main service selected:", {
+          optionName: option.name,
+          optionNameType: typeof option.name,
+          fullOption: JSON.stringify(option),
+        })
         setSelectionOptions((prev) =>
           prev.map((opt) => (opt.category !== "Add-On" ? { ...opt, selected: opt.name === option.name } : opt)),
         )
@@ -160,10 +169,18 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
       }
     } else if (allowMultipleSelection) {
       setSelectedOptions((prev) => {
-        if (prev.includes(option.name)) {
-          return prev.filter((item) => item !== option.name)
+        const optionName = option.name
+        console.log("Multiple selection toggle:", {
+          optionName,
+          optionNameType: typeof optionName,
+          prev,
+          prevTypes: prev.map((item) => typeof item),
+        })
+
+        if (prev.includes(optionName)) {
+          return prev.filter((item) => item !== optionName)
         } else {
-          return [...prev, option.name]
+          return [...prev, optionName]
         }
       })
 
@@ -171,6 +188,10 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
         prev.map((opt) => (opt.name === option.name ? { ...opt, selected: !opt.selected } : opt)),
       )
     } else {
+      console.log("Single selection:", {
+        optionName: option.name,
+        optionNameType: typeof option.name,
+      })
       setSelectedOptions([option.name])
       setSelectionOptions((prev) => prev.map((opt) => ({ ...opt, selected: opt.name === option.name })))
 
@@ -182,6 +203,18 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
 
   // Function to submit the selected options
   const submitSelections = (directOption?: string) => {
+    if (!isFormValid) return
+
+    console.log("=== SUBMIT SELECTIONS DEBUG ===")
+    console.log("directOption:", directOption, typeof directOption)
+    console.log("selectedMainService:", selectedMainService, typeof selectedMainService)
+    console.log(
+      "selectedOptions:",
+      selectedOptions,
+      selectedOptions.map((opt) => typeof opt),
+    )
+    console.log("selectionType:", selectionType)
+
     let options: string[] = []
 
     if (directOption) {
@@ -190,16 +223,48 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
       const mainService = selectedMainService
       const addOns = selectedOptions
 
+      console.log("Service selection debug:", {
+        mainService,
+        mainServiceType: typeof mainService,
+        addOns,
+        addOnsTypes: addOns.map((addon) => typeof addon),
+        selectedOptions,
+      })
+
       if (!mainService) {
+        console.log("No main service selected, cannot submit")
         return
       }
 
-      options = [mainService, ...addOns]
+      // Ensure we're working with strings and log the conversion
+      const mainServiceStr = typeof mainService === "string" ? mainService : String(mainService)
+      const addOnStrs = addOns.map((addon, index) => {
+        const converted = typeof addon === "string" ? addon : String(addon)
+        console.log(`Add-on ${index}:`, addon, typeof addon, "->", converted)
+        return converted
+      })
+
+      console.log("Converted values:", { mainServiceStr, addOnStrs })
+      options = [mainServiceStr, ...addOnStrs]
     } else {
-      options = selectedOptions
+      // Ensure all selected options are strings
+      options = selectedOptions.map((option, index) => {
+        const converted = typeof option === "string" ? option : String(option)
+        console.log(`Option ${index}:`, option, typeof option, "->", converted)
+        return converted
+      })
     }
 
-    if (options.length === 0) return
+    console.log(
+      "Final options array:",
+      options,
+      options.map((opt) => typeof opt),
+    )
+
+    if (options.length === 0) {
+      console.log("No options selected, cannot submit")
+      return
+    }
 
     let messageText = ""
 
@@ -214,12 +279,21 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
         options[0] === "Yes, proceed" ? "Yes, I'd like to proceed with the booking." : "No, I need to make changes."
     }
 
-    setShowSelectionBubbles(false)
+    console.log("Final message text:", messageText, typeof messageText)
+    console.log("=== END SUBMIT SELECTIONS DEBUG ===")
+
+    console.log("About to send message:", messageText, typeof messageText)
+    console.log("Message length:", messageText.length)
+    console.log("Message JSON:", JSON.stringify(messageText))
+
+    // Clear the selection panel state
+    setShowSelectionPanel(false)
     setSelectionOptions([])
     setSelectedOptions([])
     setSelectedMainService(null)
     setSelectionType(null)
 
+    // Send the message
     sendMessage(messageText)
   }
 
@@ -299,10 +373,29 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
       // Handle different structured data types
       if (structuredData.type === "service_list" && Array.isArray(structuredData.items)) {
         const options: SelectionOption[] = structuredData.items.map((item: any) => {
+          // More conservative add-on detection
           let category = item.category || "Main Service"
-          if (category.includes("Add") && category.includes("On")) {
+
+          // Only categorize as add-on if it's very explicitly an add-on
+          const serviceName = item.name.toLowerCase()
+          if (
+            // Original category contains "add" (but be more specific)
+            (category.toLowerCase().includes("add") &&
+              (category.toLowerCase().includes("on") || category.toLowerCase().includes("-on"))) ||
+            // Service name explicitly contains add-on patterns
+            serviceName.includes(": add") ||
+            serviceName.includes("add on") ||
+            serviceName.includes("add-on") ||
+            // Very specific add-on keywords in the name
+            (serviceName.includes("transportation") && serviceName.includes("add")) ||
+            (serviceName.includes("multiple") && serviceName.includes("add"))
+          ) {
             category = "Add-On"
+          } else {
+            // Default to Main Service for everything else
+            category = "Main Service"
           }
+
           return {
             name: item.name,
             category: category,
@@ -342,6 +435,21 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
           allowMultiple: false,
         }
       }
+    }
+
+    // Fallback: detect service requests even in text_only messages
+    if (
+      structuredData &&
+      structuredData.type === "text_only" &&
+      structuredData.intro &&
+      (structuredData.intro.toLowerCase().includes("which service") ||
+        structuredData.intro.toLowerCase().includes("specify which service") ||
+        structuredData.intro.toLowerCase().includes("list of services"))
+    ) {
+      console.log("Detected service request in text_only message, but no services provided")
+      // For now, we'll skip showing the panel since we don't have service data
+      // This indicates the webhook should be returning service_list type instead
+      return { type: null, options: [], allowMultiple: false }
     }
 
     // Add text-based detection for pet selection
@@ -403,9 +511,9 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
     return { type: null, options: [], allowMultiple: false }
   }
 
-  // Function to detect if we should show the calendar
-  const shouldShowCalendarLogic = (message: string): boolean => {
-    console.log("Checking if calendar should show for message:", message)
+  // Function to detect if we should show the date/time panel
+  const shouldShowDateTimePanel = (message: string): boolean => {
+    console.log("Checking if date/time panel should show for message:", message)
 
     try {
       const jsonData = JSON.parse(message)
@@ -453,10 +561,9 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
     return containsSchedulingPhrase || (hasDateTimeKeywords && lowerMessage.includes("provide"))
   }
 
-  // Function to handle calendar submission
-  const handleCalendarSubmit = (bookingInfo: BookingInfo) => {
+  // Function to handle date/time panel submission
+  const handleDateTimeSubmit = (bookingInfo: BookingInfo) => {
     // Format the date correctly to avoid timezone issues
-    // Use the date parts directly to create a date string in local timezone
     const dateObj = bookingInfo.date
     const year = dateObj.getFullYear()
     const month = dateObj.getMonth() + 1 // getMonth() is zero-based
@@ -499,16 +606,39 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
       messageText += `, Multi-day booking ending on: ${formattedEndDate}`
     }
 
-    setShowCalendar(false)
+    setShowDateTimePanel(false)
     sendMessage(messageText)
   }
 
+  // Function to handle calendar submission (legacy)
+  const handleCalendarSubmit = (bookingInfo: BookingInfo) => {
+    handleDateTimeSubmit(bookingInfo)
+  }
+
   const sendMessage = async (messageText?: string, actionOverride?: string) => {
-    const message = messageText || inputValue.trim()
-    if (!message) return
+    if (!isFormValid) return
+
+    // Ensure we always have a string message
+    let message = ""
+
+    if (typeof messageText === "string") {
+      message = messageText.trim()
+    } else if (messageText) {
+      // If messageText is an object, convert it to string
+      console.log("Warning: messageText is not a string:", messageText, typeof messageText)
+      message = String(messageText).trim()
+    } else {
+      message = inputValue.trim()
+    }
+
+    if (!message) {
+      console.log("No message to send")
+      return
+    }
+
+    console.log("Final message being sent:", message, typeof message)
 
     setShowActionBubbles(false)
-    // setShowNewCustomerSelection(false)
     console.log("Sending message", { message })
 
     setMessages((prev) => {
@@ -575,9 +705,10 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
           },
         ])
 
-        if (shouldShowCalendarLogic(data.message)) {
-          console.log("Showing calendar for date/time selection")
-          setShowCalendar(true)
+        // Check if we should show the date/time panel instead of calendar
+        if (shouldShowDateTimePanel(data.message)) {
+          console.log("Showing date/time panel for scheduling")
+          setShowDateTimePanel(true)
           return
         }
 
@@ -589,22 +720,22 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
 
         if (NO_BUBBLES_ACTIONS.includes(currentAction)) {
           console.log(`Action ${currentAction} is in NO_BUBBLES_ACTIONS list, skipping all selection bubbles`)
-          setShowSelectionBubbles(false)
+          setShowSelectionPanel(false)
         } else {
           const { type, options, allowMultiple } = detectSelectionType(data.message)
           console.log("Selection detection in sendMessage:", { type, options, allowMultiple })
 
           if (type && options.length > 0) {
-            console.log("Showing selection bubbles for:", type, options)
+            console.log("Showing selection panel for:", type, options)
             setSelectionType(type)
             setSelectionOptions(options)
             setSelectedOptions([])
             setSelectedMainService(null)
             setAllowMultipleSelection(allowMultiple)
-            setShowSelectionBubbles(true)
+            setShowSelectionPanel(true)
           } else {
-            console.log("No selection options detected, hiding bubbles")
-            setShowSelectionBubbles(false)
+            console.log("No selection options detected, hiding panel")
+            setShowSelectionPanel(false)
           }
         }
       } else {
@@ -637,41 +768,83 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
     }
   }
 
-  // Fix the layout to ensure side-by-side display with fixed height
-  // Ensure the chat container has a fixed height in the grid layout
-  // Update the grid layout in the return statement:
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 max-h-[calc(100vh-350px)]">
-      {/* Left Column - User Info */}
-      <div className="md:col-span-4 h-full flex flex-col">
-        <UserInfoForm ref={userInfoFormRef} selectedAction={selectedAction} resetChat={resetChat} />
-      </div>
-
-      {/* Right Column - Chat */}
-      <div className="md:col-span-8 h-full flex flex-col">
-        <ChatInterface
-          messages={messages}
-          isTyping={isTyping}
-          showActionBubbles={showActionBubbles}
-          // showNewCustomerSelection={showNewCustomerSelection}
-          // onNewCustomerSelection={handleNewCustomerSelection}
-          showSelectionBubbles={showSelectionBubbles}
+  // Determine which panel to show in the middle column
+  const getMiddlePanel = () => {
+    if (showDateTimePanel) {
+      return (
+        <DateTimePanel
+          isVisible={showDateTimePanel}
+          isFormValid={isFormValid}
+          onSubmit={handleDateTimeSubmit}
+          onClose={() => setShowDateTimePanel(false)}
+          onSkip={() => {
+            setShowDateTimePanel(false)
+            sendMessage("I don't need a calendar")
+          }}
+        />
+      )
+    } else if (showSelectionPanel) {
+      return (
+        <DynamicSelectionPanel
+          isVisible={showSelectionPanel}
           selectionType={selectionType}
           selectionOptions={selectionOptions}
           allowMultipleSelection={allowMultipleSelection}
           selectedMainService={selectedMainService}
           selectedOptions={selectedOptions}
-          showCalendar={showCalendar}
-          inputValue={inputValue}
-          onInputChange={setInputValue}
-          onSendMessage={() => sendMessage()}
-          onActionSelect={handleActionBubbleClick}
-          onSelectionClick={handleSelectionBubbleClick}
-          onSelectionSubmit={() => submitSelections()}
-          onCalendarSubmit={handleCalendarSubmit}
-          onCalendarCancel={() => setShowCalendar(false)}
+          isFormValid={isFormValid}
+          onSelectionClick={handleSelectionClick}
+          onSubmit={submitSelections}
+          onClose={() => setShowSelectionPanel(false)}
         />
+      )
+    }
+    return null
+  }
+
+  const showMiddlePanel = showSelectionPanel || showDateTimePanel
+
+  return (
+    <div className="max-h-[calc(100vh-350px)]">
+      {/* Three-column layout: User Info → Selection/DateTime Panel → Chat */}
+      <div className="grid gap-4 h-full" style={{ gridTemplateColumns: showMiddlePanel ? "1fr 1fr 1fr" : "1fr 2fr" }}>
+        {/* Left Column - User Info (Always visible) */}
+        <div className="h-full flex flex-col">
+          <UserInfoForm
+            ref={userInfoFormRef}
+            selectedAction={selectedAction}
+            resetChat={resetChat}
+            onValidationChange={handleValidationChange}
+          />
+        </div>
+
+        {/* Middle Column - Selection/DateTime Panel (Conditional) */}
+        {showMiddlePanel && <div className="h-full flex flex-col">{getMiddlePanel()}</div>}
+
+        {/* Right Column - Chat (Always visible) */}
+        <div className="h-full flex flex-col">
+          <ChatInterface
+            messages={messages}
+            isTyping={isTyping}
+            showActionBubbles={showActionBubbles}
+            showSelectionBubbles={false} // We're not using the embedded selection bubbles anymore
+            selectionType={null}
+            selectionOptions={[]}
+            allowMultipleSelection={false}
+            selectedMainService={null}
+            selectedOptions={[]}
+            showCalendar={showCalendar}
+            inputValue={inputValue}
+            isFormValid={isFormValid}
+            onInputChange={setInputValue}
+            onSendMessage={() => sendMessage()}
+            onActionSelect={handleActionBubbleClick}
+            onSelectionClick={() => {}}
+            onSelectionSubmit={() => {}}
+            onCalendarSubmit={handleCalendarSubmit}
+            onCalendarCancel={() => setShowCalendar(false)}
+          />
+        </div>
       </div>
     </div>
   )
