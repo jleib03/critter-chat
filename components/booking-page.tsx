@@ -109,13 +109,18 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
 
   // Function to handle selection bubble clicks
   const handleSelectionClick = (option: SelectionOption) => {
+    console.log("Selection clicked:", { option, selectionType })
+
     if (selectionType === "service") {
       if (option.category === "Add-On") {
         setSelectedOptions((prev) => {
-          if (prev.includes(option.name)) {
-            return prev.filter((item) => item !== option.name)
+          const optionName = option.name
+          console.log("Add-on toggle:", { optionName, prev })
+
+          if (prev.includes(optionName)) {
+            return prev.filter((item) => item !== optionName)
           } else {
-            return [...prev, option.name]
+            return [...prev, optionName]
           }
         })
 
@@ -123,6 +128,8 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
           prev.map((opt) => (opt.name === option.name ? { ...opt, selected: !opt.selected } : opt)),
         )
       } else {
+        // Main service selection
+        console.log("Main service selected:", option.name)
         setSelectionOptions((prev) =>
           prev.map((opt) => (opt.category !== "Add-On" ? { ...opt, selected: opt.name === option.name } : opt)),
         )
@@ -130,10 +137,13 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
       }
     } else if (allowMultipleSelection) {
       setSelectedOptions((prev) => {
-        if (prev.includes(option.name)) {
-          return prev.filter((item) => item !== option.name)
+        const optionName = option.name
+        console.log("Multiple selection toggle:", { optionName, prev })
+
+        if (prev.includes(optionName)) {
+          return prev.filter((item) => item !== optionName)
         } else {
-          return [...prev, option.name]
+          return [...prev, optionName]
         }
       })
 
@@ -141,6 +151,7 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
         prev.map((opt) => (opt.name === option.name ? { ...opt, selected: !opt.selected } : opt)),
       )
     } else {
+      console.log("Single selection:", option.name)
       setSelectedOptions([option.name])
       setSelectionOptions((prev) => prev.map((opt) => ({ ...opt, selected: opt.name === option.name })))
 
@@ -160,16 +171,27 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
       const mainService = selectedMainService
       const addOns = selectedOptions
 
+      console.log("Service selection debug:", { mainService, addOns, selectedOptions })
+
       if (!mainService) {
+        console.log("No main service selected, cannot submit")
         return
       }
 
-      options = [mainService, ...addOns]
+      // Ensure we're working with strings
+      const mainServiceStr = typeof mainService === "string" ? mainService : String(mainService)
+      const addOnStrs = addOns.map((addon) => (typeof addon === "string" ? addon : String(addon)))
+
+      options = [mainServiceStr, ...addOnStrs]
     } else {
-      options = selectedOptions
+      // Ensure all selected options are strings
+      options = selectedOptions.map((option) => (typeof option === "string" ? option : String(option)))
     }
 
-    if (options.length === 0) return
+    if (options.length === 0) {
+      console.log("No options selected, cannot submit")
+      return
+    }
 
     let messageText = ""
 
@@ -184,12 +206,16 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
         options[0] === "Yes, proceed" ? "Yes, I'd like to proceed with the booking." : "No, I need to make changes."
     }
 
+    console.log("Submitting selections:", { selectionType, options, messageText })
+
+    // Clear the selection panel state
     setShowSelectionPanel(false)
     setSelectionOptions([])
     setSelectedOptions([])
     setSelectedMainService(null)
     setSelectionType(null)
 
+    // Send the message
     sendMessage(messageText)
   }
 
