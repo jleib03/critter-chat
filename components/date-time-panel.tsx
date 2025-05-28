@@ -7,6 +7,7 @@ import type { BookingInfo } from "./booking-calendar"
 
 interface DateTimePanelProps {
   isVisible: boolean
+  isFormValid: boolean
   onSubmit: (bookingInfo: BookingInfo) => void
   onClose: () => void
   onSkip: () => void
@@ -72,7 +73,7 @@ const generateTimeOptions = () => {
 
 const timeOptions = generateTimeOptions()
 
-export default function DateTimePanel({ isVisible, onSubmit, onClose, onSkip }: DateTimePanelProps) {
+export default function DateTimePanel({ isVisible, isFormValid, onSubmit, onClose, onSkip }: DateTimePanelProps) {
   const [date, setDate] = useState<Date>(new Date())
   const [time, setTime] = useState<string>("10:00")
   const [timezone, setTimezone] = useState<string>("America/Los_Angeles")
@@ -86,6 +87,7 @@ export default function DateTimePanel({ isVisible, onSubmit, onClose, onSkip }: 
 
   // Handle date input change to ensure we get the correct date
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isFormValid) return
     const inputDate = e.target.value // Format: YYYY-MM-DD
     const [year, month, day] = inputDate.split("-").map(Number)
     const newDate = new Date(year, month - 1, day)
@@ -94,6 +96,7 @@ export default function DateTimePanel({ isVisible, onSubmit, onClose, onSkip }: 
 
   // Handle recurring end date change
   const handleRecurringEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isFormValid) return
     if (!e.target.value) {
       setRecurringEndDate(null)
       return
@@ -107,6 +110,7 @@ export default function DateTimePanel({ isVisible, onSubmit, onClose, onSkip }: 
 
   // Handle multi-day end date change
   const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isFormValid) return
     if (!e.target.value) {
       setEndDate(null)
       return
@@ -119,6 +123,8 @@ export default function DateTimePanel({ isVisible, onSubmit, onClose, onSkip }: 
   }
 
   const handleSubmit = () => {
+    if (!isFormValid) return
+
     const bookingInfo: BookingInfo = {
       date,
       time,
@@ -130,6 +136,11 @@ export default function DateTimePanel({ isVisible, onSubmit, onClose, onSkip }: 
       endDate,
     }
     onSubmit(bookingInfo)
+  }
+
+  const handleSkip = () => {
+    if (!isFormValid) return
+    onSkip()
   }
 
   // Format date to YYYY-MM-DD for input value
@@ -144,7 +155,8 @@ export default function DateTimePanel({ isVisible, onSubmit, onClose, onSkip }: 
   }
 
   // Check if form is valid
-  const isFormValid = () => {
+  const isDateTimeFormValid = () => {
+    if (!isFormValid) return false
     if (!date || !time) return false
     if (isRecurring && (!recurringFrequency || !recurringEndDate)) return false
     if (isMultiDay && !endDate) return false
@@ -157,15 +169,26 @@ export default function DateTimePanel({ isVisible, onSubmit, onClose, onSkip }: 
       <div className="bg-[#E75837] text-white p-4 flex justify-between items-center">
         <div>
           <h2 className="text-xl font-bold header-font">Select Date and Time</h2>
-          <p className="text-sm opacity-90 body-font">Choose when you'd like to schedule this service</p>
+          <p className="text-sm opacity-90 body-font">
+            {isFormValid
+              ? "Choose when you'd like to schedule this service"
+              : "Complete your information on the left to continue"}
+          </p>
         </div>
         <button onClick={onClose} className="p-1 rounded-full hover:bg-white/20 transition-colors">
           <X size={20} />
         </button>
       </div>
 
+      {/* Form validation notice */}
+      {!isFormValid && (
+        <div className="bg-amber-50 border-b border-amber-200 text-amber-800 px-4 py-3 text-sm body-font">
+          <p>Please complete your email, first name, and last name on the left to schedule your booking.</p>
+        </div>
+      )}
+
       {/* Content */}
-      <div className="flex-grow overflow-y-auto p-4 space-y-4">
+      <div className={`flex-grow overflow-y-auto p-4 space-y-4 ${!isFormValid ? "opacity-50" : ""}`}>
         <div>
           <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2 header-font">
             Date:
@@ -177,7 +200,10 @@ export default function DateTimePanel({ isVisible, onSubmit, onClose, onSkip }: 
             <input
               type="date"
               id="date"
-              className="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
+              disabled={!isFormValid}
+              className={`w-full pl-10 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font ${
+                isFormValid ? "border-gray-300 bg-white" : "border-gray-200 bg-gray-50"
+              }`}
               value={formatDateForInput(date)}
               onChange={handleDateChange}
             />
@@ -194,9 +220,12 @@ export default function DateTimePanel({ isVisible, onSubmit, onClose, onSkip }: 
             </div>
             <select
               id="time"
-              className="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font appearance-none"
+              disabled={!isFormValid}
+              className={`w-full pl-10 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font appearance-none ${
+                isFormValid ? "border-gray-300 bg-white" : "border-gray-200 bg-gray-50"
+              }`}
               value={time}
-              onChange={(e) => setTime(e.target.value)}
+              onChange={(e) => isFormValid && setTime(e.target.value)}
             >
               {timeOptions.map((timeOption) => (
                 <option key={timeOption.value} value={timeOption.value}>
@@ -217,9 +246,12 @@ export default function DateTimePanel({ isVisible, onSubmit, onClose, onSkip }: 
             </div>
             <select
               id="timezone"
-              className="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
+              disabled={!isFormValid}
+              className={`w-full pl-10 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font ${
+                isFormValid ? "border-gray-300 bg-white" : "border-gray-200 bg-gray-50"
+              }`}
               value={timezone}
-              onChange={(e) => setTimezone(e.target.value)}
+              onChange={(e) => isFormValid && setTimezone(e.target.value)}
             >
               {timezones.map((tz) => (
                 <option key={tz.value} value={tz.value}>
@@ -241,9 +273,10 @@ export default function DateTimePanel({ isVisible, onSubmit, onClose, onSkip }: 
             <label className="flex items-center body-font">
               <input
                 type="checkbox"
+                disabled={!isFormValid}
                 className="mr-2 h-4 w-4 text-[#E75837] focus:ring-2 focus:ring-[#E75837] border-gray-300 rounded"
                 checked={isRecurring}
-                onChange={(e) => setIsRecurring(e.target.checked)}
+                onChange={(e) => isFormValid && setIsRecurring(e.target.checked)}
               />
               This is a recurring booking
             </label>
@@ -260,9 +293,12 @@ export default function DateTimePanel({ isVisible, onSubmit, onClose, onSkip }: 
                 </label>
                 <select
                   id="recurringFrequency"
+                  disabled={!isFormValid}
                   value={recurringFrequency || ""}
-                  onChange={(e) => setRecurringFrequency(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
+                  onChange={(e) => isFormValid && setRecurringFrequency(e.target.value)}
+                  className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font ${
+                    isFormValid ? "border-gray-300 bg-white" : "border-gray-200 bg-gray-50"
+                  }`}
                   required={isRecurring}
                 >
                   <option value="">Select frequency</option>
@@ -280,9 +316,12 @@ export default function DateTimePanel({ isVisible, onSubmit, onClose, onSkip }: 
                 <input
                   type="date"
                   id="recurringEndDate"
+                  disabled={!isFormValid}
                   value={formatDateForInput(recurringEndDate)}
                   onChange={handleRecurringEndDateChange}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
+                  className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font ${
+                    isFormValid ? "border-gray-300 bg-white" : "border-gray-200 bg-gray-50"
+                  }`}
                   required={isRecurring}
                 />
               </div>
@@ -301,9 +340,10 @@ export default function DateTimePanel({ isVisible, onSubmit, onClose, onSkip }: 
             <label className="flex items-center body-font">
               <input
                 type="checkbox"
+                disabled={!isFormValid}
                 className="mr-2 h-4 w-4 text-[#E75837] focus:ring-2 focus:ring-[#E75837] border-gray-300 rounded"
                 checked={isMultiDay}
-                onChange={(e) => setIsMultiDay(e.target.checked)}
+                onChange={(e) => isFormValid && setIsMultiDay(e.target.checked)}
               />
               This booking spans multiple days
             </label>
@@ -317,9 +357,12 @@ export default function DateTimePanel({ isVisible, onSubmit, onClose, onSkip }: 
               <input
                 type="date"
                 id="endDate"
+                disabled={!isFormValid}
                 value={formatDateForInput(endDate)}
                 onChange={handleEndDateChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
+                className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font ${
+                  isFormValid ? "border-gray-300 bg-white" : "border-gray-200 bg-gray-50"
+                }`}
                 required={isMultiDay}
               />
             </div>
@@ -330,17 +373,20 @@ export default function DateTimePanel({ isVisible, onSubmit, onClose, onSkip }: 
       {/* Footer */}
       <div className="p-4 border-t border-gray-200 flex justify-between">
         <button
-          onClick={onSkip}
-          className="text-gray-500 hover:text-gray-700 text-sm underline focus:outline-none body-font"
+          onClick={handleSkip}
+          disabled={!isFormValid}
+          className={`text-sm underline focus:outline-none body-font ${
+            isFormValid ? "text-gray-500 hover:text-gray-700" : "text-gray-300 cursor-not-allowed"
+          }`}
         >
           I don't need a calendar
         </button>
 
         <button
           onClick={handleSubmit}
-          disabled={!isFormValid()}
+          disabled={!isDateTimeFormValid()}
           className={`px-6 py-2 rounded-lg body-font ${
-            isFormValid()
+            isDateTimeFormValid()
               ? "bg-[#745E25] text-white hover:bg-[#5d4b1e] transition-colors"
               : "bg-gray-300 text-gray-500 cursor-not-allowed"
           }`}

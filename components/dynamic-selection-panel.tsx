@@ -10,6 +10,7 @@ interface DynamicSelectionPanelProps {
   allowMultipleSelection: boolean
   selectedMainService: string | null
   selectedOptions: string[]
+  isFormValid: boolean
   onSelectionClick: (option: SelectionOption) => void
   onSubmit: () => void
   onClose: () => void
@@ -22,6 +23,7 @@ export default function DynamicSelectionPanel({
   allowMultipleSelection,
   selectedMainService,
   selectedOptions,
+  isFormValid,
   onSelectionClick,
   onSubmit,
   onClose,
@@ -79,6 +81,9 @@ export default function DynamicSelectionPanel({
 
   // Get subtitle based on selection type
   const getPanelSubtitle = () => {
+    if (!isFormValid) {
+      return "Complete your information on the left to continue"
+    }
     switch (selectionType) {
       case "service":
         return "Choose a main service and any add-ons you need"
@@ -95,6 +100,8 @@ export default function DynamicSelectionPanel({
 
   // Check if submit button should be enabled
   const isSubmitEnabled = () => {
+    if (!isFormValid) return false
+
     if (selectionType === "service") {
       return !!selectedMainService
     } else if (allowMultipleSelection) {
@@ -102,6 +109,11 @@ export default function DynamicSelectionPanel({
     } else {
       return selectedOptions.length === 1
     }
+  }
+
+  const handleOptionClick = (option: SelectionOption) => {
+    if (!isFormValid) return
+    onSelectionClick(option)
   }
 
   return (
@@ -117,8 +129,15 @@ export default function DynamicSelectionPanel({
         </button>
       </div>
 
+      {/* Form validation notice */}
+      {!isFormValid && (
+        <div className="bg-amber-50 border-b border-amber-200 text-amber-800 px-4 py-3 text-sm body-font">
+          <p>Please complete your email, first name, and last name on the left to make selections.</p>
+        </div>
+      )}
+
       {/* Content */}
-      <div className="flex-grow overflow-y-auto p-4">
+      <div className={`flex-grow overflow-y-auto p-4 ${!isFormValid ? "opacity-50" : ""}`}>
         {selectionType === "service" && (
           <>
             {/* Main Services Section */}
@@ -136,12 +155,14 @@ export default function DynamicSelectionPanel({
                     return (
                       <div
                         key={option.name}
-                        className={`relative border rounded-lg p-4 cursor-pointer transition-all ${
+                        className={`relative border rounded-lg p-4 transition-all ${
+                          isFormValid ? "cursor-pointer" : "cursor-not-allowed"
+                        } ${
                           isSelected
                             ? "border-[#E75837] bg-[#fff8f6] shadow-md"
                             : "border-gray-200 hover:border-[#E75837]/50 hover:shadow-sm"
                         }`}
-                        onClick={() => onSelectionClick(option)}
+                        onClick={() => handleOptionClick(option)}
                       >
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
@@ -173,9 +194,9 @@ export default function DynamicSelectionPanel({
                   <div className="flex justify-center items-center mt-4 space-x-2">
                     <button
                       onClick={handlePrevPage}
-                      disabled={currentPage === 0}
+                      disabled={currentPage === 0 || !isFormValid}
                       className={`p-2 rounded-full ${
-                        currentPage === 0 ? "text-gray-300" : "text-gray-600 hover:bg-gray-100"
+                        currentPage === 0 || !isFormValid ? "text-gray-300" : "text-gray-600 hover:bg-gray-100"
                       }`}
                     >
                       <ChevronLeft size={20} />
@@ -185,7 +206,8 @@ export default function DynamicSelectionPanel({
                       {Array.from({ length: totalPages }).map((_, index) => (
                         <button
                           key={index}
-                          onClick={() => setCurrentPage(index)}
+                          onClick={() => isFormValid && setCurrentPage(index)}
+                          disabled={!isFormValid}
                           className={`w-2 h-2 rounded-full ${
                             currentPage === index ? "bg-[#E75837]" : "bg-gray-300 hover:bg-gray-400"
                           }`}
@@ -195,9 +217,11 @@ export default function DynamicSelectionPanel({
 
                     <button
                       onClick={handleNextPage}
-                      disabled={currentPage === totalPages - 1}
+                      disabled={currentPage === totalPages - 1 || !isFormValid}
                       className={`p-2 rounded-full ${
-                        currentPage === totalPages - 1 ? "text-gray-300" : "text-gray-600 hover:bg-gray-100"
+                        currentPage === totalPages - 1 || !isFormValid
+                          ? "text-gray-300"
+                          : "text-gray-600 hover:bg-gray-100"
                       }`}
                     >
                       <ChevronRight size={20} />
@@ -220,12 +244,14 @@ export default function DynamicSelectionPanel({
                     return (
                       <div
                         key={option.name}
-                        className={`relative border rounded-lg p-3 cursor-pointer transition-all ${
+                        className={`relative border rounded-lg p-3 transition-all ${
+                          isFormValid ? "cursor-pointer" : "cursor-not-allowed"
+                        } ${
                           isSelected
                             ? "border-[#745E25] bg-[#f9f7f2] shadow-sm"
                             : "border-gray-200 hover:border-[#745E25]/50"
                         }`}
-                        onClick={() => onSelectionClick(option)}
+                        onClick={() => handleOptionClick(option)}
                       >
                         <div className="flex justify-between items-center">
                           <div className="flex items-center">
@@ -265,10 +291,12 @@ export default function DynamicSelectionPanel({
               return (
                 <div
                   key={option.name}
-                  className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                  className={`border rounded-lg p-4 transition-all ${
+                    isFormValid ? "cursor-pointer" : "cursor-not-allowed"
+                  } ${
                     isSelected ? "border-[#E75837] bg-orange-50 shadow-md" : "border-gray-200 hover:border-[#E75837]/50"
                   }`}
-                  onClick={() => onSelectionClick(option)}
+                  onClick={() => handleOptionClick(option)}
                 >
                   <h4 className="text-lg font-medium header-font">{option.name}</h4>
                   {option.description && <p className="text-gray-600 mt-1 body-font">{option.description}</p>}
@@ -289,10 +317,10 @@ export default function DynamicSelectionPanel({
               return (
                 <div
                   key={option.name}
-                  className={`border rounded-lg p-3 cursor-pointer transition-all flex items-center ${
-                    isSelected ? "border-[#E75837] bg-orange-50" : "border-gray-200 hover:border-[#E75837]/50"
-                  }`}
-                  onClick={() => onSelectionClick(option)}
+                  className={`border rounded-lg p-3 transition-all flex items-center ${
+                    isFormValid ? "cursor-pointer" : "cursor-not-allowed"
+                  } ${isSelected ? "border-[#E75837] bg-orange-50" : "border-gray-200 hover:border-[#E75837]/50"}`}
+                  onClick={() => handleOptionClick(option)}
                 >
                   <div
                     className={`w-5 h-5 rounded border mr-3 flex items-center justify-center ${
@@ -319,14 +347,16 @@ export default function DynamicSelectionPanel({
               return (
                 <div
                   key={option.name}
-                  className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                  className={`border rounded-lg p-4 transition-all ${
+                    isFormValid ? "cursor-pointer" : "cursor-not-allowed"
+                  } ${
                     isSelected
                       ? option.name === "Yes, proceed"
                         ? "border-green-500 bg-green-50"
                         : "border-red-500 bg-red-50"
                       : "border-gray-200 hover:border-gray-300"
                   }`}
-                  onClick={() => onSelectionClick(option)}
+                  onClick={() => handleOptionClick(option)}
                 >
                   <h4 className="text-lg font-medium header-font">{option.name}</h4>
                 </div>

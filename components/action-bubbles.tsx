@@ -2,44 +2,68 @@
 
 type ActionBubblesProps = {
   onActionSelect: (action: string) => void
+  disabled?: boolean
 }
 
-export default function ActionBubbles({ onActionSelect }: ActionBubblesProps) {
+export default function ActionBubbles({ onActionSelect, disabled = false }: ActionBubblesProps) {
   return (
     <div className="mt-8 mb-4">
       <p className="text-sm text-gray-600 mb-4 body-font">
-        Pick from the options below to get started on your request:
+        {disabled
+          ? "Please complete your information on the left to get started:"
+          : "Pick from the options below to get started on your request:"}
       </p>
+
+      {disabled && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 rounded-lg mb-4 text-sm body-font">
+          <p>Complete your email, first name, and last name to continue.</p>
+        </div>
+      )}
 
       {/* Existing customer options */}
       <div className="flex flex-wrap gap-2 mb-5">
         <button
-          onClick={() => onActionSelect("new_booking")}
-          className="px-4 py-2 bg-[#E75837] hover:bg-[#d04e30] text-white rounded-full text-sm font-medium transition-colors body-font"
+          onClick={() => !disabled && onActionSelect("new_booking")}
+          disabled={disabled}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors body-font ${
+            disabled ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-[#E75837] hover:bg-[#d04e30] text-white"
+          }`}
         >
           Request a new booking
         </button>
         <button
-          onClick={() => onActionSelect("change_booking")}
-          className="px-4 py-2 bg-[#E75837] hover:bg-[#d04e30] text-white rounded-full text-sm font-medium transition-colors body-font"
+          onClick={() => !disabled && onActionSelect("change_booking")}
+          disabled={disabled}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors body-font ${
+            disabled ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-[#E75837] hover:bg-[#d04e30] text-white"
+          }`}
         >
           Make a change to an existing booking
         </button>
         <button
-          onClick={() => onActionSelect("cancel_booking")}
-          className="px-4 py-2 bg-[#E75837] hover:bg-[#d04e30] text-white rounded-full text-sm font-medium transition-colors body-font"
+          onClick={() => !disabled && onActionSelect("cancel_booking")}
+          disabled={disabled}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors body-font ${
+            disabled ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-[#E75837] hover:bg-[#d04e30] text-white"
+          }`}
         >
           Cancel an existing booking
         </button>
         <button
-          onClick={() => onActionSelect("list_bookings")}
-          className="px-4 py-2 bg-[#E75837] hover:bg-[#d04e30] text-white rounded-full text-sm font-medium transition-colors body-font"
+          onClick={() => !disabled && onActionSelect("list_bookings")}
+          disabled={disabled}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors body-font ${
+            disabled ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-[#E75837] hover:bg-[#d04e30] text-white"
+          }`}
         >
           See upcoming bookings
         </button>
         <button
-          onClick={() => onActionSelect("list_outstanding")}
-          className="px-4 py-2 bg-[#E75837] hover:bg-[#d04e30] text-white rounded-full text-sm font-medium transition-colors body-font"
+          onClick={() => !disabled && onActionSelect("list_outstanding")}
+          disabled={disabled}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors body-font ${
+            disabled ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-[#E75837] hover:bg-[#d04e30] text-white"
+          }`}
         >
           Review open invoices
         </button>

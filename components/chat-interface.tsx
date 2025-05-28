@@ -34,6 +34,7 @@ type ChatInterfaceProps = {
   selectedOptions: string[]
   showCalendar: boolean
   inputValue: string
+  isFormValid: boolean
   onInputChange: (value: string) => void
   onSendMessage: () => void
   onActionSelect: (action: string) => void
@@ -49,6 +50,7 @@ export default function ChatInterface({
   showActionBubbles,
   showCalendar,
   inputValue,
+  isFormValid,
   onInputChange,
   onSendMessage,
   onActionSelect,
@@ -65,7 +67,7 @@ export default function ChatInterface({
   }, [messages, isTyping, showActionBubbles, showCalendar])
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && isFormValid) {
       onSendMessage()
     }
   }
@@ -127,7 +129,7 @@ export default function ChatInterface({
           })}
 
           {/* Initial action bubbles */}
-          {showActionBubbles && <ActionBubbles onActionSelect={onActionSelect} />}
+          {showActionBubbles && <ActionBubbles onActionSelect={onActionSelect} disabled={!isFormValid} />}
 
           {/* Calendar widget for date/time selection */}
           {showCalendar && (
@@ -154,13 +156,23 @@ export default function ChatInterface({
             value={inputValue}
             onChange={(e) => onInputChange(e.target.value)}
             onKeyDown={handleKeyPress}
-            placeholder="Type your message here..."
-            className="flex-1 p-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
+            placeholder={
+              isFormValid ? "Type your message here..." : "Complete your information on the left to continue..."
+            }
+            disabled={!isFormValid}
+            className={`flex-1 p-3 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font ${
+              isFormValid ? "border-gray-300 bg-white" : "border-gray-200 bg-gray-50 text-gray-400"
+            }`}
           />
 
           <button
             onClick={onSendMessage}
-            className="bg-[#E75837] text-white px-4 py-3 rounded-r-lg hover:bg-[#d04e30] transition-colors flex items-center header-font"
+            disabled={!isFormValid || !inputValue.trim()}
+            className={`px-4 py-3 rounded-r-lg transition-colors flex items-center header-font ${
+              isFormValid && inputValue.trim()
+                ? "bg-[#E75837] text-white hover:bg-[#d04e30]"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            }`}
           >
             <span className="mr-2">Send</span>
             <Send className="h-4 w-4" />

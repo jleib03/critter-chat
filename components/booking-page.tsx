@@ -28,6 +28,9 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
   const [inputValue, setInputValue] = useState("")
   const [showActionBubbles, setShowActionBubbles] = useState(true)
 
+  // State for form validation
+  const [isFormValid, setIsFormValid] = useState(false)
+
   // State for selection panel
   const [selectionType, setSelectionType] = useState<SelectionType>(null)
   const [selectionOptions, setSelectionOptions] = useState<SelectionOption[]>([])
@@ -54,6 +57,11 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
   const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/216e36c3-4fe2-4f2e-80c3-d9ce6524f445"
   const userInfoFormRef = useRef<UserInfoFormHandle>(null)
   const chatMessagesRef = useRef<HTMLDivElement>(null)
+
+  // Handle validation changes from UserInfoForm
+  const handleValidationChange = (isValid: boolean) => {
+    setIsFormValid(isValid)
+  }
 
   // Reset the chat to its initial state
   const resetChat = () => {
@@ -91,6 +99,8 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
   }
 
   const handleActionBubbleClick = (action: string) => {
+    if (!isFormValid) return
+
     console.log(`Action bubble clicked: "${action}"`)
 
     const actionMessages: { [key: string]: string } = {
@@ -114,6 +124,8 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
 
   // Function to handle selection bubble clicks
   const handleSelectionClick = (option: SelectionOption) => {
+    if (!isFormValid) return
+
     console.log("Selection clicked:", {
       option,
       selectionType,
@@ -191,6 +203,8 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
 
   // Function to submit the selected options
   const submitSelections = (directOption?: string) => {
+    if (!isFormValid) return
+
     console.log("=== SUBMIT SELECTIONS DEBUG ===")
     console.log("directOption:", directOption, typeof directOption)
     console.log("selectedMainService:", selectedMainService, typeof selectedMainService)
@@ -602,6 +616,8 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
   }
 
   const sendMessage = async (messageText?: string, actionOverride?: string) => {
+    if (!isFormValid) return
+
     // Ensure we always have a string message
     let message = ""
 
@@ -758,6 +774,7 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
       return (
         <DateTimePanel
           isVisible={showDateTimePanel}
+          isFormValid={isFormValid}
           onSubmit={handleDateTimeSubmit}
           onClose={() => setShowDateTimePanel(false)}
           onSkip={() => {
@@ -775,6 +792,7 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
           allowMultipleSelection={allowMultipleSelection}
           selectedMainService={selectedMainService}
           selectedOptions={selectedOptions}
+          isFormValid={isFormValid}
           onSelectionClick={handleSelectionClick}
           onSubmit={submitSelections}
           onClose={() => setShowSelectionPanel(false)}
@@ -792,7 +810,12 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
       <div className="grid gap-4 h-full" style={{ gridTemplateColumns: showMiddlePanel ? "1fr 1fr 1fr" : "1fr 2fr" }}>
         {/* Left Column - User Info (Always visible) */}
         <div className="h-full flex flex-col">
-          <UserInfoForm ref={userInfoFormRef} selectedAction={selectedAction} resetChat={resetChat} />
+          <UserInfoForm
+            ref={userInfoFormRef}
+            selectedAction={selectedAction}
+            resetChat={resetChat}
+            onValidationChange={handleValidationChange}
+          />
         </div>
 
         {/* Middle Column - Selection/DateTime Panel (Conditional) */}
@@ -812,6 +835,7 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
             selectedOptions={[]}
             showCalendar={showCalendar}
             inputValue={inputValue}
+            isFormValid={isFormValid}
             onInputChange={setInputValue}
             onSendMessage={() => sendMessage()}
             onActionSelect={handleActionBubbleClick}
