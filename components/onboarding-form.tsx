@@ -6,10 +6,17 @@ import type { OnboardingFormData, PetFormData } from "../types/booking"
 type OnboardingFormProps = {
   onSubmit: (data: OnboardingFormData) => void
   onCancel: () => void
+  skipProfessionalStep?: boolean
+  professionalId?: string
 }
 
-export default function OnboardingForm({ onSubmit, onCancel }: OnboardingFormProps) {
-  const [currentStep, setCurrentStep] = useState(1)
+export default function OnboardingForm({
+  onSubmit,
+  onCancel,
+  skipProfessionalStep = false,
+  professionalId,
+}: OnboardingFormProps) {
+  const [currentStep, setCurrentStep] = useState(skipProfessionalStep ? 2 : 1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formErrors, setFormErrors] = useState<{
     professionalName?: string
@@ -130,7 +137,7 @@ export default function OnboardingForm({ onSubmit, onCancel }: OnboardingFormPro
   }
 
   const prevStep = () => {
-    if (currentStep > 1) {
+    if (currentStep > (skipProfessionalStep ? 2 : 1)) {
       setCurrentStep(currentStep - 1)
     }
   }
@@ -149,7 +156,7 @@ export default function OnboardingForm({ onSubmit, onCancel }: OnboardingFormPro
   const validateStep = () => {
     const errors: typeof formErrors = {}
 
-    if (currentStep === 1) {
+    if (currentStep === 1 && !skipProfessionalStep) {
       if (!formData.professionalName.trim()) {
         errors.professionalName = "Professional name is required"
       }
@@ -219,26 +226,33 @@ export default function OnboardingForm({ onSubmit, onCancel }: OnboardingFormPro
         <p className="text-gray-600 body-font">
           Please provide the following information to get started with your Critter professional.
         </p>
+        {professionalId && skipProfessionalStep && (
+          <p className="text-sm text-gray-500 mt-2 body-font">Professional ID: {professionalId}</p>
+        )}
       </div>
 
       {/* Progress indicator */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
-          <div
-            className={`flex flex-col items-center ${
-              currentStep >= 1 ? "text-[#E75837]" : "text-gray-400"
-            } transition-colors`}
-          >
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 ${
-                currentStep >= 1 ? "bg-[#E75837] text-white" : "bg-gray-200 text-gray-500"
-              }`}
-            >
-              1
-            </div>
-            <span className="text-xs">Professional</span>
-          </div>
-          <div className={`flex-1 h-1 mx-2 ${currentStep >= 2 ? "bg-[#E75837]" : "bg-gray-200"}`}></div>
+          {!skipProfessionalStep && (
+            <>
+              <div
+                className={`flex flex-col items-center ${
+                  currentStep >= 1 ? "text-[#E75837]" : "text-gray-400"
+                } transition-colors`}
+              >
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 ${
+                    currentStep >= 1 ? "bg-[#E75837] text-white" : "bg-gray-200 text-gray-500"
+                  }`}
+                >
+                  1
+                </div>
+                <span className="text-xs">Professional</span>
+              </div>
+              <div className={`flex-1 h-1 mx-2 ${currentStep >= 2 ? "bg-[#E75837]" : "bg-gray-200"}`}></div>
+            </>
+          )}
           <div
             className={`flex flex-col items-center ${
               currentStep >= 2 ? "text-[#E75837]" : "text-gray-400"
@@ -249,7 +263,7 @@ export default function OnboardingForm({ onSubmit, onCancel }: OnboardingFormPro
                 currentStep >= 2 ? "bg-[#E75837] text-white" : "bg-gray-200 text-gray-500"
               }`}
             >
-              2
+              {skipProfessionalStep ? "1" : "2"}
             </div>
             <span className="text-xs">Your Info</span>
           </div>
@@ -264,7 +278,7 @@ export default function OnboardingForm({ onSubmit, onCancel }: OnboardingFormPro
                 currentStep >= 3 ? "bg-[#E75837] text-white" : "bg-gray-200 text-gray-500"
               }`}
             >
-              3
+              {skipProfessionalStep ? "2" : "3"}
             </div>
             <span className="text-xs">Pet Info</span>
           </div>
@@ -272,7 +286,7 @@ export default function OnboardingForm({ onSubmit, onCancel }: OnboardingFormPro
       </div>
 
       {/* Step 1: Professional Information */}
-      {currentStep === 1 && (
+      {currentStep === 1 && !skipProfessionalStep && (
         <div className="space-y-4">
           <div>
             <label htmlFor="professionalName" className="block text-sm font-medium text-gray-700 mb-1 header-font">
@@ -522,38 +536,39 @@ export default function OnboardingForm({ onSubmit, onCancel }: OnboardingFormPro
                     <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].breed}</p>
                   )}
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label
-                      htmlFor={`petAge-${index}`}
-                      className="block text-sm font-medium text-gray-700 mb-1 header-font"
-                    >
-                      Age*
-                    </label>
+                <div>
+                  <label
+                    htmlFor={`petAge-${index}`}
+                    className="block text-sm font-medium text-gray-700 mb-1 header-font"
+                  >
+                    Age*
+                  </label>
+                  <input
+                    type="text"
+                    id={`petAge-${index}`}
+                    value={pet.age}
+                    onChange={(e) => updatePetData(index, "age", e.target.value)}
+                    className={`w-full p-3 border ${formErrors.pets?.[index]?.age ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
+                    placeholder="e.g., 3 years"
+                    required
+                  />
+                  {formErrors.pets?.[index]?.age && (
+                    <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].age}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="flex items-center">
+                  <label className="flex items-center body-font">
                     <input
-                      type="text"
-                      id={`petAge-${index}`}
-                      value={pet.age}
-                      onChange={(e) => updatePetData(index, "age", e.target.value)}
-                      className={`w-full p-3 border ${formErrors.pets?.[index]?.age ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
-                      placeholder="e.g., 3 years"
-                      required
+                      type="checkbox"
+                      checked={pet.isSpayedOrNeutered}
+                      onChange={(e) => updatePetData(index, "isSpayedOrNeutered", e.target.checked)}
+                      className="mr-2 h-4 w-4 text-[#E75837] focus:ring-2 focus:ring-[#E75837] border-gray-300 rounded"
                     />
-                    {formErrors.pets?.[index]?.age && (
-                      <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].age}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center h-full pt-8">
-                    <label className="flex items-center body-font">
-                      <input
-                        type="checkbox"
-                        checked={pet.isSpayedOrNeutered}
-                        onChange={(e) => updatePetData(index, "isSpayedOrNeutered", e.target.checked)}
-                        className="mr-2 h-4 w-4 text-[#E75837] focus:ring-2 focus:ring-[#E75837] border-gray-300 rounded"
-                      />
-                      Spayed/Neutered
-                    </label>
-                  </div>
+                    Spayed/Neutered
+                  </label>
                 </div>
               </div>
 
@@ -588,7 +603,7 @@ export default function OnboardingForm({ onSubmit, onCancel }: OnboardingFormPro
       )}
 
       <div className="mt-8 flex justify-between">
-        {currentStep > 1 ? (
+        {currentStep > (skipProfessionalStep ? 2 : 1) ? (
           <button
             type="button"
             onClick={prevStep}
