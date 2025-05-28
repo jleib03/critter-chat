@@ -64,12 +64,98 @@ export default function NewCustomerOnboarding({
 
       if (response.ok) {
         const responseData = await response.json()
+        console.log("Webhook response:", responseData)
 
-        // Parse services from the response
-        if (responseData.services) {
-          setServicesData(responseData.services)
+        // Parse services from the response message
+        if (responseData.message) {
+          try {
+            const parsedMessage = JSON.parse(responseData.message)
+
+            if (parsedMessage.type === "service_list" && parsedMessage.items) {
+              // Convert the webhook format to our component format
+              const services = parsedMessage.items.map((item: any, index: number) => {
+                // Extract duration and price from details array
+                let duration = "Not specified"
+                let price = "Contact for pricing"
+                let description = "No description provided"
+
+                if (item.details && Array.isArray(item.details)) {
+                  item.details.forEach((detail: string) => {
+                    if (detail.startsWith("Duration:")) {
+                      duration = detail.replace("Duration:", "").trim()
+                    } else if (detail.startsWith("Price:")) {
+                      price = detail.replace("Price:", "").trim()
+                    } else if (!detail.includes("No description provided")) {
+                      description = detail
+                    }
+                  })
+                }
+
+                return {
+                  id: (index + 1).toString(),
+                  name: item.name,
+                  description: description,
+                  duration: duration,
+                  price: price,
+                  category: item.category,
+                  selected: false,
+                }
+              })
+
+              setServicesData(services)
+              console.log("Parsed services:", services)
+            } else {
+              console.log("No service_list found in response, using mock data")
+              // Fallback to mock data
+              setServicesData([
+                {
+                  id: "1",
+                  name: "Dog Walking",
+                  description: "30-minute neighborhood walk",
+                  duration: "30 minutes",
+                  price: "$25",
+                  category: "Main Service",
+                  selected: false,
+                },
+                {
+                  id: "2",
+                  name: "Pet Sitting",
+                  description: "In-home pet care while you're away",
+                  duration: "Per day",
+                  price: "$50",
+                  category: "Main Service",
+                  selected: false,
+                },
+                {
+                  id: "3",
+                  name: "Feeding",
+                  description: "Additional feeding service",
+                  duration: "15 minutes",
+                  price: "$10",
+                  category: "Add-On",
+                  selected: false,
+                },
+              ])
+            }
+          } catch (parseError) {
+            console.error("Error parsing webhook message:", parseError)
+            console.log("Raw message:", responseData.message)
+            // Use mock data as fallback
+            setServicesData([
+              {
+                id: "1",
+                name: "Service information unavailable",
+                description: "Please contact your professional directly",
+                duration: "Varies",
+                price: "Contact for pricing",
+                category: "Main Service",
+                selected: false,
+              },
+            ])
+          }
         } else {
-          // Mock services for demo if none returned
+          console.log("No message in response, using mock data")
+          // Fallback to mock data if no message
           setServicesData([
             {
               id: "1",
@@ -78,22 +164,7 @@ export default function NewCustomerOnboarding({
               duration: "30 minutes",
               price: "$25",
               category: "Main Service",
-            },
-            {
-              id: "2",
-              name: "Pet Sitting",
-              description: "In-home pet care while you're away",
-              duration: "Per day",
-              price: "$50",
-              category: "Main Service",
-            },
-            {
-              id: "3",
-              name: "Feeding",
-              description: "Additional feeding service",
-              duration: "15 minutes",
-              price: "$10",
-              category: "Add-On",
+              selected: false,
             },
           ])
         }
