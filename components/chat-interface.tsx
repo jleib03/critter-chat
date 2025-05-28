@@ -1,10 +1,9 @@
 "use client"
-import { useRef, useEffect, useState } from "react"
+import { useRef, useEffect } from "react"
 import type React from "react"
 
 import { Send } from "lucide-react"
 import ActionBubbles from "./action-bubbles"
-import SelectionBubbles from "./selection-bubbles"
 import BookingCalendar, { type BookingInfo } from "./booking-calendar"
 
 type SelectionOption = {
@@ -27,7 +26,7 @@ type ChatInterfaceProps = {
   messages: Array<{ text: string; isUser: boolean; htmlMessage?: string }>
   isTyping: boolean
   showActionBubbles: boolean
-  showSelectionBubbles: boolean
+  showSelectionBubbles: boolean // Kept for backward compatibility
   selectionType: SelectionType
   selectionOptions: SelectionOption[]
   allowMultipleSelection: boolean
@@ -48,52 +47,27 @@ export default function ChatInterface({
   messages,
   isTyping,
   showActionBubbles,
-  showSelectionBubbles,
-  selectionType,
-  selectionOptions,
-  allowMultipleSelection,
-  selectedMainService,
-  selectedOptions,
   showCalendar,
   inputValue,
   onInputChange,
   onSendMessage,
   onActionSelect,
-  onSelectionClick,
-  onSelectionSubmit,
   onCalendarSubmit,
   onCalendarCancel,
 }: ChatInterfaceProps) {
   const chatMessagesRef = useRef<HTMLDivElement>(null)
-  const [onboardingFormData, setOnboardingFormData] = useState<OnboardingFormData>({
-    name: "",
-    email: "",
-    phone: "",
-  })
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     if (chatMessagesRef.current) {
       chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight
     }
-  }, [messages, isTyping, showActionBubbles, showSelectionBubbles, showCalendar])
+  }, [messages, isTyping, showActionBubbles, showCalendar])
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       onSendMessage()
     }
-  }
-
-  const handleOnboardingFormChange = (data: OnboardingFormData) => {
-    setOnboardingFormData(data)
-  }
-
-  const handleOnboardingFormSubmit = () => {
-    // This would typically send the form data to the server
-    console.log("Onboarding form submitted:", onboardingFormData)
-
-    // For now, just simulate sending a message
-    onSendMessage()
   }
 
   return (
@@ -154,19 +128,6 @@ export default function ChatInterface({
 
           {/* Initial action bubbles */}
           {showActionBubbles && <ActionBubbles onActionSelect={onActionSelect} />}
-
-          {/* Selection bubbles for professionals, services, pets, confirmation */}
-          {showSelectionBubbles && (
-            <SelectionBubbles
-              selectionType={selectionType}
-              selectionOptions={selectionOptions}
-              allowMultipleSelection={allowMultipleSelection}
-              selectedMainService={selectedMainService}
-              selectedOptions={selectedOptions}
-              onSelectionClick={onSelectionClick}
-              onSubmit={onSelectionSubmit}
-            />
-          )}
 
           {/* Calendar widget for date/time selection */}
           {showCalendar && (

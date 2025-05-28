@@ -2,6 +2,7 @@
 import { useState, useRef } from "react"
 import UserInfoForm, { type UserInfoFormHandle } from "./user-info-form"
 import ChatInterface from "./chat-interface"
+import DynamicSelectionPanel from "./dynamic-selection-panel"
 import { formatMessage } from "../utils/message-formatter"
 import type { BookingInfo } from "./booking-calendar"
 import type { Message, SelectionOption, SelectionType, StructuredMessage } from "../types/booking"
@@ -26,14 +27,11 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
   const [inputValue, setInputValue] = useState("")
   const [showActionBubbles, setShowActionBubbles] = useState(true)
 
-  // New state for secondary new customer selection
-  // const [showNewCustomerSelection, setShowNewCustomerSelection] = useState(false)
-
-  // State for selection bubbles
+  // State for selection panel
   const [selectionType, setSelectionType] = useState<SelectionType>(null)
   const [selectionOptions, setSelectionOptions] = useState<SelectionOption[]>([])
   const [selectedOptions, setSelectedOptions] = useState<string[]>([])
-  const [showSelectionBubbles, setShowSelectionBubbles] = useState(false)
+  const [showSelectionPanel, setShowSelectionPanel] = useState(false)
   const [allowMultipleSelection, setAllowMultipleSelection] = useState(false)
   const [selectedMainService, setSelectedMainService] = useState<string | null>(null)
 
@@ -57,8 +55,7 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
   const resetChat = () => {
     setSelectedAction("")
     setShowActionBubbles(true)
-    setShowSelectionBubbles(false)
-    // setShowNewCustomerSelection(false)
+    setShowSelectionPanel(false)
     setSelectionOptions([])
     setSelectedOptions([])
     setSelectedMainService(null)
@@ -110,35 +107,8 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
     sendMessage(messageText, action)
   }
 
-  // Update the handleNewCustomerSelection function
-  // const handleNewCustomerSelection = (selection: "new_customer_onboarding" | "new_customer_lead") => {
-  //   console.log(`New customer selection made: "${selection}"`)
-
-  //   // Set appropriate action based on selection
-  //   setSelectedAction(selection)
-  //   setShowNewCustomerSelection(false)
-
-  //   // If the user selected "I know my Critter professional" and we have an onStartOnboarding handler,
-  //   // start the onboarding flow with the current session ID and user ID
-  //   if (selection === "new_customer_onboarding" && onStartOnboarding) {
-  //     onStartOnboarding(sessionId, USER_ID.current)
-  //     return
-  //   }
-
-  //   // Display different messages based on selection
-  //   let messageText = ""
-  //   if (selection === "new_customer_onboarding") {
-  //     messageText = "I know my Critter professional"
-  //   } else {
-  //     messageText = "I am looking for a new pet professional"
-  //   }
-
-  //   // Send the message
-  //   sendMessage(messageText, selection)
-  // }
-
   // Function to handle selection bubble clicks
-  const handleSelectionBubbleClick = (option: SelectionOption) => {
+  const handleSelectionClick = (option: SelectionOption) => {
     if (selectionType === "service") {
       if (option.category === "Add-On") {
         setSelectedOptions((prev) => {
@@ -214,7 +184,7 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
         options[0] === "Yes, proceed" ? "Yes, I'd like to proceed with the booking." : "No, I need to make changes."
     }
 
-    setShowSelectionBubbles(false)
+    setShowSelectionPanel(false)
     setSelectionOptions([])
     setSelectedOptions([])
     setSelectedMainService(null)
@@ -508,7 +478,6 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
     if (!message) return
 
     setShowActionBubbles(false)
-    // setShowNewCustomerSelection(false)
     console.log("Sending message", { message })
 
     setMessages((prev) => {
@@ -589,22 +558,22 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
 
         if (NO_BUBBLES_ACTIONS.includes(currentAction)) {
           console.log(`Action ${currentAction} is in NO_BUBBLES_ACTIONS list, skipping all selection bubbles`)
-          setShowSelectionBubbles(false)
+          setShowSelectionPanel(false)
         } else {
           const { type, options, allowMultiple } = detectSelectionType(data.message)
           console.log("Selection detection in sendMessage:", { type, options, allowMultiple })
 
           if (type && options.length > 0) {
-            console.log("Showing selection bubbles for:", type, options)
+            console.log("Showing selection panel for:", type, options)
             setSelectionType(type)
             setSelectionOptions(options)
             setSelectedOptions([])
             setSelectedMainService(null)
             setAllowMultipleSelection(allowMultiple)
-            setShowSelectionBubbles(true)
+            setShowSelectionPanel(true)
           } else {
-            console.log("No selection options detected, hiding bubbles")
-            setShowSelectionBubbles(false)
+            console.log("No selection options detected, hiding panel")
+            setShowSelectionPanel(false)
           }
         }
       } else {
@@ -637,41 +606,53 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
     }
   }
 
-  // Fix the layout to ensure side-by-side display with fixed height
-  // Ensure the chat container has a fixed height in the grid layout
-  // Update the grid layout in the return statement:
-
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 max-h-[calc(100vh-350px)]">
-      {/* Left Column - User Info */}
-      <div className="md:col-span-4 h-full flex flex-col">
-        <UserInfoForm ref={userInfoFormRef} selectedAction={selectedAction} resetChat={resetChat} />
-      </div>
+    <div className="relative">
+      {/* Dynamic Selection Panel */}
+      <DynamicSelectionPanel
+        isVisible={showSelectionPanel}
+        selectionType={selectionType}
+        selectionOptions={selectionOptions}
+        allowMultipleSelection={allowMultipleSelection}
+        selectedMainService={selectedMainService}
+        selectedOptions={selectedOptions}
+        onSelectionClick={handleSelectionClick}
+        onSubmit={submitSelections}
+        onClose={() => setShowSelectionPanel(false)}
+      />
 
-      {/* Right Column - Chat */}
-      <div className="md:col-span-8 h-full flex flex-col">
-        <ChatInterface
-          messages={messages}
-          isTyping={isTyping}
-          showActionBubbles={showActionBubbles}
-          // showNewCustomerSelection={showNewCustomerSelection}
-          // onNewCustomerSelection={handleNewCustomerSelection}
-          showSelectionBubbles={showSelectionBubbles}
-          selectionType={selectionType}
-          selectionOptions={selectionOptions}
-          allowMultipleSelection={allowMultipleSelection}
-          selectedMainService={selectedMainService}
-          selectedOptions={selectedOptions}
-          showCalendar={showCalendar}
-          inputValue={inputValue}
-          onInputChange={setInputValue}
-          onSendMessage={() => sendMessage()}
-          onActionSelect={handleActionBubbleClick}
-          onSelectionClick={handleSelectionBubbleClick}
-          onSelectionSubmit={() => submitSelections()}
-          onCalendarSubmit={handleCalendarSubmit}
-          onCalendarCancel={() => setShowCalendar(false)}
-        />
+      {/* Main Content - Shifted right when panel is open */}
+      <div className={`transition-all duration-300 ${showSelectionPanel ? "ml-[350px]" : "ml-0"}`}>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 max-h-[calc(100vh-350px)]">
+          {/* Left Column - User Info */}
+          <div className="md:col-span-4 h-full flex flex-col">
+            <UserInfoForm ref={userInfoFormRef} selectedAction={selectedAction} resetChat={resetChat} />
+          </div>
+
+          {/* Right Column - Chat */}
+          <div className="md:col-span-8 h-full flex flex-col">
+            <ChatInterface
+              messages={messages}
+              isTyping={isTyping}
+              showActionBubbles={showActionBubbles}
+              showSelectionBubbles={false} // We're not using the embedded selection bubbles anymore
+              selectionType={null}
+              selectionOptions={[]}
+              allowMultipleSelection={false}
+              selectedMainService={null}
+              selectedOptions={[]}
+              showCalendar={showCalendar}
+              inputValue={inputValue}
+              onInputChange={setInputValue}
+              onSendMessage={() => sendMessage()}
+              onActionSelect={handleActionBubbleClick}
+              onSelectionClick={() => {}}
+              onSelectionSubmit={() => {}}
+              onCalendarSubmit={handleCalendarSubmit}
+              onCalendarCancel={() => setShowCalendar(false)}
+            />
+          </div>
+        </div>
       </div>
     </div>
   )
