@@ -297,8 +297,8 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
 
       {/* Action Cards - Main Center Section */}
       <div className="mb-16">
-        {/* Primary Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        {/* All Actions in One Row */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Existing Customer Card */}
           <div
             onClick={() => handleActionCardClick("existing")}
@@ -360,24 +360,33 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Secondary Action */}
-        <div className="max-w-md mx-auto">
+          {/* Find Professional Card */}
           <div
             onClick={() => handleActionCardClick("find")}
-            className="bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:scale-102 hover:shadow-lg cursor-pointer border border-gray-100 group"
+            className="bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:scale-102 hover:shadow-lg cursor-pointer border border-gray-100 h-full flex flex-col relative group"
           >
             <div className="bg-gradient-to-r from-[#94ABD6] to-[#b0c1e3] h-2 w-full"></div>
-            <div className="p-6">
+            <div className="p-6 flex flex-col flex-grow">
               <div className="w-12 h-12 bg-[#f5f8fd] rounded-full flex items-center justify-center mb-4 group-hover:bg-[#94ABD6] group-hover:text-white transition-colors">
                 <Users className="h-6 w-6 text-[#94ABD6] group-hover:text-white" />
               </div>
               <h3 className="text-xl font-bold mb-2 header-font">I need to find a professional</h3>
-              <p className="text-gray-600 mb-4 body-font">
+              <p className="text-gray-600 mb-6 flex-grow body-font">
                 Looking for pet care services? We'll help you find the perfect match in your area.
               </p>
-              <div className="flex items-center text-[#94ABD6] font-medium header-font group-hover:text-[#7a90ba]">
+              <div className="mt-auto space-y-2">
+                <div className="flex items-center text-gray-500 text-sm body-font">
+                  <Users className="w-4 h-4 mr-1" /> Browse professionals
+                </div>
+                <div className="flex items-center text-gray-500 text-sm body-font">
+                  <Check className="w-4 h-4 mr-1" /> View profiles & reviews
+                </div>
+                <div className="flex items-center text-gray-500 text-sm body-font">
+                  <Calendar className="w-4 h-4 mr-1" /> Check availability
+                </div>
+              </div>
+              <div className="flex items-center text-[#94ABD6] font-medium mt-6 header-font group-hover:text-[#7a90ba]">
                 Find a professional{" "}
                 <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </div>
