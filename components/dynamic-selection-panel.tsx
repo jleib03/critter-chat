@@ -1,9 +1,9 @@
 "use client"
-import { useState, useEffect } from "react"
-import { Check, ChevronLeft, ChevronRight, Clock, X } from "lucide-react"
+import { useState } from "react"
+import { Clock, X, Check, ChevronLeft, ChevronRight } from "lucide-react"
 import type { SelectionOption, SelectionType } from "../types/booking"
 
-type DynamicSelectionPanelProps = {
+interface DynamicSelectionPanelProps {
   isVisible: boolean
   selectionType: SelectionType
   selectionOptions: SelectionOption[]
@@ -26,236 +26,218 @@ export default function DynamicSelectionPanel({
   onSubmit,
   onClose,
 }: DynamicSelectionPanelProps) {
-  const [activeIndex, setActiveIndex] = useState(0)
-
-  // Reset active index when selection type changes
-  useEffect(() => {
-    setActiveIndex(0)
-  }, [selectionType])
+  const [currentPage, setCurrentPage] = useState(0)
+  const itemsPerPage = 3
 
   if (!isVisible) return null
 
-  const getSelectionTitle = () => {
+  // Group options by category for services
+  const mainServices = selectionOptions.filter((option) => option.category !== "Add-On")
+  const addOnServices = selectionOptions.filter((option) => option.category === "Add-On")
+
+  // Pagination for main services
+  const totalPages = Math.ceil(mainServices.length / itemsPerPage)
+  const paginatedMainServices = mainServices.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage)
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1))
+  }
+
+  const handlePrevPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 0))
+  }
+
+  // Extract price from details if available
+  const getPrice = (option: SelectionOption) => {
+    if (!option.details || option.details.length === 0) return null
+    const priceDetail = option.details.find((detail) => detail.startsWith("$"))
+    return priceDetail || null
+  }
+
+  // Extract duration from details if available
+  const getDuration = (option: SelectionOption) => {
+    if (!option.details || option.details.length === 0) return null
+    const durationDetail = option.details.find(
+      (detail) => detail.includes("minute") || detail.includes("hour") || detail.includes("day"),
+    )
+    return durationDetail || null
+  }
+
+  // Get title based on selection type
+  const getPanelTitle = () => {
     switch (selectionType) {
-      case "professional":
-        return "Choose Your Professional"
       case "service":
         return "Select Services"
+      case "professional":
+        return "Select Professional"
       case "pet":
-        return "Choose Your Pet(s)"
+        return "Select Pets"
       case "confirmation":
-        return "Confirm Your Booking"
+        return "Confirm Booking"
       default:
-        return "Make Your Selection"
+        return "Make Selection"
     }
   }
 
-  const getSelectionDescription = () => {
+  // Get subtitle based on selection type
+  const getPanelSubtitle = () => {
     switch (selectionType) {
-      case "professional":
-        return "Select the professional you'd like to work with"
       case "service":
         return "Choose a main service and any add-ons you need"
+      case "professional":
+        return "Select the professional you'd like to book with"
       case "pet":
-        return allowMultipleSelection ? "Select all pets that need care" : "Select which pet needs care"
+        return "Select the pets for this booking"
       case "confirmation":
-        return "Please review and confirm your booking details"
+        return "Please confirm your booking details"
       default:
         return ""
     }
   }
 
-  // Filter options based on selection type
-  const mainServices = selectionOptions.filter((opt) => opt.category !== "Add-On")
-  const addOns = selectionOptions.filter((opt) => opt.category === "Add-On")
-
-  // For pagination in card view
-  const nextCard = () => {
+  // Check if submit button should be enabled
+  const isSubmitEnabled = () => {
     if (selectionType === "service") {
-      if (activeIndex < mainServices.length - 1) {
-        setActiveIndex(activeIndex + 1)
-      }
+      return !!selectedMainService
+    } else if (allowMultipleSelection) {
+      return selectedOptions.length > 0
     } else {
-      if (activeIndex < selectionOptions.length - 1) {
-        setActiveIndex(activeIndex + 1)
-      }
+      return selectedOptions.length === 1
     }
-  }
-
-  const prevCard = () => {
-    if (activeIndex > 0) {
-      setActiveIndex(activeIndex - 1)
-    }
-  }
-
-  // Helper to extract price from details
-  const extractPrice = (details?: string[]) => {
-    if (!details) return null
-    const priceDetail = details.find((d) => d.includes("$") || d.includes("Price:"))
-    if (!priceDetail) return null
-
-    const priceMatch = priceDetail.match(/\$(\d+)/)
-    return priceMatch ? priceMatch[0] : null
-  }
-
-  // Helper to extract duration from details
-  const extractDuration = (details?: string[]) => {
-    if (!details) return null
-    const durationDetail = details.find(
-      (d) => d.includes("minute") || d.includes("hour") || d.includes("Duration:") || d.includes("day"),
-    )
-    return durationDetail ? durationDetail.replace("Duration:", "").trim() : null
   }
 
   return (
-    <div className="h-full flex flex-col bg-white border border-gray-200 rounded-lg shadow-sm">
+    <div className="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col h-full">
       {/* Header */}
-      <div className="bg-[#E75837] text-white p-4 rounded-t-lg">
-        <div className="flex justify-between items-center">
-          <h2 className="text-lg font-medium header-font">{getSelectionTitle()}</h2>
-          <button onClick={onClose} className="p-1 hover:bg-[#d04e30] rounded-full transition-colors">
-            <X className="h-4 w-4" />
-          </button>
+      <div className="bg-[#E75837] text-white p-4 flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-bold">{getPanelTitle()}</h2>
+          <p className="text-sm opacity-90">{getPanelSubtitle()}</p>
         </div>
-        <p className="text-sm mt-1 opacity-90 body-font">{getSelectionDescription()}</p>
+        <button onClick={onClose} className="p-1 rounded-full hover:bg-white/20 transition-colors">
+          <X size={20} />
+        </button>
       </div>
 
       {/* Content */}
-      <div className="flex-1 p-4 overflow-y-auto">
-        {/* Service Selection - Card View with Pagination */}
+      <div className="flex-grow overflow-y-auto p-4">
         {selectionType === "service" && (
           <>
-            {/* Main Services Carousel */}
+            {/* Main Services Section */}
             <div className="mb-6">
-              <h3 className="text-sm font-medium text-gray-500 mb-3 body-font">Main Services (select one)</h3>
+              <h3 className="text-lg font-semibold mb-2">Main Services (select one)</h3>
 
+              {/* Main Services Carousel */}
               <div className="relative">
-                {/* Card Carousel */}
-                <div className="relative overflow-hidden">
-                  <div
-                    className="flex transition-transform duration-300"
-                    style={{ transform: `translateX(-${activeIndex * 100}%)` }}
-                  >
-                    {mainServices.map((option, index) => {
-                      const price = extractPrice(option.details)
-                      const duration = extractDuration(option.details)
-                      const isSelected = option.name === selectedMainService
+                <div className="flex flex-col space-y-4">
+                  {paginatedMainServices.map((option) => {
+                    const price = getPrice(option)
+                    const duration = getDuration(option)
+                    const isSelected = selectedMainService === option.name
 
-                      return (
-                        <div
-                          key={index}
-                          className={`min-w-full p-4 border rounded-lg transition-all ${
-                            isSelected ? "border-[#E75837] bg-[#fff9f8]" : "border-gray-200"
-                          }`}
-                        >
-                          <div className="flex justify-between items-start mb-2">
-                            <h3 className="text-lg font-medium header-font">{option.name}</h3>
-                            {price && <span className="text-lg font-bold text-[#E75837]">{price}</span>}
-                          </div>
-
-                          {option.description && (
-                            <p className="text-sm text-gray-600 mb-3 body-font">{option.description}</p>
-                          )}
-
-                          {duration && (
-                            <div className="flex items-center text-sm text-gray-500 mb-3">
-                              <Clock className="h-4 w-4 mr-1" />
-                              <span>{duration}</span>
-                            </div>
-                          )}
-
-                          <button
-                            onClick={() => onSelectionClick(option)}
-                            className={`w-full py-2 px-4 rounded-full text-sm font-medium transition-colors mt-2 ${
-                              isSelected ? "bg-[#E75837] text-white" : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                            }`}
-                          >
-                            {isSelected ? (
-                              <span className="flex items-center justify-center">
-                                <Check className="h-4 w-4 mr-1" />
-                                Selected
-                              </span>
-                            ) : (
-                              "Select Service"
-                            )}
-                          </button>
+                    return (
+                      <div
+                        key={option.name}
+                        className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                          isSelected
+                            ? "border-[#E75837] bg-orange-50 shadow-md"
+                            : "border-gray-200 hover:border-[#E75837]/50"
+                        }`}
+                        onClick={() => onSelectionClick(option)}
+                      >
+                        <div className="flex justify-between items-start">
+                          <h4 className="text-lg font-medium">{option.name}</h4>
+                          {price && <span className="text-lg font-semibold">{price}</span>}
                         </div>
-                      )
-                    })}
-                  </div>
+
+                        {option.description && <p className="text-gray-600 mt-1">{option.description}</p>}
+
+                        {duration && (
+                          <div className="flex items-center mt-2 text-gray-500">
+                            <Clock size={16} className="mr-1" />
+                            <span>{duration}</span>
+                          </div>
+                        )}
+
+                        {isSelected && (
+                          <div className="absolute top-2 right-2 bg-[#E75837] text-white rounded-full p-1">
+                            <Check size={16} />
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
 
-                {/* Navigation Buttons */}
-                {mainServices.length > 1 && (
-                  <div className="flex justify-between mt-3">
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center items-center mt-4 space-x-2">
                     <button
-                      onClick={prevCard}
-                      disabled={activeIndex === 0}
-                      className={`p-2 rounded-full ${
-                        activeIndex === 0 ? "text-gray-300" : "text-gray-600 hover:bg-gray-100"
+                      onClick={handlePrevPage}
+                      disabled={currentPage === 0}
+                      className={`p-1 rounded-full ${
+                        currentPage === 0 ? "text-gray-300" : "text-gray-600 hover:bg-gray-100"
                       }`}
                     >
-                      <ChevronLeft className="h-5 w-5" />
+                      <ChevronLeft size={20} />
                     </button>
 
-                    <div className="flex items-center space-x-1">
-                      {mainServices.map((_, idx) => (
+                    <div className="text-sm text-gray-600">
+                      {Array.from({ length: totalPages }).map((_, index) => (
                         <span
-                          key={idx}
-                          className={`block h-2 w-2 rounded-full ${
-                            idx === activeIndex ? "bg-[#E75837]" : "bg-gray-300"
+                          key={index}
+                          className={`inline-block w-2 h-2 rounded-full mx-1 ${
+                            currentPage === index ? "bg-[#E75837]" : "bg-gray-300"
                           }`}
                         />
                       ))}
                     </div>
 
                     <button
-                      onClick={nextCard}
-                      disabled={activeIndex === mainServices.length - 1}
-                      className={`p-2 rounded-full ${
-                        activeIndex === mainServices.length - 1 ? "text-gray-300" : "text-gray-600 hover:bg-gray-100"
+                      onClick={handleNextPage}
+                      disabled={currentPage === totalPages - 1}
+                      className={`p-1 rounded-full ${
+                        currentPage === totalPages - 1 ? "text-gray-300" : "text-gray-600 hover:bg-gray-100"
                       }`}
                     >
-                      <ChevronRight className="h-5 w-5" />
+                      <ChevronRight size={20} />
                     </button>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Add-Ons Grid */}
-            {addOns.length > 0 && (
-              <div className="mt-6">
-                <h3 className="text-sm font-medium text-gray-500 mb-3 body-font">Add-On Services (optional)</h3>
+            {/* Add-On Services Section */}
+            {addOnServices.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Add-On Services (optional)</h3>
                 <div className="grid grid-cols-1 gap-3">
-                  {addOns.map((option, index) => {
-                    const price = extractPrice(option.details)
+                  {addOnServices.map((option) => {
+                    const price = getPrice(option)
+                    const duration = getDuration(option)
                     const isSelected = selectedOptions.includes(option.name)
 
                     return (
                       <div
-                        key={index}
-                        className={`p-3 border rounded-lg flex items-center justify-between transition-all ${
-                          isSelected ? "border-[#94ABD6] bg-[#f8faff]" : "border-gray-200"
+                        key={option.name}
+                        className={`border rounded-lg p-3 cursor-pointer transition-all ${
+                          isSelected ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-blue-300"
                         }`}
+                        onClick={() => onSelectionClick(option)}
                       >
-                        <div className="flex-1">
-                          <div className="flex justify-between">
-                            <h4 className="font-medium body-font">{option.name}</h4>
-                            {price && <span className="font-bold text-[#94ABD6]">{price}</span>}
-                          </div>
-                          {option.description && (
-                            <p className="text-xs text-gray-500 mt-1 body-font">{option.description}</p>
-                          )}
+                        <div className="flex justify-between items-start">
+                          <h4 className="font-medium">{option.name}</h4>
+                          {price && <span className="font-semibold">{price}</span>}
                         </div>
-                        <button
-                          onClick={() => onSelectionClick(option)}
-                          className={`ml-3 h-6 w-6 rounded-full flex items-center justify-center ${
-                            isSelected ? "bg-[#94ABD6] text-white" : "bg-gray-100 text-gray-400"
-                          }`}
-                        >
-                          {isSelected && <Check className="h-4 w-4" />}
-                        </button>
+
+                        {option.description && <p className="text-gray-600 text-sm mt-1">{option.description}</p>}
+
+                        {duration && (
+                          <div className="flex items-center mt-1 text-gray-500 text-sm">
+                            <Clock size={14} className="mr-1" />
+                            <span>{duration}</span>
+                          </div>
+                        )}
                       </div>
                     )
                   })}
@@ -265,83 +247,53 @@ export default function DynamicSelectionPanel({
           </>
         )}
 
-        {/* Professional Selection */}
         {selectionType === "professional" && (
-          <div className="space-y-4">
-            {selectionOptions.map((option, index) => {
+          <div className="grid grid-cols-1 gap-4">
+            {selectionOptions.map((option) => {
               const isSelected = selectedOptions.includes(option.name)
 
               return (
                 <div
-                  key={index}
-                  className={`p-4 border rounded-lg transition-all ${
-                    isSelected ? "border-[#E75837] bg-[#fff9f8]" : "border-gray-200"
+                  key={option.name}
+                  className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                    isSelected ? "border-[#E75837] bg-orange-50 shadow-md" : "border-gray-200 hover:border-[#E75837]/50"
                   }`}
+                  onClick={() => onSelectionClick(option)}
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="h-12 w-12 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-medium">
-                      {option.name.charAt(0)}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-medium header-font">{option.name}</h3>
-                      {option.description && <p className="text-sm text-gray-600 body-font">{option.description}</p>}
-                      {option.details &&
-                        option.details.map((detail, i) => (
-                          <p key={i} className="text-sm text-gray-500 body-font">
-                            {detail}
-                          </p>
-                        ))}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => onSelectionClick(option)}
-                    className={`w-full py-2 px-4 rounded-full text-sm font-medium transition-colors mt-3 ${
-                      isSelected ? "bg-[#E75837] text-white" : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                    }`}
-                  >
-                    {isSelected ? (
-                      <span className="flex items-center justify-center">
-                        <Check className="h-4 w-4 mr-1" />
-                        Selected
-                      </span>
-                    ) : (
-                      "Select Professional"
-                    )}
-                  </button>
+                  <h4 className="text-lg font-medium">{option.name}</h4>
+                  {option.description && <p className="text-gray-600 mt-1">{option.description}</p>}
+                  {option.details && option.details.length > 0 && (
+                    <p className="text-gray-500 text-sm mt-2">{option.details.join(" • ")}</p>
+                  )}
                 </div>
               )
             })}
           </div>
         )}
 
-        {/* Pet Selection */}
         {selectionType === "pet" && (
           <div className="space-y-3">
-            <p className="text-sm text-gray-600 mb-2 body-font">
-              {allowMultipleSelection ? "Select all pets that need care:" : "Select which pet needs care:"}
-            </p>
-
-            {selectionOptions.map((option, index) => {
+            {selectionOptions.map((option) => {
               const isSelected = selectedOptions.includes(option.name)
 
               return (
                 <div
-                  key={index}
-                  onClick={() => onSelectionClick(option)}
-                  className={`p-3 border rounded-lg flex items-center cursor-pointer transition-all ${
-                    isSelected ? "border-[#E75837] bg-[#fff9f8]" : "border-gray-200 hover:border-gray-300"
+                  key={option.name}
+                  className={`border rounded-lg p-3 cursor-pointer transition-all flex items-center ${
+                    isSelected ? "border-[#E75837] bg-orange-50" : "border-gray-200 hover:border-[#E75837]/50"
                   }`}
+                  onClick={() => onSelectionClick(option)}
                 >
-                  <div className="flex-1">
-                    <h4 className="font-medium body-font">{option.name}</h4>
-                    {option.description && <p className="text-xs text-gray-500 body-font">{option.description}</p>}
-                  </div>
                   <div
-                    className={`h-5 w-5 rounded-full border flex items-center justify-center ${
-                      isSelected ? "bg-[#E75837] border-[#E75837] text-white" : "border-gray-300"
+                    className={`w-5 h-5 rounded border mr-3 flex items-center justify-center ${
+                      isSelected ? "bg-[#E75837] border-[#E75837]" : "border-gray-400"
                     }`}
                   >
-                    {isSelected && <Check className="h-3 w-3" />}
+                    {isSelected && <Check size={14} className="text-white" />}
+                  </div>
+                  <div>
+                    <h4 className="font-medium">{option.name}</h4>
+                    {option.description && <p className="text-gray-600 text-sm">{option.description}</p>}
                   </div>
                 </div>
               )
@@ -349,52 +301,59 @@ export default function DynamicSelectionPanel({
           </div>
         )}
 
-        {/* Confirmation */}
         {selectionType === "confirmation" && (
           <div className="space-y-4">
-            <p className="text-sm text-gray-600 mb-4 body-font">
-              Please confirm if you'd like to proceed with this booking:
-            </p>
-
-            {selectionOptions.map((option, index) => {
+            {selectionOptions.map((option) => {
               const isSelected = selectedOptions.includes(option.name)
-              const isYes = option.name === "Yes, proceed"
 
               return (
-                <button
-                  key={index}
-                  onClick={() => onSelectionClick(option)}
-                  className={`w-full py-3 px-4 rounded-lg text-center text-sm font-medium transition-colors ${
+                <div
+                  key={option.name}
+                  className={`border rounded-lg p-4 cursor-pointer transition-all ${
                     isSelected
-                      ? isYes
-                        ? "bg-[#E75837] text-white"
-                        : "bg-gray-700 text-white"
-                      : isYes
-                        ? "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                        : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                      ? option.name === "Yes, proceed"
+                        ? "border-green-500 bg-green-50"
+                        : "border-red-500 bg-red-50"
+                      : "border-gray-200 hover:border-gray-300"
                   }`}
+                  onClick={() => onSelectionClick(option)}
                 >
-                  {option.name}
-                </button>
+                  <h4 className="text-lg font-medium">{option.name}</h4>
+                </div>
               )
             })}
           </div>
         )}
       </div>
 
-      {/* Footer with Submit Button */}
-      <div className="p-4 border-t bg-gray-50 rounded-b-lg">
-        {((selectionType === "service" && selectedMainService) ||
-          (selectionType === "pet" && selectedOptions.length > 0)) && (
-          <button
-            onClick={onSubmit}
-            className="w-full bg-[#745E25] text-white py-3 px-4 rounded-lg font-medium text-sm transition-colors hover:bg-[#5d4b1e] focus:outline-none focus:ring-2 focus:ring-[#745E25] focus:ring-opacity-50 body-font"
-          >
-            {selectionType === "service"
-              ? `Continue with ${selectedMainService}${selectedOptions.length > 0 ? ` + ${selectedOptions.length} add-on${selectedOptions.length > 1 ? "s" : ""}` : ""}`
-              : `Continue with ${selectedOptions.length} pet${selectedOptions.length > 1 ? "s" : ""}`}
-          </button>
-        )}
+      {/* Footer */}
+      <div className="p-4 border-t border-gray-200 flex justify-between">
+        <button
+          onClick={onClose}
+          className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => {
+            console.log("Submit button clicked")
+            console.log("Selected main service:", selectedMainService)
+            console.log("Selected options:", selectedOptions)
+            onSubmit()
+          }}
+          disabled={!isSubmitEnabled()}
+          className={`px-4 py-2 rounded-md ${
+            isSubmitEnabled()
+              ? "bg-[#E75837] text-white hover:bg-[#D64726] transition-colors"
+              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+          }`}
+        >
+          {selectionType === "confirmation" && selectedOptions[0] === "Yes, proceed"
+            ? "Confirm"
+            : selectionType === "confirmation"
+              ? "Go Back"
+              : "Next"}
+        </button>
       </div>
     </div>
   )
