@@ -860,7 +860,7 @@ export default function BookingPage({ userInfo, onStartOnboarding }: BookingPage
       {/* Modal Overlays */}
       {showSelectionPanel && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[80vh] animate-scaleIn">
+          <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto animate-scaleIn">
             <DynamicSelectionPanel
               isVisible={showSelectionPanel}
               selectionType={selectionType}
@@ -879,7 +879,7 @@ export default function BookingPage({ userInfo, onStartOnboarding }: BookingPage
 
       {showDateTimePanel && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full max-h-[80vh] animate-scaleIn">
+          <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto animate-scaleIn">
             <DateTimePanel
               isVisible={showDateTimePanel}
               isFormValid={true} // Always true since we have user info
