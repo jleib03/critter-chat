@@ -14,12 +14,6 @@ export default function ActionBubbles({ onActionSelect, disabled = false }: Acti
           : "Pick from the options below to get started on your request:"}
       </p>
 
-      {disabled && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 rounded-lg mb-4 text-sm body-font">
-          <p>Complete your email, first name, and last name to continue.</p>
-        </div>
-      )}
-
       {/* Existing customer options */}
       <div className="flex flex-wrap gap-2 mb-5">
         <button

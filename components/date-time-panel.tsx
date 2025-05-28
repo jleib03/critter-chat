@@ -180,13 +180,6 @@ export default function DateTimePanel({ isVisible, isFormValid, onSubmit, onClos
         </button>
       </div>
 
-      {/* Form validation notice */}
-      {!isFormValid && (
-        <div className="bg-amber-50 border-b border-amber-200 text-amber-800 px-4 py-3 text-sm body-font">
-          <p>Please complete your email, first name, and last name on the left to schedule your booking.</p>
-        </div>
-      )}
-
       {/* Content */}
       <div className={`flex-grow overflow-y-auto p-4 space-y-4 ${!isFormValid ? "opacity-50" : ""}`}>
         <div>

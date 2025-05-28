@@ -24,11 +24,7 @@ const UserInfoForm = forwardRef<UserInfoFormHandle, UserInfoFormProps>(
     const emailRef = useRef<HTMLInputElement>(null)
     const actionSelectRef = useRef<HTMLInputElement>(null)
 
-    const [validationErrors, setValidationErrors] = useState<{
-      firstName?: string
-      lastName?: string
-      email?: string
-    }>({})
+    const [isFormValid, setIsFormValid] = useState(false)
 
     // Update the hidden input when selectedAction changes
     useEffect(() => {
@@ -37,30 +33,14 @@ const UserInfoForm = forwardRef<UserInfoFormHandle, UserInfoFormProps>(
       }
     }, [selectedAction])
 
-    // Validation function
+    // Remove the validationErrors state entirely and replace with simple validation
     const validateForm = () => {
       const firstName = firstNameRef.current?.value.trim() || ""
       const lastName = lastNameRef.current?.value.trim() || ""
       const email = emailRef.current?.value.trim() || ""
 
-      const errors: typeof validationErrors = {}
-
-      if (!firstName) {
-        errors.firstName = "First name is required"
-      }
-
-      if (!lastName) {
-        errors.lastName = "Last name is required"
-      }
-
-      if (!email) {
-        errors.email = "Email is required"
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        errors.email = "Please enter a valid email address"
-      }
-
-      setValidationErrors(errors)
-      const isValid = Object.keys(errors).length === 0
+      const isValid = firstName && lastName && email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+      setIsFormValid(isValid)
       onValidationChange(isValid)
       return isValid
     }
@@ -103,7 +83,6 @@ const UserInfoForm = forwardRef<UserInfoFormHandle, UserInfoFormProps>(
       return actionDisplayNames[action] || action
     }
 
-    const hasAnyErrors = Object.keys(validationErrors).length > 0
     const hasRequiredFields =
       firstNameRef.current?.value.trim() && lastNameRef.current?.value.trim() && emailRef.current?.value.trim()
 
@@ -119,14 +98,9 @@ const UserInfoForm = forwardRef<UserInfoFormHandle, UserInfoFormProps>(
           </p>
 
           {/* Required fields notice */}
-          {hasAnyErrors && (
+          {!isFormValid && (
             <div className="bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 rounded-lg mb-4 text-sm body-font">
-              <p className="font-medium">Please complete all required fields to continue:</p>
-              <ul className="mt-1 text-xs">
-                {validationErrors.email && <li>• {validationErrors.email}</li>}
-                {validationErrors.firstName && <li>• {validationErrors.firstName}</li>}
-                {validationErrors.lastName && <li>• {validationErrors.lastName}</li>}
-              </ul>
+              <p>Please complete all required fields to continue.</p>
             </div>
           )}
 
@@ -137,13 +111,8 @@ const UserInfoForm = forwardRef<UserInfoFormHandle, UserInfoFormProps>(
                 ref={emailRef}
                 placeholder="Email*"
                 onChange={handleInputChange}
-                className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font ${
-                  validationErrors.email ? "border-red-300 bg-red-50" : "border-gray-300"
-                }`}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
               />
-              {validationErrors.email && (
-                <p className="mt-1 text-xs text-red-600 body-font">{validationErrors.email}</p>
-              )}
             </div>
             <div>
               <input
@@ -151,13 +120,8 @@ const UserInfoForm = forwardRef<UserInfoFormHandle, UserInfoFormProps>(
                 ref={firstNameRef}
                 placeholder="First Name*"
                 onChange={handleInputChange}
-                className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font ${
-                  validationErrors.firstName ? "border-red-300 bg-red-50" : "border-gray-300"
-                }`}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
               />
-              {validationErrors.firstName && (
-                <p className="mt-1 text-xs text-red-600 body-font">{validationErrors.firstName}</p>
-              )}
             </div>
             <div>
               <input
@@ -165,13 +129,8 @@ const UserInfoForm = forwardRef<UserInfoFormHandle, UserInfoFormProps>(
                 ref={lastNameRef}
                 placeholder="Last Name*"
                 onChange={handleInputChange}
-                className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font ${
-                  validationErrors.lastName ? "border-red-300 bg-red-50" : "border-gray-300"
-                }`}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
               />
-              {validationErrors.lastName && (
-                <p className="mt-1 text-xs text-red-600 body-font">{validationErrors.lastName}</p>
-              )}
             </div>
 
             {/* Current Action Section */}
@@ -186,7 +145,7 @@ const UserInfoForm = forwardRef<UserInfoFormHandle, UserInfoFormProps>(
               </div>
               <input type="hidden" id="action-select" ref={actionSelectRef} value={selectedAction} />
               <p className="mt-2 text-xs text-gray-500 body-font">
-                {hasAnyErrors
+                {!isFormValid
                   ? "Complete the required fields above to select an action"
                   : "Please select an action from the chat options on the right"}
               </p>

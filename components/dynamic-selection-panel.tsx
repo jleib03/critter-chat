@@ -130,11 +130,6 @@ export default function DynamicSelectionPanel({
       </div>
 
       {/* Form validation notice */}
-      {!isFormValid && (
-        <div className="bg-amber-50 border-b border-amber-200 text-amber-800 px-4 py-3 text-sm body-font">
-          <p>Please complete your email, first name, and last name on the left to make selections.</p>
-        </div>
-      )}
 
       {/* Content */}
       <div className={`flex-grow overflow-y-auto p-4 ${!isFormValid ? "opacity-50" : ""}`}>
