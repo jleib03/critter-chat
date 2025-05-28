@@ -3,6 +3,7 @@ import { useState, useRef } from "react"
 import UserInfoForm, { type UserInfoFormHandle } from "./user-info-form"
 import ChatInterface from "./chat-interface"
 import DynamicSelectionPanel from "./dynamic-selection-panel"
+import DateTimePanel from "./date-time-panel"
 import { formatMessage } from "../utils/message-formatter"
 import type { BookingInfo } from "./booking-calendar"
 import type { Message, SelectionOption, SelectionType, StructuredMessage } from "../types/booking"
@@ -35,6 +36,9 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
   const [allowMultipleSelection, setAllowMultipleSelection] = useState(false)
   const [selectedMainService, setSelectedMainService] = useState<string | null>(null)
 
+  // State for date/time panel
+  const [showDateTimePanel, setShowDateTimePanel] = useState(false)
+
   // State for UI status
   const [isTyping, setIsTyping] = useState(false)
   const [sessionId, setSessionId] = useState<string | null>(null)
@@ -56,6 +60,7 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
     setSelectedAction("")
     setShowActionBubbles(true)
     setShowSelectionPanel(false)
+    setShowDateTimePanel(false)
     setSelectionOptions([])
     setSelectedOptions([])
     setSelectedMainService(null)
@@ -266,6 +271,13 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
     console.log("About to send message:", messageText, typeof messageText)
     console.log("Message length:", messageText.length)
     console.log("Message JSON:", JSON.stringify(messageText))
+
+    // Clear the selection panel state
+    setShowSelectionPanel(false)
+    setSelectionOptions([])
+    setSelectedOptions([])
+    setSelectedMainService(null)
+    setSelectionType(null)
 
     // Send the message
     sendMessage(messageText)
@@ -485,9 +497,9 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
     return { type: null, options: [], allowMultiple: false }
   }
 
-  // Function to detect if we should show the calendar
-  const shouldShowCalendarLogic = (message: string): boolean => {
-    console.log("Checking if calendar should show for message:", message)
+  // Function to detect if we should show the date/time panel
+  const shouldShowDateTimePanel = (message: string): boolean => {
+    console.log("Checking if date/time panel should show for message:", message)
 
     try {
       const jsonData = JSON.parse(message)
@@ -535,10 +547,9 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
     return containsSchedulingPhrase || (hasDateTimeKeywords && lowerMessage.includes("provide"))
   }
 
-  // Function to handle calendar submission
-  const handleCalendarSubmit = (bookingInfo: BookingInfo) => {
+  // Function to handle date/time panel submission
+  const handleDateTimeSubmit = (bookingInfo: BookingInfo) => {
     // Format the date correctly to avoid timezone issues
-    // Use the date parts directly to create a date string in local timezone
     const dateObj = bookingInfo.date
     const year = dateObj.getFullYear()
     const month = dateObj.getMonth() + 1 // getMonth() is zero-based
@@ -581,8 +592,13 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
       messageText += `, Multi-day booking ending on: ${formattedEndDate}`
     }
 
-    setShowCalendar(false)
+    setShowDateTimePanel(false)
     sendMessage(messageText)
+  }
+
+  // Function to handle calendar submission (legacy)
+  const handleCalendarSubmit = (bookingInfo: BookingInfo) => {
+    handleDateTimeSubmit(bookingInfo)
   }
 
   const sendMessage = async (messageText?: string, actionOverride?: string) => {
@@ -673,9 +689,10 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
           },
         ])
 
-        if (shouldShowCalendarLogic(data.message)) {
-          console.log("Showing calendar for date/time selection")
-          setShowCalendar(true)
+        // Check if we should show the date/time panel instead of calendar
+        if (shouldShowDateTimePanel(data.message)) {
+          console.log("Showing date/time panel for scheduling")
+          setShowDateTimePanel(true)
           return
         }
 
@@ -735,34 +752,51 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
     }
   }
 
+  // Determine which panel to show in the middle column
+  const getMiddlePanel = () => {
+    if (showDateTimePanel) {
+      return (
+        <DateTimePanel
+          isVisible={showDateTimePanel}
+          onSubmit={handleDateTimeSubmit}
+          onClose={() => setShowDateTimePanel(false)}
+          onSkip={() => {
+            setShowDateTimePanel(false)
+            sendMessage("I don't need a calendar")
+          }}
+        />
+      )
+    } else if (showSelectionPanel) {
+      return (
+        <DynamicSelectionPanel
+          isVisible={showSelectionPanel}
+          selectionType={selectionType}
+          selectionOptions={selectionOptions}
+          allowMultipleSelection={allowMultipleSelection}
+          selectedMainService={selectedMainService}
+          selectedOptions={selectedOptions}
+          onSelectionClick={handleSelectionClick}
+          onSubmit={submitSelections}
+          onClose={() => setShowSelectionPanel(false)}
+        />
+      )
+    }
+    return null
+  }
+
+  const showMiddlePanel = showSelectionPanel || showDateTimePanel
+
   return (
     <div className="max-h-[calc(100vh-350px)]">
-      {/* Three-column layout: User Info → Selection Panel → Chat */}
-      <div
-        className="grid gap-4 h-full"
-        style={{ gridTemplateColumns: showSelectionPanel ? "1fr 1fr 1fr" : "1fr 2fr" }}
-      >
+      {/* Three-column layout: User Info → Selection/DateTime Panel → Chat */}
+      <div className="grid gap-4 h-full" style={{ gridTemplateColumns: showMiddlePanel ? "1fr 1fr 1fr" : "1fr 2fr" }}>
         {/* Left Column - User Info (Always visible) */}
         <div className="h-full flex flex-col">
           <UserInfoForm ref={userInfoFormRef} selectedAction={selectedAction} resetChat={resetChat} />
         </div>
 
-        {/* Middle Column - Selection Panel (Conditional) */}
-        {showSelectionPanel && (
-          <div className="h-full flex flex-col">
-            <DynamicSelectionPanel
-              isVisible={showSelectionPanel}
-              selectionType={selectionType}
-              selectionOptions={selectionOptions}
-              allowMultipleSelection={allowMultipleSelection}
-              selectedMainService={selectedMainService}
-              selectedOptions={selectedOptions}
-              onSelectionClick={handleSelectionClick}
-              onSubmit={submitSelections}
-              onClose={() => setShowSelectionPanel(false)}
-            />
-          </div>
-        )}
+        {/* Middle Column - Selection/DateTime Panel (Conditional) */}
+        {showMiddlePanel && <div className="h-full flex flex-col">{getMiddlePanel()}</div>}
 
         {/* Right Column - Chat (Always visible) */}
         <div className="h-full flex flex-col">
