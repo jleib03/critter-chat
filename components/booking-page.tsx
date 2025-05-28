@@ -1,6 +1,5 @@
 "use client"
 import { useState, useRef } from "react"
-import UserInfoForm, { type UserInfoFormHandle } from "./user-info-form"
 import ChatInterface from "./chat-interface"
 import DynamicSelectionPanel from "./dynamic-selection-panel"
 import DateTimePanel from "./date-time-panel"
@@ -11,30 +10,28 @@ import type { Message, SelectionOption, SelectionType, StructuredMessage } from 
 // Define actions that should never show selection bubbles
 const NO_BUBBLES_ACTIONS = ["list_bookings", "list_outstanding"]
 
-// Update the prop type definition
+type UserInfo = {
+  email: string
+  firstName: string
+  lastName: string
+}
+
 type BookingPageProps = {
+  userInfo: UserInfo
   onStartOnboarding?: (sessionId: string | null, userId: string | null) => void
 }
 
-// Update the beginning of BookingPage component to handle progressive data collection
-export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
+export default function BookingPage({ userInfo, onStartOnboarding }: BookingPageProps) {
   // State for messages and UI
   const [statusColor, setStatusColor] = useState("#E75837")
   const [messages, setMessages] = useState<Message[]>([
     {
-      text: "Let's get you started! What would you like to do today?",
+      text: `Hi ${userInfo.firstName}! What would you like to do today?`,
       isUser: false,
     },
   ])
   const [inputValue, setInputValue] = useState("")
   const [showActionBubbles, setShowActionBubbles] = useState(true)
-
-  // New state for progressive flow
-  const [userEmail, setUserEmail] = useState<string>("")
-  const [isEmailCollected, setIsEmailCollected] = useState(false)
-
-  // State for form validation
-  const [isFormValid, setIsFormValid] = useState(false)
 
   // State for selection panel
   const [selectionType, setSelectionType] = useState<SelectionType>(null)
@@ -53,19 +50,15 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [statusText, setStatusText] = useState("Ready to assist you")
   const [selectedAction, setSelectedAction] = useState<string>("")
-  const [isAtBottom, setIsAtBottom] = useState(true)
-  const [debugInfo, setDebugInfo] = useState<string>("")
   const [showCalendar, setShowCalendar] = useState(false)
 
   // Refs
   const USER_ID = useRef(`web_user_${Math.random().toString(36).substring(2, 10)}`)
   const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/216e36c3-4fe2-4f2e-80c3-d9ce6524f445"
-  const userInfoFormRef = useRef<UserInfoFormHandle>(null)
-  const chatMessagesRef = useRef<HTMLDivElement>(null)
 
-  // Handle validation changes from UserInfoForm
-  const handleValidationChange = (isValid: boolean) => {
-    setIsFormValid(isValid)
+  const updateStatus = (text: string, color: string) => {
+    setStatusText(text)
+    setStatusColor(color)
   }
 
   // Reset the chat to its initial state
@@ -80,7 +73,7 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
     setSelectionType(null)
     setMessages([
       {
-        text: "Let's get you started! First thing's first, share some details to the left so can match you to the right businesses on Critter.",
+        text: `Hi ${userInfo.firstName}! What would you like to do today?`,
         isUser: false,
       },
     ])
@@ -89,23 +82,7 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
     console.log("Chat reset by user")
   }
 
-  // Update the getUserInfo function to get values from the UserInfoForm component
-  const getUserInfo = (actionOverride?: string) => {
-    const formValues = userInfoFormRef.current?.getValues() || { firstName: "", lastName: "", email: "" }
-    return {
-      ...formValues,
-      selectedAction: actionOverride || selectedAction,
-    }
-  }
-
-  const updateStatus = (text: string, color: string) => {
-    setStatusText(text)
-    setStatusColor(color)
-  }
-
   const handleActionBubbleClick = (action: string) => {
-    if (!isFormValid) return
-
     console.log(`Action bubble clicked: "${action}"`)
 
     const actionMessages: { [key: string]: string } = {
@@ -129,8 +106,6 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
 
   // Function to handle selection bubble clicks
   const handleSelectionClick = (option: SelectionOption) => {
-    if (!isFormValid) return
-
     console.log("Selection clicked:", {
       option,
       selectionType,
@@ -208,8 +183,6 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
 
   // Function to submit the selected options
   const submitSelections = (directOption?: string) => {
-    if (!isFormValid) return
-
     console.log("=== SUBMIT SELECTIONS DEBUG ===")
     console.log("directOption:", directOption, typeof directOption)
     console.log("selectedMainService:", selectedMainService, typeof selectedMainService)
@@ -620,29 +593,7 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
     handleDateTimeSubmit(bookingInfo)
   }
 
-  // Add a new function to collect email first, then show the form
-  const handleEmailSubmit = (email: string) => {
-    if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
-      return false
-    }
-
-    setUserEmail(email)
-    setIsEmailCollected(true)
-    setIsFormValid(true) // Enable form actions after email is collected
-
-    // Add email to messages
-    setMessages((prev) => [
-      ...prev,
-      { text: email, isUser: true },
-      { text: "Great! Now you can select what you'd like to do.", isUser: false },
-    ])
-
-    return true
-  }
-
   const sendMessage = async (messageText?: string, actionOverride?: string) => {
-    if (!isFormValid) return
-
     // Ensure we always have a string message
     let message = ""
 
@@ -677,16 +628,16 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
     updateStatus("Thinking...", "#745E25")
 
     try {
-      // Get user info from the form, with optional action override
-      const userInfo = getUserInfo(actionOverride)
-      console.log("Sending user info with action:", userInfo)
-
+      // Use the userInfo passed from the parent component
       const payload = {
         message: {
           text: message,
           userId: USER_ID.current,
           timestamp: new Date().toISOString(),
-          userInfo: userInfo,
+          userInfo: {
+            ...userInfo,
+            selectedAction: actionOverride || selectedAction,
+          },
         },
       } as any
 
@@ -799,7 +750,7 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
       return (
         <DateTimePanel
           isVisible={showDateTimePanel}
-          isFormValid={isFormValid}
+          isFormValid={true} // Always true since we have user info
           onSubmit={handleDateTimeSubmit}
           onClose={() => setShowDateTimePanel(false)}
           onSkip={() => {
@@ -817,7 +768,7 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
           allowMultipleSelection={allowMultipleSelection}
           selectedMainService={selectedMainService}
           selectedOptions={selectedOptions}
-          isFormValid={isFormValid}
+          isFormValid={true} // Always true since we have user info
           onSelectionClick={handleSelectionClick}
           onSubmit={submitSelections}
           onClose={() => setShowSelectionPanel(false)}
@@ -829,56 +780,64 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
 
   const showMiddlePanel = showSelectionPanel || showDateTimePanel
 
-  // The render function stays mostly the same, but you can modify how the left panel is displayed
   return (
     <div className="max-h-[calc(100vh-350px)]">
-      {/* Three-column layout: User Info → Selection/DateTime Panel → Chat */}
-      <div className="grid gap-4 h-full" style={{ gridTemplateColumns: showMiddlePanel ? "1fr 1fr 1fr" : "1fr 2fr" }}>
-        {/* Left Column - User Info (Always visible but simplified if email not collected) */}
+      {/* Two or three-column layout: User Summary → Selection/DateTime Panel → Chat */}
+      <div
+        className="grid gap-4 h-full"
+        style={{ gridTemplateColumns: showMiddlePanel ? "300px 1fr 1fr" : "300px 2fr" }}
+      >
+        {/* Left Column - User Summary (Simplified) */}
         <div className="h-full flex flex-col">
-          {isEmailCollected ? (
-            <UserInfoForm
-              ref={userInfoFormRef}
-              selectedAction={selectedAction}
-              resetChat={resetChat}
-              onValidationChange={handleValidationChange}
-              initialEmail={userEmail}
-            />
-          ) : (
-            <div className="bg-white rounded-lg shadow-md flex flex-col overflow-hidden">
-              <div className="bg-[#E75837] text-white py-3 px-4">
-                <h2 className="text-xl font-medium header-font">Let's get started</h2>
+          <div className="bg-white rounded-lg shadow-md flex flex-col overflow-hidden">
+            <div className="bg-[#E75837] text-white py-3 px-4">
+              <h2 className="text-lg font-medium header-font">Your Information</h2>
+            </div>
+            <div className="p-4 flex-1">
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-gray-500 body-font">Name</label>
+                  <p className="font-medium header-font">
+                    {userInfo.firstName} {userInfo.lastName}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 body-font">Email</label>
+                  <p className="font-medium header-font">{userInfo.email}</p>
+                </div>
+                {selectedAction && (
+                  <div>
+                    <label className="text-xs text-gray-500 body-font">Current Action</label>
+                    <p className="font-medium header-font">
+                      {selectedAction === "new_booking" && "New Booking"}
+                      {selectedAction === "change_booking" && "Change Booking"}
+                      {selectedAction === "cancel_booking" && "Cancel Booking"}
+                      {selectedAction === "list_bookings" && "List Bookings"}
+                      {selectedAction === "list_outstanding" && "Outstanding Invoices"}
+                    </p>
+                  </div>
+                )}
               </div>
-              <div className="p-6 flex-1">
-                <p className="text-gray-700 mb-4 body-font">
-                  To help you with your pet care needs, please provide your email address:
-                </p>
-                <div className="space-y-4">
-                  <input
-                    type="email"
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    placeholder="Your email address"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
-                  />
+
+              {selectedAction && (
+                <div className="mt-6">
                   <button
-                    onClick={() => {
-                      if (handleEmailSubmit(inputValue)) {
-                        setInputValue("")
-                      }
-                    }}
-                    className="w-full bg-[#E75837] text-white py-3 rounded-lg hover:bg-[#d04e30] transition-colors body-font"
+                    onClick={resetChat}
+                    className="w-full flex items-center justify-center p-2 border border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors body-font"
                   >
-                    Continue
+                    <span className="mr-2">↻</span>
+                    Do Something Else
                   </button>
                 </div>
-              </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Keep the rest of the panels the same... */}
+        {/* Middle Column - Selection/DateTime Panel (Conditional) */}
         {showMiddlePanel && <div className="h-full flex flex-col">{getMiddlePanel()}</div>}
+
+        {/* Right Column - Chat (Always visible) */}
         <div className="h-full flex flex-col">
           <ChatInterface
             messages={messages}
@@ -892,7 +851,7 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
             selectedOptions={[]}
             showCalendar={showCalendar}
             inputValue={inputValue}
-            isFormValid={isFormValid || isEmailCollected}
+            isFormValid={true} // Always true since we have user info
             onInputChange={setInputValue}
             onSendMessage={() => sendMessage()}
             onActionSelect={handleActionBubbleClick}

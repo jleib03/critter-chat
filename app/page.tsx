@@ -5,9 +5,15 @@ import LandingPage from "../components/landing-page"
 import BookingPage from "../components/booking-page"
 import NewCustomerOnboarding from "../components/new-customer-onboarding"
 
+type UserInfo = {
+  email: string
+  firstName: string
+  lastName: string
+}
+
 export default function Page() {
   const [currentView, setCurrentView] = useState<"landing" | "chat" | "onboarding">("landing")
-  const [showOnboarding, setShowOnboarding] = useState(false)
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
   // Use a more reliable webhook URL for testing
@@ -19,22 +25,23 @@ export default function Page() {
     console.log("Starting onboarding with user ID:", currentUserId)
     setSessionId(currentSessionId)
     setUserId(currentUserId)
-    setShowOnboarding(true)
   }
 
   // Handlers for landing page options
-  const handleExistingCustomer = () => {
+  const handleExistingCustomer = (userData: UserInfo) => {
+    setUserInfo(userData)
     setCurrentView("chat")
   }
 
-  const handleNewCustomer = () => {
+  const handleNewCustomer = (userData: UserInfo) => {
+    setUserInfo(userData)
     setCurrentView("onboarding")
   }
 
   // Handler to go back to landing page
   const handleBackToLanding = () => {
     setCurrentView("landing")
-    setShowOnboarding(false)
+    setUserInfo(null)
   }
 
   return (
@@ -51,31 +58,34 @@ export default function Page() {
             />
           )}
 
-          {currentView === "chat" && (
+          {currentView === "chat" && userInfo && (
             <>
-              <h1 className="text-4xl title-font text-center mb-4 font-sangbleu">Book pet care with Critter</h1>
-              <p className="text-center text-gray-700 mb-8 max-w-3xl mx-auto body-font">
-                Welcome to Critter's online booking portal, an extension of Critter's mobile app designed for fast and
-                simple booking. If your pet services provider uses Critter, you can use this site to request bookings
-                and answer questions about upcoming care and invoices.
-              </p>
+              <div className="text-center mb-8">
+                <h1 className="text-4xl title-font mb-4 font-sangbleu">Welcome back, {userInfo.firstName}!</h1>
+                <p className="text-gray-700 max-w-3xl mx-auto body-font">
+                  Ready to book pet care services with Critter? Let's get started with your request.
+                </p>
+              </div>
               <div className="flex-1 flex flex-col mb-12">
-                <BookingPage onStartOnboarding={handleStartOnboarding} />
+                <BookingPage userInfo={userInfo} onStartOnboarding={handleStartOnboarding} />
               </div>
             </>
           )}
 
-          {currentView === "onboarding" && (
+          {currentView === "onboarding" && userInfo && (
             <>
-              <h1 className="text-4xl title-font text-center mb-4 font-sangbleu">New Customer Onboarding</h1>
-              <p className="text-center text-gray-700 mb-8 max-w-3xl mx-auto body-font">
-                Complete the form below to set up your account with your Critter professional.
-              </p>
+              <div className="text-center mb-8">
+                <h1 className="text-4xl title-font mb-4 font-sangbleu">Welcome to Critter, {userInfo.firstName}!</h1>
+                <p className="text-gray-700 max-w-3xl mx-auto body-font">
+                  Let's get you set up with your Critter professional and book your first appointment.
+                </p>
+              </div>
               <div className="flex-1 flex flex-col mb-12">
                 <NewCustomerOnboarding
                   onCancel={handleBackToLanding}
                   onComplete={handleBackToLanding}
                   webhookUrl={WEBHOOK_URL}
+                  userInfo={userInfo}
                   initialSessionId={sessionId}
                   initialUserId={userId}
                 />

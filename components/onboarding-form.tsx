@@ -3,11 +3,18 @@ import { useState } from "react"
 import { PlusCircle, MinusCircle, ArrowRight, ArrowLeft, Loader2 } from "lucide-react"
 import type { OnboardingFormData, PetFormData } from "../types/booking"
 
+type UserInfo = {
+  email: string
+  firstName: string
+  lastName: string
+}
+
 type OnboardingFormProps = {
   onSubmit: (data: OnboardingFormData) => void
   onCancel: () => void
   skipProfessionalStep?: boolean
   professionalId?: string
+  userInfo: UserInfo
 }
 
 export default function OnboardingForm({
@@ -15,15 +22,12 @@ export default function OnboardingForm({
   onCancel,
   skipProfessionalStep = false,
   professionalId,
+  userInfo,
 }: OnboardingFormProps) {
   const [currentStep, setCurrentStep] = useState(skipProfessionalStep ? 2 : 1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formErrors, setFormErrors] = useState<{
     professionalName?: string
-    firstName?: string
-    lastName?: string
-    email?: string
-    phone?: string
     address?: string
     city?: string
     state?: string
@@ -33,9 +37,9 @@ export default function OnboardingForm({
 
   const [formData, setFormData] = useState<OnboardingFormData>({
     professionalName: "",
-    firstName: "",
-    lastName: "",
-    email: "",
+    firstName: userInfo.firstName,
+    lastName: userInfo.lastName,
+    email: userInfo.email,
     phone: "",
     address: "",
     city: "",
@@ -161,15 +165,6 @@ export default function OnboardingForm({
         errors.professionalName = "Professional name is required"
       }
     } else if (currentStep === 2) {
-      if (!formData.firstName.trim()) errors.firstName = "First name is required"
-      if (!formData.lastName.trim()) errors.lastName = "Last name is required"
-
-      if (!formData.email.trim()) {
-        errors.email = "Email is required"
-      } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
-        errors.email = "Please enter a valid email address"
-      }
-
       if (!formData.phone.trim()) {
         errors.phone = "Phone number is required"
       }
@@ -222,13 +217,30 @@ export default function OnboardingForm({
   return (
     <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-[#E75837] mb-2 header-font">New Customer Onboarding</h2>
+        <h2 className="text-2xl font-bold text-[#E75837] mb-2 header-font">Complete Your Profile</h2>
         <p className="text-gray-600 body-font">
-          Please provide the following information to get started with your Critter professional.
+          We have your basic information. Let's add a few more details to get you set up with your Critter professional.
         </p>
         {professionalId && skipProfessionalStep && (
           <p className="text-sm text-gray-500 mt-2 body-font">Professional ID: {professionalId}</p>
         )}
+      </div>
+
+      {/* User Info Summary */}
+      <div className="bg-gray-50 rounded-lg p-4 mb-6">
+        <h3 className="text-sm font-medium text-gray-700 mb-2 header-font">Your Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          <div>
+            <span className="text-gray-500 body-font">Name:</span>
+            <p className="font-medium header-font">
+              {userInfo.firstName} {userInfo.lastName}
+            </p>
+          </div>
+          <div>
+            <span className="text-gray-500 body-font">Email:</span>
+            <p className="font-medium header-font">{userInfo.email}</p>
+          </div>
+        </div>
       </div>
 
       {/* Progress indicator */}
@@ -265,7 +277,7 @@ export default function OnboardingForm({
             >
               {skipProfessionalStep ? "1" : "2"}
             </div>
-            <span className="text-xs">Your Info</span>
+            <span className="text-xs">Contact Info</span>
           </div>
           <div className={`flex-1 h-1 mx-2 ${currentStep >= 3 ? "bg-[#E75837]" : "bg-gray-200"}`}></div>
           <div
@@ -311,73 +323,23 @@ export default function OnboardingForm({
         </div>
       )}
 
-      {/* Step 2: Personal Information */}
+      {/* Step 2: Contact Information */}
       {currentStep === 2 && (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1 header-font">
-                First Name*
-              </label>
-              <input
-                type="text"
-                id="firstName"
-                value={formData.firstName}
-                onChange={(e) => updateFormData("firstName", e.target.value)}
-                className={`w-full p-3 border ${formErrors.firstName ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
-                placeholder="Your first name"
-                required
-              />
-              {formErrors.firstName && <p className="mt-1 text-xs text-red-500 body-font">{formErrors.firstName}</p>}
-            </div>
-            <div>
-              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1 header-font">
-                Last Name*
-              </label>
-              <input
-                type="text"
-                id="lastName"
-                value={formData.lastName}
-                onChange={(e) => updateFormData("lastName", e.target.value)}
-                className={`w-full p-3 border ${formErrors.lastName ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
-                placeholder="Your last name"
-                required
-              />
-              {formErrors.lastName && <p className="mt-1 text-xs text-red-500 body-font">{formErrors.lastName}</p>}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1 header-font">
-                Email Address*
-              </label>
-              <input
-                type="email"
-                id="email"
-                value={formData.email}
-                onChange={(e) => updateFormData("email", e.target.value)}
-                className={`w-full p-3 border ${formErrors.email ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
-                placeholder="your.email@example.com"
-                required
-              />
-              {formErrors.email && <p className="mt-1 text-xs text-red-500 body-font">{formErrors.email}</p>}
-            </div>
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1 header-font">
-                Phone Number*
-              </label>
-              <input
-                type="tel"
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => updateFormData("phone", e.target.value)}
-                className={`w-full p-3 border ${formErrors.phone ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
-                placeholder="(123) 456-7890"
-                required
-              />
-              {formErrors.phone && <p className="mt-1 text-xs text-red-500 body-font">{formErrors.phone}</p>}
-            </div>
+          <div>
+            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1 header-font">
+              Phone Number*
+            </label>
+            <input
+              type="tel"
+              id="phone"
+              value={formData.phone}
+              onChange={(e) => updateFormData("phone", e.target.value)}
+              className={`w-full p-3 border ${formErrors.phone ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
+              placeholder="(123) 456-7890"
+              required
+            />
+            {formErrors.phone && <p className="mt-1 text-xs text-red-500 body-font">{formErrors.phone}</p>}
           </div>
 
           <div>

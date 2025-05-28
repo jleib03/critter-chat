@@ -15,12 +15,19 @@ import {
   FileText,
   PenLine,
   X,
+  Sparkles,
 } from "lucide-react"
+
+type UserInfo = {
+  email: string
+  firstName: string
+  lastName: string
+}
 
 type LandingPageProps = {
   webhookUrl: string
-  onExistingCustomer?: () => void
-  onNewCustomer?: () => void
+  onExistingCustomer?: (userInfo: UserInfo) => void
+  onNewCustomer?: (userInfo: UserInfo) => void
 }
 
 export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCustomer }: LandingPageProps) {
@@ -30,9 +37,18 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle")
   const [errorMessage, setErrorMessage] = useState("")
-  const [showEmailForm, setShowEmailForm] = useState(false)
-  const [emailValue, setEmailValue] = useState("")
-  const [emailFormAction, setEmailFormAction] = useState<"existing" | "new" | null>(null)
+  const [showUserForm, setShowUserForm] = useState(false)
+  const [userFormAction, setUserFormAction] = useState<"existing" | "new" | null>(null)
+  const [formData, setFormData] = useState({
+    email: "",
+    firstName: "",
+    lastName: "",
+  })
+  const [formErrors, setFormErrors] = useState<{
+    email?: string
+    firstName?: string
+    lastName?: string
+  }>({})
 
   // Function to validate email format
   const isValidEmail = (email: string) => {
@@ -46,38 +62,74 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
       return
     }
 
-    setEmailFormAction(action)
-    setShowEmailForm(true)
+    setUserFormAction(action)
+    setShowUserForm(true)
   }
 
-  // Function to handle email submit
-  const handleEmailSubmit = () => {
-    if (!emailValue || !isValidEmail(emailValue)) {
-      setErrorMessage("Please enter a valid email address")
+  // Function to validate form
+  const validateForm = () => {
+    const errors: typeof formErrors = {}
+
+    if (!formData.email.trim()) {
+      errors.email = "Email is required"
+    } else if (!isValidEmail(formData.email)) {
+      errors.email = "Please enter a valid email address"
+    }
+
+    if (!formData.firstName.trim()) {
+      errors.firstName = "First name is required"
+    }
+
+    if (!formData.lastName.trim()) {
+      errors.lastName = "Last name is required"
+    }
+
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  // Function to handle form input changes
+  const handleInputChange = (field: keyof typeof formData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
+    // Clear error for this field when user types
+    if (formErrors[field]) {
+      setFormErrors((prev) => ({ ...prev, [field]: undefined }))
+    }
+  }
+
+  // Function to handle form submit
+  const handleFormSubmit = () => {
+    if (!validateForm()) {
       return
     }
 
-    if (emailFormAction === "existing") {
+    const userInfo: UserInfo = {
+      email: formData.email.trim(),
+      firstName: formData.firstName.trim(),
+      lastName: formData.lastName.trim(),
+    }
+
+    if (userFormAction === "existing") {
       if (onExistingCustomer) {
-        onExistingCustomer()
+        onExistingCustomer(userInfo)
       } else {
         router.push("/existing")
       }
-    } else if (emailFormAction === "new") {
+    } else if (userFormAction === "new") {
       if (onNewCustomer) {
-        onNewCustomer()
+        onNewCustomer(userInfo)
       } else {
         router.push("/newcustomer")
       }
     }
   }
 
-  // Function to close the email form
-  const handleCloseEmailForm = () => {
-    setShowEmailForm(false)
-    setEmailValue("")
-    setErrorMessage("")
-    setEmailFormAction(null)
+  // Function to close the form
+  const handleCloseForm = () => {
+    setShowUserForm(false)
+    setFormData({ email: "", firstName: "", lastName: "" })
+    setFormErrors({})
+    setUserFormAction(null)
   }
 
   // Function to handle the notify me submission
@@ -157,59 +209,87 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
       <div className="text-center mb-12">
-        <h1 className="text-4xl md:text-5xl title-font mb-6">Book pet care with Critter</h1>
+        <div className="flex items-center justify-center mb-4">
+          <Sparkles className="h-8 w-8 text-[#E75837] mr-2" />
+          <h1 className="text-4xl md:text-5xl title-font">Book pet care with Critter</h1>
+          <Sparkles className="h-8 w-8 text-[#E75837] ml-2" />
+        </div>
         <p className="text-xl text-gray-700 max-w-3xl mx-auto body-font">
           Welcome to Critter's online booking portal, an extension of Critter's mobile app designed for fast and simple
           booking.
         </p>
       </div>
 
-      {/* Email Card - Slides in when an action is selected */}
-      {showEmailForm && (
+      {/* User Information Form Modal */}
+      {showUserForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6 transform transition-all animate-fadeIn">
+          <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6 transform transition-all animate-scaleIn">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold header-font">
-                {emailFormAction === "existing" ? "Welcome back!" : "Let's get started!"}
+                {userFormAction === "existing" ? "Welcome back!" : "Let's get started!"}
               </h3>
-              <button onClick={handleCloseEmailForm} className="text-gray-500 hover:text-gray-700">
+              <button onClick={handleCloseForm} className="text-gray-500 hover:text-gray-700">
                 <X size={20} />
               </button>
             </div>
-            <p className="text-gray-600 mb-4 body-font">
-              {emailFormAction === "existing"
-                ? "Enter your email to access your bookings and services."
-                : "Enter your email to start the onboarding process."}
+            <p className="text-gray-600 mb-6 body-font">
+              {userFormAction === "existing"
+                ? "Enter your information to access your bookings and services."
+                : "Enter your information to start the onboarding process."}
             </p>
 
-            {errorMessage && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
-                <p className="body-font">{errorMessage}</p>
+            <div className="space-y-4">
+              <div>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange("email", e.target.value)}
+                  placeholder="Email address*"
+                  className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font ${
+                    formErrors.email ? "border-red-500" : "border-gray-300"
+                  }`}
+                />
+                {formErrors.email && <p className="mt-1 text-sm text-red-500 body-font">{formErrors.email}</p>}
               </div>
-            )}
 
-            <div className="mb-4">
-              <input
-                type="email"
-                value={emailValue}
-                onChange={(e) => setEmailValue(e.target.value)}
-                placeholder="Your email address"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
-                autoFocus
-              />
-            </div>
+              <div>
+                <input
+                  type="text"
+                  value={formData.firstName}
+                  onChange={(e) => handleInputChange("firstName", e.target.value)}
+                  placeholder="First name*"
+                  className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font ${
+                    formErrors.firstName ? "border-red-500" : "border-gray-300"
+                  }`}
+                />
+                {formErrors.firstName && <p className="mt-1 text-sm text-red-500 body-font">{formErrors.firstName}</p>}
+              </div>
 
-            <button
-              onClick={handleEmailSubmit}
-              className="w-full bg-[#E75837] text-white py-3 px-4 rounded-lg hover:bg-[#d04e30] transition-colors body-font"
-            >
-              {emailFormAction === "existing" ? "Continue" : "Get Started"}
-            </button>
+              <div>
+                <input
+                  type="text"
+                  value={formData.lastName}
+                  onChange={(e) => handleInputChange("lastName", e.target.value)}
+                  placeholder="Last name*"
+                  className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font ${
+                    formErrors.lastName ? "border-red-500" : "border-gray-300"
+                  }`}
+                />
+                {formErrors.lastName && <p className="mt-1 text-sm text-red-500 body-font">{formErrors.lastName}</p>}
+              </div>
 
-            <div className="mt-3 text-center">
-              <button onClick={handleCloseEmailForm} className="text-sm text-gray-500 hover:text-gray-700 body-font">
-                Cancel
+              <button
+                onClick={handleFormSubmit}
+                className="w-full bg-[#E75837] text-white py-3 px-4 rounded-lg hover:bg-[#d04e30] transition-colors body-font"
+              >
+                {userFormAction === "existing" ? "Continue to Booking" : "Start Onboarding"}
               </button>
+
+              <div className="mt-3 text-center">
+                <button onClick={handleCloseForm} className="text-sm text-gray-500 hover:text-gray-700 body-font">
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -222,12 +302,12 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
           {/* Existing Customer Card */}
           <div
             onClick={() => handleActionCardClick("existing")}
-            className="bg-white rounded-xl shadow-md overflow-hidden transition-transform hover:scale-102 cursor-pointer border border-gray-100 h-full flex flex-col relative"
+            className="bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:scale-102 hover:shadow-lg cursor-pointer border border-gray-100 h-full flex flex-col relative group"
           >
-            <div className="bg-[#E75837] h-2 w-full"></div>
+            <div className="bg-gradient-to-r from-[#E75837] to-[#f07a5f] h-2 w-full"></div>
             <div className="p-6 flex flex-col flex-grow">
-              <div className="w-12 h-12 bg-[#fff8f6] rounded-full flex items-center justify-center mb-4">
-                <User className="h-6 w-6 text-[#E75837]" />
+              <div className="w-12 h-12 bg-[#fff8f6] rounded-full flex items-center justify-center mb-4 group-hover:bg-[#E75837] group-hover:text-white transition-colors">
+                <User className="h-6 w-6 text-[#E75837] group-hover:text-white" />
               </div>
               <h3 className="text-xl font-bold mb-2 header-font">I'm an existing customer</h3>
               <p className="text-gray-600 mb-6 flex-grow body-font">
@@ -244,8 +324,8 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
                   <PenLine className="w-4 h-4 mr-1" /> Make changes to bookings
                 </div>
               </div>
-              <div className="flex items-center text-[#E75837] font-medium mt-6 header-font">
-                Continue <ArrowRight className="ml-2 h-4 w-4" />
+              <div className="flex items-center text-[#E75837] font-medium mt-6 header-font group-hover:text-[#d04e30]">
+                Continue <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
           </div>
@@ -253,12 +333,12 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
           {/* New Customer Card */}
           <div
             onClick={() => handleActionCardClick("new")}
-            className="bg-white rounded-xl shadow-md overflow-hidden transition-transform hover:scale-102 cursor-pointer border border-gray-100 h-full flex flex-col relative"
+            className="bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:scale-102 hover:shadow-lg cursor-pointer border border-gray-100 h-full flex flex-col relative group"
           >
-            <div className="bg-[#745E25] h-2 w-full"></div>
+            <div className="bg-gradient-to-r from-[#745E25] to-[#8b7030] h-2 w-full"></div>
             <div className="p-6 flex flex-col flex-grow">
-              <div className="w-12 h-12 bg-[#f9f7f2] rounded-full flex items-center justify-center mb-4">
-                <UserPlus className="h-6 w-6 text-[#745E25]" />
+              <div className="w-12 h-12 bg-[#f9f7f2] rounded-full flex items-center justify-center mb-4 group-hover:bg-[#745E25] group-hover:text-white transition-colors">
+                <UserPlus className="h-6 w-6 text-[#745E25] group-hover:text-white" />
               </div>
               <h3 className="text-xl font-bold mb-2 header-font">I'm a new customer</h3>
               <p className="text-gray-600 mb-6 flex-grow body-font">
@@ -275,8 +355,8 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
                   <Check className="w-4 h-4 mr-1" /> Book your first appointment
                 </div>
               </div>
-              <div className="flex items-center text-[#745E25] font-medium mt-6 header-font">
-                Get Started <ArrowRight className="ml-2 h-4 w-4" />
+              <div className="flex items-center text-[#745E25] font-medium mt-6 header-font group-hover:text-[#5d4b1e]">
+                Get Started <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
           </div>
@@ -286,19 +366,20 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
         <div className="max-w-md mx-auto">
           <div
             onClick={() => handleActionCardClick("find")}
-            className="bg-white rounded-xl shadow-md overflow-hidden transition-transform hover:scale-102 cursor-pointer border border-gray-100"
+            className="bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:scale-102 hover:shadow-lg cursor-pointer border border-gray-100 group"
           >
-            <div className="bg-[#94ABD6] h-2 w-full"></div>
+            <div className="bg-gradient-to-r from-[#94ABD6] to-[#b0c1e3] h-2 w-full"></div>
             <div className="p-6">
-              <div className="w-12 h-12 bg-[#f5f8fd] rounded-full flex items-center justify-center mb-4">
-                <Users className="h-6 w-6 text-[#94ABD6]" />
+              <div className="w-12 h-12 bg-[#f5f8fd] rounded-full flex items-center justify-center mb-4 group-hover:bg-[#94ABD6] group-hover:text-white transition-colors">
+                <Users className="h-6 w-6 text-[#94ABD6] group-hover:text-white" />
               </div>
               <h3 className="text-xl font-bold mb-2 header-font">I need to find a professional</h3>
               <p className="text-gray-600 mb-4 body-font">
                 Looking for pet care services? We'll help you find the perfect match in your area.
               </p>
-              <div className="flex items-center text-[#94ABD6] font-medium header-font">
-                Find a professional <ArrowRight className="ml-2 h-4 w-4" />
+              <div className="flex items-center text-[#94ABD6] font-medium header-font group-hover:text-[#7a90ba]">
+                Find a professional{" "}
+                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
           </div>

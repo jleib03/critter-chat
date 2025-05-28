@@ -5,10 +5,17 @@ import OnboardingForm from "./onboarding-form"
 import ServiceSelection from "./service-selection"
 import Confirmation from "./confirmation"
 
+type UserInfo = {
+  email: string
+  firstName: string
+  lastName: string
+}
+
 type NewCustomerOnboardingProps = {
   onCancel: () => void
   onComplete: () => void
   webhookUrl: string
+  userInfo: UserInfo
   initialSessionId?: string
   initialUserId?: string
   initialProfessionalId?: string
@@ -75,6 +82,7 @@ export default function NewCustomerOnboarding({
   onCancel,
   onComplete,
   webhookUrl,
+  userInfo,
   initialSessionId,
   initialUserId,
   initialProfessionalId,
@@ -88,7 +96,13 @@ export default function NewCustomerOnboarding({
   const USER_ID = useRef(initialUserId || "user_id_" + Math.random().toString(36).substring(2, 15))
 
   const handleFormSubmit = async (data: any) => {
-    setFormData(data)
+    // Merge the user info from landing page with additional form data
+    const combinedData = {
+      ...userInfo,
+      ...data,
+    }
+
+    setFormData(combinedData)
     setIsLoading(true)
 
     const payload = {
@@ -97,12 +111,12 @@ export default function NewCustomerOnboarding({
         userId: USER_ID.current,
         timestamp: new Date().toISOString(),
         userInfo: {
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: data.email,
+          firstName: combinedData.firstName,
+          lastName: combinedData.lastName,
+          email: combinedData.email,
           selectedAction: "new_customer_onboarding",
         },
-        formData: data,
+        formData: combinedData,
         professionalID: initialProfessionalId,
         type: "new_customer_get_services",
         source: "critter_booking_site",
@@ -319,6 +333,7 @@ export default function NewCustomerOnboarding({
           onCancel={onCancel}
           skipProfessionalStep={skipProfessionalStep}
           professionalId={initialProfessionalId}
+          userInfo={userInfo}
         />
       )}
       {currentStep === "services" && servicesData && (
