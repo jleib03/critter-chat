@@ -15,8 +15,8 @@ type NewCustomerOnboardingProps = {
   skipProfessionalStep?: boolean
 }
 
-// Robust function to determine if a service is an add-on
-const isAddOnService = (category: string, serviceName: string, description = ""): boolean => {
+// More conservative function to determine if a service is an add-on
+const isAddOnService = (category: string, serviceName: string): boolean => {
   // Normalize text for comparison (lowercase, remove special characters)
   const normalizeText = (text: string): string => {
     return text
@@ -27,66 +27,47 @@ const isAddOnService = (category: string, serviceName: string, description = "")
 
   const normalizedCategory = normalizeText(category)
   const normalizedName = normalizeText(serviceName)
-  const normalizedDescription = normalizeText(description)
 
-  // Add-on category patterns (case-insensitive, with various separators)
+  // First, check if the original category explicitly indicates add-on
   const addOnCategoryPatterns = ["addon", "add on", "add-on", "add_on", "addons", "add ons", "add-ons", "add_ons"]
 
-  // Check if category explicitly mentions add-on
+  // If category explicitly mentions add-on, trust it
   for (const pattern of addOnCategoryPatterns) {
     if (normalizedCategory.includes(pattern)) {
       return true
     }
   }
 
-  // Add-on keywords that might appear in service names or descriptions
-  const addOnKeywords = [
-    "additional",
-    "extra",
-    "addon",
+  // Only check service name for very specific add-on indicators
+  // Be more conservative - only look for explicit add-on mentions in the name
+  const explicitAddOnInName = [
     "add on",
     "add-on",
-    "supplemental",
-    "supplement",
-    "optional",
-    "upgrade",
-    "enhancement",
-    "extension",
-    "plus",
-    "bonus",
-    "complimentary",
-    "ancillary",
-    "auxiliary",
+    "addon",
+    ": add", // matches "Transportation: Add On"
+    "add :", // matches "Add: Transportation"
   ]
 
-  // Check service name for add-on keywords
-  for (const keyword of addOnKeywords) {
-    if (normalizedName.includes(keyword)) {
+  for (const pattern of explicitAddOnInName) {
+    if (normalizedName.includes(pattern)) {
       return true
     }
   }
 
-  // Check description for add-on keywords
-  for (const keyword of addOnKeywords) {
-    if (normalizedDescription.includes(keyword)) {
-      return true
-    }
-  }
-
-  // Special patterns that often indicate add-ons
-  const addOnNamePatterns = [
-    /multiple\s+\w+/, // "multiple dogs", "multiple cats", etc.
-    /\w+\s*:\s*add/, // "Transportation: Add", "Feeding: Add", etc.
-    /per\s+additional/, // "per additional pet", etc.
-    /each\s+extra/, // "each extra hour", etc.
+  // Check for very specific patterns that are almost always add-ons
+  const specificAddOnPatterns = [
+    /^multiple\s+\w+.*add/i, // "Multiple Dogs: Add on"
+    /^additional\s+\w+/i, // "Additional Feeding" (but not "No additional description")
+    /^extra\s+\w+/i, // "Extra Walk Time"
   ]
 
-  for (const pattern of addOnNamePatterns) {
-    if (pattern.test(normalizedName) || pattern.test(normalizedDescription)) {
+  for (const pattern of specificAddOnPatterns) {
+    if (pattern.test(serviceName)) {
       return true
     }
   }
 
+  // Default to main service if no clear add-on indicators
   return false
 }
 
@@ -160,17 +141,18 @@ export default function NewCustomerOnboarding({
                       duration = detail.replace("Duration:", "").trim()
                     } else if (detail.startsWith("Price:")) {
                       price = detail.replace("Price:", "").trim()
-                    } else if (!detail.includes("No description provided")) {
+                    } else if (
+                      !detail.includes("No description provided") &&
+                      !detail.includes("No additional description")
+                    ) {
                       description = detail
                     }
                   })
                 }
 
-                // Use robust category detection
+                // Use conservative category detection
                 const originalCategory = item.category || ""
-                const detectedCategory = isAddOnService(originalCategory, item.name, description)
-                  ? "Add-On"
-                  : "Main Service"
+                const detectedCategory = isAddOnService(originalCategory, item.name) ? "Add-On" : "Main Service"
 
                 console.log(
                   `Service: "${item.name}" | Original Category: "${originalCategory}" | Detected: "${detectedCategory}"`,
@@ -179,7 +161,7 @@ export default function NewCustomerOnboarding({
                 return {
                   id: (index + 1).toString(),
                   name: item.name,
-                  description: description,
+                  description: description === "No description provided" ? "No additional description" : description,
                   duration: duration,
                   price: price,
                   category: detectedCategory,
