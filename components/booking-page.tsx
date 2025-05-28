@@ -269,10 +269,29 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
       // Handle different structured data types
       if (structuredData.type === "service_list" && Array.isArray(structuredData.items)) {
         const options: SelectionOption[] = structuredData.items.map((item: any) => {
+          // More conservative add-on detection
           let category = item.category || "Main Service"
-          if (category.includes("Add") && category.includes("On")) {
+
+          // Only categorize as add-on if it's very explicitly an add-on
+          const serviceName = item.name.toLowerCase()
+          if (
+            // Original category contains "add" (but be more specific)
+            (category.toLowerCase().includes("add") &&
+              (category.toLowerCase().includes("on") || category.toLowerCase().includes("-on"))) ||
+            // Service name explicitly contains add-on patterns
+            serviceName.includes(": add") ||
+            serviceName.includes("add on") ||
+            serviceName.includes("add-on") ||
+            // Very specific add-on keywords in the name
+            (serviceName.includes("transportation") && serviceName.includes("add")) ||
+            (serviceName.includes("multiple") && serviceName.includes("add"))
+          ) {
             category = "Add-On"
+          } else {
+            // Default to Main Service for everything else
+            category = "Main Service"
           }
+
           return {
             name: item.name,
             category: category,
@@ -607,51 +626,56 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
   }
 
   return (
-    <div className="relative">
-      {/* Dynamic Selection Panel */}
-      <DynamicSelectionPanel
-        isVisible={showSelectionPanel}
-        selectionType={selectionType}
-        selectionOptions={selectionOptions}
-        allowMultipleSelection={allowMultipleSelection}
-        selectedMainService={selectedMainService}
-        selectedOptions={selectedOptions}
-        onSelectionClick={handleSelectionClick}
-        onSubmit={submitSelections}
-        onClose={() => setShowSelectionPanel(false)}
-      />
+    <div className="max-h-[calc(100vh-350px)]">
+      {/* Three-column layout: User Info → Selection Panel → Chat */}
+      <div
+        className="grid gap-4 h-full"
+        style={{ gridTemplateColumns: showSelectionPanel ? "1fr 1fr 1fr" : "1fr 2fr" }}
+      >
+        {/* Left Column - User Info (Always visible) */}
+        <div className="h-full flex flex-col">
+          <UserInfoForm ref={userInfoFormRef} selectedAction={selectedAction} resetChat={resetChat} />
+        </div>
 
-      {/* Main Content - Shifted right when panel is open */}
-      <div className={`transition-all duration-300 ${showSelectionPanel ? "ml-[350px]" : "ml-0"}`}>
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 max-h-[calc(100vh-350px)]">
-          {/* Left Column - User Info */}
-          <div className="md:col-span-4 h-full flex flex-col">
-            <UserInfoForm ref={userInfoFormRef} selectedAction={selectedAction} resetChat={resetChat} />
-          </div>
-
-          {/* Right Column - Chat */}
-          <div className="md:col-span-8 h-full flex flex-col">
-            <ChatInterface
-              messages={messages}
-              isTyping={isTyping}
-              showActionBubbles={showActionBubbles}
-              showSelectionBubbles={false} // We're not using the embedded selection bubbles anymore
-              selectionType={null}
-              selectionOptions={[]}
-              allowMultipleSelection={false}
-              selectedMainService={null}
-              selectedOptions={[]}
-              showCalendar={showCalendar}
-              inputValue={inputValue}
-              onInputChange={setInputValue}
-              onSendMessage={() => sendMessage()}
-              onActionSelect={handleActionBubbleClick}
-              onSelectionClick={() => {}}
-              onSelectionSubmit={() => {}}
-              onCalendarSubmit={handleCalendarSubmit}
-              onCalendarCancel={() => setShowCalendar(false)}
+        {/* Middle Column - Selection Panel (Conditional) */}
+        {showSelectionPanel && (
+          <div className="h-full flex flex-col">
+            <DynamicSelectionPanel
+              isVisible={showSelectionPanel}
+              selectionType={selectionType}
+              selectionOptions={selectionOptions}
+              allowMultipleSelection={allowMultipleSelection}
+              selectedMainService={selectedMainService}
+              selectedOptions={selectedOptions}
+              onSelectionClick={handleSelectionClick}
+              onSubmit={submitSelections}
+              onClose={() => setShowSelectionPanel(false)}
             />
           </div>
+        )}
+
+        {/* Right Column - Chat (Always visible) */}
+        <div className="h-full flex flex-col">
+          <ChatInterface
+            messages={messages}
+            isTyping={isTyping}
+            showActionBubbles={showActionBubbles}
+            showSelectionBubbles={false} // We're not using the embedded selection bubbles anymore
+            selectionType={null}
+            selectionOptions={[]}
+            allowMultipleSelection={false}
+            selectedMainService={null}
+            selectedOptions={[]}
+            showCalendar={showCalendar}
+            inputValue={inputValue}
+            onInputChange={setInputValue}
+            onSendMessage={() => sendMessage()}
+            onActionSelect={handleActionBubbleClick}
+            onSelectionClick={() => {}}
+            onSelectionSubmit={() => {}}
+            onCalendarSubmit={handleCalendarSubmit}
+            onCalendarCancel={() => setShowCalendar(false)}
+          />
         </div>
       </div>
     </div>

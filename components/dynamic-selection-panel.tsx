@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
-import { Check, ChevronLeft, ChevronRight, Clock } from "lucide-react"
+import { Check, ChevronLeft, ChevronRight, Clock, X } from "lucide-react"
 import type { SelectionOption, SelectionType } from "../types/booking"
 
 type DynamicSelectionPanelProps = {
@@ -27,16 +27,6 @@ export default function DynamicSelectionPanel({
   onClose,
 }: DynamicSelectionPanelProps) {
   const [activeIndex, setActiveIndex] = useState(0)
-  const [animateIn, setAnimateIn] = useState(false)
-
-  useEffect(() => {
-    if (isVisible) {
-      // Trigger animation after component mounts
-      setTimeout(() => setAnimateIn(true), 50)
-    } else {
-      setAnimateIn(false)
-    }
-  }, [isVisible])
 
   // Reset active index when selection type changes
   useEffect(() => {
@@ -118,24 +108,20 @@ export default function DynamicSelectionPanel({
   }
 
   return (
-    <div
-      className={`fixed left-0 top-0 bottom-0 w-[350px] bg-white shadow-lg z-10 transition-transform duration-300 ease-in-out ${
-        animateIn ? "translate-x-0" : "-translate-x-full"
-      }`}
-    >
+    <div className="h-full flex flex-col bg-white border border-gray-200 rounded-lg shadow-sm">
       {/* Header */}
-      <div className="bg-[#E75837] text-white p-4">
+      <div className="bg-[#E75837] text-white p-4 rounded-t-lg">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-medium header-font">{getSelectionTitle()}</h2>
+          <h2 className="text-lg font-medium header-font">{getSelectionTitle()}</h2>
           <button onClick={onClose} className="p-1 hover:bg-[#d04e30] rounded-full transition-colors">
-            <ChevronLeft className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
         <p className="text-sm mt-1 opacity-90 body-font">{getSelectionDescription()}</p>
       </div>
 
       {/* Content */}
-      <div className="p-4 h-[calc(100%-180px)] overflow-y-auto">
+      <div className="flex-1 p-4 overflow-y-auto">
         {/* Service Selection - Card View with Pagination */}
         {selectionType === "service" && (
           <>
@@ -239,7 +225,7 @@ export default function DynamicSelectionPanel({
 
             {/* Add-Ons Grid */}
             {addOns.length > 0 && (
-              <div className="mt-8">
+              <div className="mt-6">
                 <h3 className="text-sm font-medium text-gray-500 mb-3 body-font">Add-On Services (optional)</h3>
                 <div className="grid grid-cols-1 gap-3">
                   {addOns.map((option, index) => {
@@ -397,7 +383,7 @@ export default function DynamicSelectionPanel({
       </div>
 
       {/* Footer with Submit Button */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-white">
+      <div className="p-4 border-t bg-gray-50 rounded-b-lg">
         {((selectionType === "service" && selectedMainService) ||
           (selectionType === "pet" && selectedOptions.length > 0)) && (
           <button
