@@ -782,12 +782,9 @@ export default function BookingPage({ userInfo, onStartOnboarding }: BookingPage
 
   return (
     <div className="max-h-[calc(100vh-350px)]">
-      {/* Two or three-column layout: User Summary → Selection/DateTime Panel → Chat */}
-      <div
-        className="grid gap-4 h-full"
-        style={{ gridTemplateColumns: showMiddlePanel ? "300px 1fr 1fr" : "300px 2fr" }}
-      >
-        {/* Left Column - User Summary (Simplified) */}
+      {/* Two-column layout: User Summary → Chat (panels now overlay) */}
+      <div className="grid gap-4 h-full" style={{ gridTemplateColumns: "300px 1fr" }}>
+        {/* Left Column - User Summary (Always visible) */}
         <div className="h-full flex flex-col">
           <div className="bg-white rounded-lg shadow-md flex flex-col overflow-hidden">
             <div className="bg-[#E75837] text-white py-3 px-4">
@@ -834,10 +831,7 @@ export default function BookingPage({ userInfo, onStartOnboarding }: BookingPage
           </div>
         </div>
 
-        {/* Middle Column - Selection/DateTime Panel (Conditional) */}
-        {showMiddlePanel && <div className="h-full flex flex-col">{getMiddlePanel()}</div>}
-
-        {/* Right Column - Chat (Always visible) */}
+        {/* Right Column - Chat (Full width when no panels) */}
         <div className="h-full flex flex-col">
           <ChatInterface
             messages={messages}
@@ -862,6 +856,43 @@ export default function BookingPage({ userInfo, onStartOnboarding }: BookingPage
           />
         </div>
       </div>
+
+      {/* Modal Overlays */}
+      {showSelectionPanel && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[80vh] animate-scaleIn">
+            <DynamicSelectionPanel
+              isVisible={showSelectionPanel}
+              selectionType={selectionType}
+              selectionOptions={selectionOptions}
+              allowMultipleSelection={allowMultipleSelection}
+              selectedMainService={selectedMainService}
+              selectedOptions={selectedOptions}
+              isFormValid={true} // Always true since we have user info
+              onSelectionClick={handleSelectionClick}
+              onSubmit={submitSelections}
+              onClose={() => setShowSelectionPanel(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {showDateTimePanel && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full max-h-[80vh] animate-scaleIn">
+            <DateTimePanel
+              isVisible={showDateTimePanel}
+              isFormValid={true} // Always true since we have user info
+              onSubmit={handleDateTimeSubmit}
+              onClose={() => setShowDateTimePanel(false)}
+              onSkip={() => {
+                setShowDateTimePanel(false)
+                sendMessage("I don't need a calendar")
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
