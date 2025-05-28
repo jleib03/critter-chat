@@ -80,7 +80,7 @@ export default function NewCustomerOnboarding({
   initialProfessionalId,
   skipProfessionalStep = false,
 }: NewCustomerOnboardingProps) {
-  const [currentStep, setCurrentStep] = useState<"form" | "services" | "confirmation">("form")
+  const [currentStep, setCurrentStep] = useState<"form" | "services" | "confirmation" | "success">("form")
   const [formData, setFormData] = useState<any>(null)
   const [servicesData, setServicesData] = useState<any>(null)
   const [serviceSelectionData, setServiceSelectionData] = useState<any>(null)
@@ -286,7 +286,7 @@ export default function NewCustomerOnboarding({
       })
 
       if (response.ok) {
-        onComplete()
+        setCurrentStep("success")
       } else {
         console.error("Webhook request failed:", response.status)
       }
@@ -336,6 +336,50 @@ export default function NewCustomerOnboarding({
           formData={formData}
           serviceData={serviceSelectionData}
         />
+      )}
+      {currentStep === "success" && (
+        <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
+          <div className="text-center">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-3xl font-bold text-[#E75837] mb-4 header-font">Request Submitted Successfully!</h2>
+            <p className="text-lg text-gray-700 mb-6 body-font">
+              Your onboarding and booking request has been sent to your Critter professional.
+            </p>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <p className="text-blue-800 body-font">
+                📧 <strong className="header-font">Check your email!</strong> You should receive a confirmation email
+                shortly with next steps and your professional's contact information.
+              </p>
+            </div>
+            <div className="space-y-3 text-gray-600 body-font mb-8">
+              <p>What happens next:</p>
+              <ul className="text-left max-w-md mx-auto space-y-2">
+                <li className="flex items-start">
+                  <span className="text-[#E75837] mr-2">1.</span>
+                  Your professional will review your request
+                </li>
+                <li className="flex items-start">
+                  <span className="text-[#E75837] mr-2">2.</span>
+                  They'll contact you to confirm details and schedule
+                </li>
+                <li className="flex items-start">
+                  <span className="text-[#E75837] mr-2">3.</span>
+                  You'll receive booking confirmation once approved
+                </li>
+              </ul>
+            </div>
+            <button
+              onClick={onComplete}
+              className="bg-[#E75837] text-white px-8 py-3 rounded-lg hover:bg-[#d04e30] transition-colors body-font font-medium"
+            >
+              Return to Home
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )
