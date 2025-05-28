@@ -109,13 +109,24 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
 
   // Function to handle selection bubble clicks
   const handleSelectionClick = (option: SelectionOption) => {
-    console.log("Selection clicked:", { option, selectionType })
+    console.log("Selection clicked:", {
+      option,
+      selectionType,
+      optionName: option.name,
+      optionNameType: typeof option.name,
+      fullOption: JSON.stringify(option),
+    })
 
     if (selectionType === "service") {
       if (option.category === "Add-On") {
         setSelectedOptions((prev) => {
           const optionName = option.name
-          console.log("Add-on toggle:", { optionName, prev })
+          console.log("Add-on toggle:", {
+            optionName,
+            optionNameType: typeof optionName,
+            prev,
+            prevTypes: prev.map((item) => typeof item),
+          })
 
           if (prev.includes(optionName)) {
             return prev.filter((item) => item !== optionName)
@@ -129,7 +140,11 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
         )
       } else {
         // Main service selection
-        console.log("Main service selected:", option.name)
+        console.log("Main service selected:", {
+          optionName: option.name,
+          optionNameType: typeof option.name,
+          fullOption: JSON.stringify(option),
+        })
         setSelectionOptions((prev) =>
           prev.map((opt) => (opt.category !== "Add-On" ? { ...opt, selected: opt.name === option.name } : opt)),
         )
@@ -138,7 +153,12 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
     } else if (allowMultipleSelection) {
       setSelectedOptions((prev) => {
         const optionName = option.name
-        console.log("Multiple selection toggle:", { optionName, prev })
+        console.log("Multiple selection toggle:", {
+          optionName,
+          optionNameType: typeof optionName,
+          prev,
+          prevTypes: prev.map((item) => typeof item),
+        })
 
         if (prev.includes(optionName)) {
           return prev.filter((item) => item !== optionName)
@@ -151,7 +171,10 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
         prev.map((opt) => (opt.name === option.name ? { ...opt, selected: !opt.selected } : opt)),
       )
     } else {
-      console.log("Single selection:", option.name)
+      console.log("Single selection:", {
+        optionName: option.name,
+        optionNameType: typeof option.name,
+      })
       setSelectedOptions([option.name])
       setSelectionOptions((prev) => prev.map((opt) => ({ ...opt, selected: opt.name === option.name })))
 
@@ -163,6 +186,16 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
 
   // Function to submit the selected options
   const submitSelections = (directOption?: string) => {
+    console.log("=== SUBMIT SELECTIONS DEBUG ===")
+    console.log("directOption:", directOption, typeof directOption)
+    console.log("selectedMainService:", selectedMainService, typeof selectedMainService)
+    console.log(
+      "selectedOptions:",
+      selectedOptions,
+      selectedOptions.map((opt) => typeof opt),
+    )
+    console.log("selectionType:", selectionType)
+
     let options: string[] = []
 
     if (directOption) {
@@ -171,22 +204,43 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
       const mainService = selectedMainService
       const addOns = selectedOptions
 
-      console.log("Service selection debug:", { mainService, addOns, selectedOptions })
+      console.log("Service selection debug:", {
+        mainService,
+        mainServiceType: typeof mainService,
+        addOns,
+        addOnsTypes: addOns.map((addon) => typeof addon),
+        selectedOptions,
+      })
 
       if (!mainService) {
         console.log("No main service selected, cannot submit")
         return
       }
 
-      // Ensure we're working with strings
+      // Ensure we're working with strings and log the conversion
       const mainServiceStr = typeof mainService === "string" ? mainService : String(mainService)
-      const addOnStrs = addOns.map((addon) => (typeof addon === "string" ? addon : String(addon)))
+      const addOnStrs = addOns.map((addon, index) => {
+        const converted = typeof addon === "string" ? addon : String(addon)
+        console.log(`Add-on ${index}:`, addon, typeof addon, "->", converted)
+        return converted
+      })
 
+      console.log("Converted values:", { mainServiceStr, addOnStrs })
       options = [mainServiceStr, ...addOnStrs]
     } else {
       // Ensure all selected options are strings
-      options = selectedOptions.map((option) => (typeof option === "string" ? option : String(option)))
+      options = selectedOptions.map((option, index) => {
+        const converted = typeof option === "string" ? option : String(option)
+        console.log(`Option ${index}:`, option, typeof option, "->", converted)
+        return converted
+      })
     }
+
+    console.log(
+      "Final options array:",
+      options,
+      options.map((opt) => typeof opt),
+    )
 
     if (options.length === 0) {
       console.log("No options selected, cannot submit")
@@ -206,7 +260,8 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
         options[0] === "Yes, proceed" ? "Yes, I'd like to proceed with the booking." : "No, I need to make changes."
     }
 
-    console.log("Submitting selections:", { selectionType, options, messageText })
+    console.log("Final message text:", messageText, typeof messageText)
+    console.log("=== END SUBMIT SELECTIONS DEBUG ===")
 
     // Clear the selection panel state
     setShowSelectionPanel(false)
