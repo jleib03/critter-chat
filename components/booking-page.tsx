@@ -16,17 +16,22 @@ type BookingPageProps = {
   onStartOnboarding?: (sessionId: string | null, userId: string | null) => void
 }
 
+// Update the beginning of BookingPage component to handle progressive data collection
 export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
   // State for messages and UI
   const [statusColor, setStatusColor] = useState("#E75837")
   const [messages, setMessages] = useState<Message[]>([
     {
-      text: "Let's get you started! First thing's first, share some details to the left so can match you to the right businesses on Critter.",
+      text: "Let's get you started! What would you like to do today?",
       isUser: false,
     },
   ])
   const [inputValue, setInputValue] = useState("")
   const [showActionBubbles, setShowActionBubbles] = useState(true)
+
+  // New state for progressive flow
+  const [userEmail, setUserEmail] = useState<string>("")
+  const [isEmailCollected, setIsEmailCollected] = useState(false)
 
   // State for form validation
   const [isFormValid, setIsFormValid] = useState(false)
@@ -615,6 +620,26 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
     handleDateTimeSubmit(bookingInfo)
   }
 
+  // Add a new function to collect email first, then show the form
+  const handleEmailSubmit = (email: string) => {
+    if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+      return false
+    }
+
+    setUserEmail(email)
+    setIsEmailCollected(true)
+    setIsFormValid(true) // Enable form actions after email is collected
+
+    // Add email to messages
+    setMessages((prev) => [
+      ...prev,
+      { text: email, isUser: true },
+      { text: "Great! Now you can select what you'd like to do.", isUser: false },
+    ])
+
+    return true
+  }
+
   const sendMessage = async (messageText?: string, actionOverride?: string) => {
     if (!isFormValid) return
 
@@ -804,30 +829,62 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
 
   const showMiddlePanel = showSelectionPanel || showDateTimePanel
 
+  // The render function stays mostly the same, but you can modify how the left panel is displayed
   return (
     <div className="max-h-[calc(100vh-350px)]">
       {/* Three-column layout: User Info → Selection/DateTime Panel → Chat */}
       <div className="grid gap-4 h-full" style={{ gridTemplateColumns: showMiddlePanel ? "1fr 1fr 1fr" : "1fr 2fr" }}>
-        {/* Left Column - User Info (Always visible) */}
+        {/* Left Column - User Info (Always visible but simplified if email not collected) */}
         <div className="h-full flex flex-col">
-          <UserInfoForm
-            ref={userInfoFormRef}
-            selectedAction={selectedAction}
-            resetChat={resetChat}
-            onValidationChange={handleValidationChange}
-          />
+          {isEmailCollected ? (
+            <UserInfoForm
+              ref={userInfoFormRef}
+              selectedAction={selectedAction}
+              resetChat={resetChat}
+              onValidationChange={handleValidationChange}
+              initialEmail={userEmail}
+            />
+          ) : (
+            <div className="bg-white rounded-lg shadow-md flex flex-col overflow-hidden">
+              <div className="bg-[#E75837] text-white py-3 px-4">
+                <h2 className="text-xl font-medium header-font">Let's get started</h2>
+              </div>
+              <div className="p-6 flex-1">
+                <p className="text-gray-700 mb-4 body-font">
+                  To help you with your pet care needs, please provide your email address:
+                </p>
+                <div className="space-y-4">
+                  <input
+                    type="email"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder="Your email address"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
+                  />
+                  <button
+                    onClick={() => {
+                      if (handleEmailSubmit(inputValue)) {
+                        setInputValue("")
+                      }
+                    }}
+                    className="w-full bg-[#E75837] text-white py-3 rounded-lg hover:bg-[#d04e30] transition-colors body-font"
+                  >
+                    Continue
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Middle Column - Selection/DateTime Panel (Conditional) */}
+        {/* Keep the rest of the panels the same... */}
         {showMiddlePanel && <div className="h-full flex flex-col">{getMiddlePanel()}</div>}
-
-        {/* Right Column - Chat (Always visible) */}
         <div className="h-full flex flex-col">
           <ChatInterface
             messages={messages}
             isTyping={isTyping}
             showActionBubbles={showActionBubbles}
-            showSelectionBubbles={false} // We're not using the embedded selection bubbles anymore
+            showSelectionBubbles={false}
             selectionType={null}
             selectionOptions={[]}
             allowMultipleSelection={false}
@@ -835,7 +892,7 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
             selectedOptions={[]}
             showCalendar={showCalendar}
             inputValue={inputValue}
-            isFormValid={isFormValid}
+            isFormValid={isFormValid || isEmailCollected}
             onInputChange={setInputValue}
             onSendMessage={() => sendMessage()}
             onActionSelect={handleActionBubbleClick}

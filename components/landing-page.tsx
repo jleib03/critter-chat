@@ -2,23 +2,82 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowRight, Construction, Users, UserPlus, User, Check, AlertCircle, Loader2 } from "lucide-react"
+import {
+  ArrowRight,
+  Construction,
+  Users,
+  UserPlus,
+  User,
+  Check,
+  AlertCircle,
+  Loader2,
+  Calendar,
+  FileText,
+  PenLine,
+  X,
+} from "lucide-react"
 
 type LandingPageProps = {
   webhookUrl: string
+  onExistingCustomer?: () => void
+  onNewCustomer?: () => void
 }
 
-export default function LandingPage({ webhookUrl }: LandingPageProps) {
+export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCustomer }: LandingPageProps) {
   const router = useRouter()
   const [showComingSoon, setShowComingSoon] = useState(false)
   const [notifyEmail, setNotifyEmail] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle")
   const [errorMessage, setErrorMessage] = useState("")
+  const [showEmailForm, setShowEmailForm] = useState(false)
+  const [emailValue, setEmailValue] = useState("")
+  const [emailFormAction, setEmailFormAction] = useState<"existing" | "new" | null>(null)
 
   // Function to validate email format
   const isValidEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  }
+
+  // Function to handle action card click
+  const handleActionCardClick = (action: "existing" | "new" | "find") => {
+    if (action === "find") {
+      router.push("/findprofessional")
+      return
+    }
+
+    setEmailFormAction(action)
+    setShowEmailForm(true)
+  }
+
+  // Function to handle email submit
+  const handleEmailSubmit = () => {
+    if (!emailValue || !isValidEmail(emailValue)) {
+      setErrorMessage("Please enter a valid email address")
+      return
+    }
+
+    if (emailFormAction === "existing") {
+      if (onExistingCustomer) {
+        onExistingCustomer()
+      } else {
+        router.push("/existing")
+      }
+    } else if (emailFormAction === "new") {
+      if (onNewCustomer) {
+        onNewCustomer()
+      } else {
+        router.push("/newcustomer")
+      }
+    }
+  }
+
+  // Function to close the email form
+  const handleCloseEmailForm = () => {
+    setShowEmailForm(false)
+    setEmailValue("")
+    setErrorMessage("")
+    setEmailFormAction(null)
   }
 
   // Function to handle the notify me submission
@@ -97,76 +156,157 @@ export default function LandingPage({ webhookUrl }: LandingPageProps) {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
-      <div className="text-center mb-16">
+      <div className="text-center mb-12">
         <h1 className="text-4xl md:text-5xl title-font mb-6">Book pet care with Critter</h1>
         <p className="text-xl text-gray-700 max-w-3xl mx-auto body-font">
           Welcome to Critter's online booking portal, an extension of Critter's mobile app designed for fast and simple
-          booking. If your pet services provider uses Critter, you can use this site to request bookings and answer
-          questions about upcoming care and invoices.
+          booking.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-        {/* Option 1: Existing Customer */}
-        <Link href="/existing" className="block">
-          <div className="bg-white rounded-xl shadow-md overflow-hidden transition-transform hover:transform hover:scale-105 cursor-pointer border border-gray-100 h-full">
+      {/* Email Card - Slides in when an action is selected */}
+      {showEmailForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6 transform transition-all animate-fadeIn">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold header-font">
+                {emailFormAction === "existing" ? "Welcome back!" : "Let's get started!"}
+              </h3>
+              <button onClick={handleCloseEmailForm} className="text-gray-500 hover:text-gray-700">
+                <X size={20} />
+              </button>
+            </div>
+            <p className="text-gray-600 mb-4 body-font">
+              {emailFormAction === "existing"
+                ? "Enter your email to access your bookings and services."
+                : "Enter your email to start the onboarding process."}
+            </p>
+
+            {errorMessage && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+                <p className="body-font">{errorMessage}</p>
+              </div>
+            )}
+
+            <div className="mb-4">
+              <input
+                type="email"
+                value={emailValue}
+                onChange={(e) => setEmailValue(e.target.value)}
+                placeholder="Your email address"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
+                autoFocus
+              />
+            </div>
+
+            <button
+              onClick={handleEmailSubmit}
+              className="w-full bg-[#E75837] text-white py-3 px-4 rounded-lg hover:bg-[#d04e30] transition-colors body-font"
+            >
+              {emailFormAction === "existing" ? "Continue" : "Get Started"}
+            </button>
+
+            <div className="mt-3 text-center">
+              <button onClick={handleCloseEmailForm} className="text-sm text-gray-500 hover:text-gray-700 body-font">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Action Cards - Main Center Section */}
+      <div className="mb-16">
+        {/* Primary Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {/* Existing Customer Card */}
+          <div
+            onClick={() => handleActionCardClick("existing")}
+            className="bg-white rounded-xl shadow-md overflow-hidden transition-transform hover:scale-102 cursor-pointer border border-gray-100 h-full flex flex-col relative"
+          >
             <div className="bg-[#E75837] h-2 w-full"></div>
-            <div className="p-6">
+            <div className="p-6 flex flex-col flex-grow">
               <div className="w-12 h-12 bg-[#fff8f6] rounded-full flex items-center justify-center mb-4">
                 <User className="h-6 w-6 text-[#E75837]" />
               </div>
-              <h3 className="text-xl font-bold mb-3 header-font">Existing Customer</h3>
-              <p className="text-gray-600 mb-4 body-font">
+              <h3 className="text-xl font-bold mb-2 header-font">I'm an existing customer</h3>
+              <p className="text-gray-600 mb-6 flex-grow body-font">
                 Already use Critter? Book services, manage appointments, and check invoices.
               </p>
-              <div className="flex items-center text-[#E75837] font-medium header-font">
+              <div className="mt-auto space-y-2">
+                <div className="flex items-center text-gray-500 text-sm body-font">
+                  <Calendar className="w-4 h-4 mr-1" /> Book or view appointments
+                </div>
+                <div className="flex items-center text-gray-500 text-sm body-font">
+                  <FileText className="w-4 h-4 mr-1" /> Check invoices
+                </div>
+                <div className="flex items-center text-gray-500 text-sm body-font">
+                  <PenLine className="w-4 h-4 mr-1" /> Make changes to bookings
+                </div>
+              </div>
+              <div className="flex items-center text-[#E75837] font-medium mt-6 header-font">
                 Continue <ArrowRight className="ml-2 h-4 w-4" />
               </div>
             </div>
           </div>
-        </Link>
 
-        {/* Option 2: New Customer with Professional */}
-        <Link href="/newcustomer" className="block">
-          <div className="bg-white rounded-xl shadow-md overflow-hidden transition-transform hover:transform hover:scale-105 cursor-pointer border border-gray-100 h-full">
+          {/* New Customer Card */}
+          <div
+            onClick={() => handleActionCardClick("new")}
+            className="bg-white rounded-xl shadow-md overflow-hidden transition-transform hover:scale-102 cursor-pointer border border-gray-100 h-full flex flex-col relative"
+          >
             <div className="bg-[#745E25] h-2 w-full"></div>
-            <div className="p-6">
+            <div className="p-6 flex flex-col flex-grow">
               <div className="w-12 h-12 bg-[#f9f7f2] rounded-full flex items-center justify-center mb-4">
                 <UserPlus className="h-6 w-6 text-[#745E25]" />
               </div>
-              <h3 className="text-xl font-bold mb-3 header-font">New Customer</h3>
-              <p className="text-gray-600 mb-4 body-font">
+              <h3 className="text-xl font-bold mb-2 header-font">I'm a new customer</h3>
+              <p className="text-gray-600 mb-6 flex-grow body-font">
                 Know your Critter professional? Get the onboarding and booking request process started.
               </p>
-              <div className="flex items-center text-[#745E25] font-medium header-font">
+              <div className="mt-auto space-y-2">
+                <div className="flex items-center text-gray-500 text-sm body-font">
+                  <Check className="w-4 h-4 mr-1" /> Complete quick onboarding
+                </div>
+                <div className="flex items-center text-gray-500 text-sm body-font">
+                  <Check className="w-4 h-4 mr-1" /> Enter your pet information
+                </div>
+                <div className="flex items-center text-gray-500 text-sm body-font">
+                  <Check className="w-4 h-4 mr-1" /> Book your first appointment
+                </div>
+              </div>
+              <div className="flex items-center text-[#745E25] font-medium mt-6 header-font">
                 Get Started <ArrowRight className="ml-2 h-4 w-4" />
               </div>
             </div>
           </div>
-        </Link>
+        </div>
 
-        {/* Option 3: Looking for Professional (Coming Soon) */}
-        <Link href="/findprofessional" className="block">
-          <div className="bg-white rounded-xl shadow-md overflow-hidden transition-transform hover:transform hover:scale-105 cursor-pointer border border-gray-100 h-full">
+        {/* Secondary Action */}
+        <div className="max-w-md mx-auto">
+          <div
+            onClick={() => handleActionCardClick("find")}
+            className="bg-white rounded-xl shadow-md overflow-hidden transition-transform hover:scale-102 cursor-pointer border border-gray-100"
+          >
             <div className="bg-[#94ABD6] h-2 w-full"></div>
             <div className="p-6">
               <div className="w-12 h-12 bg-[#f5f8fd] rounded-full flex items-center justify-center mb-4">
                 <Users className="h-6 w-6 text-[#94ABD6]" />
               </div>
-              <h3 className="text-xl font-bold mb-3 header-font">Find a Professional</h3>
+              <h3 className="text-xl font-bold mb-2 header-font">I need to find a professional</h3>
               <p className="text-gray-600 mb-4 body-font">
-                Looking for pet care services? We'll help you find the perfect match.
+                Looking for pet care services? We'll help you find the perfect match in your area.
               </p>
               <div className="flex items-center text-[#94ABD6] font-medium header-font">
-                Explore <ArrowRight className="ml-2 h-4 w-4" />
+                Find a professional <ArrowRight className="ml-2 h-4 w-4" />
               </div>
             </div>
           </div>
-        </Link>
+        </div>
       </div>
 
       {/* App Store Links */}
-      <div className="text-center mb-12">
+      <div className="text-center">
         <h2 className="text-2xl font-bold mb-6 header-font">Get the Critter App</h2>
         <div className="flex justify-center space-x-4">
           <Link

@@ -6,6 +6,7 @@ type UserInfoFormProps = {
   selectedAction: string
   resetChat: () => void
   onValidationChange: (isValid: boolean) => void
+  initialEmail?: string
 }
 
 export type UserInfoFormHandle = {
@@ -18,7 +19,7 @@ export type UserInfoFormHandle = {
 }
 
 const UserInfoForm = forwardRef<UserInfoFormHandle, UserInfoFormProps>(
-  ({ selectedAction, resetChat, onValidationChange }, ref) => {
+  ({ selectedAction, resetChat, onValidationChange, initialEmail = "" }, ref) => {
     const firstNameRef = useRef<HTMLInputElement>(null)
     const lastNameRef = useRef<HTMLInputElement>(null)
     const emailRef = useRef<HTMLInputElement>(null)
@@ -26,12 +27,14 @@ const UserInfoForm = forwardRef<UserInfoFormHandle, UserInfoFormProps>(
 
     const [isFormValid, setIsFormValid] = useState(false)
 
-    // Update the hidden input when selectedAction changes
+    // Set the email value from initialEmail if provided
     useEffect(() => {
-      if (actionSelectRef.current) {
-        actionSelectRef.current.value = selectedAction
+      if (initialEmail && emailRef.current) {
+        emailRef.current.value = initialEmail
+        // Trigger validation after setting initial email
+        setTimeout(validateForm, 0)
       }
-    }, [selectedAction])
+    }, [initialEmail])
 
     // Remove the validationErrors state entirely and replace with simple validation
     const validateForm = () => {
@@ -92,10 +95,7 @@ const UserInfoForm = forwardRef<UserInfoFormHandle, UserInfoFormProps>(
           <h2 className="text-xl font-medium header-font">Tell us about you</h2>
         </div>
         <div className="bg-white rounded-b-lg p-6 shadow-sm flex-1 flex flex-col overflow-y-auto user-info-container">
-          <p className="text-gray-700 mb-4 body-font">
-            Let's start by telling us a little bit about yourself, with first/last name and/or email. This lets Critter
-            match you to the services providers you already work with.
-          </p>
+          <p className="text-gray-700 mb-4 body-font">Let's finish gathering the information we need to help you.</p>
 
           {/* Required fields notice */}
           {!isFormValid && (
@@ -110,6 +110,7 @@ const UserInfoForm = forwardRef<UserInfoFormHandle, UserInfoFormProps>(
                 type="email"
                 ref={emailRef}
                 placeholder="Email*"
+                defaultValue={initialEmail}
                 onChange={handleInputChange}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
               />

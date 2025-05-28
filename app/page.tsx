@@ -45,9 +45,9 @@ export default function Page() {
         <div className="max-w-6xl mx-auto px-4 flex flex-col page-content">
           {currentView === "landing" && (
             <LandingPage
+              webhookUrl={WEBHOOK_URL}
               onExistingCustomer={handleExistingCustomer}
               onNewCustomer={handleNewCustomer}
-              webhookUrl={WEBHOOK_URL}
             />
           )}
 
