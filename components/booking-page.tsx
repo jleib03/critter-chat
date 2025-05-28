@@ -263,12 +263,9 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
     console.log("Final message text:", messageText, typeof messageText)
     console.log("=== END SUBMIT SELECTIONS DEBUG ===")
 
-    // Clear the selection panel state
-    setShowSelectionPanel(false)
-    setSelectionOptions([])
-    setSelectedOptions([])
-    setSelectedMainService(null)
-    setSelectionType(null)
+    console.log("About to send message:", messageText, typeof messageText)
+    console.log("Message length:", messageText.length)
+    console.log("Message JSON:", JSON.stringify(messageText))
 
     // Send the message
     sendMessage(messageText)
@@ -589,8 +586,25 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
   }
 
   const sendMessage = async (messageText?: string, actionOverride?: string) => {
-    const message = messageText || inputValue.trim()
-    if (!message) return
+    // Ensure we always have a string message
+    let message = ""
+
+    if (typeof messageText === "string") {
+      message = messageText.trim()
+    } else if (messageText) {
+      // If messageText is an object, convert it to string
+      console.log("Warning: messageText is not a string:", messageText, typeof messageText)
+      message = String(messageText).trim()
+    } else {
+      message = inputValue.trim()
+    }
+
+    if (!message) {
+      console.log("No message to send")
+      return
+    }
+
+    console.log("Final message being sent:", message, typeof message)
 
     setShowActionBubbles(false)
     console.log("Sending message", { message })
