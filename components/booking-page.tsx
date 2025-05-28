@@ -359,6 +359,21 @@ export default function BookingPage({ onStartOnboarding }: BookingPageProps) {
       }
     }
 
+    // Fallback: detect service requests even in text_only messages
+    if (
+      structuredData &&
+      structuredData.type === "text_only" &&
+      structuredData.intro &&
+      (structuredData.intro.toLowerCase().includes("which service") ||
+        structuredData.intro.toLowerCase().includes("specify which service") ||
+        structuredData.intro.toLowerCase().includes("list of services"))
+    ) {
+      console.log("Detected service request in text_only message, but no services provided")
+      // For now, we'll skip showing the panel since we don't have service data
+      // This indicates the webhook should be returning service_list type instead
+      return { type: null, options: [], allowMultiple: false }
+    }
+
     // Add text-based detection for pet selection
     if (
       message.toLowerCase().includes("which pet") ||
