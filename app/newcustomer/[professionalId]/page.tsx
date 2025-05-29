@@ -51,6 +51,9 @@ export default function ProfessionalSpecificPage() {
         try {
           if (rawText && rawText.trim()) {
             data = JSON.parse(rawText)
+            console.log("Parsed data:", data)
+            console.log("Data type:", typeof data)
+            console.log("Data keys:", Object.keys(data))
           }
         } catch (parseError) {
           console.error("JSON parse error:", parseError)
@@ -58,6 +61,7 @@ export default function ProfessionalSpecificPage() {
           if (rawText && rawText.includes("name")) {
             const nameMatch = rawText.match(/"name"\s*:\s*"([^"]+)"/)
             if (nameMatch && nameMatch[1]) {
+              console.log("Extracted name from regex:", nameMatch[1])
               setProfessionalName(nameMatch[1])
               setLoading(false)
               return
@@ -68,33 +72,49 @@ export default function ProfessionalSpecificPage() {
 
         // Check for name in parsed data
         if (data) {
+          console.log("Checking data.name:", data.name)
+          console.log("Checking data.professional_name:", data.professional_name)
+
           if (data.name) {
+            console.log("Found name in data.name:", data.name)
             setProfessionalName(data.name)
           } else if (data.professional_name) {
+            console.log("Found name in data.professional_name:", data.professional_name)
             setProfessionalName(data.professional_name)
           } else if (data.message && typeof data.message === "string") {
+            console.log("Checking data.message:", data.message)
             // Try to parse message if it's a string that might contain JSON
             try {
               const messageData = JSON.parse(data.message)
+              console.log("Parsed message data:", messageData)
               if (messageData.name) {
+                console.log("Found name in messageData.name:", messageData.name)
                 setProfessionalName(messageData.name)
               } else if (messageData.professional_name) {
+                console.log("Found name in messageData.professional_name:", messageData.professional_name)
                 setProfessionalName(messageData.professional_name)
               } else {
+                console.log("No name found in parsed message data")
                 throw new Error("Professional name not found in response")
               }
             } catch (e) {
+              console.log("Message is not JSON, checking if it contains name directly")
               // If message isn't JSON, check if it directly contains the name
               if (data.message.includes("Critter")) {
+                console.log("Found Critter in message, using as name:", data.message)
                 setProfessionalName(data.message)
               } else {
+                console.log("No Critter found in message")
                 throw new Error("Professional name not found in response")
               }
             }
           } else {
+            console.log("No name found in any expected location")
+            console.log("Available data properties:", Object.keys(data))
             throw new Error("Professional name not found in response")
           }
         } else {
+          console.log("No data after parsing")
           throw new Error("Empty response from server")
         }
       } catch (err) {
