@@ -15,7 +15,6 @@ import {
   FileText,
   PenLine,
   X,
-  Sparkles,
 } from "lucide-react"
 
 type UserInfo = {
@@ -212,9 +211,7 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
     <div className="max-w-5xl mx-auto px-4 py-12">
       <div className="text-center mb-12">
         <div className="flex items-center justify-center mb-4">
-          <Sparkles className="h-8 w-8 text-[#E75837] mr-2" />
           <h1 className="text-4xl md:text-5xl title-font">Book pet care with Critter</h1>
-          <Sparkles className="h-8 w-8 text-[#E75837] ml-2" />
         </div>
         <p className="text-xl text-gray-700 max-w-3xl mx-auto body-font">
           Welcome to Critter's online booking portal, an extension of Critter's mobile app designed for fast and simple
@@ -342,13 +339,14 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
               </p>
               <div className="mt-auto space-y-2">
                 <div className="flex items-center text-gray-500 text-sm body-font">
-                  <Check className="w-4 h-4 mr-1" /> Complete quick onboarding
+                  <UserPlus className="w-4 h-4 mr-1" /> Complete quick onboarding
                 </div>
                 <div className="flex items-center text-gray-500 text-sm body-font">
-                  <Check className="w-4 h-4 mr-1" /> Enter your pet information
+                  <FileText className="w-4 h-4 mr-1" /> Provide detailed information to improve the ability to find
+                  services to fit your needs
                 </div>
                 <div className="flex items-center text-gray-500 text-sm body-font">
-                  <Check className="w-4 h-4 mr-1" /> Book your first appointment
+                  <Calendar className="w-4 h-4 mr-1" /> Book your first appointment
                 </div>
               </div>
               <div className="flex items-center text-[#745E25] font-medium mt-6 header-font group-hover:text-[#5d4b1e]">
