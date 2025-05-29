@@ -3,7 +3,7 @@ import { useState } from "react"
 import Header from "../components/header"
 import LandingPage from "../components/landing-page"
 import BookingPage from "../components/booking-page"
-import NewCustomerOnboarding from "../components/new-customer-onboarding"
+import NewCustomerIntake from "../components/new-customer-intake"
 
 type UserInfo = {
   email: string
@@ -12,7 +12,7 @@ type UserInfo = {
 }
 
 export default function Page() {
-  const [currentView, setCurrentView] = useState<"landing" | "chat" | "onboarding">("landing")
+  const [currentView, setCurrentView] = useState<"landing" | "chat" | "intake">("landing")
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
@@ -35,7 +35,7 @@ export default function Page() {
 
   const handleNewCustomer = () => {
     // For new customers, go directly to onboarding without requiring user info upfront
-    setCurrentView("onboarding")
+    setCurrentView("intake")
   }
 
   // Handler to go back to landing page
@@ -72,16 +72,17 @@ export default function Page() {
             </>
           )}
 
-          {currentView === "onboarding" && (
+          {currentView === "intake" && (
             <>
               <div className="text-center mb-8">
                 <h1 className="text-4xl title-font mb-4 font-sangbleu">Welcome to Critter!</h1>
                 <p className="text-gray-700 max-w-3xl mx-auto body-font">
-                  Let's get you set up with your Critter professional and book your first appointment.
+                  Let's get you set up with your Critter professional through our intake process and book your first
+                  appointment.
                 </p>
               </div>
               <div className="flex-1 flex flex-col mb-12">
-                <NewCustomerOnboarding
+                <NewCustomerIntake
                   onCancel={handleBackToLanding}
                   onComplete={handleBackToLanding}
                   webhookUrl={WEBHOOK_URL}

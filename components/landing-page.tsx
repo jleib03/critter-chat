@@ -340,7 +340,7 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
               </p>
               <div className="mt-auto space-y-2">
                 <div className="flex items-center text-gray-500 text-sm body-font">
-                  <UserPlus className="w-4 h-4 mr-1" /> Complete quick onboarding
+                  <UserPlus className="w-4 h-4 mr-1" /> Complete quick intake
                 </div>
                 <div className="flex items-center text-gray-500 text-sm body-font">
                   <Heart className="w-4 h-4 mr-1" /> Provide detailed pet information

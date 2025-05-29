@@ -233,12 +233,12 @@ export default function OnboardingForm({
     <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-[#E75837] mb-2 header-font">
-          {userInfo ? "Complete Your Profile" : "New Customer Onboarding"}
+          {userInfo ? "Complete Your Profile" : "New Customer Intake"}
         </h2>
         <p className="text-gray-600 body-font">
           {userInfo
             ? "We have your basic information. Let's add a few more details to get you set up with your Critter professional."
-            : "Please provide the following information to get started with your Critter professional."}
+            : "Please provide the following information to complete your intake with your Critter professional."}
         </p>
         {professionalId && skipProfessionalStep && professionalName && (
           <p className="text-sm text-gray-700 mt-2 body-font">

@@ -1,7 +1,7 @@
 "use client"
 import { useParams, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
-import NewCustomerOnboarding from "../../../components/new-customer-onboarding"
+import NewCustomerIntake from "../../../components/new-customer-intake"
 import Header from "../../../components/header"
 import { Loader2 } from "lucide-react"
 
@@ -25,7 +25,7 @@ export default function ProfessionalSpecificPage() {
     const fetchProfessionalName = async () => {
       try {
         setLoading(true)
-        console.log("Fetching professional info for ID:", professionalId)
+        console.log("Fetching professional info for intake ID:", professionalId)
 
         const response = await fetch(WEBHOOK_URL, {
           method: "POST",
@@ -150,7 +150,7 @@ export default function ProfessionalSpecificPage() {
 
       <main className="pt-8 flex-1 flex flex-col">
         <div className="max-w-6xl mx-auto px-4 flex flex-col page-content">
-          <h1 className="text-4xl title-font text-center mb-4 font-sangbleu">New Customer Onboarding</h1>
+          <h1 className="text-4xl title-font text-center mb-4 font-sangbleu">New Customer Intake</h1>
 
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12">
@@ -183,7 +183,7 @@ export default function ProfessionalSpecificPage() {
                 Complete the form below to set up your account with your Critter professional.
               </p>
               <div className="flex-1 flex flex-col mb-12">
-                <NewCustomerOnboarding
+                <NewCustomerIntake
                   onCancel={handleBackToLanding}
                   onComplete={handleBackToLanding}
                   webhookUrl={WEBHOOK_URL}

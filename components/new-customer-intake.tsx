@@ -12,7 +12,7 @@ type UserInfo = {
   lastName: string
 }
 
-type NewCustomerOnboardingProps = {
+type NewCustomerIntakeProps = {
   onCancel: () => void
   onComplete: () => void
   webhookUrl: string
@@ -80,7 +80,7 @@ const isAddOnService = (category: string, serviceName: string): boolean => {
   return false
 }
 
-export default function NewCustomerOnboarding({
+export default function NewCustomerIntake({
   onCancel,
   onComplete,
   webhookUrl,
@@ -90,7 +90,7 @@ export default function NewCustomerOnboarding({
   initialProfessionalId,
   initialProfessionalName,
   skipProfessionalStep = false,
-}: NewCustomerOnboardingProps) {
+}: NewCustomerIntakeProps) {
   const [currentStep, setCurrentStep] = useState<"form" | "services" | "confirmation" | "success">("form")
   const [formData, setFormData] = useState<any>(null)
   const [servicesData, setServicesData] = useState<any>(null)
@@ -113,14 +113,14 @@ export default function NewCustomerOnboarding({
 
     const payload = {
       message: {
-        text: "New customer onboarding - retrieve services",
+        text: "New customer intake - retrieve services",
         userId: USER_ID.current,
         timestamp: new Date().toISOString(),
         userInfo: {
           firstName: combinedData.firstName,
           lastName: combinedData.lastName,
           email: combinedData.email,
-          selectedAction: "new_customer_onboarding",
+          selectedAction: "new_customer_intake",
         },
         formData: combinedData,
         professionalID: initialProfessionalId,
@@ -275,7 +275,7 @@ export default function NewCustomerOnboarding({
   const handleConfirmationSubmit = async (data: any) => {
     const payload = {
       message: {
-        text: "New customer final booking submission",
+        text: "New customer final intake submission",
         userId: USER_ID.current,
         timestamp: new Date().toISOString(),
         userInfo: formData
@@ -283,15 +283,15 @@ export default function NewCustomerOnboarding({
               firstName: formData.firstName,
               lastName: formData.lastName,
               email: formData.email,
-              selectedAction: "new_customer_onboarding",
+              selectedAction: "new_customer_intake",
             }
           : {
-              selectedAction: "new_customer_onboarding",
+              selectedAction: "new_customer_intake",
             },
         formData: formData,
         serviceData: serviceSelectionData,
         professionalID: initialProfessionalId,
-        type: "new_customer_final_submission",
+        type: "new_customer_final_intake_submission",
         source: "critter_booking_site",
       },
     }
@@ -419,7 +419,7 @@ export default function NewCustomerOnboarding({
             </div>
             <h2 className="text-3xl font-bold text-[#E75837] mb-4 header-font">Request Submitted Successfully!</h2>
             <p className="text-lg text-gray-700 mb-6 body-font">
-              Your onboarding and booking request has been sent to your Critter professional.
+              Your intake and booking request has been sent to your Critter professional.
             </p>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
               <p className="text-blue-800 body-font">
