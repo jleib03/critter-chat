@@ -4,6 +4,7 @@ import { useState, useRef } from "react"
 import OnboardingForm from "./onboarding-form"
 import ServiceSelection from "./service-selection"
 import Confirmation from "./confirmation"
+import type { OnboardingFormData } from "../types/booking"
 
 type UserInfo = {
   email: string
@@ -19,6 +20,7 @@ type NewCustomerOnboardingProps = {
   initialSessionId?: string
   initialUserId?: string
   initialProfessionalId?: string
+  initialProfessionalName?: string
   skipProfessionalStep?: boolean
 }
 
@@ -86,6 +88,7 @@ export default function NewCustomerOnboarding({
   initialSessionId,
   initialUserId,
   initialProfessionalId,
+  initialProfessionalName,
   skipProfessionalStep = false,
 }: NewCustomerOnboardingProps) {
   const [currentStep, setCurrentStep] = useState<"form" | "services" | "confirmation" | "success">("form")
@@ -94,6 +97,9 @@ export default function NewCustomerOnboarding({
   const [serviceSelectionData, setServiceSelectionData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const USER_ID = useRef(initialUserId || "user_id_" + Math.random().toString(36).substring(2, 15))
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isComplete, setIsComplete] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleFormSubmit = async (data: any) => {
     // Merge the user info from landing page with additional form data
@@ -313,6 +319,41 @@ export default function NewCustomerOnboarding({
     setCurrentStep("services")
   }
 
+  const handleSubmit = async (formData: OnboardingFormData) => {
+    setIsSubmitting(true)
+    setError(null)
+
+    try {
+      // If we have an initialProfessionalName, use it
+      const dataToSubmit = initialProfessionalName
+        ? { ...formData, professionalName: initialProfessionalName }
+        : formData
+
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "new_customer_onboarding",
+          professionalId: initialProfessionalId || null,
+          formData: dataToSubmit,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`)
+      }
+
+      setIsComplete(true)
+    } catch (err) {
+      console.error("Error submitting form:", err)
+      setError("There was an error submitting your information. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
@@ -325,15 +366,31 @@ export default function NewCustomerOnboarding({
     )
   }
 
+  if (isComplete) {
+    return (
+      <Confirmation
+        title="Onboarding Complete!"
+        message="Your information has been submitted successfully. Your Critter professional will be in touch with you soon."
+        buttonText="Return to Home"
+        onButtonClick={onComplete}
+      />
+    )
+  }
+
   return (
     <div>
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <p className="text-red-600 text-center">{error}</p>
+        </div>
+      )}
       {currentStep === "form" && (
         <OnboardingForm
           onSubmit={handleFormSubmit}
           onCancel={onCancel}
           skipProfessionalStep={skipProfessionalStep}
           professionalId={initialProfessionalId}
-          userInfo={userInfo}
+          professionalName={initialProfessionalName}
         />
       )}
       {currentStep === "services" && servicesData && (

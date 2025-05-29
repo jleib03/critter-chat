@@ -14,6 +14,7 @@ type OnboardingFormProps = {
   onCancel: () => void
   skipProfessionalStep?: boolean
   professionalId?: string
+  professionalName?: string
   userInfo?: UserInfo | null
 }
 
@@ -22,6 +23,7 @@ export default function OnboardingForm({
   onCancel,
   skipProfessionalStep = false,
   professionalId,
+  professionalName,
   userInfo,
 }: OnboardingFormProps) {
   const [currentStep, setCurrentStep] = useState(skipProfessionalStep ? 2 : 1)
@@ -40,7 +42,7 @@ export default function OnboardingForm({
   }>({})
 
   const [formData, setFormData] = useState<OnboardingFormData>({
-    professionalName: "",
+    professionalName: professionalName || "",
     firstName: userInfo?.firstName || "",
     lastName: userInfo?.lastName || "",
     email: userInfo?.email || "",
@@ -238,8 +240,10 @@ export default function OnboardingForm({
             ? "We have your basic information. Let's add a few more details to get you set up with your Critter professional."
             : "Please provide the following information to get started with your Critter professional."}
         </p>
-        {professionalId && skipProfessionalStep && (
-          <p className="text-sm text-gray-500 mt-2 body-font">Professional ID: {professionalId}</p>
+        {professionalId && skipProfessionalStep && professionalName && (
+          <p className="text-sm text-gray-700 mt-2 body-font">
+            You're setting up an account with <span className="font-medium text-[#E75837]">{professionalName}</span>
+          </p>
         )}
       </div>
 
