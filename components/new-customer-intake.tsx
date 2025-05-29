@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useEffect, useRef } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import OnboardingForm from "./onboarding-form"
 import ServiceSelection from "./service-selection"
 import Confirmation from "./confirmation"
@@ -13,15 +14,8 @@ type UserInfo = {
 }
 
 type NewCustomerIntakeProps = {
-  onCancel: () => void
-  onComplete: () => void
-  webhookUrl: string
-  userInfo: UserInfo
-  initialSessionId?: string
-  initialUserId?: string
-  initialProfessionalId?: string
-  initialProfessionalName?: string
-  skipProfessionalStep?: boolean
+  professionalId?: string
+  professionalName?: string
 }
 
 // More conservative function to determine if a service is an add-on
@@ -80,31 +74,78 @@ const isAddOnService = (category: string, serviceName: string): boolean => {
   return false
 }
 
-export default function NewCustomerIntake({
-  onCancel,
-  onComplete,
-  webhookUrl,
-  userInfo,
-  initialSessionId,
-  initialUserId,
-  initialProfessionalId,
-  initialProfessionalName,
-  skipProfessionalStep = false,
-}: NewCustomerIntakeProps) {
+export default function NewCustomerIntake({ professionalId, professionalName }: NewCustomerIntakeProps) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [currentStep, setCurrentStep] = useState<"form" | "services" | "confirmation" | "success">("form")
   const [formData, setFormData] = useState<any>(null)
   const [servicesData, setServicesData] = useState<any>(null)
   const [serviceSelectionData, setServiceSelectionData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const USER_ID = useRef(initialUserId || "user_id_" + Math.random().toString(36).substring(2, 15))
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const USER_ID = useRef(professionalId || "user_id_" + Math.random().toString(36).substring(2, 15))
+  const [resolvedProfessionalName, setResolvedProfessionalName] = useState<string | null>(professionalName || null)
+
+  // If we have a professional ID but no name, fetch the name
+  useEffect(() => {
+    const fetchProfessionalName = async () => {
+      if (professionalId && !professionalName) {
+        setIsLoading(true)
+        setError(null)
+        try {
+          console.log("Fetching professional name for ID:", professionalId)
+          const webhookUrl = process.env.NEXT_PUBLIC_WEBHOOK_URL
+          if (!webhookUrl) {
+            throw new Error("Webhook URL not configured")
+          }
+
+          const response = await fetch(`${webhookUrl}?professionalId=${professionalId}`)
+          console.log("Response status:", response.status)
+
+          if (!response.ok) {
+            throw new Error(`Failed to fetch professional: ${response.status}`)
+          }
+
+          const data = await response.json()
+          console.log("Response data:", JSON.stringify(data))
+
+          // Handle different response formats
+          let name = null
+          if (Array.isArray(data) && data.length > 0 && data[0].name) {
+            // If response is an array with objects containing name
+            name = data[0].name
+            console.log("Found name in array format:", name)
+          } else if (data.name) {
+            // If response is an object with name property
+            name = data.name
+            console.log("Found name in object format:", name)
+          } else if (typeof data === "string") {
+            // If response is a string
+            name = data
+            console.log("Found name as string:", name)
+          } else {
+            console.error("Unexpected response format:", data)
+            throw new Error("Professional not found")
+          }
+
+          setResolvedProfessionalName(name)
+        } catch (err) {
+          console.error("Error fetching professional:", err)
+          setError(err instanceof Error ? err.message : "Failed to fetch professional")
+        } finally {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    fetchProfessionalName()
+  }, [professionalId, professionalName])
 
   const handleFormSubmit = async (data: any) => {
     // Merge the user info from landing page with additional form data
     const combinedData = {
-      ...userInfo,
       ...data,
     }
 
@@ -123,14 +164,14 @@ export default function NewCustomerIntake({
           selectedAction: "new_customer_intake",
         },
         formData: combinedData,
-        professionalID: initialProfessionalId,
+        professionalID: professionalId,
         type: "new_customer_get_services",
         source: "critter_booking_site",
       },
     }
 
     try {
-      const response = await fetch(webhookUrl, {
+      const response = await fetch(process.env.NEXT_PUBLIC_WEBHOOK_URL || "", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -290,14 +331,14 @@ export default function NewCustomerIntake({
             },
         formData: formData,
         serviceData: serviceSelectionData,
-        professionalID: initialProfessionalId,
+        professionalID: professionalId,
         type: "new_customer_final_intake_submission",
         source: "critter_booking_site",
       },
     }
 
     try {
-      const response = await fetch(webhookUrl, {
+      const response = await fetch(process.env.NEXT_PUBLIC_WEBHOOK_URL || "", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -319,24 +360,22 @@ export default function NewCustomerIntake({
     setCurrentStep("services")
   }
 
-  const handleSubmit = async (formData: OnboardingFormData) => {
+  const handleSubmit = async (data: OnboardingFormData) => {
     setIsSubmitting(true)
     setError(null)
 
     try {
       // If we have an initialProfessionalName, use it
-      const dataToSubmit = initialProfessionalName
-        ? { ...formData, professionalName: initialProfessionalName }
-        : formData
+      const dataToSubmit = professionalName ? { ...data, professionalName: professionalName } : data
 
-      const response = await fetch(webhookUrl, {
+      const response = await fetch(process.env.NEXT_PUBLIC_WEBHOOK_URL || "", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           action: "new_customer_onboarding",
-          professionalId: initialProfessionalId || null,
+          professionalId: professionalId || null,
           formData: dataToSubmit,
         }),
       })
@@ -353,6 +392,15 @@ export default function NewCustomerIntake({
       setIsSubmitting(false)
     }
   }
+
+  const handleCancel = () => {
+    router.push("/")
+  }
+
+  // Extract user info from query params if available
+  const userInfo = searchParams.get("userInfo")
+    ? JSON.parse(decodeURIComponent(searchParams.get("userInfo") as string))
+    : null
 
   if (isLoading) {
     return (
@@ -372,13 +420,24 @@ export default function NewCustomerIntake({
         title="Onboarding Complete!"
         message="Your information has been submitted successfully. Your Critter professional will be in touch with you soon."
         buttonText="Return to Home"
-        onButtonClick={onComplete}
+        onButtonClick={handleCancel}
       />
     )
   }
 
   return (
-    <div>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-4xl text-center font-bold mb-8 header-font">New Customer Intake</h1>
+
+      {professionalId && (
+        <div className="bg-[#f8f3ef] p-4 rounded-lg mb-8 text-center">
+          <p className="text-xl text-gray-700">
+            You're completing the intake process for{" "}
+            <span className="text-[#E75837] font-medium">{resolvedProfessionalName || "..."}</span>
+          </p>
+        </div>
+      )}
+
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
           <p className="text-red-600 text-center">{error}</p>
@@ -387,10 +446,11 @@ export default function NewCustomerIntake({
       {currentStep === "form" && (
         <OnboardingForm
           onSubmit={handleFormSubmit}
-          onCancel={onCancel}
-          skipProfessionalStep={skipProfessionalStep}
-          professionalId={initialProfessionalId}
-          professionalName={initialProfessionalName}
+          onCancel={handleCancel}
+          skipProfessionalStep={!!professionalId}
+          professionalId={professionalId}
+          professionalName={resolvedProfessionalName || undefined}
+          userInfo={userInfo}
         />
       )}
       {currentStep === "services" && servicesData && (
@@ -403,7 +463,7 @@ export default function NewCustomerIntake({
       {currentStep === "confirmation" && (
         <Confirmation
           onSubmit={handleConfirmationSubmit}
-          onCancel={onCancel}
+          onCancel={handleCancel}
           onBack={handleBackToServices}
           formData={formData}
           serviceData={serviceSelectionData}
@@ -445,7 +505,7 @@ export default function NewCustomerIntake({
               </ul>
             </div>
             <button
-              onClick={onComplete}
+              onClick={handleCancel}
               className="bg-[#E75837] text-white px-8 py-3 rounded-lg hover:bg-[#d04e30] transition-colors body-font font-medium"
             >
               Return to Home
