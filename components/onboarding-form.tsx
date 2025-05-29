@@ -240,12 +240,6 @@ export default function OnboardingForm({
             ? "We have your basic information. Let's add a few more details to get you set up with your Critter professional."
             : "Please provide the following information to complete your intake with your Critter professional."}
         </p>
-        {professionalId && skipProfessionalStep && professionalName && (
-          <p className="text-sm text-gray-700 mt-2 body-font">
-            You're completing the intake process for{" "}
-            <span className="font-medium text-[#E75837]">{professionalName}</span>
-          </p>
-        )}
       </div>
 
       {/* User Info Summary - Only show if we have user info */}

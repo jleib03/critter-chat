@@ -150,8 +150,6 @@ export default function ProfessionalSpecificPage() {
 
       <main className="pt-8 flex-1 flex flex-col">
         <div className="max-w-6xl mx-auto px-4 flex flex-col page-content">
-          <h1 className="text-4xl title-font text-center mb-4 font-sangbleu">New Customer Intake</h1>
-
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="h-8 w-8 text-[#E75837] animate-spin mb-4" />
@@ -171,14 +169,6 @@ export default function ProfessionalSpecificPage() {
             </div>
           ) : (
             <>
-              {professionalName && (
-                <div className="bg-[#f0e9df] rounded-lg p-4 mb-8 text-center">
-                  <p className="text-gray-700 body-font">
-                    You're completing the intake process for{" "}
-                    <span className="font-medium text-[#E75837]">{professionalName}</span>
-                  </p>
-                </div>
-              )}
               <div className="flex-1 flex flex-col mb-12">
                 <NewCustomerIntake
                   onCancel={handleBackToLanding}

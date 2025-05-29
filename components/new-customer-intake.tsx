@@ -448,11 +448,11 @@ export default function NewCustomerIntake({
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-4xl text-center font-bold mb-8 header-font">New Customer Intake</h1>
 
-      {initialProfessionalId && (
+      {initialProfessionalId && resolvedProfessionalName && (
         <div className="bg-[#f8f3ef] p-4 rounded-lg mb-8 text-center">
           <p className="text-xl text-gray-700">
             You're completing the intake process for{" "}
-            <span className="text-[#E75837] font-medium">{resolvedProfessionalName || "..."}</span>
+            <span className="text-[#E75837] font-medium">{resolvedProfessionalName}</span>
           </p>
         </div>
       )}
@@ -466,9 +466,9 @@ export default function NewCustomerIntake({
         <OnboardingForm
           onSubmit={handleFormSubmit}
           onCancel={onCancel}
-          skipProfessionalStep={skipProfessionalStep}
+          skipProfessionalStep={!!initialProfessionalId}
           professionalId={initialProfessionalId}
-          professionalName={initialProfessionalName}
+          professionalName={resolvedProfessionalName || initialProfessionalName}
           userInfo={queryUserInfo || initialUserInfo}
         />
       )}
