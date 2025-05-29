@@ -307,15 +307,18 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
               <p className="text-gray-600 mb-6 flex-grow body-font">
                 Already use Critter? Book services, manage appointments, and check invoices.
               </p>
-              <div className="mt-auto space-y-2">
+              <div className="mt-auto space-y-1">
                 <div className="flex items-center text-gray-500 text-sm body-font">
-                  <Calendar className="w-4 h-4 mr-1" /> Request or view appointments
+                  <Calendar className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>Request or view appointments</span>
                 </div>
                 <div className="flex items-center text-gray-500 text-sm body-font">
-                  <FileText className="w-4 h-4 mr-1" /> Check invoices
+                  <FileText className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>Check invoices</span>
                 </div>
                 <div className="flex items-center text-gray-500 text-sm body-font">
-                  <PenLine className="w-4 h-4 mr-1" /> Request changes to bookings
+                  <PenLine className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>Request changes to bookings</span>
                 </div>
               </div>
               <div className="flex items-center text-[#E75837] font-medium mt-6 header-font group-hover:text-[#d04e30]">
@@ -338,15 +341,18 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
               <p className="text-gray-600 mb-6 flex-grow body-font">
                 Know your Critter professional? Get the onboarding and booking request process started.
               </p>
-              <div className="mt-auto space-y-2">
+              <div className="mt-auto space-y-1">
                 <div className="flex items-center text-gray-500 text-sm body-font">
-                  <UserPlus className="w-4 h-4 mr-1" /> Complete quick intake
+                  <UserPlus className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>Complete quick intake</span>
                 </div>
                 <div className="flex items-center text-gray-500 text-sm body-font">
-                  <Heart className="w-4 h-4 mr-1" /> Provide detailed pet information
+                  <Heart className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>Provide detailed pet information</span>
                 </div>
                 <div className="flex items-center text-gray-500 text-sm body-font">
-                  <Calendar className="w-4 h-4 mr-1" /> Book your first appointment
+                  <Calendar className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>Request your first appointment</span>
                 </div>
               </div>
               <div className="flex items-center text-[#745E25] font-medium mt-6 header-font group-hover:text-[#5d4b1e]">
@@ -369,15 +375,18 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
               <p className="text-gray-600 mb-6 flex-grow body-font">
                 Looking for pet care services? We'll help you find the perfect match in your area.
               </p>
-              <div className="mt-auto space-y-2">
+              <div className="mt-auto space-y-1">
                 <div className="flex items-center text-gray-500 text-sm body-font">
-                  <Users className="w-4 h-4 mr-1" /> Browse professionals
+                  <Users className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>Browse professionals</span>
                 </div>
                 <div className="flex items-center text-gray-500 text-sm body-font">
-                  <Check className="w-4 h-4 mr-1" /> View profiles & reviews
+                  <Check className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>View profiles & reviews</span>
                 </div>
                 <div className="flex items-center text-gray-500 text-sm body-font">
-                  <Calendar className="w-4 h-4 mr-1" /> Check availability
+                  <Calendar className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>Check availability</span>
                 </div>
               </div>
               <div className="flex items-center text-[#94ABD6] font-medium mt-6 header-font group-hover:text-[#7a90ba]">
