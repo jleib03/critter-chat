@@ -27,7 +27,7 @@ type UserInfo = {
 type LandingPageProps = {
   webhookUrl: string
   onExistingCustomer?: (userInfo: UserInfo) => void
-  onNewCustomer?: (userInfo: UserInfo) => void
+  onNewCustomer?: () => void
 }
 
 export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCustomer }: LandingPageProps) {
@@ -38,7 +38,6 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle")
   const [errorMessage, setErrorMessage] = useState("")
   const [showUserForm, setShowUserForm] = useState(false)
-  const [userFormAction, setUserFormAction] = useState<"existing" | "new" | null>(null)
   const [formData, setFormData] = useState({
     email: "",
     firstName: "",
@@ -62,8 +61,20 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
       return
     }
 
-    setUserFormAction(action)
-    setShowUserForm(true)
+    if (action === "new") {
+      // For new customers, go directly to the URL without popup
+      if (onNewCustomer) {
+        onNewCustomer()
+      } else {
+        router.push("/newcustomer")
+      }
+      return
+    }
+
+    if (action === "existing") {
+      // Only show the form popup for existing customers
+      setShowUserForm(true)
+    }
   }
 
   // Function to validate form
@@ -97,7 +108,7 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
     }
   }
 
-  // Function to handle form submit
+  // Function to handle form submit (only for existing customers)
   const handleFormSubmit = () => {
     if (!validateForm()) {
       return
@@ -109,18 +120,10 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
       lastName: formData.lastName.trim(),
     }
 
-    if (userFormAction === "existing") {
-      if (onExistingCustomer) {
-        onExistingCustomer(userInfo)
-      } else {
-        router.push("/existing")
-      }
-    } else if (userFormAction === "new") {
-      if (onNewCustomer) {
-        onNewCustomer(userInfo)
-      } else {
-        router.push("/newcustomer")
-      }
+    if (onExistingCustomer) {
+      onExistingCustomer(userInfo)
+    } else {
+      router.push("/existing")
     }
   }
 
@@ -129,7 +132,6 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
     setShowUserForm(false)
     setFormData({ email: "", firstName: "", lastName: "" })
     setFormErrors({})
-    setUserFormAction(null)
   }
 
   // Function to handle the notify me submission
@@ -220,23 +222,17 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
         </p>
       </div>
 
-      {/* User Information Form Modal */}
+      {/* User Information Form Modal - Only for Existing Customers */}
       {showUserForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6 transform transition-all animate-scaleIn">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold header-font">
-                {userFormAction === "existing" ? "Welcome back!" : "Let's get started!"}
-              </h3>
+              <h3 className="text-xl font-bold header-font">Welcome back!</h3>
               <button onClick={handleCloseForm} className="text-gray-500 hover:text-gray-700">
                 <X size={20} />
               </button>
             </div>
-            <p className="text-gray-600 mb-6 body-font">
-              {userFormAction === "existing"
-                ? "Enter your information to access your bookings and services."
-                : "Enter your information to start the onboarding process."}
-            </p>
+            <p className="text-gray-600 mb-6 body-font">Enter your information to access your bookings and services.</p>
 
             <div className="space-y-4">
               <div>
@@ -282,7 +278,7 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
                 onClick={handleFormSubmit}
                 className="w-full bg-[#E75837] text-white py-3 px-4 rounded-lg hover:bg-[#d04e30] transition-colors body-font"
               >
-                {userFormAction === "existing" ? "Continue to Booking" : "Start Onboarding"}
+                Continue to Booking
               </button>
 
               <div className="mt-3 text-center">

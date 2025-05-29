@@ -33,8 +33,8 @@ export default function Page() {
     setCurrentView("chat")
   }
 
-  const handleNewCustomer = (userData: UserInfo) => {
-    setUserInfo(userData)
+  const handleNewCustomer = () => {
+    // For new customers, go directly to onboarding without requiring user info upfront
     setCurrentView("onboarding")
   }
 
@@ -72,10 +72,10 @@ export default function Page() {
             </>
           )}
 
-          {currentView === "onboarding" && userInfo && (
+          {currentView === "onboarding" && (
             <>
               <div className="text-center mb-8">
-                <h1 className="text-4xl title-font mb-4 font-sangbleu">Welcome to Critter, {userInfo.firstName}!</h1>
+                <h1 className="text-4xl title-font mb-4 font-sangbleu">Welcome to Critter!</h1>
                 <p className="text-gray-700 max-w-3xl mx-auto body-font">
                   Let's get you set up with your Critter professional and book your first appointment.
                 </p>
