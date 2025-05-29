@@ -75,7 +75,21 @@ export default function ProfessionalSpecificPage() {
           console.log("Checking data.name:", data.name)
           console.log("Checking data.professional_name:", data.professional_name)
 
-          if (data.name) {
+          // Check if data is an array (which it is in this case)
+          if (Array.isArray(data) && data.length > 0) {
+            console.log("Data is an array, checking first element:", data[0])
+            const firstItem = data[0]
+            if (firstItem.name) {
+              console.log("Found name in data[0].name:", firstItem.name)
+              setProfessionalName(firstItem.name)
+            } else if (firstItem.professional_name) {
+              console.log("Found name in data[0].professional_name:", firstItem.professional_name)
+              setProfessionalName(firstItem.professional_name)
+            } else {
+              console.log("No name found in first array element")
+              throw new Error("Professional name not found in response")
+            }
+          } else if (data.name) {
             console.log("Found name in data.name:", data.name)
             setProfessionalName(data.name)
           } else if (data.professional_name) {
