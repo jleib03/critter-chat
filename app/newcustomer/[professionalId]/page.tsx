@@ -177,11 +177,7 @@ export default function ProfessionalSpecificPage() {
                   initialProfessionalId={professionalId}
                   initialProfessionalName={professionalName}
                   skipProfessionalStep={true}
-                  userInfo={{
-                    firstName: "",
-                    lastName: "",
-                    email: "",
-                  }}
+                  userInfo={null}
                 />
               </div>
             </>

@@ -469,7 +469,7 @@ export default function NewCustomerIntake({
           skipProfessionalStep={!!initialProfessionalId}
           professionalId={initialProfessionalId}
           professionalName={resolvedProfessionalName || initialProfessionalName}
-          userInfo={queryUserInfo || initialUserInfo}
+          userInfo={initialUserInfo && initialUserInfo.firstName ? initialUserInfo : null}
         />
       )}
       {currentStep === "services" && servicesData && (

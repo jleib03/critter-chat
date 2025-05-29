@@ -246,7 +246,7 @@ export default function OnboardingForm({
       {userInfo && (
         <div className="bg-gray-50 rounded-lg p-4 mb-6">
           <h3 className="text-sm font-medium text-gray-700 mb-2 header-font">Your Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-gray-500 body-font">Name:</span>
               <p className="font-medium header-font">
