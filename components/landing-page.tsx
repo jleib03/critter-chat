@@ -309,13 +309,13 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
               </p>
               <div className="mt-auto space-y-2">
                 <div className="flex items-center text-gray-500 text-sm body-font">
-                  <Calendar className="w-4 h-4 mr-1" /> Book or view appointments
+                  <Calendar className="w-4 h-4 mr-1" /> Request or view appointments
                 </div>
                 <div className="flex items-center text-gray-500 text-sm body-font">
                   <FileText className="w-4 h-4 mr-1" /> Check invoices
                 </div>
                 <div className="flex items-center text-gray-500 text-sm body-font">
-                  <PenLine className="w-4 h-4 mr-1" /> Make changes to bookings
+                  <PenLine className="w-4 h-4 mr-1" /> Request changes to bookings
                 </div>
               </div>
               <div className="flex items-center text-[#E75837] font-medium mt-6 header-font group-hover:text-[#d04e30]">
