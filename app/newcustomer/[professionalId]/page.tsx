@@ -25,6 +25,8 @@ export default function ProfessionalSpecificPage() {
     const fetchProfessionalName = async () => {
       try {
         setLoading(true)
+        console.log("Fetching professional info for ID:", professionalId)
+
         const response = await fetch(WEBHOOK_URL, {
           method: "POST",
           headers: {
@@ -40,15 +42,64 @@ export default function ProfessionalSpecificPage() {
           throw new Error(`Error: ${response.status}`)
         }
 
-        const data = await response.json()
-        if (data.professional_name) {
-          setProfessionalName(data.professional_name)
+        // Get the raw text first to debug
+        const rawText = await response.text()
+        console.log("Raw response:", rawText)
+
+        // Try to parse if it looks like JSON
+        let data
+        try {
+          if (rawText && rawText.trim()) {
+            data = JSON.parse(rawText)
+          }
+        } catch (parseError) {
+          console.error("JSON parse error:", parseError)
+          // If we can't parse as JSON but have text, try to extract the name directly
+          if (rawText && rawText.includes("name")) {
+            const nameMatch = rawText.match(/"name"\s*:\s*"([^"]+)"/)
+            if (nameMatch && nameMatch[1]) {
+              setProfessionalName(nameMatch[1])
+              setLoading(false)
+              return
+            }
+          }
+          throw new Error("Invalid response format")
+        }
+
+        // Check for name in parsed data
+        if (data) {
+          if (data.name) {
+            setProfessionalName(data.name)
+          } else if (data.professional_name) {
+            setProfessionalName(data.professional_name)
+          } else if (data.message && typeof data.message === "string") {
+            // Try to parse message if it's a string that might contain JSON
+            try {
+              const messageData = JSON.parse(data.message)
+              if (messageData.name) {
+                setProfessionalName(messageData.name)
+              } else if (messageData.professional_name) {
+                setProfessionalName(messageData.professional_name)
+              } else {
+                throw new Error("Professional name not found in response")
+              }
+            } catch (e) {
+              // If message isn't JSON, check if it directly contains the name
+              if (data.message.includes("Critter")) {
+                setProfessionalName(data.message)
+              } else {
+                throw new Error("Professional name not found in response")
+              }
+            }
+          } else {
+            throw new Error("Professional name not found in response")
+          }
         } else {
-          setError("Professional not found")
+          throw new Error("Empty response from server")
         }
       } catch (err) {
         console.error("Error fetching professional name:", err)
-        setError("Failed to load professional information")
+        setError("Professional not found")
       } finally {
         setLoading(false)
       }
@@ -105,6 +156,11 @@ export default function ProfessionalSpecificPage() {
                   initialProfessionalId={professionalId}
                   initialProfessionalName={professionalName}
                   skipProfessionalStep={true}
+                  userInfo={{
+                    firstName: "",
+                    lastName: "",
+                    email: "",
+                  }}
                 />
               </div>
             </>
