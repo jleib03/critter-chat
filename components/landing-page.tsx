@@ -15,6 +15,7 @@ import {
   FileText,
   PenLine,
   X,
+  Heart,
 } from "lucide-react"
 
 type UserInfo = {
@@ -342,8 +343,7 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
                   <UserPlus className="w-4 h-4 mr-1" /> Complete quick onboarding
                 </div>
                 <div className="flex items-center text-gray-500 text-sm body-font">
-                  <FileText className="w-4 h-4 mr-1" /> Provide detailed information to improve the ability to find
-                  services to fit your needs
+                  <Heart className="w-4 h-4 mr-1" /> Provide detailed pet information
                 </div>
                 <div className="flex items-center text-gray-500 text-sm body-font">
                   <Calendar className="w-4 h-4 mr-1" /> Book your first appointment
