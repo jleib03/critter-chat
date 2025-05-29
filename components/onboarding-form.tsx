@@ -7,10 +7,19 @@ interface OnboardingFormProps {
 const OnboardingForm: React.FC<OnboardingFormProps> = ({ professionalName }) => {
   return (
     <div>
-      <h1>You're completing the intake process for {professionalName}</h1>
-      {/* Rest of the onboarding form content goes here */}
-      <p>Please fill out the following information to complete your onboarding.</p>
-      {/* Add form fields and submit button here */}
+      <h1>Onboarding Form</h1>
+      <p>You're completing the intake process for {professionalName}</p>
+      {/* Add form elements here */}
+      <form>
+        {/* Example form fields */}
+        <label htmlFor="name">Name:</label>
+        <input type="text" id="name" name="name" />
+
+        <label htmlFor="email">Email:</label>
+        <input type="email" id="email" name="email" />
+
+        <button type="submit">Submit</button>
+      </form>
     </div>
   )
 }
