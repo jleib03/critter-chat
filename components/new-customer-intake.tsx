@@ -14,8 +14,15 @@ type UserInfo = {
 }
 
 type NewCustomerIntakeProps = {
-  professionalId?: string
-  professionalName?: string
+  onCancel: () => void
+  onComplete: () => void
+  webhookUrl: string
+  userInfo: UserInfo
+  initialSessionId?: string
+  initialUserId?: string
+  initialProfessionalId?: string
+  initialProfessionalName?: string
+  skipProfessionalStep?: boolean
 }
 
 // More conservative function to determine if a service is an add-on
@@ -74,7 +81,17 @@ const isAddOnService = (category: string, serviceName: string): boolean => {
   return false
 }
 
-export default function NewCustomerIntake({ professionalId, professionalName }: NewCustomerIntakeProps) {
+export default function NewCustomerIntake({
+  onCancel,
+  onComplete,
+  webhookUrl,
+  userInfo: initialUserInfo,
+  initialSessionId,
+  initialUserId,
+  initialProfessionalId,
+  initialProfessionalName,
+  skipProfessionalStep,
+}: NewCustomerIntakeProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [currentStep, setCurrentStep] = useState<"form" | "services" | "confirmation" | "success">("form")
@@ -85,23 +102,25 @@ export default function NewCustomerIntake({ professionalId, professionalName }: 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const USER_ID = useRef(professionalId || "user_id_" + Math.random().toString(36).substring(2, 15))
-  const [resolvedProfessionalName, setResolvedProfessionalName] = useState<string | null>(professionalName || null)
+  const USER_ID = useRef(initialProfessionalId || "user_id_" + Math.random().toString(36).substring(2, 15))
+  const [resolvedProfessionalName, setResolvedProfessionalName] = useState<string | null>(
+    initialProfessionalName || null,
+  )
 
   // If we have a professional ID but no name, fetch the name
   useEffect(() => {
     const fetchProfessionalName = async () => {
-      if (professionalId && !professionalName) {
+      if (initialProfessionalId && !initialProfessionalName) {
         setIsLoading(true)
         setError(null)
         try {
-          console.log("Fetching professional name for ID:", professionalId)
+          console.log("Fetching professional name for ID:", initialProfessionalId)
           const webhookUrl = process.env.NEXT_PUBLIC_WEBHOOK_URL
           if (!webhookUrl) {
             throw new Error("Webhook URL not configured")
           }
 
-          const response = await fetch(`${webhookUrl}?professionalId=${professionalId}`)
+          const response = await fetch(`${webhookUrl}?professionalId=${initialProfessionalId}`)
           console.log("Response status:", response.status)
 
           if (!response.ok) {
@@ -141,7 +160,7 @@ export default function NewCustomerIntake({ professionalId, professionalName }: 
     }
 
     fetchProfessionalName()
-  }, [professionalId, professionalName])
+  }, [initialProfessionalId, initialProfessionalName])
 
   const handleFormSubmit = async (data: any) => {
     // Merge the user info from landing page with additional form data
@@ -164,7 +183,7 @@ export default function NewCustomerIntake({ professionalId, professionalName }: 
           selectedAction: "new_customer_intake",
         },
         formData: combinedData,
-        professionalID: professionalId,
+        professionalID: initialProfessionalId,
         type: "new_customer_get_services",
         source: "critter_booking_site",
       },
@@ -331,7 +350,7 @@ export default function NewCustomerIntake({ professionalId, professionalName }: 
             },
         formData: formData,
         serviceData: serviceSelectionData,
-        professionalID: professionalId,
+        professionalID: initialProfessionalId,
         type: "new_customer_final_intake_submission",
         source: "critter_booking_site",
       },
@@ -366,7 +385,7 @@ export default function NewCustomerIntake({ professionalId, professionalName }: 
 
     try {
       // If we have an initialProfessionalName, use it
-      const dataToSubmit = professionalName ? { ...data, professionalName: professionalName } : data
+      const dataToSubmit = initialProfessionalName ? { ...data, professionalName: initialProfessionalName } : data
 
       const response = await fetch(process.env.NEXT_PUBLIC_WEBHOOK_URL || "", {
         method: "POST",
@@ -375,7 +394,7 @@ export default function NewCustomerIntake({ professionalId, professionalName }: 
         },
         body: JSON.stringify({
           action: "new_customer_onboarding",
-          professionalId: professionalId || null,
+          professionalId: initialProfessionalId || null,
           formData: dataToSubmit,
         }),
       })
@@ -398,7 +417,7 @@ export default function NewCustomerIntake({ professionalId, professionalName }: 
   }
 
   // Extract user info from query params if available
-  const userInfo = searchParams.get("userInfo")
+  const queryUserInfo = searchParams.get("userInfo")
     ? JSON.parse(decodeURIComponent(searchParams.get("userInfo") as string))
     : null
 
@@ -429,7 +448,7 @@ export default function NewCustomerIntake({ professionalId, professionalName }: 
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-4xl text-center font-bold mb-8 header-font">New Customer Intake</h1>
 
-      {professionalId && (
+      {initialProfessionalId && (
         <div className="bg-[#f8f3ef] p-4 rounded-lg mb-8 text-center">
           <p className="text-xl text-gray-700">
             You're completing the intake process for{" "}
@@ -446,11 +465,11 @@ export default function NewCustomerIntake({ professionalId, professionalName }: 
       {currentStep === "form" && (
         <OnboardingForm
           onSubmit={handleFormSubmit}
-          onCancel={handleCancel}
-          skipProfessionalStep={!!professionalId}
-          professionalId={professionalId}
-          professionalName={resolvedProfessionalName || undefined}
-          userInfo={userInfo}
+          onCancel={onCancel}
+          skipProfessionalStep={skipProfessionalStep}
+          professionalId={initialProfessionalId}
+          professionalName={initialProfessionalName}
+          userInfo={queryUserInfo || initialUserInfo}
         />
       )}
       {currentStep === "services" && servicesData && (
