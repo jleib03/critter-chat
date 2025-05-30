@@ -1,104 +1,85 @@
 "use client"
-import { useState } from "react"
-import Header from "../components/header"
-import LandingPage from "../components/landing-page"
-import BookingPage from "../components/booking-page"
 
-import NewCustomerIntake from "../components/new-customer-intake"
+import { useEffect, useState } from "react"
+import NewCustomerIntake from "@/components/NewCustomerIntake"
 
-type UserInfo = {
-  email: string
-  firstName: string
-  lastName: string
-}
+const WEBHOOK_URL = process.env.NEXT_PUBLIC_WEBHOOK_URL || ""
 
-export default function Page() {
-  const [currentView, setCurrentView] = useState<"landing" | "chat" | "intake">("landing")
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
+export default function Home() {
+  const [currentView, setCurrentView] = useState<"landing" | "intake">("landing")
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
-  // Use a more reliable webhook URL for testing
-  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
+  const [userInfo, setUserInfo] = useState<{ firstName: string; lastName: string; email: string } | null>(null)
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const session = params.get("session_id")
+    const user = params.get("user_id")
+    const firstName = params.get("firstName")
+    const lastName = params.get("lastName")
+    const email = params.get("email")
 
-  // Handler to start onboarding with a session ID and userId
-  const handleStartOnboarding = (currentSessionId: string | null, currentUserId: string | null) => {
-    console.log("Starting onboarding with session ID:", currentSessionId)
-    console.log("Starting onboarding with user ID:", currentUserId)
-    setSessionId(currentSessionId)
-    setUserId(currentUserId)
+    if (session) {
+      setSessionId(session)
+      setCurrentView("intake")
+    }
+    if (user) {
+      setUserId(user)
+      setCurrentView("intake")
+    }
 
-  }
+    if (firstName && lastName && email) {
+      setUserInfo({ firstName, lastName, email })
+      setCurrentView("intake")
+    }
+  }, [])
 
-  // Handlers for landing page options
-  const handleExistingCustomer = (userData: UserInfo) => {
-    setUserInfo(userData)
-    setCurrentView("chat")
-  }
-
-  const handleNewCustomer = () => {
-    // For new customers, go directly to onboarding without requiring user info upfront
+  const handleStartIntake = () => {
     setCurrentView("intake")
   }
 
-  // Handler to go back to landing page
   const handleBackToLanding = () => {
     setCurrentView("landing")
-    setUserInfo(null)
-
   }
 
   return (
-    <div className="min-h-screen bg-[#FBF8F3] flex flex-col">
-      <Header />
-
-      <main className="pt-8 flex-1 flex flex-col">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col page-content">
-          {currentView === "landing" && (
-            <LandingPage
-
-              webhookUrl={WEBHOOK_URL}
-              onExistingCustomer={handleExistingCustomer}
-              onNewCustomer={handleNewCustomer}
-            />
-          )}
-
-          {currentView === "chat" && userInfo && (
-            <>
-              <div className="text-center mb-8">
-                <h1 className="text-4xl title-font mb-4 font-sangbleu">Welcome back, {userInfo.firstName}!</h1>
-                <p className="text-gray-700 max-w-3xl mx-auto body-font">
-                  Ready to book pet care services with Critter? Let's get started with your request.
-                </p>
-              </div>
-              <div className="flex-1 flex flex-col mb-12">
-                <BookingPage userInfo={userInfo} onStartOnboarding={handleStartOnboarding} />
-              </div>
-            </>
-          )}
-          {currentView === "intake" && (
-            <>
-              <div className="text-center mb-8">
-                <h1 className="text-4xl title-font mb-4 font-sangbleu">Welcome to Critter!</h1>
-                <p className="text-gray-700 max-w-3xl mx-auto body-font">
-                  Let's get you set up with your Critter professional through our intake process and book your first
-                  appointment.
-                </p>
-              </div>
-              <div className="flex-1 flex flex-col mb-12">
-                <NewCustomerIntake
-                  onCancel={handleBackToLanding}
-                  onComplete={handleBackToLanding}
-                  webhookUrl={WEBHOOK_URL}
-                  userInfo={userInfo}
-                  initialSessionId={sessionId}
-                  initialUserId={userId}
-                />
-              </div>
-            </>
-          )}
+    <div className="flex flex-col items-center justify-start min-h-screen py-24 px-8">
+      {currentView === "landing" && (
+        <div className="text-center">
+          <h1 className="text-5xl title-font mb-4 font-sangbleu">Welcome to Critter!</h1>
+          <p className="text-gray-700 max-w-3xl mx-auto body-font mb-8">
+            Critter is your all-in-one solution for managing your pet's health and wellness. Get started today!
+          </p>
+          <button
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            onClick={handleStartIntake}
+          >
+            Start New Customer Intake
+          </button>
         </div>
-      </main>
+      )}
+
+      {currentView === "intake" && (
+        <>
+          <div className="text-center mb-8">
+            <h1 className="text-4xl title-font mb-4 font-sangbleu">Welcome to Critter!</h1>
+            <p className="text-gray-700 max-w-3xl mx-auto body-font">
+              Let's get you set up with your Critter professional through our intake process and book your first
+              appointment.
+            </p>
+          </div>
+          <div className="flex-1 flex flex-col mb-12">
+            <NewCustomerIntake
+              onCancel={handleBackToLanding}
+              onComplete={handleBackToLanding}
+              webhookUrl={WEBHOOK_URL}
+              userInfo={userInfo}
+              initialSessionId={sessionId}
+              initialUserId={userId}
+            />
+          </div>
+        </>
+      )}
     </div>
   )
 }
