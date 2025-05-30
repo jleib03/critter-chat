@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import NewCustomerIntake from "../components/new-customer-intake"
+import NewCustomerIntake from "../../components/new-customer-intake"
 
 export default function NewCustomerPage() {
   const router = useRouter()
