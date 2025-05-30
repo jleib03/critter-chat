@@ -4,6 +4,7 @@ import "./globals.css"
 export const metadata = {
   title: "Critter Pet Services",
   description: "Book pet care services with Critter",
+    generator: 'v0.dev'
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

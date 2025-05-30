@@ -1,10 +1,9 @@
 "use client"
-import { useRef, useEffect } from "react"
+import { useRef, useEffect, useState } from "react"
 import type React from "react"
 
 import { Send } from "lucide-react"
 import ActionBubbles from "./action-bubbles"
-import SelectionBubbles from "./selection-bubbles"
 import BookingCalendar, { type BookingInfo } from "./booking-calendar"
 
 type SelectionOption = {
@@ -17,11 +16,17 @@ type SelectionOption = {
 
 type SelectionType = "professional" | "service" | "pet" | "confirmation" | null
 
+type OnboardingFormData = {
+  name: string
+  email: string
+  phone: string
+}
+
 type ChatInterfaceProps = {
   messages: Array<{ text: string; isUser: boolean; htmlMessage?: string }>
   isTyping: boolean
   showActionBubbles: boolean
-  showSelectionBubbles: boolean
+  showSelectionBubbles: boolean // Kept for backward compatibility
   selectionType: SelectionType
   selectionOptions: SelectionOption[]
   allowMultipleSelection: boolean
@@ -29,6 +34,7 @@ type ChatInterfaceProps = {
   selectedOptions: string[]
   showCalendar: boolean
   inputValue: string
+  isFormValid: boolean
   onInputChange: (value: string) => void
   onSendMessage: () => void
   onActionSelect: (action: string) => void
@@ -42,35 +48,45 @@ export default function ChatInterface({
   messages,
   isTyping,
   showActionBubbles,
-  showSelectionBubbles,
-  selectionType,
-  selectionOptions,
-  allowMultipleSelection,
-  selectedMainService,
-  selectedOptions,
   showCalendar,
   inputValue,
+  isFormValid,
   onInputChange,
   onSendMessage,
   onActionSelect,
-  onSelectionClick,
-  onSelectionSubmit,
   onCalendarSubmit,
   onCalendarCancel,
 }: ChatInterfaceProps) {
   const chatMessagesRef = useRef<HTMLDivElement>(null)
+  const [onboardingFormData, setOnboardingFormData] = useState<OnboardingFormData>({
+    name: "",
+    email: "",
+    phone: "",
+  })
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     if (chatMessagesRef.current) {
       chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight
     }
-  }, [messages, isTyping, showActionBubbles, showSelectionBubbles, showCalendar])
+  }, [messages, isTyping, showActionBubbles, showCalendar])
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && isFormValid) {
       onSendMessage()
     }
+  }
+
+  const handleOnboardingFormChange = (data: OnboardingFormData) => {
+    setOnboardingFormData(data)
+  }
+
+  const handleOnboardingFormSubmit = () => {
+    // This would typically send the form data to the server
+    console.log("Onboarding form submitted:", onboardingFormData)
+
+    // For now, just simulate sending a message
+    onSendMessage()
   }
 
   return (
@@ -130,20 +146,7 @@ export default function ChatInterface({
           })}
 
           {/* Initial action bubbles */}
-          {showActionBubbles && <ActionBubbles onActionSelect={onActionSelect} />}
-
-          {/* Selection bubbles for professionals, services, pets, confirmation */}
-          {showSelectionBubbles && (
-            <SelectionBubbles
-              selectionType={selectionType}
-              selectionOptions={selectionOptions}
-              allowMultipleSelection={allowMultipleSelection}
-              selectedMainService={selectedMainService}
-              selectedOptions={selectedOptions}
-              onSelectionClick={onSelectionClick}
-              onSubmit={onSelectionSubmit}
-            />
-          )}
+          {showActionBubbles && <ActionBubbles onActionSelect={onActionSelect} disabled={!isFormValid} />}
 
           {/* Calendar widget for date/time selection */}
           {showCalendar && (
@@ -170,13 +173,23 @@ export default function ChatInterface({
             value={inputValue}
             onChange={(e) => onInputChange(e.target.value)}
             onKeyDown={handleKeyPress}
-            placeholder="Type your message here..."
-            className="flex-1 p-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
+            placeholder={
+              isFormValid ? "Type your message here..." : "Complete your information on the left to continue..."
+            }
+            disabled={!isFormValid}
+            className={`flex-1 p-3 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font ${
+              isFormValid ? "border-gray-300 bg-white" : "border-gray-200 bg-gray-50 text-gray-400"
+            }`}
           />
 
           <button
             onClick={onSendMessage}
-            className="bg-[#E75837] text-white px-4 py-3 rounded-r-lg hover:bg-[#d04e30] transition-colors flex items-center header-font"
+            disabled={!isFormValid || !inputValue.trim()}
+            className={`px-4 py-3 rounded-r-lg transition-colors flex items-center header-font ${
+              isFormValid && inputValue.trim()
+                ? "bg-[#E75837] text-white hover:bg-[#d04e30]"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            }`}
           >
             <span className="mr-2">Send</span>
             <Send className="h-4 w-4" />
