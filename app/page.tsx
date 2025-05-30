@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import NewCustomerIntake from "@/components/NewCustomerIntake"
+import NewCustomerIntake from "../components/new-customer-intake"
 
 const WEBHOOK_URL = process.env.NEXT_PUBLIC_WEBHOOK_URL || ""
 
@@ -35,7 +35,7 @@ export default function Home() {
   }, [])
 
   const handleStartIntake = () => {
-    setCurrentView("intake")
+    window.location.href = "/newcustomer"
   }
 
   const handleBackToLanding = () => {
@@ -54,7 +54,7 @@ export default function Home() {
             className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
             onClick={handleStartIntake}
           >
-            Start New Customer Intake
+            I'm a new customer
           </button>
         </div>
       )}
