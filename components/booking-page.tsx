@@ -26,7 +26,7 @@ export default function BookingPage({ userInfo, onStartOnboarding }: BookingPage
   const [statusColor, setStatusColor] = useState("#E75837")
   const [messages, setMessages] = useState<Message[]>([
     {
-      text: `Hi ${userInfo.firstName}! What would you like to do today?`,
+      text: `Hi ${userInfo?.firstName || "there"}! What would you like to do today?`,
       isUser: false,
     },
   ])
@@ -73,7 +73,7 @@ export default function BookingPage({ userInfo, onStartOnboarding }: BookingPage
     setSelectionType(null)
     setMessages([
       {
-        text: `Hi ${userInfo.firstName}! What would you like to do today?`,
+        text: `Hi ${userInfo?.firstName || "there"}! What would you like to do today?`,
         isUser: false,
       },
     ])
@@ -795,12 +795,12 @@ export default function BookingPage({ userInfo, onStartOnboarding }: BookingPage
                 <div>
                   <label className="text-xs text-gray-500 body-font">Name</label>
                   <p className="font-medium header-font">
-                    {userInfo.firstName} {userInfo.lastName}
+                    {userInfo?.firstName} {userInfo?.lastName}
                   </p>
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 body-font">Email</label>
-                  <p className="font-medium header-font">{userInfo.email}</p>
+                  <p className="font-medium header-font">{userInfo?.email}</p>
                 </div>
                 {selectedAction && (
                   <div>
