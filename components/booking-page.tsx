@@ -54,7 +54,7 @@ export default function BookingPage({ userInfo, onStartOnboarding }: BookingPage
 
   // Refs
   const USER_ID = useRef(`web_user_${Math.random().toString(36).substring(2, 10)}`)
-  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/216e36c3-4fe2-4f2e-80c3-d9ce6524f445"
+  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
 
   const updateStatus = (text: string, color: string) => {
     setStatusText(text)
