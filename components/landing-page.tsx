@@ -2,23 +2,136 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowRight, Construction, Users, UserPlus, User, Check, AlertCircle, Loader2 } from "lucide-react"
+import {
+  ArrowRight,
+  Construction,
+  Users,
+  UserPlus,
+  User,
+  Check,
+  AlertCircle,
+  Loader2,
+  Calendar,
+  FileText,
+  PenLine,
+  X,
+  Heart,
+} from "lucide-react"
+
+type UserInfo = {
+  email: string
+  firstName: string
+  lastName: string
+}
 
 type LandingPageProps = {
   webhookUrl: string
+  onExistingCustomer?: (userInfo: UserInfo) => void
+  onNewCustomer?: () => void
 }
 
-export default function LandingPage({ webhookUrl }: LandingPageProps) {
+export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCustomer }: LandingPageProps) {
   const router = useRouter()
   const [showComingSoon, setShowComingSoon] = useState(false)
   const [notifyEmail, setNotifyEmail] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle")
   const [errorMessage, setErrorMessage] = useState("")
+  const [showUserForm, setShowUserForm] = useState(false)
+  const [formData, setFormData] = useState({
+    email: "",
+    firstName: "",
+    lastName: "",
+  })
+  const [formErrors, setFormErrors] = useState<{
+    email?: string
+    firstName?: string
+    lastName?: string
+  }>({})
 
   // Function to validate email format
   const isValidEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  }
+
+  // Function to handle action card click
+  const handleActionCardClick = (action: "existing" | "new" | "find") => {
+    if (action === "find") {
+      router.push("/findprofessional")
+      return
+    }
+
+    if (action === "new") {
+      // For new customers, go directly to the URL without popup
+      if (onNewCustomer) {
+        onNewCustomer()
+      } else {
+        router.push("/newcustomer")
+      }
+      return
+    }
+
+    if (action === "existing") {
+      // Only show the form popup for existing customers
+      setShowUserForm(true)
+    }
+  }
+
+  // Function to validate form
+  const validateForm = () => {
+    const errors: typeof formErrors = {}
+
+    if (!formData.email.trim()) {
+      errors.email = "Email is required"
+    } else if (!isValidEmail(formData.email)) {
+      errors.email = "Please enter a valid email address"
+    }
+
+    if (!formData.firstName.trim()) {
+      errors.firstName = "First name is required"
+    }
+
+    if (!formData.lastName.trim()) {
+      errors.lastName = "Last name is required"
+    }
+
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  // Function to handle form input changes
+  const handleInputChange = (field: keyof typeof formData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
+    // Clear error for this field when user types
+    if (formErrors[field]) {
+      setFormErrors((prev) => ({ ...prev, [field]: undefined }))
+    }
+  }
+
+  // Function to handle form submit (only for existing customers)
+  const handleFormSubmit = () => {
+    if (!validateForm()) {
+      return
+    }
+
+    const userInfo: UserInfo = {
+      email: formData.email.trim(),
+      firstName: formData.firstName.trim(),
+      lastName: formData.lastName.trim(),
+    }
+
+    if (onExistingCustomer) {
+      onExistingCustomer(userInfo)
+    } else {
+      router.push("/existing")
+    }
+  }
+
+  // Function to close the form
+  const handleCloseForm = () => {
+    setShowUserForm(false)
+    setFormData({ email: "", firstName: "", lastName: "" })
+    setFormErrors({})
   }
 
   // Function to handle the notify me submission
@@ -97,76 +210,196 @@ export default function LandingPage({ webhookUrl }: LandingPageProps) {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
-      <div className="text-center mb-16">
-        <h1 className="text-4xl md:text-5xl title-font mb-6">Book pet care with Critter</h1>
+      <div className="text-center mb-12">
+        <div className="flex items-center justify-center mb-4">
+          <h1 className="text-4xl md:text-5xl title-font">Book pet care with Critter</h1>
+        </div>
         <p className="text-xl text-gray-700 max-w-3xl mx-auto body-font">
           Welcome to Critter's online booking portal, an extension of Critter's mobile app designed for fast and simple
-          booking. If your pet services provider uses Critter, you can use this site to request bookings and answer
-          questions about upcoming care and invoices.
+          booking.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-        {/* Option 1: Existing Customer */}
-        <Link href="/existing" className="block">
-          <div className="bg-white rounded-xl shadow-md overflow-hidden transition-transform hover:transform hover:scale-105 cursor-pointer border border-gray-100 h-full">
-            <div className="bg-[#E75837] h-2 w-full"></div>
-            <div className="p-6">
-              <div className="w-12 h-12 bg-[#fff8f6] rounded-full flex items-center justify-center mb-4">
-                <User className="h-6 w-6 text-[#E75837]" />
+      {/* User Information Form Modal - Only for Existing Customers */}
+      {showUserForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6 transform transition-all animate-scaleIn">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold header-font">Welcome back!</h3>
+              <button onClick={handleCloseForm} className="text-gray-500 hover:text-gray-700">
+                <X size={20} />
+              </button>
+            </div>
+            <p className="text-gray-600 mb-6 body-font">Enter your information to access your bookings and services.</p>
+
+            <div className="space-y-4">
+              <div>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange("email", e.target.value)}
+                  placeholder="Email address*"
+                  className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font ${
+                    formErrors.email ? "border-red-500" : "border-gray-300"
+                  }`}
+                />
+                {formErrors.email && <p className="mt-1 text-sm text-red-500 body-font">{formErrors.email}</p>}
               </div>
-              <h3 className="text-xl font-bold mb-3 header-font">Existing Customer</h3>
-              <p className="text-gray-600 mb-4 body-font">
+
+              <div>
+                <input
+                  type="text"
+                  value={formData.firstName}
+                  onChange={(e) => handleInputChange("firstName", e.target.value)}
+                  placeholder="First name*"
+                  className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font ${
+                    formErrors.firstName ? "border-red-500" : "border-gray-300"
+                  }`}
+                />
+                {formErrors.firstName && <p className="mt-1 text-sm text-red-500 body-font">{formErrors.firstName}</p>}
+              </div>
+
+              <div>
+                <input
+                  type="text"
+                  value={formData.lastName}
+                  onChange={(e) => handleInputChange("lastName", e.target.value)}
+                  placeholder="Last name*"
+                  className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font ${
+                    formErrors.lastName ? "border-red-500" : "border-gray-300"
+                  }`}
+                />
+                {formErrors.lastName && <p className="mt-1 text-sm text-red-500 body-font">{formErrors.lastName}</p>}
+              </div>
+
+              <button
+                onClick={handleFormSubmit}
+                className="w-full bg-[#E75837] text-white py-3 px-4 rounded-lg hover:bg-[#d04e30] transition-colors body-font"
+              >
+                Continue to Booking
+              </button>
+
+              <div className="mt-3 text-center">
+                <button onClick={handleCloseForm} className="text-sm text-gray-500 hover:text-gray-700 body-font">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Action Cards - Main Center Section */}
+      <div className="mb-16">
+        {/* All Actions in One Row */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Existing Customer Card */}
+          <div
+            onClick={() => handleActionCardClick("existing")}
+            className="bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:scale-102 hover:shadow-lg cursor-pointer border border-gray-100 h-full flex flex-col relative group"
+          >
+            <div className="bg-gradient-to-r from-[#E75837] to-[#f07a5f] h-2 w-full"></div>
+            <div className="p-6 flex flex-col flex-grow">
+              <div className="w-12 h-12 bg-[#fff8f6] rounded-full flex items-center justify-center mb-4 group-hover:bg-[#E75837] group-hover:text-white transition-colors">
+                <User className="h-6 w-6 text-[#E75837] group-hover:text-white" />
+              </div>
+              <h3 className="text-xl font-bold mb-2 header-font">I'm an existing customer</h3>
+              <p className="text-gray-600 mb-6 flex-grow body-font">
                 Already use Critter? Book services, manage appointments, and check invoices.
               </p>
-              <div className="flex items-center text-[#E75837] font-medium header-font">
-                Continue <ArrowRight className="ml-2 h-4 w-4" />
+              <div className="mt-auto space-y-1">
+                <div className="flex items-center text-gray-500 text-sm body-font">
+                  <Calendar className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>Request or view appointments</span>
+                </div>
+                <div className="flex items-center text-gray-500 text-sm body-font">
+                  <FileText className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>Check invoices</span>
+                </div>
+                <div className="flex items-center text-gray-500 text-sm body-font">
+                  <PenLine className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>Request changes to bookings</span>
+                </div>
+              </div>
+              <div className="flex items-center text-[#E75837] font-medium mt-6 header-font group-hover:text-[#d04e30]">
+                Continue <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
           </div>
-        </Link>
 
-        {/* Option 2: New Customer with Professional */}
-        <Link href="/newcustomer" className="block">
-          <div className="bg-white rounded-xl shadow-md overflow-hidden transition-transform hover:transform hover:scale-105 cursor-pointer border border-gray-100 h-full">
-            <div className="bg-[#745E25] h-2 w-full"></div>
-            <div className="p-6">
-              <div className="w-12 h-12 bg-[#f9f7f2] rounded-full flex items-center justify-center mb-4">
-                <UserPlus className="h-6 w-6 text-[#745E25]" />
+          {/* New Customer Card */}
+          <div
+            onClick={() => handleActionCardClick("new")}
+            className="bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:scale-102 hover:shadow-lg cursor-pointer border border-gray-100 h-full flex flex-col relative group"
+          >
+            <div className="bg-gradient-to-r from-[#745E25] to-[#8b7030] h-2 w-full"></div>
+            <div className="p-6 flex flex-col flex-grow">
+              <div className="w-12 h-12 bg-[#f9f7f2] rounded-full flex items-center justify-center mb-4 group-hover:bg-[#745E25] group-hover:text-white transition-colors">
+                <UserPlus className="h-6 w-6 text-[#745E25] group-hover:text-white" />
               </div>
-              <h3 className="text-xl font-bold mb-3 header-font">New Customer</h3>
-              <p className="text-gray-600 mb-4 body-font">
+              <h3 className="text-xl font-bold mb-2 header-font">I'm a new customer</h3>
+              <p className="text-gray-600 mb-6 flex-grow body-font">
                 Know your Critter professional? Get the onboarding and booking request process started.
               </p>
-              <div className="flex items-center text-[#745E25] font-medium header-font">
-                Get Started <ArrowRight className="ml-2 h-4 w-4" />
+              <div className="mt-auto space-y-1">
+                <div className="flex items-center text-gray-500 text-sm body-font">
+                  <UserPlus className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>Complete quick intake</span>
+                </div>
+                <div className="flex items-center text-gray-500 text-sm body-font">
+                  <Heart className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>Provide detailed pet information</span>
+                </div>
+                <div className="flex items-center text-gray-500 text-sm body-font">
+                  <Calendar className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>Request your first appointment</span>
+                </div>
+              </div>
+              <div className="flex items-center text-[#745E25] font-medium mt-6 header-font group-hover:text-[#5d4b1e]">
+                Get Started <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
           </div>
-        </Link>
 
-        {/* Option 3: Looking for Professional (Coming Soon) */}
-        <Link href="/findprofessional" className="block">
-          <div className="bg-white rounded-xl shadow-md overflow-hidden transition-transform hover:transform hover:scale-105 cursor-pointer border border-gray-100 h-full">
-            <div className="bg-[#94ABD6] h-2 w-full"></div>
-            <div className="p-6">
-              <div className="w-12 h-12 bg-[#f5f8fd] rounded-full flex items-center justify-center mb-4">
-                <Users className="h-6 w-6 text-[#94ABD6]" />
+          {/* Find Professional Card */}
+          <div
+            onClick={() => handleActionCardClick("find")}
+            className="bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:scale-102 hover:shadow-lg cursor-pointer border border-gray-100 h-full flex flex-col relative group"
+          >
+            <div className="bg-gradient-to-r from-[#94ABD6] to-[#b0c1e3] h-2 w-full"></div>
+            <div className="p-6 flex flex-col flex-grow">
+              <div className="w-12 h-12 bg-[#f5f8fd] rounded-full flex items-center justify-center mb-4 group-hover:bg-[#94ABD6] group-hover:text-white transition-colors">
+                <Users className="h-6 w-6 text-[#94ABD6] group-hover:text-white" />
               </div>
-              <h3 className="text-xl font-bold mb-3 header-font">Find a Professional</h3>
-              <p className="text-gray-600 mb-4 body-font">
-                Looking for pet care services? We'll help you find the perfect match.
+              <h3 className="text-xl font-bold mb-2 header-font">I need to find a professional</h3>
+              <p className="text-gray-600 mb-6 flex-grow body-font">
+                Looking for pet care services? We'll help you find the perfect match in your area.
               </p>
-              <div className="flex items-center text-[#94ABD6] font-medium header-font">
-                Explore <ArrowRight className="ml-2 h-4 w-4" />
+              <div className="mt-auto space-y-1">
+                <div className="flex items-center text-gray-500 text-sm body-font">
+                  <Users className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>Browse professionals</span>
+                </div>
+                <div className="flex items-center text-gray-500 text-sm body-font">
+                  <Check className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>View profiles & reviews</span>
+                </div>
+                <div className="flex items-center text-gray-500 text-sm body-font">
+                  <Calendar className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>Check availability</span>
+                </div>
+              </div>
+              <div className="flex items-center text-[#94ABD6] font-medium mt-6 header-font group-hover:text-[#7a90ba]">
+                Find a professional{" "}
+                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
           </div>
-        </Link>
+        </div>
       </div>
 
       {/* App Store Links */}
-      <div className="text-center mb-12">
+      <div className="text-center">
         <h2 className="text-2xl font-bold mb-6 header-font">Get the Critter App</h2>
         <div className="flex justify-center space-x-4">
           <Link

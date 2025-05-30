@@ -3,12 +3,22 @@ import { useRouter } from "next/navigation"
 import BookingPage from "../../components/booking-page"
 import Header from "../../components/header"
 
+// This tells Next.js not to statically optimize this page
+export const dynamic = "force-dynamic"
+
 export default function ExistingCustomerPage() {
   const router = useRouter()
 
   // Handler to go back to landing page
   const handleBackToLanding = () => {
     router.push("/")
+  }
+
+  // Create a default empty userInfo object to prevent build-time errors
+  const defaultUserInfo = {
+    firstName: "",
+    lastName: "",
+    email: "",
   }
 
   return (
@@ -24,7 +34,7 @@ export default function ExistingCustomerPage() {
             answer questions about upcoming care and invoices.
           </p>
           <div className="flex-1 flex flex-col mb-12">
-            <BookingPage />
+            <BookingPage userInfo={defaultUserInfo} />
           </div>
         </div>
       </main>

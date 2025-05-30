@@ -3,15 +3,23 @@ import { useState } from "react"
 import Header from "../components/header"
 import LandingPage from "../components/landing-page"
 import BookingPage from "../components/booking-page"
-import NewCustomerOnboarding from "../components/new-customer-onboarding"
+
+import NewCustomerIntake from "../components/new-customer-intake"
+
+type UserInfo = {
+  email: string
+  firstName: string
+  lastName: string
+}
 
 export default function Page() {
-  const [currentView, setCurrentView] = useState<"landing" | "chat" | "onboarding">("landing")
-  const [showOnboarding, setShowOnboarding] = useState(false)
+  const [currentView, setCurrentView] = useState<"landing" | "chat" | "intake">("landing")
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
   // Use a more reliable webhook URL for testing
-  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/216e36c3-4fe2-4f2e-80c3-d9ce6524f445"
+  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
+
 
   // Handler to start onboarding with a session ID and userId
   const handleStartOnboarding = (currentSessionId: string | null, currentUserId: string | null) => {
@@ -19,22 +27,25 @@ export default function Page() {
     console.log("Starting onboarding with user ID:", currentUserId)
     setSessionId(currentSessionId)
     setUserId(currentUserId)
-    setShowOnboarding(true)
+
   }
 
   // Handlers for landing page options
-  const handleExistingCustomer = () => {
+  const handleExistingCustomer = (userData: UserInfo) => {
+    setUserInfo(userData)
     setCurrentView("chat")
   }
 
   const handleNewCustomer = () => {
-    setCurrentView("onboarding")
+    // For new customers, go directly to onboarding without requiring user info upfront
+    setCurrentView("intake")
   }
 
   // Handler to go back to landing page
   const handleBackToLanding = () => {
     setCurrentView("landing")
-    setShowOnboarding(false)
+    setUserInfo(null)
+
   }
 
   return (
@@ -45,37 +56,41 @@ export default function Page() {
         <div className="max-w-6xl mx-auto px-4 flex flex-col page-content">
           {currentView === "landing" && (
             <LandingPage
+
+              webhookUrl={WEBHOOK_URL}
               onExistingCustomer={handleExistingCustomer}
               onNewCustomer={handleNewCustomer}
-              webhookUrl={WEBHOOK_URL}
             />
           )}
 
-          {currentView === "chat" && (
+          {currentView === "chat" && userInfo && (
             <>
-              <h1 className="text-4xl title-font text-center mb-4 font-sangbleu">Book pet care with Critter</h1>
-              <p className="text-center text-gray-700 mb-8 max-w-3xl mx-auto body-font">
-                Welcome to Critter's online booking portal, an extension of Critter's mobile app designed for fast and
-                simple booking. If your pet services provider uses Critter, you can use this site to request bookings
-                and answer questions about upcoming care and invoices.
-              </p>
+              <div className="text-center mb-8">
+                <h1 className="text-4xl title-font mb-4 font-sangbleu">Welcome back, {userInfo.firstName}!</h1>
+                <p className="text-gray-700 max-w-3xl mx-auto body-font">
+                  Ready to book pet care services with Critter? Let's get started with your request.
+                </p>
+              </div>
               <div className="flex-1 flex flex-col mb-12">
-                <BookingPage onStartOnboarding={handleStartOnboarding} />
+                <BookingPage userInfo={userInfo} onStartOnboarding={handleStartOnboarding} />
               </div>
             </>
           )}
-
-          {currentView === "onboarding" && (
+          {currentView === "intake" && (
             <>
-              <h1 className="text-4xl title-font text-center mb-4 font-sangbleu">New Customer Onboarding</h1>
-              <p className="text-center text-gray-700 mb-8 max-w-3xl mx-auto body-font">
-                Complete the form below to set up your account with your Critter professional.
-              </p>
+              <div className="text-center mb-8">
+                <h1 className="text-4xl title-font mb-4 font-sangbleu">Welcome to Critter!</h1>
+                <p className="text-gray-700 max-w-3xl mx-auto body-font">
+                  Let's get you set up with your Critter professional through our intake process and book your first
+                  appointment.
+                </p>
+              </div>
               <div className="flex-1 flex flex-col mb-12">
-                <NewCustomerOnboarding
+                <NewCustomerIntake
                   onCancel={handleBackToLanding}
                   onComplete={handleBackToLanding}
                   webhookUrl={WEBHOOK_URL}
+                  userInfo={userInfo}
                   initialSessionId={sessionId}
                   initialUserId={userId}
                 />
