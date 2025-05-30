@@ -1,12 +1,15 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Header from "../components/header"
+import LandingPage from "../components/landing-page"
+import BookingPage from "../components/booking-page"
 import NewCustomerIntake from "../components/new-customer-intake"
 
 const WEBHOOK_URL = process.env.NEXT_PUBLIC_WEBHOOK_URL || ""
 
 export default function Home() {
-  const [currentView, setCurrentView] = useState<"landing" | "intake">("landing")
+  const [currentView, setCurrentView] = useState<"landing" | "booking" | "intake">("landing")
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
   const [userInfo, setUserInfo] = useState<{ firstName: string; lastName: string; email: string } | null>(null)
@@ -38,25 +41,24 @@ export default function Home() {
     window.location.href = "/newcustomer"
   }
 
+  const handleExistingCustomer = () => {
+    setCurrentView("booking")
+  }
+
   const handleBackToLanding = () => {
     setCurrentView("landing")
   }
 
   return (
-    <div className="flex flex-col items-center justify-start min-h-screen py-24 px-8">
+    <div className="flex flex-col items-center justify-start min-h-screen py-2 bg-gray-50">
+      <Header />
+
       {currentView === "landing" && (
-        <div className="text-center">
-          <h1 className="text-5xl title-font mb-4 font-sangbleu">Welcome to Critter!</h1>
-          <p className="text-gray-700 max-w-3xl mx-auto body-font mb-8">
-            Critter is your all-in-one solution for managing your pet's health and wellness. Get started today!
-          </p>
-          <button
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-            onClick={handleStartIntake}
-          >
-            I'm a new customer
-          </button>
-        </div>
+        <LandingPage onNewCustomer={handleStartIntake} onExistingCustomer={handleExistingCustomer} />
+      )}
+
+      {currentView === "booking" && (
+        <BookingPage onStartIntake={handleStartIntake} onBackToLanding={handleBackToLanding} />
       )}
 
       {currentView === "intake" && (
