@@ -143,13 +143,8 @@ export default function ProfessionalSpecificPage() {
       fetchProfessionalName()
     }
   }, [professionalId, WEBHOOK_URL])
+    
 
-  return (
-    <div className="min-h-screen bg-[#FBF8F3] flex flex-col">
-      <Header />
-
-      <main className="pt-8 flex-1 flex flex-col">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col page-content">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="h-8 w-8 text-[#E75837] animate-spin mb-4" />

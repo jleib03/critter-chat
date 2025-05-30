@@ -1,5 +1,5 @@
 "use client"
-import { useRef, useEffect } from "react"
+import { useRef, useEffect, useState } from "react"
 import type React from "react"
 
 import { Send } from "lucide-react"
@@ -58,6 +58,11 @@ export default function ChatInterface({
   onCalendarCancel,
 }: ChatInterfaceProps) {
   const chatMessagesRef = useRef<HTMLDivElement>(null)
+  const [onboardingFormData, setOnboardingFormData] = useState<OnboardingFormData>({
+    name: "",
+    email: "",
+    phone: "",
+  })
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -70,6 +75,18 @@ export default function ChatInterface({
     if (e.key === "Enter" && isFormValid) {
       onSendMessage()
     }
+  }
+
+  const handleOnboardingFormChange = (data: OnboardingFormData) => {
+    setOnboardingFormData(data)
+  }
+
+  const handleOnboardingFormSubmit = () => {
+    // This would typically send the form data to the server
+    console.log("Onboarding form submitted:", onboardingFormData)
+
+    // For now, just simulate sending a message
+    onSendMessage()
   }
 
   return (

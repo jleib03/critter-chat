@@ -3,6 +3,7 @@ import { useState } from "react"
 import Header from "../components/header"
 import LandingPage from "../components/landing-page"
 import BookingPage from "../components/booking-page"
+
 import NewCustomerIntake from "../components/new-customer-intake"
 
 type UserInfo = {
@@ -19,12 +20,14 @@ export default function Page() {
   // Use a more reliable webhook URL for testing
   const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
 
+
   // Handler to start onboarding with a session ID and userId
   const handleStartOnboarding = (currentSessionId: string | null, currentUserId: string | null) => {
     console.log("Starting onboarding with session ID:", currentSessionId)
     console.log("Starting onboarding with user ID:", currentUserId)
     setSessionId(currentSessionId)
     setUserId(currentUserId)
+
   }
 
   // Handlers for landing page options
@@ -42,6 +45,7 @@ export default function Page() {
   const handleBackToLanding = () => {
     setCurrentView("landing")
     setUserInfo(null)
+
   }
 
   return (
@@ -52,6 +56,7 @@ export default function Page() {
         <div className="max-w-6xl mx-auto px-4 flex flex-col page-content">
           {currentView === "landing" && (
             <LandingPage
+
               webhookUrl={WEBHOOK_URL}
               onExistingCustomer={handleExistingCustomer}
               onNewCustomer={handleNewCustomer}
@@ -71,7 +76,6 @@ export default function Page() {
               </div>
             </>
           )}
-
           {currentView === "intake" && (
             <>
               <div className="text-center mb-8">

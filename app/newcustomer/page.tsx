@@ -40,6 +40,7 @@ export default function NewCustomerPage() {
       ) : (
         <p>Loading...</p>
       )}
+
     </div>
   )
 }

@@ -22,6 +22,7 @@ type BookingPageProps = {
 }
 
 export default function BookingPage({ userInfo, onStartOnboarding }: BookingPageProps) {
+          
   // State for messages and UI
   const [statusColor, setStatusColor] = useState("#E75837")
   const [messages, setMessages] = useState<Message[]>([
@@ -103,6 +104,33 @@ export default function BookingPage({ userInfo, onStartOnboarding }: BookingPage
     // Send the message with the action explicitly passed
     sendMessage(messageText, action)
   }
+
+  // Update the handleNewCustomerSelection function
+  // const handleNewCustomerSelection = (selection: "new_customer_onboarding" | "new_customer_lead") => {
+  //   console.log(`New customer selection made: "${selection}"`)
+
+  //   // Set appropriate action based on selection
+  //   setSelectedAction(selection)
+  //   setShowNewCustomerSelection(false)
+
+  //   // If the user selected "I know my Critter professional" and we have an onStartOnboarding handler,
+  //   // start the onboarding flow with the current session ID and user ID
+  //   if (selection === "new_customer_onboarding" && onStartOnboarding) {
+  //     onStartOnboarding(sessionId, USER_ID.current)
+  //     return
+  //   }
+
+  //   // Display different messages based on selection
+  //   let messageText = ""
+  //   if (selection === "new_customer_onboarding") {
+  //     messageText = "I know my Critter professional"
+  //   } else {
+  //     messageText = "I am looking for a new pet professional"
+  //   }
+
+  //   // Send the message
+  //   sendMessage(messageText, selection)
+  // }
 
   // Function to handle selection bubble clicks
   const handleSelectionClick = (option: SelectionOption) => {
@@ -615,6 +643,7 @@ export default function BookingPage({ userInfo, onStartOnboarding }: BookingPage
     console.log("Final message being sent:", message, typeof message)
 
     setShowActionBubbles(false)
+    // setShowNewCustomerSelection(false)
     console.log("Sending message", { message })
 
     setMessages((prev) => {

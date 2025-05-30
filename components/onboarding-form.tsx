@@ -398,6 +398,7 @@ export default function OnboardingForm({
                 {formErrors.email && <p className="mt-1 text-xs text-red-500 body-font">{formErrors.email}</p>}
               </div>
             )}
+
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1 header-font">
                 Phone Number*
