@@ -61,8 +61,19 @@ export default function ProfessionalSetupPage() {
       const data = await response.json()
       console.log("Received response:", data)
 
-      if (data.professionalId) {
-        setProfessionalId(data.professionalId)
+      // Handle the response format: [{"id":"151"}]
+      let professionalId = null
+
+      if (Array.isArray(data) && data.length > 0 && data[0].id) {
+        professionalId = data[0].id
+      } else if (data.professionalId) {
+        professionalId = data.professionalId
+      } else if (data.id) {
+        professionalId = data.id
+      }
+
+      if (professionalId) {
+        setProfessionalId(professionalId)
         setShowModal(false)
         setShowResults(true)
       } else {
