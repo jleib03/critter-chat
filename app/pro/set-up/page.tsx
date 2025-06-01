@@ -1,6 +1,6 @@
 "use client"
 import { useState } from "react"
-import { Loader2, Copy, Check, ExternalLink, Settings, Users, Globe } from "lucide-react"
+import { Loader2, Copy, Check, Settings, Users, MessageSquare, Construction, ArrowRight } from "lucide-react"
 import Header from "../../../components/header"
 
 export default function ProfessionalSetupPage() {
@@ -121,56 +121,62 @@ ${buttonHtml}`
                 </div>
                 <h1 className="text-4xl md:text-5xl title-font mb-4">Professional Setup</h1>
                 <p className="text-xl text-gray-700 max-w-3xl mx-auto body-font">
-                  Get your custom customer intake link and embed it on your website to streamline new customer
-                  onboarding.
+                  Tools and resources to enhance your Critter professional experience
                 </p>
               </div>
 
-              {/* Features Section */}
+              {/* Feature Tiles Section */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-                <div className="bg-white rounded-xl shadow-md p-6 text-center">
-                  <div className="w-12 h-12 bg-[#f5f8fd] rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Users className="h-6 w-6 text-[#94ABD6]" />
-                  </div>
-                  <h3 className="text-lg font-bold mb-2 header-font">Streamlined Intake</h3>
-                  <p className="text-gray-600 body-font">
-                    New customers can complete their intake and first booking request directly from your website.
-                  </p>
-                </div>
-
-                <div className="bg-white rounded-xl shadow-md p-6 text-center">
-                  <div className="w-12 h-12 bg-[#fff8f6] rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Globe className="h-6 w-6 text-[#E75837]" />
-                  </div>
-                  <h3 className="text-lg font-bold mb-2 header-font">Easy Integration</h3>
-                  <p className="text-gray-600 body-font">
-                    Simple copy-paste code that works with any website platform including Squarespace, Wix, and more.
-                  </p>
-                </div>
-
-                <div className="bg-white rounded-xl shadow-md p-6 text-center">
-                  <div className="w-12 h-12 bg-[#f9f7f2] rounded-full flex items-center justify-center mx-auto mb-4">
-                    <ExternalLink className="h-6 w-6 text-[#745E25]" />
-                  </div>
-                  <h3 className="text-lg font-bold mb-2 header-font">Custom Link</h3>
-                  <p className="text-gray-600 body-font">
-                    Get a personalized link that connects directly to your Critter professional account.
-                  </p>
-                </div>
-              </div>
-
-              {/* CTA Section */}
-              <div className="bg-white rounded-xl shadow-md p-8 text-center">
-                <h2 className="text-2xl font-bold mb-4 header-font">Ready to Get Started?</h2>
-                <p className="text-gray-600 mb-6 body-font">
-                  Click the button below to generate your custom customer intake link and website integration code.
-                </p>
-                <button
+                {/* Customer Intake Tile - Clickable */}
+                <div
                   onClick={handleSetupClick}
-                  className="bg-[#E75837] text-white px-8 py-4 rounded-lg hover:bg-[#d04e30] transition-colors text-lg font-medium header-font"
+                  className="bg-white rounded-xl shadow-md p-6 text-center transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer border border-transparent hover:border-[#E75837]/20"
                 >
-                  Set Up Customer Intake
-                </button>
+                  <div className="w-12 h-12 bg-[#fff8f6] rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Users className="h-6 w-6 text-[#E75837]" />
+                  </div>
+                  <h3 className="text-lg font-bold mb-2 header-font">Customer Intake</h3>
+                  <p className="text-gray-600 body-font mb-4">
+                    Generate a custom intake link and button for your website to streamline new customer onboarding.
+                  </p>
+                  <span className="inline-flex items-center text-[#E75837] text-sm font-medium">
+                    Set up now <ArrowRight className="ml-1 h-4 w-4" />
+                  </span>
+                </div>
+
+                {/* Custom Support Agent Tile - Coming Soon */}
+                <div className="bg-white rounded-xl shadow-md p-6 text-center relative overflow-hidden">
+                  <div className="absolute top-3 right-3">
+                    <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                      Coming Soon
+                    </span>
+                  </div>
+                  <div className="w-12 h-12 bg-[#f5f8fd] rounded-full flex items-center justify-center mx-auto mb-4">
+                    <MessageSquare className="h-6 w-6 text-[#94ABD6]" />
+                  </div>
+                  <h3 className="text-lg font-bold mb-2 header-font">Custom Support Agent</h3>
+                  <p className="text-gray-600 body-font mb-4">
+                    Create a personalized AI support agent trained on your business policies and FAQs.
+                  </p>
+                  <span className="inline-flex items-center text-gray-400 text-sm font-medium">Available soon</span>
+                </div>
+
+                {/* Under Construction Tile */}
+                <div className="bg-white rounded-xl shadow-md p-6 text-center relative overflow-hidden">
+                  <div className="absolute top-3 right-3">
+                    <span className="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                      In Development
+                    </span>
+                  </div>
+                  <div className="w-12 h-12 bg-[#f9f7f2] rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Construction className="h-6 w-6 text-[#745E25]" />
+                  </div>
+                  <h3 className="text-lg font-bold mb-2 header-font">New Feature</h3>
+                  <p className="text-gray-600 body-font mb-4">
+                    We're working on something exciting to help you manage your business more effectively.
+                  </p>
+                  <span className="inline-flex items-center text-gray-400 text-sm font-medium">Stay tuned</span>
+                </div>
               </div>
             </>
           ) : (
