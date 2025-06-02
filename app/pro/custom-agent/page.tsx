@@ -20,6 +20,7 @@ export default function CustomAgentSetupPage() {
   const [professionalName, setProfessionalName] = useState("")
   const [professionalId, setProfessionalId] = useState<string | null>(null)
   const [isEnrolled, setIsEnrolled] = useState<boolean | null>(null)
+  const [configurationSkipped, setConfigurationSkipped] = useState(false)
   const [agentConfig, setAgentConfig] = useState({
     cancellationPolicy: "",
     newCustomerProcess: "",
@@ -272,7 +273,7 @@ export default function CustomAgentSetupPage() {
       }
       // If not enrolled, stay on step 1 to show enrollment option
     } else if (currentStep === 2) {
-      // Configuration step
+      // Configuration step - save if there's content
       const success = await saveAgentConfiguration()
       if (success) {
         setCurrentStep(3)
@@ -280,6 +281,12 @@ export default function CustomAgentSetupPage() {
     } else if (currentStep < 5) {
       setCurrentStep(currentStep + 1)
     }
+  }
+
+  // Function to handle skipping configuration
+  const handleSkipConfiguration = () => {
+    setConfigurationSkipped(true)
+    setCurrentStep(3) // Skip to testing step
   }
 
   const handlePrevStep = () => {
@@ -330,9 +337,9 @@ export default function CustomAgentSetupPage() {
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 ${
                     currentStep >= 2 ? "bg-[#94ABD6] text-white" : "bg-gray-200 text-gray-500"
-                  }`}
+                  } ${configurationSkipped ? "border-2 border-dashed border-gray-400" : ""}`}
                 >
-                  2
+                  {configurationSkipped ? "⏭" : "2"}
                 </div>
                 <span className="text-xs">Configuration</span>
               </div>
@@ -384,6 +391,16 @@ export default function CustomAgentSetupPage() {
             </div>
           </div>
 
+          {/* Skipped Configuration Notice */}
+          {configurationSkipped && currentStep >= 3 && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-lg mb-6">
+              <p className="body-font">
+                <strong>Configuration skipped:</strong> Your agent is using default settings. You can add custom
+                business policies anytime from your dashboard.
+              </p>
+            </div>
+          )}
+
           {/* Error Message */}
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
@@ -419,6 +436,7 @@ export default function CustomAgentSetupPage() {
                 setAgentConfig={setAgentConfig}
                 onNext={handleNextStep}
                 onBack={handlePrevStep}
+                onSkip={handleSkipConfiguration}
               />
             )}
 

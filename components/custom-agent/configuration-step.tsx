@@ -1,6 +1,6 @@
 "use client"
 import type React from "react"
-import { ArrowRight, ArrowLeft } from "lucide-react"
+import { ArrowRight, ArrowLeft, SkipForward } from "lucide-react"
 
 type ConfigurationStepProps = {
   agentConfig: {
@@ -15,9 +15,16 @@ type ConfigurationStepProps = {
   setAgentConfig: (config: any) => void
   onNext: () => void
   onBack: () => void
+  onSkip: () => void
 }
 
-export default function ConfigurationStep({ agentConfig, setAgentConfig, onNext, onBack }: ConfigurationStepProps) {
+export default function ConfigurationStep({
+  agentConfig,
+  setAgentConfig,
+  onNext,
+  onBack,
+  onSkip,
+}: ConfigurationStepProps) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setAgentConfig({
@@ -36,18 +43,28 @@ export default function ConfigurationStep({ agentConfig, setAgentConfig, onNext,
     )
   }
 
+  const hasAnyContent = () => {
+    return (
+      agentConfig.cancellationPolicy.trim() !== "" ||
+      agentConfig.newCustomerProcess.trim() !== "" ||
+      agentConfig.animalRestrictions.trim() !== "" ||
+      agentConfig.serviceDetails.trim() !== "" ||
+      agentConfig.additionalInfo.trim() !== ""
+    )
+  }
+
   return (
     <div>
       <h2 className="text-2xl font-bold mb-4 header-font">Step 2: Business Policies</h2>
       <p className="text-gray-600 mb-6 body-font">
-        Your support agent already has access to your Critter documentation. Now, let's add specific information about
-        your business policies and procedures.
+        Your support agent already has access to your Critter documentation. You can add specific information about your
+        business policies now, or skip this step and come back to customize it later.
       </p>
 
       <div className="space-y-6">
         <div>
           <label htmlFor="cancellationPolicy" className="block text-sm font-medium text-gray-700 mb-2 header-font">
-            Cancellation Policy
+            Cancellation Policy <span className="text-gray-400 text-xs">(Optional)</span>
           </label>
           <textarea
             id="cancellationPolicy"
@@ -62,7 +79,7 @@ export default function ConfigurationStep({ agentConfig, setAgentConfig, onNext,
 
         <div>
           <label htmlFor="newCustomerProcess" className="block text-sm font-medium text-gray-700 mb-2 header-font">
-            New Customer Intake Process
+            New Customer Intake Process <span className="text-gray-400 text-xs">(Optional)</span>
           </label>
           <textarea
             id="newCustomerProcess"
@@ -77,7 +94,7 @@ export default function ConfigurationStep({ agentConfig, setAgentConfig, onNext,
 
         <div>
           <label htmlFor="animalRestrictions" className="block text-sm font-medium text-gray-700 mb-2 header-font">
-            Animal Restrictions
+            Animal Restrictions <span className="text-gray-400 text-xs">(Optional)</span>
           </label>
           <textarea
             id="animalRestrictions"
@@ -92,7 +109,7 @@ export default function ConfigurationStep({ agentConfig, setAgentConfig, onNext,
 
         <div>
           <label htmlFor="serviceDetails" className="block text-sm font-medium text-gray-700 mb-2 header-font">
-            Service Details
+            Service Details <span className="text-gray-400 text-xs">(Optional)</span>
           </label>
           <textarea
             id="serviceDetails"
@@ -107,7 +124,7 @@ export default function ConfigurationStep({ agentConfig, setAgentConfig, onNext,
 
         <div>
           <label htmlFor="additionalInfo" className="block text-sm font-medium text-gray-700 mb-2 header-font">
-            Additional Information
+            Additional Information <span className="text-gray-400 text-xs">(Optional)</span>
           </label>
           <textarea
             id="additionalInfo"
@@ -121,7 +138,16 @@ export default function ConfigurationStep({ agentConfig, setAgentConfig, onNext,
         </div>
       </div>
 
-      <div className="flex justify-between mt-8">
+      {/* Info box about skipping */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+        <h3 className="text-sm font-medium text-blue-800 mb-2 header-font">💡 You can always come back</h3>
+        <p className="text-sm text-blue-700 body-font">
+          Want to test your agent first? You can skip this step and add your business policies later. Your agent will
+          work with the default Critter documentation, and you can customize it anytime from your dashboard.
+        </p>
+      </div>
+
+      <div className="flex justify-between items-center mt-8">
         <button
           onClick={onBack}
           className="flex items-center px-6 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors body-font"
@@ -129,16 +155,26 @@ export default function ConfigurationStep({ agentConfig, setAgentConfig, onNext,
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </button>
-        <button
-          onClick={onNext}
-          disabled={!isFormValid()}
-          className={`flex items-center px-6 py-2 rounded-lg text-white transition-colors body-font ${
-            isFormValid() ? "bg-[#94ABD6] hover:bg-[#7a90ba]" : "bg-gray-300 cursor-not-allowed"
-          }`}
-        >
-          Next
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </button>
+
+        <div className="flex gap-3">
+          <button
+            onClick={onSkip}
+            className="flex items-center px-6 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors body-font"
+          >
+            <SkipForward className="mr-2 h-4 w-4" />
+            Skip for Now
+          </button>
+
+          {hasAnyContent() && (
+            <button
+              onClick={onNext}
+              className="flex items-center px-6 py-2 rounded-lg bg-[#94ABD6] text-white hover:bg-[#7a90ba] transition-colors body-font"
+            >
+              Save & Continue
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )
