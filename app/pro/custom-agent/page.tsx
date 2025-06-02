@@ -565,7 +565,13 @@ export default function CustomAgentSetupPage() {
               />
             )}
 
-            {currentStep === 5 && <SuccessStep professionalName={professionalName} />}
+            {currentStep === 5 && (
+              <SuccessStep
+                professionalName={professionalName}
+                professionalId={professionalId || ""}
+                agentConfig={agentConfig}
+              />
+            )}
           </div>
         </div>
       </main>
