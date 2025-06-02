@@ -106,7 +106,7 @@ ${baseCode}`
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-4 header-font">Step 4: Customize & Implement</h2>
+      <h2 className="text-2xl font-bold mb-4 header-font">Step 3: Customization & Implementation</h2>
       <p className="text-gray-600 mb-6 body-font">
         Customize your chat widget appearance and get the code to add it to your website.
       </p>
@@ -363,7 +363,7 @@ ${baseCode}`
           onClick={onNext}
           className="flex items-center px-6 py-2 rounded-lg bg-[#94ABD6] text-white hover:bg-[#7a90ba] transition-colors body-font"
         >
-          Finish Setup
+          Next: Test Your Agent
           <ArrowRight className="ml-2 h-4 w-4" />
         </button>
       </div>

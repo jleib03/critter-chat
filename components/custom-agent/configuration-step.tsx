@@ -55,7 +55,7 @@ export default function ConfigurationStep({
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-4 header-font">Step 2: Business Policies</h2>
+      <h2 className="text-2xl font-bold mb-4 header-font">Step 2: Training</h2>
       <p className="text-gray-600 mb-6 body-font">
         Your support agent already has access to your Critter documentation. You can add specific information about your
         business policies now, or skip this step and come back to customize it later.

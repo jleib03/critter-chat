@@ -273,7 +273,7 @@ export default function CustomAgentSetupPage() {
       }
       // If not enrolled, stay on step 1 to show enrollment option
     } else if (currentStep === 2) {
-      // Configuration step - save if there's content
+      // Training step - save if there's content
       const success = await saveAgentConfiguration()
       if (success) {
         setCurrentStep(3)
@@ -286,7 +286,7 @@ export default function CustomAgentSetupPage() {
   // Function to handle skipping configuration
   const handleSkipConfiguration = () => {
     setConfigurationSkipped(true)
-    setCurrentStep(3) // Skip to testing step
+    setCurrentStep(3) // Skip to customization step
   }
 
   const handlePrevStep = () => {
@@ -341,7 +341,7 @@ export default function CustomAgentSetupPage() {
                 >
                   {configurationSkipped ? "⏭" : "2"}
                 </div>
-                <span className="text-xs">Configuration</span>
+                <span className="text-xs">Training</span>
               </div>
               <div className={`flex-1 h-1 mx-2 ${currentStep >= 3 ? "bg-[#94ABD6]" : "bg-gray-200"}`}></div>
               <div
@@ -356,7 +356,7 @@ export default function CustomAgentSetupPage() {
                 >
                   3
                 </div>
-                <span className="text-xs">Testing</span>
+                <span className="text-xs">Customization</span>
               </div>
               <div className={`flex-1 h-1 mx-2 ${currentStep >= 4 ? "bg-[#94ABD6]" : "bg-gray-200"}`}></div>
               <div
@@ -371,7 +371,7 @@ export default function CustomAgentSetupPage() {
                 >
                   4
                 </div>
-                <span className="text-xs">Implementation</span>
+                <span className="text-xs">Testing</span>
               </div>
               <div className={`flex-1 h-1 mx-2 ${currentStep >= 5 ? "bg-[#94ABD6]" : "bg-gray-200"}`}></div>
               <div
@@ -395,8 +395,8 @@ export default function CustomAgentSetupPage() {
           {configurationSkipped && currentStep >= 3 && (
             <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-lg mb-6">
               <p className="body-font">
-                <strong>Configuration skipped:</strong> Your agent is using default settings. You can add custom
-                business policies anytime from your dashboard.
+                <strong>Training skipped:</strong> Your agent is using default settings. You can add custom business
+                policies anytime from your dashboard.
               </p>
             </div>
           )}
@@ -441,22 +441,22 @@ export default function CustomAgentSetupPage() {
             )}
 
             {currentStep === 3 && (
-              <TestingStep
-                testMessages={testMessages}
-                testInput={testInput}
-                setTestInput={setTestInput}
-                sendTestMessage={sendTestMessage}
-                isTestingActive={isTestingActive}
+              <ImplementationStep
+                professionalId={professionalId || ""}
+                agentConfig={agentConfig}
+                setAgentConfig={setAgentConfig}
                 onNext={() => setCurrentStep(4)}
                 onBack={handlePrevStep}
               />
             )}
 
             {currentStep === 4 && (
-              <ImplementationStep
-                professionalId={professionalId || ""}
-                agentConfig={agentConfig}
-                setAgentConfig={setAgentConfig}
+              <TestingStep
+                testMessages={testMessages}
+                testInput={testInput}
+                setTestInput={setTestInput}
+                sendTestMessage={sendTestMessage}
+                isTestingActive={isTestingActive}
                 onNext={() => setCurrentStep(5)}
                 onBack={handlePrevStep}
               />

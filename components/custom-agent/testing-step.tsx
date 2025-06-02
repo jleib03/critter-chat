@@ -39,7 +39,7 @@ export default function TestingStep({
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-4 header-font">Step 3: Testing</h2>
+      <h2 className="text-2xl font-bold mb-4 header-font">Step 4: Testing</h2>
       <p className="text-gray-600 mb-6 body-font">
         Test your custom support agent to make sure it responds correctly to customer inquiries. Try asking questions
         about your policies, services, or other common customer questions.
@@ -117,7 +117,7 @@ export default function TestingStep({
           onClick={onNext}
           className="flex items-center px-6 py-2 rounded-lg bg-[#94ABD6] text-white hover:bg-[#7a90ba] transition-colors body-font"
         >
-          Next
+          Complete Setup
           <ArrowRight className="ml-2 h-4 w-4" />
         </button>
       </div>
