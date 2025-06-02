@@ -120,8 +120,15 @@ export default function CustomAgentSetupPage() {
       if (Array.isArray(data) && data.length > 0) {
         const result = data[0]
 
-        // Check for successful enrollment based on the response structure
-        if (result && (result.operation_type === "updated" || result.enrolled_at)) {
+        // Check for successful enrollment based on multiple response formats
+        const isSuccessful =
+          result &&
+          (result.operation_type === "updated" ||
+            result.enrolled_at ||
+            (result.output &&
+              (result.output.includes("successfully enrolled") || result.output === "successfully enrolled")))
+
+        if (isSuccessful) {
           setIsEnrolled(enroll)
           setError(null) // Clear any previous errors
           return true
