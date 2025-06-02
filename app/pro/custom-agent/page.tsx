@@ -63,13 +63,20 @@ export default function CustomAgentSetupPage() {
       const data = await response.json()
       console.log("Enrollment check response:", data)
 
-      // Handle the response
-      if (data.success) {
-        setProfessionalId(data.professionalId || null)
-        setIsEnrolled(data.isEnrolled || false)
-        return true
+      // Handle the response - now expecting an array
+      if (Array.isArray(data) && data.length > 0) {
+        const professional = data[0]
+
+        if (professional) {
+          setProfessionalId(professional.professional_id || null)
+          setIsEnrolled(professional.enrollment_status === "enrolled")
+          return true
+        } else {
+          setError("Professional not found")
+          return false
+        }
       } else {
-        setError(data.message || "Failed to verify professional name")
+        setError("Failed to verify professional name")
         return false
       }
     } catch (err) {
@@ -109,11 +116,14 @@ export default function CustomAgentSetupPage() {
       const data = await response.json()
       console.log("Toggle enrollment response:", data)
 
-      if (data.success) {
+      // Handle array response if needed
+      const result = Array.isArray(data) ? data[0] : data
+
+      if (result && (result.success || result.enrollment_status === "enrolled")) {
         setIsEnrolled(enroll)
         return true
       } else {
-        setError(data.message || `Failed to ${enroll ? "enroll" : "unenroll"}`)
+        setError(result?.message || `Failed to ${enroll ? "enroll" : "unenroll"}`)
         return false
       }
     } catch (err) {
@@ -153,11 +163,14 @@ export default function CustomAgentSetupPage() {
       const data = await response.json()
       console.log("Save configuration response:", data)
 
-      if (data.success) {
+      // Handle array response if needed
+      const result = Array.isArray(data) ? data[0] : data
+
+      if (result && result.success) {
         setIsConfigSaved(true)
         return true
       } else {
-        setError(data.message || "Failed to save configuration")
+        setError(result?.message || "Failed to save configuration")
         return false
       }
     } catch (err) {
@@ -198,11 +211,14 @@ export default function CustomAgentSetupPage() {
       const data = await response.json()
       console.log("Test agent response:", data)
 
+      // Handle array response if needed
+      const result = Array.isArray(data) ? data[0] : data
+
       // Add agent response to chat
       setTimeout(() => {
         setTestMessages((prev) => [
           ...prev,
-          { text: data.response || "I'm sorry, I couldn't process that request.", isUser: false },
+          { text: result?.response || "I'm sorry, I couldn't process that request.", isUser: false },
         ])
         setIsTestingActive(false)
       }, 1000)
