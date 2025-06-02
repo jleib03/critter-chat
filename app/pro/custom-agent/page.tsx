@@ -226,9 +226,14 @@ export default function CustomAgentSetupPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          action: "test_agent",
+          action: "support_conversation",
           professionalId: professionalId,
           message: message,
+          userInfo: {
+            source: "testing_interface",
+            sessionId: "test_" + Date.now(),
+            timestamp: new Date().toISOString(),
+          },
         }),
       })
 
