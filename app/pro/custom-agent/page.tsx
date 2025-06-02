@@ -182,7 +182,11 @@ export default function CustomAgentSetupPage() {
       // Handle array response if needed
       const result = Array.isArray(data) ? data[0] : data
 
-      if (result && result.success) {
+      // Check for successful configuration save based on the actual response format
+      if (
+        result &&
+        (result.success || (result.id && result.professional_id && result.content_type === "policy_configuration"))
+      ) {
         setIsConfigSaved(true)
         return true
       } else {
