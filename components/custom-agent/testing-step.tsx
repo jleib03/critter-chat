@@ -76,10 +76,13 @@ export default function TestingStep({
                   message.isUser ? `text-white` : "bg-gray-100 text-gray-800"
                 } body-font`}
                 style={message.isUser ? { backgroundColor: primaryColor } : {}}
-                dangerouslySetInnerHTML={{
-                  __html: message.isUser ? message.text : formatMessageContent(message.text),
-                }}
-              />
+              >
+                {message.isUser ? (
+                  message.text
+                ) : (
+                  <div dangerouslySetInnerHTML={{ __html: formatMessageContent(message.text) }} />
+                )}
+              </div>
             </div>
           ))}
           {isTestingActive && (
@@ -148,15 +151,27 @@ export default function TestingStep({
   )
 }
 
-// Helper function to format message content
+// Enhanced helper function to format message content
 function formatMessageContent(text: string): string {
+  // First, clean up any JSON artifacts that might have leaked through
+  let cleanText = text
+
+  // Remove any JSON structure artifacts
+  cleanText = cleanText.replace(/^\[?\{?"?output"?:\s*"?/, "")
+  cleanText = cleanText.replace(/"?\}?\]?$/, "")
+  cleanText = cleanText.replace(/\\n/g, "\n")
+  cleanText = cleanText.replace(/\\"/g, '"')
+
   // Convert markdown-style formatting to HTML
-  const formatted = text
+  const formatted = cleanText
     .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Bold text
-    .replace(/\n\n/g, "<br><br>") // Double line breaks
-    .replace(/\n/g, "<br>") // Single line breaks
-    .replace(/(\d+\.\s)/g, "<br>$1") // Number lists
-    .replace(/(-\s)/g, "<br>&nbsp;&nbsp;&bull;&nbsp;") // Bullet points
+    .replace(/\n\n/g, "<br><br>") // Double line breaks for paragraphs
+    .replace(/\n•\s/g, "<br>• ") // Bullet points with line breaks
+    .replace(/\n-\s/g, "<br>• ") // Convert dashes to bullet points
+    .replace(/\n(\d+\.)\s/g, "<br><br>$1 ") // Numbered lists with spacing
+    .replace(/\n/g, "<br>") // Remaining single line breaks
+    .replace(/^<br>/, "") // Remove leading line break
+    .replace(/(<br>){3,}/g, "<br><br>") // Limit consecutive line breaks
 
   return formatted
 }

@@ -69,11 +69,20 @@ export default function CustomAgentSetupPage() {
               if (innerItem.output) {
                 return innerItem.output
               }
+              // If the array item is just a string, return it
+              if (typeof innerItem === "string") {
+                return innerItem
+              }
             }
 
             // If it's an object with output, return that
             if (parsedOutput.output) {
               return parsedOutput.output
+            }
+
+            // If it's just a string, return it
+            if (typeof parsedOutput === "string") {
+              return parsedOutput
             }
 
             // Otherwise return the parsed output as string
@@ -89,6 +98,11 @@ export default function CustomAgentSetupPage() {
           return firstItem.response
         }
 
+        // Check if the first item itself is a string
+        if (typeof firstItem === "string") {
+          return firstItem
+        }
+
         // Return first item as string if no specific field found
         return String(firstItem)
       }
@@ -97,6 +111,11 @@ export default function CustomAgentSetupPage() {
       if (data && typeof data === "object") {
         if (data.output) return data.output
         if (data.response) return data.response
+      }
+
+      // Handle direct string response
+      if (typeof data === "string") {
+        return data
       }
 
       // Fallback
