@@ -259,13 +259,14 @@ export default function CustomAgentSetupPage() {
       // If we're on the enrollment step and haven't checked enrollment yet
       if (isEnrolled === null) {
         await checkEnrollmentStatus(professionalName)
-        return // Don't advance to next step yet
+        return // Don't advance to next step yet, just show the status
       }
 
-      // Only proceed if enrolled or wants to enroll
-      if (isEnrolled || professionalName) {
+      // Only proceed to next step if enrolled
+      if (isEnrolled) {
         setCurrentStep(2)
       }
+      // If not enrolled, stay on step 1 to show enrollment option
     } else if (currentStep === 2) {
       // Configuration step
       const success = await saveAgentConfiguration()

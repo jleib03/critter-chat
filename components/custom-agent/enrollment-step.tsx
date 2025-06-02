@@ -34,106 +34,131 @@ export default function EnrollmentStep({
     }
   }
 
+  const handleEnrollNow = async () => {
+    setWantsToEnroll(true)
+    const success = await toggleEnrollment(true)
+    if (success) {
+      // Enrollment was successful, the parent will update isEnrolled state
+    }
+  }
+
+  // Show verification form if we haven't verified yet
+  if (!hasVerified || isEnrolled === null) {
+    return (
+      <div>
+        <h2 className="text-2xl font-bold mb-4 header-font">Step 1: Enrollment</h2>
+        <p className="text-gray-600 mb-6 body-font">
+          Let's start by verifying your Critter professional account. Please enter your business name exactly as it
+          appears in your Critter account.
+        </p>
+
+        <div className="mb-6">
+          <label htmlFor="professionalName" className="block text-sm font-medium text-gray-700 mb-2 header-font">
+            Business Name*
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              id="professionalName"
+              value={professionalName}
+              onChange={(e) => setProfessionalName(e.target.value)}
+              className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#94ABD6] body-font"
+              placeholder="Enter your business name as it appears in Critter"
+              disabled={isVerifying}
+            />
+            <button
+              onClick={handleVerify}
+              disabled={!professionalName.trim() || isVerifying}
+              className={`px-4 py-2 rounded-lg flex items-center justify-center transition-colors ${
+                !professionalName.trim() || isVerifying
+                  ? "bg-gray-300 cursor-not-allowed"
+                  : "bg-[#94ABD6] hover:bg-[#7a90ba] text-white"
+              }`}
+            >
+              {isVerifying ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <>
+                  <Search className="h-5 w-5 mr-1" />
+                  Verify
+                </>
+              )}
+            </button>
+          </div>
+          <p className="mt-2 text-sm text-gray-500 body-font">
+            This helps us verify your account and set up your custom support agent.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show enrollment status after verification
   return (
     <div>
       <h2 className="text-2xl font-bold mb-4 header-font">Step 1: Enrollment</h2>
       <p className="text-gray-600 mb-6 body-font">
-        Let's start by verifying your Critter professional account. Please enter your business name exactly as it
-        appears in your Critter account.
+        Great! We've verified your Critter professional account. Here's your enrollment status:
       </p>
 
       <div className="mb-6">
-        <label htmlFor="professionalName" className="block text-sm font-medium text-gray-700 mb-2 header-font">
-          Business Name*
-        </label>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            id="professionalName"
-            value={professionalName}
-            onChange={(e) => setProfessionalName(e.target.value)}
-            className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#94ABD6] body-font"
-            placeholder="Enter your business name as it appears in Critter"
-          />
-          <button
-            onClick={handleVerify}
-            disabled={!professionalName.trim() || isVerifying}
-            className={`px-4 py-2 rounded-lg flex items-center justify-center transition-colors ${
-              !professionalName.trim() || isVerifying
-                ? "bg-gray-300 cursor-not-allowed"
-                : "bg-[#94ABD6] hover:bg-[#7a90ba] text-white"
-            }`}
-          >
-            {isVerifying ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <>
-                <Search className="h-5 w-5 mr-1" />
-                Verify
-              </>
-            )}
-          </button>
+        <label className="block text-sm font-medium text-gray-700 mb-2 header-font">Business Name</label>
+        <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg body-font text-gray-700">
+          {professionalName}
         </div>
-        <p className="mt-2 text-sm text-gray-500 body-font">
-          This helps us verify your account and set up your custom support agent.
-        </p>
       </div>
 
-      {isEnrolled !== null && hasVerified && (
-        <div
-          className={`p-4 rounded-lg mb-6 ${
-            isEnrolled ? "bg-green-50 border border-green-200" : "bg-amber-50 border border-amber-200"
-          }`}
-        >
-          {isEnrolled ? (
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <Check className="h-5 w-5 text-green-600" />
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-green-800 header-font">Enrollment Active</h3>
-                <p className="mt-1 text-sm text-green-700 body-font">
-                  Your business is already enrolled in the Custom Support Agent program. You can proceed to configure
-                  your agent.
-                </p>
+      <div
+        className={`p-4 rounded-lg mb-6 ${
+          isEnrolled ? "bg-green-50 border border-green-200" : "bg-amber-50 border border-amber-200"
+        }`}
+      >
+        {isEnrolled ? (
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <Check className="h-5 w-5 text-green-600" />
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-green-800 header-font">Enrollment Active</h3>
+              <p className="mt-1 text-sm text-green-700 body-font">
+                Your business is already enrolled in the Custom Support Agent program. You can proceed to configure your
+                agent.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <X className="h-5 w-5 text-amber-600" />
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-amber-800 header-font">Not Enrolled</h3>
+              <p className="mt-1 text-sm text-amber-700 body-font">
+                Your business is not currently enrolled in the Custom Support Agent program. Would you like to enroll
+                now?
+              </p>
+              <div className="mt-3">
+                <button
+                  onClick={handleEnrollNow}
+                  disabled={wantsToEnroll}
+                  className={`px-4 py-2 rounded-lg transition-colors body-font ${
+                    wantsToEnroll ? "bg-gray-300 cursor-not-allowed" : "bg-[#94ABD6] text-white hover:bg-[#7a90ba]"
+                  }`}
+                >
+                  {wantsToEnroll ? "Enrolling..." : "Enroll Now"}
+                </button>
               </div>
             </div>
-          ) : (
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <X className="h-5 w-5 text-amber-600" />
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-amber-800 header-font">Not Enrolled</h3>
-                <p className="mt-1 text-sm text-amber-700 body-font">
-                  Your business is not currently enrolled in the Custom Support Agent program. Would you like to enroll
-                  now?
-                </p>
-                <div className="mt-3">
-                  <button
-                    onClick={() => {
-                      setWantsToEnroll(true)
-                      toggleEnrollment(true)
-                    }}
-                    className="bg-[#94ABD6] text-white px-4 py-2 rounded-lg hover:bg-[#7a90ba] transition-colors body-font"
-                  >
-                    Enroll Now
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
 
       <div className="flex justify-end mt-8">
         <button
-          onClick={onNext}
-          disabled={!professionalName || isEnrolled === null || (!isEnrolled && !wantsToEnroll)}
+          onClick={() => onNext()}
+          disabled={!isEnrolled && !wantsToEnroll}
           className={`flex items-center px-6 py-2 rounded-lg text-white transition-colors body-font ${
-            professionalName && isEnrolled !== null && (isEnrolled || wantsToEnroll)
-              ? "bg-[#94ABD6] hover:bg-[#7a90ba]"
-              : "bg-gray-300 cursor-not-allowed"
+            isEnrolled || wantsToEnroll ? "bg-[#94ABD6] hover:bg-[#7a90ba]" : "bg-gray-300 cursor-not-allowed"
           }`}
         >
           Next
