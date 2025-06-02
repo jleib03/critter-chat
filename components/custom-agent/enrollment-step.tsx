@@ -1,11 +1,11 @@
 "use client"
 import { useState } from "react"
-import { ArrowRight, Check, X } from "lucide-react"
+import { ArrowRight, Check, X, Search, Loader2 } from "lucide-react"
 
 type EnrollmentStepProps = {
   professionalName: string
   setProfessionalName: (name: string) => void
-  isEnrolled: boolean
+  isEnrolled: boolean | null
   toggleEnrollment: (enroll: boolean) => Promise<boolean>
   onNext: () => void
 }
@@ -18,6 +18,21 @@ export default function EnrollmentStep({
   onNext,
 }: EnrollmentStepProps) {
   const [wantsToEnroll, setWantsToEnroll] = useState(false)
+  const [isVerifying, setIsVerifying] = useState(false)
+  const [hasVerified, setHasVerified] = useState(false)
+
+  const handleVerify = async () => {
+    if (!professionalName.trim()) return
+    setIsVerifying(true)
+
+    try {
+      // This will trigger the parent component's checkEnrollmentStatus function
+      await onNext()
+      setHasVerified(true)
+    } finally {
+      setIsVerifying(false)
+    }
+  }
 
   return (
     <div>
@@ -31,20 +46,40 @@ export default function EnrollmentStep({
         <label htmlFor="professionalName" className="block text-sm font-medium text-gray-700 mb-2 header-font">
           Business Name*
         </label>
-        <input
-          type="text"
-          id="professionalName"
-          value={professionalName}
-          onChange={(e) => setProfessionalName(e.target.value)}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#94ABD6] body-font"
-          placeholder="Enter your business name as it appears in Critter"
-        />
+        <div className="flex gap-2">
+          <input
+            type="text"
+            id="professionalName"
+            value={professionalName}
+            onChange={(e) => setProfessionalName(e.target.value)}
+            className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#94ABD6] body-font"
+            placeholder="Enter your business name as it appears in Critter"
+          />
+          <button
+            onClick={handleVerify}
+            disabled={!professionalName.trim() || isVerifying}
+            className={`px-4 py-2 rounded-lg flex items-center justify-center transition-colors ${
+              !professionalName.trim() || isVerifying
+                ? "bg-gray-300 cursor-not-allowed"
+                : "bg-[#94ABD6] hover:bg-[#7a90ba] text-white"
+            }`}
+          >
+            {isVerifying ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <>
+                <Search className="h-5 w-5 mr-1" />
+                Verify
+              </>
+            )}
+          </button>
+        </div>
         <p className="mt-2 text-sm text-gray-500 body-font">
           This helps us verify your account and set up your custom support agent.
         </p>
       </div>
 
-      {isEnrolled !== null && professionalName && (
+      {isEnrolled !== null && hasVerified && (
         <div
           className={`p-4 rounded-lg mb-6 ${
             isEnrolled ? "bg-green-50 border border-green-200" : "bg-amber-50 border border-amber-200"
@@ -94,9 +129,9 @@ export default function EnrollmentStep({
       <div className="flex justify-end mt-8">
         <button
           onClick={onNext}
-          disabled={!professionalName || (!isEnrolled && !wantsToEnroll)}
+          disabled={!professionalName || isEnrolled === null || (!isEnrolled && !wantsToEnroll)}
           className={`flex items-center px-6 py-2 rounded-lg text-white transition-colors body-font ${
-            professionalName && (isEnrolled || wantsToEnroll)
+            professionalName && isEnrolled !== null && (isEnrolled || wantsToEnroll)
               ? "bg-[#94ABD6] hover:bg-[#7a90ba]"
               : "bg-gray-300 cursor-not-allowed"
           }`}

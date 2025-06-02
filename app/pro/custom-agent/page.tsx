@@ -19,7 +19,7 @@ export default function CustomAgentSetupPage() {
   const [error, setError] = useState<string | null>(null)
   const [professionalName, setProfessionalName] = useState("")
   const [professionalId, setProfessionalId] = useState<string | null>(null)
-  const [isEnrolled, setIsEnrolled] = useState(false)
+  const [isEnrolled, setIsEnrolled] = useState<boolean | null>(null)
   const [agentConfig, setAgentConfig] = useState({
     cancellationPolicy: "",
     newCustomerProcess: "",
@@ -224,9 +224,14 @@ export default function CustomAgentSetupPage() {
   // Function to handle step navigation
   const handleNextStep = async () => {
     if (currentStep === 1) {
-      // Enrollment step
-      const success = await checkEnrollmentStatus(professionalName)
-      if (success) {
+      // If we're on the enrollment step and haven't checked enrollment yet
+      if (isEnrolled === null) {
+        await checkEnrollmentStatus(professionalName)
+        return // Don't advance to next step yet
+      }
+
+      // Only proceed if enrolled or wants to enroll
+      if (isEnrolled || professionalName) {
         setCurrentStep(2)
       }
     } else if (currentStep === 2) {
