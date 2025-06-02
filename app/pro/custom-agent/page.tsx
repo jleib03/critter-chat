@@ -438,6 +438,7 @@ export default function CustomAgentSetupPage() {
               <ImplementationStep
                 professionalId={professionalId || ""}
                 agentConfig={agentConfig}
+                setAgentConfig={setAgentConfig}
                 onNext={() => setCurrentStep(5)}
                 onBack={handlePrevStep}
               />
