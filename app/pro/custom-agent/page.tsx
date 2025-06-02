@@ -1,5 +1,7 @@
 "use client"
 import { useState } from "react"
+import { useEffect } from "react"
+
 import { useRouter } from "next/navigation"
 import Header from "../../../components/header"
 import EnrollmentStep from "../../../components/custom-agent/enrollment-step"
@@ -29,6 +31,11 @@ export default function CustomAgentSetupPage() {
     additionalInfo: "",
     chatName: "Critter Support",
     chatWelcomeMessage: "Hello! I'm your Critter professional's virtual assistant. How can I help you today?",
+    widgetConfig: {
+      primaryColor: "#94ABD6",
+      position: "bottom-right",
+      size: "medium",
+    },
   })
   const [isConfigSaved, setIsConfigSaved] = useState(false)
   const [testMessages, setTestMessages] = useState<Array<{ text: string; isUser: boolean }>>([
@@ -295,6 +302,20 @@ export default function CustomAgentSetupPage() {
     }
   }
 
+  // Update test messages when chat name or welcome message changes
+  useEffect(() => {
+    // Only update the first message if it exists
+    if (testMessages.length > 0 && !testMessages[0].isUser) {
+      setTestMessages([
+        {
+          text: agentConfig.chatWelcomeMessage,
+          isUser: false,
+        },
+        ...testMessages.slice(1),
+      ])
+    }
+  }, [agentConfig.chatWelcomeMessage])
+
   return (
     <div className="min-h-screen bg-[#FBF8F3] flex flex-col">
       <Header />
@@ -459,6 +480,7 @@ export default function CustomAgentSetupPage() {
                 isTestingActive={isTestingActive}
                 onNext={() => setCurrentStep(5)}
                 onBack={handlePrevStep}
+                agentConfig={agentConfig}
               />
             )}
 

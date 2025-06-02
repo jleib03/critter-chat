@@ -21,6 +21,7 @@ export default function ImplementationStep({
   onBack,
 }: ImplementationStepProps) {
   const [activeTab, setActiveTab] = useState("customize")
+  const [activePlatform, setActivePlatform] = useState("squarespace")
   const [copied, setCopied] = useState<string | null>(null)
   const [widgetConfig, setWidgetConfig] = useState({
     primaryColor: "#94ABD6",
@@ -102,6 +103,24 @@ ${baseCode}`
       default:
         return "w-80 h-96"
     }
+  }
+
+  // Handle next step with widget config
+  const handleNext = () => {
+    // Update the main agent config with all widget settings
+    if (setAgentConfig) {
+      setAgentConfig({
+        ...agentConfig,
+        chatName: widgetConfig.chatName,
+        chatWelcomeMessage: widgetConfig.chatWelcomeMessage,
+        widgetConfig: {
+          primaryColor: widgetConfig.primaryColor,
+          position: widgetConfig.position,
+          size: widgetConfig.size,
+        },
+      })
+    }
+    onNext()
   }
 
   return (
@@ -312,11 +331,11 @@ ${baseCode}`
               <button
                 key={platform.id}
                 className={`py-2 px-4 font-medium text-sm whitespace-nowrap focus:outline-none ${
-                  activeTab === platform.id
+                  activePlatform === platform.id
                     ? "border-b-2 border-[#94ABD6] text-[#94ABD6]"
                     : "text-gray-500 hover:text-gray-700"
                 }`}
-                onClick={() => setActiveTab(platform.id)}
+                onClick={() => setActivePlatform(platform.id)}
               >
                 {platform.name}
               </button>
@@ -327,14 +346,18 @@ ${baseCode}`
           <div className="space-y-6">
             <div className="relative">
               <pre className="bg-gray-800 text-gray-200 p-4 rounded-lg overflow-x-auto text-sm font-mono">
-                {getEmbedCode(activeTab)}
+                {getEmbedCode(activePlatform)}
               </pre>
               <button
-                onClick={() => handleCopy(getEmbedCode(activeTab), activeTab)}
+                onClick={() => handleCopy(getEmbedCode(activePlatform), activePlatform)}
                 className="absolute top-2 right-2 p-1 rounded-md bg-gray-700 text-gray-200 hover:bg-gray-600"
                 aria-label="Copy code"
               >
-                {copied === activeTab ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
+                {copied === activePlatform ? (
+                  <Check className="h-4 w-4 text-green-400" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
               </button>
             </div>
 
@@ -360,7 +383,7 @@ ${baseCode}`
           Back
         </button>
         <button
-          onClick={onNext}
+          onClick={handleNext}
           className="flex items-center px-6 py-2 rounded-lg bg-[#94ABD6] text-white hover:bg-[#7a90ba] transition-colors body-font"
         >
           Next: Test Your Agent

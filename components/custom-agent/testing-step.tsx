@@ -12,6 +12,15 @@ type TestingStepProps = {
   isTestingActive: boolean
   onNext: () => void
   onBack: () => void
+  agentConfig?: {
+    chatName: string
+    chatWelcomeMessage: string
+    widgetConfig?: {
+      primaryColor: string
+      position: string
+      size: string
+    }
+  }
 }
 
 export default function TestingStep({
@@ -22,8 +31,13 @@ export default function TestingStep({
   isTestingActive,
   onNext,
   onBack,
+  agentConfig,
 }: TestingStepProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Default values if not provided
+  const chatName = agentConfig?.chatName || "Critter Support"
+  const primaryColor = agentConfig?.widgetConfig?.primaryColor || "#94ABD6"
 
   // Scroll to bottom of messages when new messages are added
   useEffect(() => {
@@ -46,16 +60,22 @@ export default function TestingStep({
       </p>
 
       <div className="bg-gray-50 border border-gray-200 rounded-lg mb-6">
-        <div className="p-4 border-b border-gray-200">
-          <h3 className="font-medium text-gray-700 header-font">Test Chat</h3>
+        <div className="p-4 border-b border-gray-200" style={{ backgroundColor: primaryColor }}>
+          <div className="flex items-center">
+            <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-white font-medium mr-3">
+              {chatName.charAt(0)}
+            </div>
+            <h3 className="font-medium text-white header-font">{chatName}</h3>
+          </div>
         </div>
         <div className="h-80 overflow-y-auto p-4">
           {testMessages.map((message, index) => (
             <div key={index} className={`mb-4 flex ${message.isUser ? "justify-end" : "justify-start"}`}>
               <div
                 className={`max-w-[80%] p-3 rounded-lg ${
-                  message.isUser ? "bg-[#94ABD6] text-white" : "bg-gray-100 text-gray-800"
+                  message.isUser ? `bg-[${primaryColor}] text-white` : "bg-gray-100 text-gray-800"
                 } body-font`}
+                style={message.isUser ? { backgroundColor: primaryColor } : {}}
               >
                 {message.text}
               </div>
@@ -86,8 +106,9 @@ export default function TestingStep({
             className={`px-4 py-2 rounded-r-lg flex items-center justify-center ${
               !testInput.trim() || isTestingActive
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-[#94ABD6] text-white hover:bg-[#7a90ba]"
+                : "text-white hover:opacity-90"
             } transition-colors`}
+            style={{ backgroundColor: !testInput.trim() || isTestingActive ? undefined : primaryColor }}
           >
             {isTestingActive ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </button>
@@ -115,7 +136,8 @@ export default function TestingStep({
         </button>
         <button
           onClick={onNext}
-          className="flex items-center px-6 py-2 rounded-lg bg-[#94ABD6] text-white hover:bg-[#7a90ba] transition-colors body-font"
+          className="flex items-center px-6 py-2 rounded-lg text-white hover:opacity-90 transition-colors body-font"
+          style={{ backgroundColor: primaryColor }}
         >
           Complete Setup
           <ArrowRight className="ml-2 h-4 w-4" />
