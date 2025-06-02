@@ -1,6 +1,7 @@
 "use client"
 import { useRef, useEffect } from "react"
 import type React from "react"
+import { formatMessage } from "../../utils/message-formatter"
 
 import { ArrowRight, ArrowLeft, Send, Loader2 } from "lucide-react"
 
@@ -77,7 +78,15 @@ export default function TestingStep({
                 } body-font`}
                 style={message.isUser ? { backgroundColor: primaryColor } : {}}
               >
-                {message.text}
+                {message.isUser ? (
+                  message.text
+                ) : (
+                  <div
+                    dangerouslySetInnerHTML={{
+                      __html: formatMessage(message.text).html,
+                    }}
+                  />
+                )}
               </div>
             </div>
           ))}

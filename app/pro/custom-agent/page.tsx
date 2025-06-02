@@ -47,6 +47,77 @@ export default function CustomAgentSetupPage() {
   const [testInput, setTestInput] = useState("")
   const [isTestingActive, setIsTestingActive] = useState(false)
 
+  // Function to parse webhook response
+  const parseWebhookResponse = (data: any): string => {
+    try {
+      console.log("Raw webhook data:", data)
+
+      // Handle array response
+      if (Array.isArray(data) && data.length > 0) {
+        const firstItem = data[0]
+        console.log("First item:", firstItem)
+
+        // Check if it has an output field
+        if (firstItem.output) {
+          const output = firstItem.output
+          console.log("Output field:", output)
+
+          // If output is a string that looks like JSON, parse it
+          if (typeof output === "string") {
+            try {
+              const parsedOutput = JSON.parse(output)
+              console.log("Parsed output:", parsedOutput)
+
+              // If it's an array, get the first item
+              if (Array.isArray(parsedOutput) && parsedOutput.length > 0) {
+                const innerItem = parsedOutput[0]
+                console.log("Inner item:", innerItem)
+
+                // Get the actual message content
+                if (innerItem.output) {
+                  return innerItem.output
+                }
+              }
+            } catch (parseError) {
+              console.log("Could not parse output as JSON, using as-is:", parseError)
+              return output
+            }
+          }
+
+          return output
+        }
+
+        // Check for other possible response fields
+        if (firstItem.response) {
+          return firstItem.response
+        }
+
+        if (firstItem.message) {
+          return firstItem.message
+        }
+      }
+
+      // If data is not an array, check for direct fields
+      if (data.output) {
+        return data.output
+      }
+
+      if (data.response) {
+        return data.response
+      }
+
+      if (data.message) {
+        return data.message
+      }
+
+      console.log("Could not extract message from response:", data)
+      return "I'm sorry, I couldn't process that request."
+    } catch (error) {
+      console.error("Error parsing webhook response:", error)
+      return "I'm sorry, there was an error processing your request."
+    }
+  }
+
   // Function to check enrollment status
   const checkEnrollmentStatus = async (name: string) => {
     setIsLoading(true)
@@ -244,15 +315,12 @@ export default function CustomAgentSetupPage() {
       const data = await response.json()
       console.log("Test agent response:", data)
 
-      // Handle array response if needed
-      const result = Array.isArray(data) ? data[0] : data
+      // Parse the response using our new function
+      const responseMessage = parseWebhookResponse(data)
 
       // Add agent response to chat
       setTimeout(() => {
-        setTestMessages((prev) => [
-          ...prev,
-          { text: result?.response || "I'm sorry, I couldn't process that request.", isUser: false },
-        ])
+        setTestMessages((prev) => [...prev, { text: responseMessage, isUser: false }])
         setIsTestingActive(false)
       }, 1000)
     } catch (err) {
