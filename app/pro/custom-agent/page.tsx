@@ -69,7 +69,9 @@ export default function CustomAgentSetupPage() {
 
         if (professional) {
           setProfessionalId(professional.professional_id || null)
-          setIsEnrolled(professional.enrollment_status === "enrolled")
+          setIsEnrolled(
+            professional.enrollment_status === "enrolled" || professional.enrollment_status === "already_enrolled",
+          )
           return true
         } else {
           setError("Professional not found")
