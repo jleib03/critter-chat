@@ -116,14 +116,21 @@ export default function CustomAgentSetupPage() {
       const data = await response.json()
       console.log("Toggle enrollment response:", data)
 
-      // Handle array response if needed
-      const result = Array.isArray(data) ? data[0] : data
+      // Handle array response for enrollment
+      if (Array.isArray(data) && data.length > 0) {
+        const result = data[0]
 
-      if (result && (result.success || result.enrollment_status === "enrolled")) {
-        setIsEnrolled(enroll)
-        return true
+        // Check for successful enrollment based on the response structure
+        if (result && (result.operation_type === "updated" || result.enrolled_at)) {
+          setIsEnrolled(enroll)
+          setError(null) // Clear any previous errors
+          return true
+        } else {
+          setError(result?.message || `Failed to ${enroll ? "enroll" : "unenroll"}`)
+          return false
+        }
       } else {
-        setError(result?.message || `Failed to ${enroll ? "enroll" : "unenroll"}`)
+        setError(`Failed to ${enroll ? "enroll" : "unenroll"}`)
         return false
       }
     } catch (err) {
