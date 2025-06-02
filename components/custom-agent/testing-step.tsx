@@ -1,7 +1,6 @@
 "use client"
 import { useRef, useEffect } from "react"
 import type React from "react"
-import { formatMessage } from "../../utils/message-formatter"
 
 import { ArrowRight, ArrowLeft, Send, Loader2 } from "lucide-react"
 
@@ -77,17 +76,10 @@ export default function TestingStep({
                   message.isUser ? `text-white` : "bg-gray-100 text-gray-800"
                 } body-font`}
                 style={message.isUser ? { backgroundColor: primaryColor } : {}}
-              >
-                {message.isUser ? (
-                  message.text
-                ) : (
-                  <div
-                    dangerouslySetInnerHTML={{
-                      __html: formatMessage(message.text).html,
-                    }}
-                  />
-                )}
-              </div>
+                dangerouslySetInnerHTML={{
+                  __html: message.isUser ? message.text : formatMessageContent(message.text),
+                }}
+              />
             </div>
           ))}
           {isTestingActive && (
@@ -154,4 +146,17 @@ export default function TestingStep({
       </div>
     </div>
   )
+}
+
+// Helper function to format message content
+function formatMessageContent(text: string): string {
+  // Convert markdown-style formatting to HTML
+  const formatted = text
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Bold text
+    .replace(/\n\n/g, "<br><br>") // Double line breaks
+    .replace(/\n/g, "<br>") // Single line breaks
+    .replace(/(\d+\.\s)/g, "<br>$1") // Number lists
+    .replace(/(-\s)/g, "<br>&nbsp;&nbsp;&bull;&nbsp;") // Bullet points
+
+  return formatted
 }

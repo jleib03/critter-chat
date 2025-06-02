@@ -47,70 +47,59 @@ export default function CustomAgentSetupPage() {
   const [testInput, setTestInput] = useState("")
   const [isTestingActive, setIsTestingActive] = useState(false)
 
-  // Function to parse webhook response
+  // Function to parse nested webhook response
   const parseWebhookResponse = (data: any): string => {
     try {
-      console.log("Raw webhook data:", data)
+      console.log("Raw response data:", data)
 
       // Handle array response
       if (Array.isArray(data) && data.length > 0) {
         const firstItem = data[0]
-        console.log("First item:", firstItem)
 
         // Check if it has an output field
         if (firstItem.output) {
-          const output = firstItem.output
-          console.log("Output field:", output)
+          try {
+            // Try to parse the output as JSON
+            const parsedOutput = JSON.parse(firstItem.output)
+            console.log("Parsed output:", parsedOutput)
 
-          // If output is a string that looks like JSON, parse it
-          if (typeof output === "string") {
-            try {
-              const parsedOutput = JSON.parse(output)
-              console.log("Parsed output:", parsedOutput)
-
-              // If it's an array, get the first item
-              if (Array.isArray(parsedOutput) && parsedOutput.length > 0) {
-                const innerItem = parsedOutput[0]
-                console.log("Inner item:", innerItem)
-
-                // Get the actual message content
-                if (innerItem.output) {
-                  return innerItem.output
-                }
+            // If it's an array, get the first item
+            if (Array.isArray(parsedOutput) && parsedOutput.length > 0) {
+              const innerItem = parsedOutput[0]
+              if (innerItem.output) {
+                return innerItem.output
               }
-            } catch (parseError) {
-              console.log("Could not parse output as JSON, using as-is:", parseError)
-              return output
             }
-          }
 
-          return output
+            // If it's an object with output, return that
+            if (parsedOutput.output) {
+              return parsedOutput.output
+            }
+
+            // Otherwise return the parsed output as string
+            return String(parsedOutput)
+          } catch (parseError) {
+            console.log("Could not parse output as JSON, returning as string:", firstItem.output)
+            return firstItem.output
+          }
         }
 
-        // Check for other possible response fields
+        // Check for direct response field
         if (firstItem.response) {
           return firstItem.response
         }
 
-        if (firstItem.message) {
-          return firstItem.message
-        }
+        // Return first item as string if no specific field found
+        return String(firstItem)
       }
 
-      // If data is not an array, check for direct fields
-      if (data.output) {
-        return data.output
+      // Handle direct object response
+      if (data && typeof data === "object") {
+        if (data.output) return data.output
+        if (data.response) return data.response
       }
 
-      if (data.response) {
-        return data.response
-      }
-
-      if (data.message) {
-        return data.message
-      }
-
-      console.log("Could not extract message from response:", data)
+      // Fallback
       return "I'm sorry, I couldn't process that request."
     } catch (error) {
       console.error("Error parsing webhook response:", error)
