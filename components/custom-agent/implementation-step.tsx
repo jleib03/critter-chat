@@ -1,395 +1,368 @@
-"use client"
-import { useState } from "react"
-import { ArrowRight, ArrowLeft, Copy, Check, Code, Palette, MessageSquare, Settings } from "lucide-react"
-
-type ImplementationStepProps = {
-  professionalId: string
-  agentConfig: {
-    chatName: string
-    chatWelcomeMessage: string
+const generateEmbedCode = () => {
+  const config = {
+    professionalId: professionalId,
+    webhookUrl: "https://jleib03.app.n8n.cloud/webhook-test/803d260b-1b17-4abf-8079-2d40225c29b0",
+    chatName: agentConfig.chatName,
+    welcomeMessage: agentConfig.chatWelcomeMessage,
+    primaryColor: agentConfig.widgetConfig?.primaryColor || "#94ABD6",
+    position: agentConfig.widgetConfig?.position || "bottom-right",
+    size: agentConfig.widgetConfig?.size || "medium",
   }
-  setAgentConfig?: (config: any) => void
-  onNext: () => void
-  onBack: () => void
+
+  return `<!-- Critter Support Widget -->
+<div id="critter-support-widget"></div>
+<script>
+(function() {
+  // Widget configuration
+  const CRITTER_CONFIG = ${JSON.stringify(config, null, 2)};
+  
+  // Message formatting function
+  function formatMessage(message, htmlMessage) {
+    if (htmlMessage) {
+      return { text: removeMarkdown(message), html: enhanceHtmlMessage(htmlMessage) };
+    }
+    
+    const cleanText = removeMarkdown(message);
+    
+    // Check for booking lists
+    if (message.includes("Here are your existing bookings")) {
+      return formatBookingList(message, cleanText);
+    }
+    
+    // Check for invoice lists  
+    if (message.includes("outstanding invoices")) {
+      return formatInvoiceList(message, cleanText);
+    }
+    
+    // Default formatting
+    return { text: cleanText, html: markdownToHtml(message) };
+  }
+  
+  function removeMarkdown(text) {
+    return text.replace(/\\*\\*(.*?)\\*\\*/g, "$1");
+  }
+  
+  function markdownToHtml(text) {
+    let html = text.replace(/\\*\\*(.*?)\\*\\*/g, "<strong>$1</strong>");
+    html = html.replace(/\\n/g, "<br>");
+    return html;
+  }
+  
+  function enhanceHtmlMessage(html) {
+    // Add styling classes
+    html = html.replace(/<ul>/g, '<ul class="bullet-list ml-4">');
+    html = html.replace(/<ol>/g, '<ol class="numbered-list ml-4">');
+    html = html.replace(/<li>/g, '<li class="list-item">');
+    html = html.replace(/<strong>/g, '<strong class="font-bold">');
+    return html;
+  }
+  
+  function formatBookingList(message, cleanText) {
+    // Simplified booking list formatting for embedded widget
+    const bookingRegex = /\\d+\\. \\*\\*(.*?)\\*\\*: (.*?)(?=\\n|$)/g;
+    let match;
+    const bookings = [];
+    
+    while ((match = bookingRegex.exec(message)) !== null) {
+      bookings.push({ date: match[1], time: match[2] });
+    }
+    
+    let htmlOutput = '<div class="bookings-list">';
+    htmlOutput += '<strong>Your upcoming bookings:</strong><br><br>';
+    htmlOutput += '<ul class="bullet-list ml-4">';
+    
+    bookings.forEach(booking => {
+      htmlOutput += \`<li><strong>\${booking.date}</strong>: \${booking.time}</li>\`;
+    });
+    
+    htmlOutput += '</ul></div>';
+    
+    return { text: cleanText, html: htmlOutput };
+  }
+  
+  function formatInvoiceList(message, cleanText) {
+    // Simplified invoice list formatting for embedded widget
+    const invoiceRegex = /(\\d+)\\. \\*\\*Invoice Number:\\*\\* (.*?) \\| \\*\\*Status:\\*\\* (.*?) \\| \\*\\*Due Date:\\*\\* (.*?)(?=\\n|$)/g;
+    let match;
+    const invoices = [];
+    
+    while ((match = invoiceRegex.exec(message)) !== null) {
+      invoices.push({
+        number: match[2],
+        status: match[3], 
+        dueDate: match[4]
+      });
+    }
+    
+    let htmlOutput = '<div class="invoices-list">';
+    htmlOutput += '<strong>Your outstanding invoices:</strong><br><br>';
+    htmlOutput += '<ul class="bullet-list ml-4">';
+    
+    invoices.forEach(invoice => {
+      htmlOutput += \`<li><strong>Invoice \${invoice.number}</strong><ul class="ml-4"><li>Status: \${invoice.status}</li><li>Due: \${invoice.dueDate}</li></ul></li>\`;
+    });
+    
+    htmlOutput += '</ul></div>';
+    
+    return { text: cleanText, html: htmlOutput };
+  }
+
+  // Widget creation and chat functionality
+  function createWidget() {
+    const widgetContainer = document.getElementById('critter-support-widget');
+    if (!widgetContainer) return;
+
+    // Create widget HTML structure
+    const widgetHTML = \`
+      <div id="critter-chat-widget" style="
+        position: fixed;
+        \${CRITTER_CONFIG.position.includes('bottom') ? 'bottom: 20px;' : 'top: 20px;'}
+        \${CRITTER_CONFIG.position.includes('right') ? 'right: 20px;' : 'left: 20px;'}
+        z-index: 9999;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      ">
+        <!-- Chat toggle button -->
+        <div id="critter-chat-toggle" style="
+          width: \${CRITTER_CONFIG.size === 'large' ? '70px' : CRITTER_CONFIG.size === 'small' ? '50px' : '60px'};
+          height: \${CRITTER_CONFIG.size === 'large' ? '70px' : CRITTER_CONFIG.size === 'small' ? '50px' : '60px'};
+          background-color: \${CRITTER_CONFIG.primaryColor};
+          border-radius: 50%;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          transition: all 0.3s ease;
+        ">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+        </div>
+        
+        <!-- Chat window -->
+        <div id="critter-chat-window" style="
+          display: none;
+          position: absolute;
+          bottom: 80px;
+          right: 0;
+          width: \${CRITTER_CONFIG.size === 'large' ? '400px' : CRITTER_CONFIG.size === 'small' ? '300px' : '350px'};
+          height: \${CRITTER_CONFIG.size === 'large' ? '500px' : CRITTER_CONFIG.size === 'small' ? '400px' : '450px'};
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        ">
+          <!-- Chat header -->
+          <div style="
+            background-color: \${CRITTER_CONFIG.primaryColor};
+            color: white;
+            padding: 16px;
+            font-weight: 600;
+            font-size: 16px;
+          ">
+            \${CRITTER_CONFIG.chatName}
+          </div>
+          
+          <!-- Chat messages -->
+          <div id="critter-chat-messages" style="
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.5;
+          ">
+            <div style="
+              background: #f3f4f6;
+              padding: 12px;
+              border-radius: 8px;
+              margin-bottom: 12px;
+            ">
+              \${CRITTER_CONFIG.welcomeMessage}
+            </div>
+          </div>
+          
+          <!-- Chat input -->
+          <div style="
+            padding: 16px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 8px;
+          ">
+            <input 
+              id="critter-chat-input" 
+              type="text" 
+              placeholder="Type your message..."
+              style="
+                flex: 1;
+                padding: 8px 12px;
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+                outline: none;
+                font-size: 14px;
+              "
+            />
+            <button 
+              id="critter-chat-send"
+              style="
+                background-color: \${CRITTER_CONFIG.primaryColor};
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 500;
+              "
+            >
+              Send
+            </button>
+          </div>
+        </div>
+      </div>
+    \`;
+
+    widgetContainer.innerHTML = widgetHTML;
+
+    // Add event listeners
+    const toggle = document.getElementById('critter-chat-toggle');
+    const window = document.getElementById('critter-chat-window');
+    const input = document.getElementById('critter-chat-input');
+    const sendBtn = document.getElementById('critter-chat-send');
+    const messages = document.getElementById('critter-chat-messages');
+
+    let isOpen = false;
+    let sessionId = 'embedded_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+
+    toggle.addEventListener('click', () => {
+      isOpen = !isOpen;
+      window.style.display = isOpen ? 'flex' : 'none';
+    });
+
+    async function sendMessage(messageText) {
+      if (!messageText.trim()) return;
+
+      // Add user message to chat
+      addMessage(messageText, true);
+      input.value = '';
+
+      // Show typing indicator
+      const typingDiv = document.createElement('div');
+      typingDiv.id = 'typing-indicator';
+      typingDiv.style.cssText = 'background: #f3f4f6; padding: 12px; border-radius: 8px; margin-bottom: 12px;';
+      typingDiv.innerHTML = 'Typing...';
+      messages.appendChild(typingDiv);
+      messages.scrollTop = messages.scrollHeight;
+
+      try {
+        const response = await fetch(CRITTER_CONFIG.webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'support_conversation',
+            professionalId: CRITTER_CONFIG.professionalId,
+            message: messageText,
+            userInfo: {
+              source: 'embedded_widget',
+              sessionId: sessionId,
+              timestamp: new Date().toISOString(),
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(\`HTTP error! status: \${response.status}\`);
+        }
+
+        const data = await response.json();
+        
+        // Remove typing indicator
+        const typing = document.getElementById('typing-indicator');
+        if (typing) typing.remove();
+
+        // Format and add response message
+        if (data.message) {
+          const formattedMessage = formatMessage(data.message, data.htmlMessage);
+          addMessage(formattedMessage.html || formattedMessage.text, false, true);
+        } else {
+          addMessage('Sorry, I encountered an error. Please try again.', false);
+        }
+
+      } catch (error) {
+        console.error('Error sending message:', error);
+        
+        // Remove typing indicator
+        const typing = document.getElementById('typing-indicator');
+        if (typing) typing.remove();
+        
+        addMessage('Sorry, there was an error processing your request. Please try again later.', false);
+      }
+    }
+
+    function addMessage(text, isUser, isHtml = false) {
+      const messageDiv = document.createElement('div');
+      messageDiv.style.cssText = \`
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        max-width: 85%;
+        \${isUser 
+          ? \`background-color: \${CRITTER_CONFIG.primaryColor}; color: white; margin-left: auto;\`
+          : 'background: #f3f4f6; color: #374151; margin-right: auto;'
+        }
+      \`;
+      
+      if (isHtml) {
+        messageDiv.innerHTML = text;
+      } else {
+        messageDiv.textContent = text;
+      }
+      
+      messages.appendChild(messageDiv);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    sendBtn.addEventListener('click', () => sendMessage(input.value));
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendMessage(input.value);
+    });
+  }
+
+  // Initialize widget when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', createWidget);
+  } else {
+    createWidget();
+  }
+})();
+</script>
+
+<style>
+/* Additional styles for embedded widget */
+#critter-support-widget .bullet-list {
+  list-style-type: disc;
+  margin-left: 1rem;
 }
 
-export default function ImplementationStep({
-  professionalId,
-  agentConfig,
-  setAgentConfig,
-  onNext,
-  onBack,
-}: ImplementationStepProps) {
-  const [activeTab, setActiveTab] = useState("customize")
-  const [activePlatform, setActivePlatform] = useState("squarespace")
-  const [copied, setCopied] = useState<string | null>(null)
-  const [widgetConfig, setWidgetConfig] = useState({
-    primaryColor: "#94ABD6",
-    position: "bottom-right",
-    size: "medium",
-    chatName: agentConfig.chatName,
-    chatWelcomeMessage: agentConfig.chatWelcomeMessage,
-  })
+#critter-support-widget .numbered-list {
+  list-style-type: decimal;
+  margin-left: 1rem;
+}
 
-  const handleCopy = (text: string, id: string) => {
-    navigator.clipboard.writeText(text)
-    setCopied(id)
-    setTimeout(() => setCopied(null), 2000)
-  }
+#critter-support-widget .list-item {
+  margin-bottom: 0.25rem;
+}
 
-  const handleWidgetConfigChange = (field: string, value: string) => {
-    const newConfig = { ...widgetConfig, [field]: value }
-    setWidgetConfig(newConfig)
+#critter-support-widget .font-bold {
+  font-weight: 600;
+}
 
-    // Update the main agent config if the function is available
-    if (setAgentConfig && (field === "chatName" || field === "chatWelcomeMessage")) {
-      setAgentConfig({
-        ...agentConfig,
-        [field]: value,
-      })
-    }
-  }
-
-  const getEmbedCode = (platform: string) => {
-    const baseCode = `<div id="critter-support-widget" 
-  data-professional-id="${professionalId}"
-  data-primary-color="${widgetConfig.primaryColor}"
-  data-position="${widgetConfig.position}"
-  data-size="${widgetConfig.size}">
-</div>
-<script src="https://critter.com/support-widget.js" async></script>`
-
-    switch (platform) {
-      case "squarespace":
-        return `<!-- Add this code to your Squarespace site in Code Injection or Custom HTML Block -->
-${baseCode}`
-      case "wordpress":
-        return `<!-- Add this code to your WordPress site using a Custom HTML block or in your theme's footer.php -->
-${baseCode}`
-      case "wix":
-        return `<!-- Add this code to your Wix site using the Custom Code (HTML iframe) element -->
-${baseCode}`
-      case "custom":
-        return `<!-- Add this code to your website's HTML, ideally just before the closing </body> tag -->
-${baseCode}`
-      default:
-        return baseCode
-    }
-  }
-
-  const getPositionStyle = () => {
-    switch (widgetConfig.position) {
-      case "bottom-left":
-        return "bottom-4 left-4"
-      case "bottom-right":
-        return "bottom-4 right-4"
-      case "top-left":
-        return "top-4 left-4"
-      case "top-right":
-        return "top-4 right-4"
-      default:
-        return "bottom-4 right-4"
-    }
-  }
-
-  const getSizeClasses = () => {
-    switch (widgetConfig.size) {
-      case "small":
-        return "w-64 h-80"
-      case "medium":
-        return "w-80 h-96"
-      case "large":
-        return "w-96 h-[28rem]"
-      default:
-        return "w-80 h-96"
-    }
-  }
-
-  // Handle next step with widget config
-  const handleNext = () => {
-    // Update the main agent config with all widget settings
-    if (setAgentConfig) {
-      setAgentConfig({
-        ...agentConfig,
-        chatName: widgetConfig.chatName,
-        chatWelcomeMessage: widgetConfig.chatWelcomeMessage,
-        widgetConfig: {
-          primaryColor: widgetConfig.primaryColor,
-          position: widgetConfig.position,
-          size: widgetConfig.size,
-        },
-      })
-    }
-    onNext()
-  }
-
-  return (
-    <div>
-      <h2 className="text-2xl font-bold mb-4 header-font">Step 3: Customization & Implementation</h2>
-      <p className="text-gray-600 mb-6 body-font">
-        Customize your chat widget appearance and get the code to add it to your website.
-      </p>
-
-      {/* Tab Navigation */}
-      <div className="flex border-b border-gray-200 mb-6">
-        <button
-          className={`py-2 px-4 font-medium text-sm focus:outline-none ${
-            activeTab === "customize"
-              ? "border-b-2 border-[#94ABD6] text-[#94ABD6]"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-          onClick={() => setActiveTab("customize")}
-        >
-          <Palette className="inline w-4 h-4 mr-2" />
-          Customize Widget
-        </button>
-        <button
-          className={`py-2 px-4 font-medium text-sm focus:outline-none ${
-            activeTab === "install" ? "border-b-2 border-[#94ABD6] text-[#94ABD6]" : "text-gray-500 hover:text-gray-700"
-          }`}
-          onClick={() => setActiveTab("install")}
-        >
-          <Code className="inline w-4 h-4 mr-2" />
-          Installation Code
-        </button>
-      </div>
-
-      {/* Customize Tab */}
-      {activeTab === "customize" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Customization Controls */}
-          <div className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 header-font">Chat Agent Name</label>
-              <input
-                type="text"
-                value={widgetConfig.chatName}
-                onChange={(e) => handleWidgetConfigChange("chatName", e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#94ABD6] body-font"
-                placeholder="Name your chat agent"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 header-font">Welcome Message</label>
-              <textarea
-                value={widgetConfig.chatWelcomeMessage}
-                onChange={(e) => handleWidgetConfigChange("chatWelcomeMessage", e.target.value)}
-                rows={3}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#94ABD6] body-font"
-                placeholder="The first message customers will see"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 header-font">Primary Color</label>
-              <div className="flex items-center space-x-3">
-                <input
-                  type="color"
-                  value={widgetConfig.primaryColor}
-                  onChange={(e) => handleWidgetConfigChange("primaryColor", e.target.value)}
-                  className="w-12 h-12 border border-gray-300 rounded-lg cursor-pointer"
-                />
-                <input
-                  type="text"
-                  value={widgetConfig.primaryColor}
-                  onChange={(e) => handleWidgetConfigChange("primaryColor", e.target.value)}
-                  className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#94ABD6] body-font"
-                  placeholder="#94ABD6"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 header-font">Widget Position</label>
-              <select
-                value={widgetConfig.position}
-                onChange={(e) => handleWidgetConfigChange("position", e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#94ABD6] body-font"
-              >
-                <option value="bottom-right">Bottom Right</option>
-                <option value="bottom-left">Bottom Left</option>
-                <option value="top-right">Top Right</option>
-                <option value="top-left">Top Left</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 header-font">Widget Size</label>
-              <select
-                value={widgetConfig.size}
-                onChange={(e) => handleWidgetConfigChange("size", e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#94ABD6] body-font"
-              >
-                <option value="small">Small (320x400px)</option>
-                <option value="medium">Medium (384x480px)</option>
-                <option value="large">Large (448x560px)</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Live Preview */}
-          <div className="relative">
-            <h3 className="text-lg font-medium text-gray-900 mb-4 header-font">Live Preview</h3>
-            <div className="relative bg-gray-100 rounded-lg h-96 overflow-hidden border-2 border-gray-200">
-              {/* Simulated website background */}
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-                <div className="bg-white rounded-lg p-4 mb-4">
-                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                </div>
-                <div className="bg-white rounded-lg p-4">
-                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                </div>
-              </div>
-
-              {/* Chat Widget Preview */}
-              <div className={`absolute ${getPositionStyle()}`}>
-                <div className={`${getSizeClasses()} bg-white rounded-lg shadow-xl border overflow-hidden`}>
-                  {/* Widget Header */}
-                  <div
-                    className="p-4 text-white flex items-center justify-between"
-                    style={{ backgroundColor: widgetConfig.primaryColor }}
-                  >
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-white font-medium mr-3">
-                        {widgetConfig.chatName.charAt(0)}
-                      </div>
-                      <div>
-                        <div className="font-medium text-sm">{widgetConfig.chatName}</div>
-                        <div className="text-xs opacity-90">Online</div>
-                      </div>
-                    </div>
-                    <Settings className="w-4 h-4 opacity-75" />
-                  </div>
-
-                  {/* Chat Messages */}
-                  <div className="flex-1 p-4 space-y-3 bg-gray-50">
-                    <div className="flex">
-                      <div className="bg-white rounded-lg p-3 max-w-[80%] shadow-sm">
-                        <div className="text-sm body-font">
-                          {widgetConfig.chatWelcomeMessage || "Hello! How can I help you today?"}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Input Area */}
-                  <div className="p-3 border-t bg-white">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="text"
-                        placeholder="Type your message..."
-                        className="flex-1 p-2 border border-gray-300 rounded-lg text-sm"
-                        disabled
-                      />
-                      <button
-                        className="p-2 rounded-lg text-white"
-                        style={{ backgroundColor: widgetConfig.primaryColor }}
-                        disabled
-                      >
-                        <MessageSquare className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Installation Tab */}
-      {activeTab === "install" && (
-        <div>
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <Code className="h-5 w-5 text-blue-600" />
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-blue-800 header-font">Your Professional ID</h3>
-                <p className="mt-1 text-sm text-blue-700 body-font">
-                  Your unique Professional ID is: <span className="font-mono font-bold">{professionalId}</span>
-                </p>
-                <p className="mt-1 text-sm text-blue-700 body-font">
-                  This ID and your customization settings are automatically included in the code snippets below.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Platform Tabs */}
-          <div className="flex border-b border-gray-200 mb-6 overflow-x-auto">
-            {[
-              { id: "squarespace", name: "Squarespace" },
-              { id: "wordpress", name: "WordPress" },
-              { id: "wix", name: "Wix" },
-              { id: "custom", name: "Custom HTML" },
-            ].map((platform) => (
-              <button
-                key={platform.id}
-                className={`py-2 px-4 font-medium text-sm whitespace-nowrap focus:outline-none ${
-                  activePlatform === platform.id
-                    ? "border-b-2 border-[#94ABD6] text-[#94ABD6]"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-                onClick={() => setActivePlatform(platform.id)}
-              >
-                {platform.name}
-              </button>
-            ))}
-          </div>
-
-          {/* Installation Instructions */}
-          <div className="space-y-6">
-            <div className="relative">
-              <pre className="bg-gray-800 text-gray-200 p-4 rounded-lg overflow-x-auto text-sm font-mono">
-                {getEmbedCode(activePlatform)}
-              </pre>
-              <button
-                onClick={() => handleCopy(getEmbedCode(activePlatform), activePlatform)}
-                className="absolute top-2 right-2 p-1 rounded-md bg-gray-700 text-gray-200 hover:bg-gray-600"
-                aria-label="Copy code"
-              >
-                {copied === activePlatform ? (
-                  <Check className="h-4 w-4 text-green-400" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
-              </button>
-            </div>
-
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-yellow-800 mb-2">Installation Tips:</h4>
-              <ul className="text-sm text-yellow-700 space-y-1">
-                <li>• The widget will automatically load with your custom colors and settings</li>
-                <li>• You can change the position and size by updating the data attributes</li>
-                <li>• The widget is responsive and will adapt to different screen sizes</li>
-                <li>• Test the widget on your site to ensure it appears correctly</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="flex justify-between mt-8">
-        <button
-          onClick={onBack}
-          className="flex items-center px-6 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors body-font"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </button>
-        <button
-          onClick={handleNext}
-          className="flex items-center px-6 py-2 rounded-lg bg-[#94ABD6] text-white hover:bg-[#7a90ba] transition-colors body-font"
-        >
-          Next: Test Your Agent
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </button>
-      </div>
-    </div>
-  )
+#critter-support-widget ul ul {
+  margin-top: 0.5rem;
+  margin-left: 1rem;
+}
+</style>`
 }
