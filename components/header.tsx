@@ -26,10 +26,6 @@ export default function Header() {
         >
           Download on Android
         </Link>
-
-        <Link href="/pro/custom-agent" className="text-[#333] hover:text-[#94ABD6] transition-colors text-sm body-font">
-          Custom Support Agent
-        </Link>
       </div>
 
       <Link href="/" className="absolute left-1/2 transform -translate-x-1/2">
