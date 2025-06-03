@@ -47,7 +47,7 @@ export default function CustomAgentSetupPage() {
   const [testInput, setTestInput] = useState("")
   const [isTestingActive, setIsTestingActive] = useState(false)
 
-  // Function to parse nested webhook response
+  // Simplified function to parse webhook response
   const parseWebhookResponse = (data: any): string => {
     try {
       console.log("Raw response data:", data)
@@ -56,81 +56,14 @@ export default function CustomAgentSetupPage() {
       if (Array.isArray(data) && data.length > 0) {
         const firstItem = data[0]
 
-        // Check if it has an output field
+        // Since n8n now handles all formatting, we just need to extract the output
         if (firstItem.output) {
-          try {
-            // Try to parse the output as JSON (first level)
-            const parsedOutput = JSON.parse(firstItem.output)
-            console.log("First level parsed output:", parsedOutput)
-
-            // Check if the parsed output is an array with nested JSON
-            if (Array.isArray(parsedOutput) && parsedOutput.length > 0) {
-              const innerItem = parsedOutput[0]
-
-              // If the inner item has an output field that's a string, try to parse it again
-              if (innerItem.output && typeof innerItem.output === "string") {
-                try {
-                  const doubleParsed = JSON.parse(innerItem.output)
-                  console.log("Double parsed output:", doubleParsed)
-
-                  // If this is an array, get the first item's output
-                  if (Array.isArray(doubleParsed) && doubleParsed.length > 0 && doubleParsed[0].output) {
-                    return doubleParsed[0].output
-                  }
-
-                  // If it's an object with output, return that
-                  if (doubleParsed.output) {
-                    return doubleParsed.output
-                  }
-
-                  // Otherwise return as string
-                  return String(doubleParsed)
-                } catch (doubleParseError) {
-                  console.log("Could not double-parse, using inner output as string:", innerItem.output)
-                  return innerItem.output
-                }
-              }
-
-              // If inner item has direct output, return it
-              if (innerItem.output) {
-                return innerItem.output
-              }
-
-              // If the array item is just a string, return it
-              if (typeof innerItem === "string") {
-                return innerItem
-              }
-            }
-
-            // If it's an object with output, return that
-            if (parsedOutput.output) {
-              return parsedOutput.output
-            }
-
-            // If it's just a string, return it
-            if (typeof parsedOutput === "string") {
-              return parsedOutput
-            }
-
-            // Otherwise return the parsed output as string
-            return String(parsedOutput)
-          } catch (parseError) {
-            console.log("Could not parse output as JSON, returning as string:", firstItem.output)
-            return firstItem.output
-          }
+          return firstItem.output
         }
 
-        // Check for direct response field
-        if (firstItem.response) {
-          return firstItem.response
-        }
-
-        // Check if the first item itself is a string
-        if (typeof firstItem === "string") {
-          return firstItem
-        }
-
-        // Return first item as string if no specific field found
+        // Fallback for other response formats
+        if (firstItem.response) return firstItem.response
+        if (typeof firstItem === "string") return firstItem
         return String(firstItem)
       }
 

@@ -77,11 +77,7 @@ export default function TestingStep({
                 } body-font`}
                 style={message.isUser ? { backgroundColor: primaryColor } : {}}
               >
-                {message.isUser ? (
-                  message.text
-                ) : (
-                  <div dangerouslySetInnerHTML={{ __html: formatMessageContent(message.text) }} />
-                )}
+                {message.isUser ? message.text : <div dangerouslySetInnerHTML={{ __html: message.text }} />}
               </div>
             </div>
           ))}
@@ -151,27 +147,9 @@ export default function TestingStep({
   )
 }
 
-// Enhanced helper function to format message content
+// Simplified helper function since formatting is now done in n8n
 function formatMessageContent(text: string): string {
-  // First, clean up any JSON artifacts that might have leaked through
-  let cleanText = text
-
-  // Remove any JSON structure artifacts
-  cleanText = cleanText.replace(/^\[?\{?"?output"?:\s*"?/, "")
-  cleanText = cleanText.replace(/"?\}?\]?$/, "")
-  cleanText = cleanText.replace(/\\n/g, "\n")
-  cleanText = cleanText.replace(/\\"/g, '"')
-
-  // Convert markdown-style formatting to HTML
-  const formatted = cleanText
-    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Bold text
-    .replace(/\n\n/g, "<br><br>") // Double line breaks for paragraphs
-    .replace(/\n•\s/g, "<br>• ") // Bullet points with line breaks
-    .replace(/\n-\s/g, "<br>• ") // Convert dashes to bullet points
-    .replace(/\n(\d+\.)\s/g, "<br><br>$1 ") // Numbered lists with spacing
-    .replace(/\n/g, "<br>") // Remaining single line breaks
-    .replace(/^<br>/, "") // Remove leading line break
-    .replace(/(<br>){3,}/g, "<br><br>") // Limit consecutive line breaks
-
-  return formatted
+  // n8n now handles all the complex formatting, so we just return the text
+  // The text should already be properly formatted with HTML
+  return text
 }
