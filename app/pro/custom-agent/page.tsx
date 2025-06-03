@@ -159,7 +159,25 @@ export default function CustomAgentSetupPage() {
       const data = await response.json()
       console.log("Save customization response:", data)
 
-      return true
+      // Handle the response - check for SQL query structure which indicates the webhook processed it
+      if (Array.isArray(data) && data.length > 0) {
+        const result = data[0]
+
+        // Check if we got back a query structure (which means n8n processed the request)
+        if (result.query && result.parameters) {
+          console.log("Customization save request processed successfully")
+          return true
+        }
+
+        // Also check for direct success indicators
+        if (result.success || result.id || result.professional_id) {
+          return true
+        }
+      }
+
+      // If we get here, the response format was unexpected
+      console.warn("Unexpected response format for customization save:", data)
+      return false
     } catch (err) {
       console.error("Error saving customization:", err)
       return false
