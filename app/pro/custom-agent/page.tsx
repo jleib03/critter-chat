@@ -219,14 +219,6 @@ export default function CustomAgentSetupPage() {
             professional.enrollment_status === "enrolled" || professional.enrollment_status === "already_enrolled",
           )
 
-          // Load existing customization if enrolled
-          if (
-            profId &&
-            (professional.enrollment_status === "enrolled" || professional.enrollment_status === "already_enrolled")
-          ) {
-            await loadExistingCustomization(profId)
-          }
-
           return true
         } else {
           setError("Professional not found")
@@ -432,6 +424,10 @@ export default function CustomAgentSetupPage() {
       // Training step - save if there's content
       const success = await saveAgentConfiguration()
       if (success) {
+        // Load existing customization when entering customization step
+        if (professionalId) {
+          await loadExistingCustomization(professionalId)
+        }
         setCurrentStep(3)
       }
     } else if (currentStep === 3) {
@@ -448,8 +444,12 @@ export default function CustomAgentSetupPage() {
   }
 
   // Function to handle skipping configuration
-  const handleSkipConfiguration = () => {
+  const handleSkipConfiguration = async () => {
     setConfigurationSkipped(true)
+    // Load existing customization when skipping to customization step
+    if (professionalId) {
+      await loadExistingCustomization(professionalId)
+    }
     setCurrentStep(3) // Skip to customization step
   }
 
