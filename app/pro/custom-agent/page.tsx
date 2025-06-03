@@ -23,6 +23,7 @@ export default function CustomAgentSetupPage() {
   const [professionalId, setProfessionalId] = useState<string | null>(null)
   const [isEnrolled, setIsEnrolled] = useState<boolean | null>(null)
   const [configurationSkipped, setConfigurationSkipped] = useState(false)
+  const [hasExistingCustomization, setHasExistingCustomization] = useState(false)
   const [agentConfig, setAgentConfig] = useState({
     cancellationPolicy: "",
     newCustomerProcess: "",
@@ -86,6 +87,85 @@ export default function CustomAgentSetupPage() {
     }
   }
 
+  // Function to load existing customization settings
+  const loadExistingCustomization = async (professionalId: string) => {
+    try {
+      const response = await fetch(WEBHOOK_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "get_widget_customization",
+          professionalId: professionalId,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log("Existing customization response:", data)
+
+      if (Array.isArray(data) && data.length > 0) {
+        const customization = data[0]
+
+        if (customization) {
+          setHasExistingCustomization(true)
+          setAgentConfig((prev) => ({
+            ...prev,
+            chatName: customization.chat_name || prev.chatName,
+            chatWelcomeMessage: customization.chat_welcome_message || prev.chatWelcomeMessage,
+            widgetConfig: {
+              primaryColor: customization.widget_primary_color || prev.widgetConfig.primaryColor,
+              position: customization.widget_position || prev.widgetConfig.position,
+              size: customization.widget_size || prev.widgetConfig.size,
+            },
+          }))
+        }
+      }
+    } catch (err) {
+      console.error("Error loading existing customization:", err)
+      // Don't show error to user, just use defaults
+    }
+  }
+
+  // Function to save widget customization
+  const saveWidgetCustomization = async () => {
+    if (!professionalId) return false
+
+    try {
+      const response = await fetch(WEBHOOK_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "save_widget_customization",
+          professionalId: professionalId,
+          customization: {
+            chatName: agentConfig.chatName,
+            chatWelcomeMessage: agentConfig.chatWelcomeMessage,
+            widgetConfig: agentConfig.widgetConfig,
+          },
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log("Save customization response:", data)
+
+      return true
+    } catch (err) {
+      console.error("Error saving customization:", err)
+      return false
+    }
+  }
+
   // Function to check enrollment status
   const checkEnrollmentStatus = async (name: string) => {
     setIsLoading(true)
@@ -115,10 +195,20 @@ export default function CustomAgentSetupPage() {
         const professional = data[0]
 
         if (professional) {
-          setProfessionalId(professional.professional_id || null)
+          const profId = professional.professional_id || null
+          setProfessionalId(profId)
           setIsEnrolled(
             professional.enrollment_status === "enrolled" || professional.enrollment_status === "already_enrolled",
           )
+
+          // Load existing customization if enrolled
+          if (
+            profId &&
+            (professional.enrollment_status === "enrolled" || professional.enrollment_status === "already_enrolled")
+          ) {
+            await loadExistingCustomization(profId)
+          }
+
           return true
         } else {
           setError("Professional not found")
@@ -326,6 +416,14 @@ export default function CustomAgentSetupPage() {
       if (success) {
         setCurrentStep(3)
       }
+    } else if (currentStep === 3) {
+      // Customization step - save widget customization before proceeding to testing
+      const success = await saveWidgetCustomization()
+      if (success) {
+        setCurrentStep(4)
+      } else {
+        setError("Failed to save customization settings. Please try again.")
+      }
     } else if (currentStep < 5) {
       setCurrentStep(currentStep + 1)
     }
@@ -372,6 +470,16 @@ export default function CustomAgentSetupPage() {
               Create a personalized AI support agent trained on your business policies and FAQs.
             </p>
           </div>
+
+          {/* Existing Customization Notice */}
+          {hasExistingCustomization && currentStep >= 3 && (
+            <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg mb-6">
+              <p className="body-font">
+                <strong>Existing settings loaded:</strong> We've loaded your previous customization settings. You can
+                update them below.
+              </p>
+            </div>
+          )}
 
           {/* Progress Steps */}
           <div className="mb-8">
@@ -507,7 +615,7 @@ export default function CustomAgentSetupPage() {
                 professionalId={professionalId || ""}
                 agentConfig={agentConfig}
                 setAgentConfig={setAgentConfig}
-                onNext={() => setCurrentStep(4)}
+                onNext={handleNextStep}
                 onBack={handlePrevStep}
               />
             )}
