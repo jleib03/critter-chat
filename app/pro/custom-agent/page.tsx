@@ -59,16 +59,43 @@ export default function CustomAgentSetupPage() {
         // Check if it has an output field
         if (firstItem.output) {
           try {
-            // Try to parse the output as JSON
+            // Try to parse the output as JSON (first level)
             const parsedOutput = JSON.parse(firstItem.output)
-            console.log("Parsed output:", parsedOutput)
+            console.log("First level parsed output:", parsedOutput)
 
-            // If it's an array, get the first item
+            // Check if the parsed output is an array with nested JSON
             if (Array.isArray(parsedOutput) && parsedOutput.length > 0) {
               const innerItem = parsedOutput[0]
+
+              // If the inner item has an output field that's a string, try to parse it again
+              if (innerItem.output && typeof innerItem.output === "string") {
+                try {
+                  const doubleParsed = JSON.parse(innerItem.output)
+                  console.log("Double parsed output:", doubleParsed)
+
+                  // If this is an array, get the first item's output
+                  if (Array.isArray(doubleParsed) && doubleParsed.length > 0 && doubleParsed[0].output) {
+                    return doubleParsed[0].output
+                  }
+
+                  // If it's an object with output, return that
+                  if (doubleParsed.output) {
+                    return doubleParsed.output
+                  }
+
+                  // Otherwise return as string
+                  return String(doubleParsed)
+                } catch (doubleParseError) {
+                  console.log("Could not double-parse, using inner output as string:", innerItem.output)
+                  return innerItem.output
+                }
+              }
+
+              // If inner item has direct output, return it
               if (innerItem.output) {
                 return innerItem.output
               }
+
               // If the array item is just a string, return it
               if (typeof innerItem === "string") {
                 return innerItem
