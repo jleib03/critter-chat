@@ -20,6 +20,7 @@ export default function EnrollmentStep({
   const [wantsToEnroll, setWantsToEnroll] = useState(false)
   const [isVerifying, setIsVerifying] = useState(false)
   const [hasVerified, setHasVerified] = useState(false)
+  const [justEnrolled, setJustEnrolled] = useState(false)
 
   const handleVerify = async () => {
     if (!professionalName.trim()) return
@@ -38,6 +39,7 @@ export default function EnrollmentStep({
     setWantsToEnroll(true)
     const success = await toggleEnrollment(true)
     if (success) {
+      setJustEnrolled(true)
       // Enrollment was successful, the parent will update isEnrolled state
     }
   }
@@ -119,11 +121,23 @@ export default function EnrollmentStep({
               <Check className="h-5 w-5 text-green-600" />
             </div>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-green-800 header-font">Enrollment Active</h3>
-              <p className="mt-1 text-sm text-green-700 body-font">
-                Your business is already enrolled in the Custom Support Agent program. You can proceed to configure your
-                agent.
-              </p>
+              {justEnrolled ? (
+                <>
+                  <h3 className="text-sm font-medium text-green-800 header-font">Successfully Enrolled!</h3>
+                  <p className="mt-1 text-sm text-green-700 body-font">
+                    Great! Your business has been successfully enrolled in the Custom Support Agent program. You can now
+                    proceed to configure your personalized agent.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-sm font-medium text-green-800 header-font">Enrollment Active</h3>
+                  <p className="mt-1 text-sm text-green-700 body-font">
+                    Your business is already enrolled in the Custom Support Agent program. You can proceed to update
+                    your agent configuration or create a new setup.
+                  </p>
+                </>
+              )}
             </div>
           </div>
         ) : (
@@ -161,7 +175,7 @@ export default function EnrollmentStep({
             isEnrolled || wantsToEnroll ? "bg-[#94ABD6] hover:bg-[#7a90ba]" : "bg-gray-300 cursor-not-allowed"
           }`}
         >
-          Next
+          {justEnrolled ? "Configure Agent" : isEnrolled ? "Update Configuration" : "Next"}
           <ArrowRight className="ml-2 h-4 w-4" />
         </button>
       </div>
