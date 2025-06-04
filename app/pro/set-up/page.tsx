@@ -1,275 +1,415 @@
 "use client"
-
 import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Users, MessageSquare, Sparkles, ArrowRight, Construction, Check, AlertCircle, Loader2 } from "lucide-react"
+import { Loader2, Copy, Check, Settings, Users, MessageSquare, Construction, ArrowRight } from "lucide-react"
+import Header from "../../../components/header"
 import PasswordProtection from "../../../components/password-protection"
+import { useRouter } from "next/navigation"
 
 export default function ProfessionalSetupPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [showComingSoon, setShowComingSoon] = useState(false)
-  const [notifyEmail, setNotifyEmail] = useState("")
+  const [showModal, setShowModal] = useState(false)
+  const [businessName, setBusinessName] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle")
-  const [errorMessage, setErrorMessage] = useState("")
+  const [error, setError] = useState("")
+  const [professionalId, setProfessionalId] = useState("")
+  const [showResults, setShowResults] = useState(false)
+  const [copiedStates, setCopiedStates] = useState<{ [key: string]: boolean }>({})
+
+  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
   const router = useRouter()
 
-  // Function to validate email format
-  const isValidEmail = (email: string) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  // If not authenticated, show password protection
+  if (!isAuthenticated) {
+    return (
+      <PasswordProtection
+        onAuthenticated={() => setIsAuthenticated(true)}
+        title="Critter Professional Access"
+        description="Enter your professional password to access setup tools and resources."
+      />
+    )
   }
 
-  // Function to handle tile clicks
-  const handleTileClick = (tile: "intake" | "agent" | "feature") => {
-    if (tile === "intake") {
-      router.push("/newcustomer")
-      return
-    }
-
-    if (tile === "agent") {
-      // Show coming soon modal for Custom Support Agent
-      setShowComingSoon(true)
-      return
-    }
-
-    if (tile === "feature") {
-      // This could be another coming soon feature
-      setShowComingSoon(true)
-      return
-    }
+  const handleSetupClick = () => {
+    setShowModal(true)
+    setError("")
+    setBusinessName("")
   }
 
-  // Function to handle the notify me submission
-  const handleNotifySubmit = async () => {
-    // Reset states
-    setSubmitStatus("idle")
-    setErrorMessage("")
+  const handleCloseModal = () => {
+    setShowModal(false)
+    setError("")
+    setBusinessName("")
+    setIsSubmitting(false)
+  }
 
-    // Validate email
-    if (!notifyEmail) {
-      setErrorMessage("Please enter your email address")
-      return
-    }
-
-    if (!isValidEmail(notifyEmail)) {
-      setErrorMessage("Please enter a valid email address")
+  const handleSubmit = async () => {
+    if (!businessName.trim()) {
+      setError("Please enter your business name")
       return
     }
 
     setIsSubmitting(true)
+    setError("")
 
     try {
-      // Create a unique user ID for this submission
-      const userId = `pro_user_${Math.random().toString(36).substring(2, 10)}`
-
-      // Prepare the payload for webhook
       const payload = {
-        message: {
-          text: "Professional notification request for Custom Support Agent",
-          userId: userId,
-          timestamp: new Date().toISOString(),
-          userInfo: {
-            email: notifyEmail,
-            selectedAction: "notify_me_custom_agent",
-          },
-          source: "critter_professional_setup",
-        },
+        action: "get-url",
+        businessName: businessName.trim(),
+        timestamp: new Date().toISOString(),
+        source: "professional_setup_page",
       }
 
-      console.log("Sending professional notification request")
+      console.log("Sending request to get professional ID:", payload)
 
-      // For now, just simulate success since we don't have the webhook setup
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const response = await fetch(WEBHOOK_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
 
-      setSubmitStatus("success")
-      setNotifyEmail("")
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log("Received response:", data)
+
+      // Handle the response format: [{"id":"151"}]
+      let professionalId = null
+
+      if (Array.isArray(data) && data.length > 0 && data[0].id) {
+        professionalId = data[0].id
+      } else if (data.professionalId) {
+        professionalId = data.professionalId
+      } else if (data.id) {
+        professionalId = data.id
+      }
+
+      if (professionalId) {
+        setProfessionalId(professionalId)
+        setShowModal(false)
+        setShowResults(true)
+      } else {
+        setError("Business not found. Please check the spelling and try again.")
+      }
     } catch (error) {
-      console.error("Error sending notification request:", error)
-      setSubmitStatus("error")
-      setErrorMessage("There was an error submitting your request. Please try again.")
+      console.error("Error getting professional ID:", error)
+      setError("There was an error processing your request. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  // Function to close the modal and reset states
-  const handleCloseModal = () => {
-    setShowComingSoon(false)
-    setNotifyEmail("")
-    setSubmitStatus("idle")
-    setErrorMessage("")
+  const copyToClipboard = async (text: string, key: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedStates((prev) => ({ ...prev, [key]: true }))
+      setTimeout(() => {
+        setCopiedStates((prev) => ({ ...prev, [key]: false }))
+      }, 2000)
+    } catch (err) {
+      console.error("Failed to copy text: ", err)
+    }
   }
 
-  if (!isAuthenticated) {
-    return <PasswordProtection onAuthenticated={() => setIsAuthenticated(true)} />
-  }
+  const intakeUrl = `https://booking.critter.pet/newcustomer/${professionalId}`
+
+  const buttonHtml = `<a href="${intakeUrl}" target="_blank" style="display: inline-block; background-color: #E75837; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-family: Arial, sans-serif; font-weight: bold; font-size: 16px; transition: background-color 0.3s;">Start Your Critter Intake</a>`
+
+  const buttonCode = `<!-- Critter Customer Intake Button -->
+${buttonHtml}`
 
   return (
     <div className="min-h-screen bg-[#FBF8F3] flex flex-col">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-6xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 header-font">Critter Professional Setup</h1>
-              <p className="text-gray-600 mt-2 body-font">Choose the tools and features you'd like to set up</p>
-            </div>
-            <button onClick={() => router.push("/")} className="text-gray-600 hover:text-gray-800 body-font">
-              ← Back to Home
-            </button>
-          </div>
-        </div>
-      </div>
+      <Header />
 
-      {/* Main Content */}
-      <main className="flex-1 py-12">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Customer Intake Tile */}
-            <div
-              onClick={() => handleTileClick("intake")}
-              className="bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:scale-102 hover:shadow-lg cursor-pointer border border-gray-100 h-full flex flex-col relative group"
-            >
-              <div className="bg-gradient-to-r from-[#E75837] to-[#f07a5f] h-2 w-full"></div>
-              <div className="p-8 flex flex-col flex-grow">
-                <div className="w-16 h-16 bg-[#fff8f6] rounded-full flex items-center justify-center mb-6 group-hover:bg-[#E75837] group-hover:text-white transition-colors">
-                  <Users className="h-8 w-8 text-[#E75837] group-hover:text-white" />
+      <main className="pt-8 flex-1 flex flex-col">
+        <div className="max-w-4xl mx-auto px-4 flex flex-col page-content">
+          {!showResults ? (
+            <>
+              {/* Hero Section */}
+              <div className="text-center mb-12">
+                <div className="w-16 h-16 bg-[#E75837] rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Settings className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold mb-4 header-font">Customer Intake</h3>
-                <p className="text-gray-600 mb-6 flex-grow body-font text-lg">
-                  Set up and manage customer onboarding processes. Help new clients get started with your services.
+                <h1 className="text-4xl md:text-5xl title-font mb-4">Professional Setup</h1>
+                <p className="text-xl text-gray-700 max-w-3xl mx-auto body-font">
+                  Tools and resources to enhance your Critter professional experience
                 </p>
-                <div className="mt-auto space-y-3">
-                  <div className="flex items-center text-gray-500 body-font">
-                    <Check className="w-5 h-5 mr-3 flex-shrink-0 text-green-500" />
-                    <span>Streamlined onboarding</span>
-                  </div>
-                  <div className="flex items-center text-gray-500 body-font">
-                    <Check className="w-5 h-5 mr-3 flex-shrink-0 text-green-500" />
-                    <span>Customer information collection</span>
-                  </div>
-                  <div className="flex items-center text-gray-500 body-font">
-                    <Check className="w-5 h-5 mr-3 flex-shrink-0 text-green-500" />
-                    <span>Service preferences setup</span>
-                  </div>
-                </div>
-                <div className="flex items-center text-[#E75837] font-medium mt-8 header-font group-hover:text-[#d04e30] text-lg">
-                  Set Up Intake <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </div>
               </div>
-            </div>
 
-            {/* Custom Support Agent Tile - Coming Soon */}
-            <div className="bg-white rounded-xl shadow-md p-6 text-center relative overflow-hidden">
-              <div className="absolute top-3 right-3">
-                <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                  Coming Soon
-                </span>
-              </div>
-              <div className="w-12 h-12 bg-[#f5f8fd] rounded-full flex items-center justify-center mx-auto mb-4">
-                <MessageSquare className="h-6 w-6 text-[#94ABD6]" />
-              </div>
-              <h3 className="text-lg font-bold mb-2 header-font">Custom Support Agent</h3>
-              <p className="text-gray-600 body-font mb-4">
-                Create a personalized AI support agent trained on your business policies and FAQs.
-              </p>
-              <span className="inline-flex items-center text-gray-400 text-sm font-medium">Available soon</span>
-            </div>
-
-            {/* New Feature Tile - Coming Soon */}
-            <div
-              onClick={() => handleTileClick("feature")}
-              className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 h-full flex flex-col relative opacity-75 cursor-pointer hover:opacity-90 transition-opacity"
-            >
-              <div className="bg-gradient-to-r from-[#745E25] to-[#8b7030] h-2 w-full"></div>
-              <div className="p-8 flex flex-col flex-grow">
-                <div className="w-16 h-16 bg-[#f9f7f2] rounded-full flex items-center justify-center mb-6 relative">
-                  <Sparkles className="h-8 w-8 text-[#745E25]" />
-                  <div className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs px-2 py-1 rounded-full">
-                    Soon
+              {/* Feature Tiles Section */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                {/* Customer Intake Tile - Clickable */}
+                <div
+                  onClick={handleSetupClick}
+                  className="bg-white rounded-xl shadow-md p-6 text-center transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer border border-transparent hover:border-[#E75837]/20"
+                >
+                  <div className="w-12 h-12 bg-[#fff8f6] rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Users className="h-6 w-6 text-[#E75837]" />
                   </div>
+                  <h3 className="text-lg font-bold mb-2 header-font">Customer Intake</h3>
+                  <p className="text-gray-600 body-font mb-4">
+                    Generate a custom intake link and button for your website to streamline new customer onboarding.
+                  </p>
+                  <span className="inline-flex items-center text-[#E75837] text-sm font-medium">
+                    Set up now <ArrowRight className="ml-1 h-4 w-4" />
+                  </span>
                 </div>
-                <h3 className="text-2xl font-bold mb-4 header-font">Advanced Analytics</h3>
-                <p className="text-gray-600 mb-6 flex-grow body-font text-lg">
-                  Get detailed insights into your business performance, customer satisfaction, and growth opportunities.
+
+                {/* Custom Support Agent Tile - Coming Soon */}
+                <div className="bg-white rounded-xl shadow-md p-6 text-center relative overflow-hidden">
+                  <div className="absolute top-3 right-3">
+                    <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                      Coming Soon
+                    </span>
+                  </div>
+                  <div className="w-12 h-12 bg-[#f5f8fd] rounded-full flex items-center justify-center mx-auto mb-4">
+                    <MessageSquare className="h-6 w-6 text-[#94ABD6]" />
+                  </div>
+                  <h3 className="text-lg font-bold mb-2 header-font">Custom Support Agent</h3>
+                  <p className="text-gray-600 body-font mb-4">
+                    Create a personalized AI support agent trained on your business policies and FAQs.
+                  </p>
+                  <span className="inline-flex items-center text-gray-400 text-sm font-medium">Available soon</span>
+                </div>
+
+                {/* Under Construction Tile */}
+                <div className="bg-white rounded-xl shadow-md p-6 text-center relative overflow-hidden">
+                  <div className="absolute top-3 right-3">
+                    <span className="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                      In Development
+                    </span>
+                  </div>
+                  <div className="w-12 h-12 bg-[#f9f7f2] rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Construction className="h-6 w-6 text-[#745E25]" />
+                  </div>
+                  <h3 className="text-lg font-bold mb-2 header-font">New Feature</h3>
+                  <p className="text-gray-600 body-font mb-4">
+                    We're working on something exciting to help you manage your business more effectively.
+                  </p>
+                  <span className="inline-flex items-center text-gray-400 text-sm font-medium">Stay tuned</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            /* Results Section */
+            <div className="space-y-8">
+              {/* Success Header */}
+              <div className="text-center">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Check className="h-8 w-8 text-green-600" />
+                </div>
+                <h1 className="text-4xl title-font mb-4">Setup Complete!</h1>
+                <p className="text-xl text-gray-700 body-font">
+                  Your custom customer intake link is ready. Follow the instructions below to add it to your website.
                 </p>
-                <div className="mt-auto space-y-3">
-                  <div className="flex items-center text-gray-400 body-font">
-                    <Construction className="w-5 h-5 mr-3 flex-shrink-0" />
-                    <span>Performance metrics</span>
-                  </div>
-                  <div className="flex items-center text-gray-400 body-font">
-                    <Construction className="w-5 h-5 mr-3 flex-shrink-0" />
-                    <span>Customer insights</span>
-                  </div>
-                  <div className="flex items-center text-gray-400 body-font">
-                    <Construction className="w-5 h-5 mr-3 flex-shrink-0" />
-                    <span>Growth recommendations</span>
-                  </div>
+              </div>
+
+              {/* Professional ID */}
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <h2 className="text-xl font-bold mb-4 header-font">Your Professional ID</h2>
+                <div className="bg-gray-50 rounded-lg p-4 flex items-center justify-between">
+                  <code className="text-lg font-mono text-[#E75837]">{professionalId}</code>
+                  <button
+                    onClick={() => copyToClipboard(professionalId, "professionalId")}
+                    className="flex items-center px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
+                  >
+                    {copiedStates.professionalId ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </button>
                 </div>
-                <div className="flex items-center text-gray-500 font-medium mt-8 header-font text-lg">
-                  Coming Soon <Construction className="ml-2 h-5 w-5" />
+                <p className="text-sm text-gray-600 mt-2 body-font">
+                  This is your unique identifier that connects customers to your Critter account.
+                </p>
+              </div>
+
+              {/* Direct Link */}
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <h2 className="text-xl font-bold mb-4 header-font">Your Customer Intake Link</h2>
+                <div className="bg-gray-50 rounded-lg p-4 flex items-center justify-between mb-4">
+                  <code className="text-sm font-mono text-[#E75837] break-all">{intakeUrl}</code>
+                  <button
+                    onClick={() => copyToClipboard(intakeUrl, "intakeUrl")}
+                    className="flex items-center px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors ml-2"
+                  >
+                    {copiedStates.intakeUrl ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                <p className="text-sm text-gray-600 body-font">
+                  Share this link directly with customers or use the button code below to embed it on your website.
+                </p>
+              </div>
+
+              {/* Button Preview */}
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <h2 className="text-xl font-bold mb-4 header-font">Button Preview</h2>
+                <div className="bg-gray-50 rounded-lg p-6 text-center mb-4">
+                  <div dangerouslySetInnerHTML={{ __html: buttonHtml }} />
+                </div>
+                <p className="text-sm text-gray-600 body-font">
+                  This is how the button will appear on your website. You can customize the styling to match your brand.
+                </p>
+              </div>
+
+              {/* Button Code */}
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <h2 className="text-xl font-bold mb-4 header-font">Button Code</h2>
+                <div className="bg-gray-900 rounded-lg p-4 mb-4">
+                  <pre className="text-green-400 text-sm overflow-x-auto">
+                    <code>{buttonCode}</code>
+                  </pre>
+                </div>
+                <button
+                  onClick={() => copyToClipboard(buttonCode, "buttonCode")}
+                  className="flex items-center px-4 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#d04e30] transition-colors"
+                >
+                  {copiedStates.buttonCode ? (
+                    <>
+                      <Check className="h-4 w-4 mr-2" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copy Button Code
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Platform Instructions */}
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <h2 className="text-xl font-bold mb-6 header-font">Platform-Specific Instructions</h2>
+
+                <div className="space-y-6">
+                  {/* Squarespace */}
+                  <div className="border-l-4 border-[#E75837] pl-4">
+                    <h3 className="text-lg font-bold mb-2 header-font">Squarespace</h3>
+                    <ol className="list-decimal list-inside space-y-1 text-sm body-font">
+                      <li>Go to your Squarespace editor</li>
+                      <li>Add a "Code Block" where you want the button</li>
+                      <li>Paste the button code above into the code block</li>
+                      <li>Save and publish your changes</li>
+                    </ol>
+                  </div>
+
+                  {/* Wix */}
+                  <div className="border-l-4 border-[#745E25] pl-4">
+                    <h3 className="text-lg font-bold mb-2 header-font">Wix</h3>
+                    <ol className="list-decimal list-inside space-y-1 text-sm body-font">
+                      <li>Open your Wix editor</li>
+                      <li>Click the "+" button to add an element</li>
+                      <li>Select "Embed Code" → "HTML iframe"</li>
+                      <li>Paste the button code and click "Apply"</li>
+                      <li>Position the button where you want it and publish</li>
+                    </ol>
+                  </div>
+
+                  {/* WordPress */}
+                  <div className="border-l-4 border-[#94ABD6] pl-4">
+                    <h3 className="text-lg font-bold mb-2 header-font">WordPress</h3>
+                    <ol className="list-decimal list-inside space-y-1 text-sm body-font">
+                      <li>Edit the page or post where you want the button</li>
+                      <li>Add a "Custom HTML" block</li>
+                      <li>Paste the button code into the HTML block</li>
+                      <li>Update/publish your page</li>
+                    </ol>
+                  </div>
+
+                  {/* Generic HTML */}
+                  <div className="border-l-4 border-gray-400 pl-4">
+                    <h3 className="text-lg font-bold mb-2 header-font">Other Websites</h3>
+                    <p className="text-sm body-font">
+                      For any website that allows custom HTML, simply paste the button code wherever you want the button
+                      to appear. If you need help with implementation, contact your web developer or platform support.
+                    </p>
+                  </div>
                 </div>
               </div>
+
+              {/* Additional Tips */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                <h2 className="text-lg font-bold mb-4 text-blue-800 header-font">💡 Pro Tips</h2>
+                <ul className="space-y-2 text-sm text-blue-700 body-font">
+                  <li>• Place the button prominently on your homepage or services page</li>
+                  <li>• Consider adding text like "New customers start here" above the button</li>
+                  <li>• You can customize the button colors by editing the CSS in the code</li>
+                  <li>• Test the button after adding it to make sure it works correctly</li>
+                </ul>
+              </div>
+
+              {/* Reset Button */}
+              <div className="text-center">
+                <button
+                  onClick={() => {
+                    setShowResults(false)
+                    setProfessionalId("")
+                    setCopiedStates({})
+                  }}
+                  className="text-gray-600 hover:text-gray-800 underline body-font"
+                >
+                  Set up for a different business
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </main>
 
-      {/* Coming Soon Modal */}
-      {showComingSoon && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-          onClick={handleCloseModal}
-        >
-          <div className="bg-white p-8 rounded-xl max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 bg-[#f5f8fd] rounded-full flex items-center justify-center">
-                <Construction className="h-8 w-8 text-[#94ABD6]" />
-              </div>
-            </div>
-            <h3 className="text-2xl font-bold text-center mb-4 header-font">Coming Soon!</h3>
-            <p className="text-gray-600 text-center mb-6 body-font">
-              We're working hard to bring you this feature. Sign up to be notified when it launches.
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold mb-4 header-font">Enter Your Business Name</h3>
+            <p className="text-gray-600 mb-4 body-font">
+              Please enter your business name exactly as it appears in your Critter professional account.
             </p>
 
-            {submitStatus === "success" ? (
-              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 flex items-center">
-                <Check className="w-5 h-5 mr-2 flex-shrink-0" />
-                <p className="body-font">Thank you! We'll notify you when this feature launches.</p>
-              </div>
-            ) : (
-              <>
-                {errorMessage && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 flex items-center">
-                    <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
-                    <p className="body-font">{errorMessage}</p>
-                  </div>
+            <div className="mb-4">
+              <input
+                type="text"
+                value={businessName}
+                onChange={(e) => setBusinessName(e.target.value)}
+                placeholder="Your business name"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
+                disabled={isSubmitting}
+              />
+              {error && <p className="mt-2 text-sm text-red-600 body-font">{error}</p>}
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={handleCloseModal}
+                disabled={isSubmitting}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors body-font"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={isSubmitting || !businessName.trim()}
+                className="px-6 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#d04e30] transition-colors body-font flex items-center"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Getting Link...
+                  </>
+                ) : (
+                  "Get My Link"
                 )}
-                <div className="flex mb-4">
-                  <input
-                    type="email"
-                    placeholder="Your email address"
-                    value={notifyEmail}
-                    onChange={(e) => setNotifyEmail(e.target.value)}
-                    className="flex-1 p-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-[#94ABD6] body-font"
-                  />
-                  <button
-                    onClick={handleNotifySubmit}
-                    disabled={isSubmitting}
-                    className="bg-[#94ABD6] text-white px-4 py-3 rounded-r-lg hover:bg-[#7a90ba] transition-colors flex items-center justify-center min-w-[100px]"
-                  >
-                    {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : "Notify Me"}
-                  </button>
-                </div>
-              </>
-            )}
-            <button
-              onClick={handleCloseModal}
-              className="w-full text-gray-600 text-sm hover:text-gray-800 transition-colors body-font"
-            >
-              Close
-            </button>
+              </button>
+            </div>
           </div>
         </div>
       )}
