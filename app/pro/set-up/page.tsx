@@ -2,11 +2,9 @@
 import { useState } from "react"
 import { Loader2, Copy, Check, Settings, Users, MessageSquare, Construction, ArrowRight } from "lucide-react"
 import Header from "../../../components/header"
-import PasswordProtection from "../../../components/password-protection"
 import { useRouter } from "next/navigation"
 
 export default function ProfessionalSetupPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [businessName, setBusinessName] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -17,17 +15,6 @@ export default function ProfessionalSetupPage() {
 
   const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
   const router = useRouter()
-
-  // If not authenticated, show password protection
-  if (!isAuthenticated) {
-    return (
-      <PasswordProtection
-        onAuthenticated={() => setIsAuthenticated(true)}
-        title="Critter Professional Access"
-        description="Enter your professional password to access setup tools and resources."
-      />
-    )
-  }
 
   const handleSetupClick = () => {
     setShowModal(true)
