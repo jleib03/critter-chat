@@ -228,10 +228,10 @@ export default function CustomAgentSetupPage() {
         if (professional) {
           const profId = professional.professional_id || null
           setProfessionalId(profId)
+
+          // Use the new enrollment status values and the is_enrolled_and_active boolean
           setIsEnrolled(
-            professional.enrollment_status === "enrolled" ||
-              professional.enrollment_status === "already_enrolled" ||
-              professional.enrollment_status === "reactivated",
+            professional.is_enrolled_and_active === true || professional.enrollment_status === "enrolled_and_active",
           )
 
           return true
