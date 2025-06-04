@@ -3,6 +3,7 @@ import { useState } from "react"
 import Header from "../components/header"
 import LandingPage from "../components/landing-page"
 import BookingPage from "../components/booking-page"
+import { Settings } from "lucide-react"
 
 import NewCustomerIntake from "../components/new-customer-intake"
 
@@ -20,14 +21,12 @@ export default function Page() {
   // Use a more reliable webhook URL for testing
   const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
 
-
   // Handler to start onboarding with a session ID and userId
   const handleStartOnboarding = (currentSessionId: string | null, currentUserId: string | null) => {
     console.log("Starting onboarding with session ID:", currentSessionId)
     console.log("Starting onboarding with user ID:", currentUserId)
     setSessionId(currentSessionId)
     setUserId(currentUserId)
-
   }
 
   // Handlers for landing page options
@@ -45,7 +44,6 @@ export default function Page() {
   const handleBackToLanding = () => {
     setCurrentView("landing")
     setUserInfo(null)
-
   }
 
   return (
@@ -56,11 +54,31 @@ export default function Page() {
         <div className="max-w-6xl mx-auto px-4 flex flex-col page-content">
           {currentView === "landing" && (
             <LandingPage
-
               webhookUrl={WEBHOOK_URL}
               onExistingCustomer={handleExistingCustomer}
               onNewCustomer={handleNewCustomer}
             />
+          )}
+
+          {/* Professional Access Section */}
+          {currentView === "landing" && (
+            <div className="mt-16 pt-8 border-t border-gray-200">
+              <div className="text-center">
+                <div className="max-w-md mx-auto">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-800 header-font">
+                    Are you a Critter Professional?
+                  </h3>
+                  <button
+                    onClick={() => window.open("/pro/set-up", "_blank")}
+                    className="inline-flex items-center px-6 py-3 bg-[#94ABD6] text-white rounded-lg hover:bg-[#7a94c7] transition-colors font-medium body-font"
+                  >
+                    <Settings className="h-5 w-5 mr-2" />
+                    Critter Professionals Set-Up Home
+                  </button>
+                  <p className="text-sm text-gray-600 mt-2 body-font">Access professional tools and setup options</p>
+                </div>
+              </div>
+            </div>
           )}
 
           {currentView === "chat" && userInfo && (
