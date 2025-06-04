@@ -160,40 +160,20 @@ export default function ProfessionalSetupPage() {
             </div>
 
             {/* Custom Support Agent Tile - Coming Soon */}
-            <div
-              onClick={() => handleTileClick("agent")}
-              className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 h-full flex flex-col relative opacity-75 cursor-pointer hover:opacity-90 transition-opacity"
-            >
-              <div className="bg-gradient-to-r from-[#94ABD6] to-[#b0c1e3] h-2 w-full"></div>
-              <div className="p-8 flex flex-col flex-grow">
-                <div className="w-16 h-16 bg-[#f5f8fd] rounded-full flex items-center justify-center mb-6 relative">
-                  <MessageSquare className="h-8 w-8 text-[#94ABD6]" />
-                  <div className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs px-2 py-1 rounded-full">
-                    Soon
-                  </div>
-                </div>
-                <h3 className="text-2xl font-bold mb-4 header-font">Custom Support Agent</h3>
-                <p className="text-gray-600 mb-6 flex-grow body-font text-lg">
-                  Create an AI-powered support agent customized for your business. Handle customer inquiries 24/7.
-                </p>
-                <div className="mt-auto space-y-3">
-                  <div className="flex items-center text-gray-400 body-font">
-                    <Construction className="w-5 h-5 mr-3 flex-shrink-0" />
-                    <span>AI-powered responses</span>
-                  </div>
-                  <div className="flex items-center text-gray-400 body-font">
-                    <Construction className="w-5 h-5 mr-3 flex-shrink-0" />
-                    <span>24/7 customer support</span>
-                  </div>
-                  <div className="flex items-center text-gray-400 body-font">
-                    <Construction className="w-5 h-5 mr-3 flex-shrink-0" />
-                    <span>Custom branding & setup</span>
-                  </div>
-                </div>
-                <div className="flex items-center text-gray-500 font-medium mt-8 header-font text-lg">
-                  Coming Soon <Construction className="ml-2 h-5 w-5" />
-                </div>
+            <div className="bg-white rounded-xl shadow-md p-6 text-center relative overflow-hidden">
+              <div className="absolute top-3 right-3">
+                <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                  Coming Soon
+                </span>
               </div>
+              <div className="w-12 h-12 bg-[#f5f8fd] rounded-full flex items-center justify-center mx-auto mb-4">
+                <MessageSquare className="h-6 w-6 text-[#94ABD6]" />
+              </div>
+              <h3 className="text-lg font-bold mb-2 header-font">Custom Support Agent</h3>
+              <p className="text-gray-600 body-font mb-4">
+                Create a personalized AI support agent trained on your business policies and FAQs.
+              </p>
+              <span className="inline-flex items-center text-gray-400 text-sm font-medium">Available soon</span>
             </div>
 
             {/* New Feature Tile - Coming Soon */}
