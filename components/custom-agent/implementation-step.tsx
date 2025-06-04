@@ -46,12 +46,23 @@ export default function ImplementationStep({
     const newConfig = { ...widgetConfig, [field]: value }
     setWidgetConfig(newConfig)
 
-    // Update the main agent config if the function is available
-    if (setAgentConfig && (field === "chatName" || field === "chatWelcomeMessage")) {
-      setAgentConfig({
-        ...agentConfig,
-        [field]: value,
-      })
+    // Update the main agent config for all fields
+    if (setAgentConfig) {
+      if (field === "chatName" || field === "chatWelcomeMessage") {
+        setAgentConfig({
+          ...agentConfig,
+          [field]: value,
+        })
+      } else {
+        // Handle widget-specific config (primaryColor, position, size)
+        setAgentConfig({
+          ...agentConfig,
+          widgetConfig: {
+            ...agentConfig.widgetConfig,
+            [field]: value,
+          },
+        })
+      }
     }
   }
 
