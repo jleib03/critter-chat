@@ -2,6 +2,7 @@
 import { useState } from "react"
 import { Loader2, Copy, Check, Settings, Users, MessageSquare, Construction, ArrowRight } from "lucide-react"
 import Header from "../../../components/header"
+import { useRouter } from "next/navigation"
 
 export default function ProfessionalSetupPage() {
   const [showModal, setShowModal] = useState(false)
@@ -13,6 +14,7 @@ export default function ProfessionalSetupPage() {
   const [copiedStates, setCopiedStates] = useState<{ [key: string]: boolean }>({})
 
   const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
+  const router = useRouter()
 
   const handleSetupClick = () => {
     setShowModal(true)
