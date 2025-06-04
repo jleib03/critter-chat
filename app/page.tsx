@@ -4,6 +4,7 @@ import Header from "../components/header"
 import LandingPage from "../components/landing-page"
 import BookingPage from "../components/booking-page"
 import { Settings } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 import NewCustomerIntake from "../components/new-customer-intake"
 
@@ -18,6 +19,7 @@ export default function Page() {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
+  const router = useRouter()
   // Use a more reliable webhook URL for testing
   const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
 
@@ -69,7 +71,7 @@ export default function Page() {
                     Are you a Critter Professional?
                   </h3>
                   <button
-                    onClick={() => window.open("/pro/set-up", "_blank")}
+                    onClick={() => router.push("/pro/set-up")}
                     className="inline-flex items-center px-6 py-3 bg-[#94ABD6] text-white rounded-lg hover:bg-[#7a94c7] transition-colors font-medium body-font"
                   >
                     <Settings className="h-5 w-5 mr-2" />
