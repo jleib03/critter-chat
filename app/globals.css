@@ -1,7 +1,7 @@
 @font-face {
   font-family: "SangBleuKingdom";
-  src: url("/fonts/sangbleu-kingdom/SangBleuKingdom-Light-WebS.woff") format("woff"),
-    url("/fonts/sangbleu-kingdom/SangBleuKingdom-Light-WebXL.woff") format("woff");
+  src: url("/Fonts/SangBlue-Cuts/SangBleuKingdom-Light-WebXL.woff") format("woff"),
+    url("/Fonts/SangBlue-Cuts/SangBleuKingdom-Light-WebS.woff") format("woff");
   font-weight: 300;
   font-style: normal;
   font-display: swap;
@@ -9,8 +9,8 @@
 
 @font-face {
   font-family: "Suisse-Intl-Book";
-  src: url("/fonts/suisse-intl-book/Suisse-Intl-Book.woff") format("woff"),
-    url("/fonts/suisse-intl-book/Suisse-Intl-Book.woff2") format("woff2");
+  src: url("/Fonts/Suisse-Intl-Book/SuisseIntl-Book-WebM.woff") format("woff"),
+    url("/Fonts/Suisse-Intl-Book/SuisseIntl-Book-WebS.woff") format("woff");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -18,8 +18,8 @@
 
 @font-face {
   font-family: "Suisse-Intl-Light";
-  src: url("/fonts/suisse-intl-light/Suisse-Intl-Light.woff") format("woff"),
-    url("/fonts/suisse-intl-light/Suisse-Intl-Light.woff2") format("woff2");
+  src: url("/Fonts/Suisse-Intl-Light/SuisseIntl-Light-WebM.woff") format("woff"),
+    url("/Fonts/Suisse-Intl-Light/SuisseIntl-Light-WebS.woff") format("woff");
   font-weight: 300;
   font-style: normal;
   font-display: swap;
@@ -31,17 +31,24 @@
 
 :root {
   /* Updated color palette based on the provided image */
-  --primary: #e85a4f; /* Orange as primary */
-  --primary-dark: #d44a3e; /* Darker version of Orange */
-  --primary-light: #f06b61; /* Lighter version of Orange */
-  --secondary: #94abd6; /* Green as secondary */
-  --accent: #f4a261; /* Blue */
-  --text: #1a1a1a; /* Dark Blue for text */
-  --text-light: #6b7280; /* Maroon for light text */
+  --primary: #e75837; /* Orange as primary */
+  --primary-dark: #d04e30; /* Darker version of Orange */
+  --primary-light: #f07a5f; /* Lighter version of Orange */
+  --secondary: #745e25; /* Green as secondary */
+  --accent: #94abd6; /* Blue */
+  --accent-light: #b0c1e3; /* Lighter Blue */
+  --accent-dark: #7a90ba; /* Darker Blue */
+  --pink: #f4baea; /* Pink */
+  --maroon: #3f001d; /* Maroon */
+  --dark-blue: #17000b; /* Dark Blue */
+  --gray: #808b92; /* Gray tint 1 */
+  --background: #fbf8f3; /* Beige */
+  --text: #17000b; /* Dark Blue for text */
+  --text-light: #3f001d; /* Maroon for light text */
   --card-bg: #ffffff;
-  --border: #e5e7eb;
+  --border: #e0e0e0;
   --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  --radius: 0.5rem;
+  --radius: 12px;
 
   /* Add font family variables */
   --font-title: "SangBleuKingdom", serif;
@@ -51,41 +58,6 @@
   /* Chat container sizing variables - reduce height */
   --chat-height: 500px;
   --chat-max-height: calc(100vh - 350px);
-
-  /* CSS Variables */
-  --background: #fbf8f3;
-  --foreground: #1a1a1a;
-  --primary: #e85a4f;
-  --primary-dark: #d44a3e;
-  --primary-light: #f06b61;
-  --secondary: #94abd6;
-  --accent: #f4a261;
-  --text: #1a1a1a;
-  --text-light: #6b7280;
-  --card: #ffffff;
-  --card-foreground: #1a1a1a;
-  --popover: #ffffff;
-  --popover-foreground: #1a1a1a;
-  --muted: #f3f4f6;
-  --muted-foreground: #6b7280;
-  --input: #ffffff;
-  --ring: #94abd6;
-  --radius: 0.5rem;
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
-  --sidebar-background: #ffffff;
-  --sidebar-foreground: #1a1a1a;
-  --sidebar-primary: #e85a4f;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f3f4f6;
-  --sidebar-accent-foreground: #1a1a1a;
-  --sidebar-border: #e5e7eb;
-  --sidebar-ring: #94abd6;
-  --chart-1: #e85a4f;
-  --chart-2: #94abd6;
-  --chart-3: #f4a261;
-  --chart-4: #2a9d8f;
-  --chart-5: #264653;
 }
 
 /* Fix for scrolling issues */
@@ -136,7 +108,6 @@ h5,
 h6,
 .header {
   font-family: var(--font-header);
-  font-weight: 600;
 }
 
 /* The rest of the CSS from the user's file */
