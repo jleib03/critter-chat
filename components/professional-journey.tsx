@@ -84,7 +84,7 @@ const processSteps: ProcessStep[] = [
       {
         id: "critter-platform",
         title: "Critter Platform",
-        description: "Central hub for all business operations",
+        description: "Central hub for all operations",
         useCase: "Complete business management",
         icon: <Database className="h-8 w-8" />,
         color: critterColors.orange,
