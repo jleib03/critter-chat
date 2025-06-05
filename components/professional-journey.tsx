@@ -364,84 +364,80 @@ export default function ProfessionalJourney() {
 
               {/* Resources */}
               {step.id === "step-3" ? (
-                // Triangle layout for Grow step
-                <div className="relative">
-                  {/* Top resource (Booking Portal) */}
-                  <div className="flex justify-center mb-4">
-                    <div className="w-[280px]">
-                      <div
-                        className="bg-white rounded-xl p-5 shadow-md cursor-pointer transition-all duration-300 hover:shadow-lg border border-gray-100 h-full min-h-[280px] flex flex-col"
-                        onClick={() =>
-                          setSelectedResource(selectedResource === step.resources[0].id ? null : step.resources[0].id)
-                        }
-                      >
-                        {/* Resource Header */}
-                        <div className="flex items-center mb-4">
+                // Horizontal triangle layout for Grow step
+                <div className="flex gap-4 items-center justify-center">
+                  {/* Left resource (Booking Portal) */}
+                  <div className="w-[280px]">
+                    <div
+                      className="bg-white rounded-xl p-5 shadow-md cursor-pointer transition-all duration-300 hover:shadow-lg border border-gray-100 h-full min-h-[280px] flex flex-col"
+                      onClick={() =>
+                        setSelectedResource(selectedResource === step.resources[0].id ? null : step.resources[0].id)
+                      }
+                    >
+                      {/* Resource Header */}
+                      <div className="flex items-center mb-4">
+                        <div
+                          className="w-12 h-12 rounded-xl flex items-center justify-center text-white mr-3 shadow-sm"
+                          style={{ backgroundColor: step.resources[0].color }}
+                        >
+                          {step.resources[0].icon}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-base font-bold text-[#1E293B] header-font">{step.resources[0].title}</h3>
+                          <p className="text-xs text-[#64748B] body-font">{step.resources[0].description}</p>
                           <div
-                            className="w-12 h-12 rounded-xl flex items-center justify-center text-white mr-3 shadow-sm"
-                            style={{ backgroundColor: step.resources[0].color }}
+                            className={`mt-1 inline-flex items-center text-xs px-2 py-0.5 rounded-full font-medium ${
+                              step.resources[0].managedBy === "critter"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-blue-100 text-blue-700"
+                            }`}
                           >
-                            {step.resources[0].icon}
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="text-base font-bold text-[#1E293B] header-font">
-                              {step.resources[0].title}
-                            </h3>
-                            <p className="text-xs text-[#64748B] body-font">{step.resources[0].description}</p>
-                            <div
-                              className={`mt-1 inline-flex items-center text-xs px-2 py-0.5 rounded-full font-medium ${
-                                step.resources[0].managedBy === "critter"
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-blue-100 text-blue-700"
-                              }`}
-                            >
-                              {step.resources[0].managedBy === "critter" ? (
-                                <>
-                                  <Shield className="h-2 w-2 mr-1" /> Critter Managed
-                                </>
-                              ) : (
-                                <>
-                                  <User className="h-2 w-2 mr-1" /> You Manage
-                                </>
-                              )}
-                            </div>
+                            {step.resources[0].managedBy === "critter" ? (
+                              <>
+                                <Shield className="h-2 w-2 mr-1" /> Critter Managed
+                              </>
+                            ) : (
+                              <>
+                                <User className="h-2 w-2 mr-1" /> You Manage
+                              </>
+                            )}
                           </div>
                         </div>
+                      </div>
 
-                        {/* Use Case */}
-                        <div className="bg-gray-50 rounded-lg p-3 mb-3">
-                          <div className="flex items-center mb-1">
-                            <Play className="h-3 w-3 text-[#64748B] mr-2" />
-                            <span className="text-sm font-medium text-[#1E293B] header-font">Primary Use Case</span>
+                      {/* Use Case */}
+                      <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                        <div className="flex items-center mb-1">
+                          <Play className="h-3 w-3 text-[#64748B] mr-2" />
+                          <span className="text-sm font-medium text-[#1E293B] header-font">Primary Use Case</span>
+                        </div>
+                        <p className="text-sm text-[#64748B] body-font">{step.resources[0].useCase}</p>
+                      </div>
+
+                      {/* Quick Capabilities */}
+                      <div className="space-y-1 flex-grow">
+                        {step.resources[0].capabilities.slice(0, 2).map((capability, idx) => (
+                          <div key={idx} className="flex items-center text-xs text-[#64748B] body-font">
+                            <CheckCircle className="h-3 w-3 text-green-500 mr-1 flex-shrink-0" />
+                            {capability}
                           </div>
-                          <p className="text-sm text-[#64748B] body-font">{step.resources[0].useCase}</p>
-                        </div>
+                        ))}
+                        {step.resources[0].capabilities.length > 2 && (
+                          <div className="text-xs text-[#64748B] body-font">
+                            +{step.resources[0].capabilities.length - 2} more capabilities
+                          </div>
+                        )}
+                      </div>
 
-                        {/* Quick Capabilities */}
-                        <div className="space-y-1 flex-grow">
-                          {step.resources[0].capabilities.slice(0, 2).map((capability, idx) => (
-                            <div key={idx} className="flex items-center text-xs text-[#64748B] body-font">
-                              <CheckCircle className="h-3 w-3 text-green-500 mr-1 flex-shrink-0" />
-                              {capability}
-                            </div>
-                          ))}
-                          {step.resources[0].capabilities.length > 2 && (
-                            <div className="text-xs text-[#64748B] body-font">
-                              +{step.resources[0].capabilities.length - 2} more capabilities
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Click to explore */}
-                        <div className="mt-3 text-center">
-                          <span className="text-xs text-[#3B82F6] body-font">Click to explore →</span>
-                        </div>
+                      {/* Click to explore */}
+                      <div className="mt-3 text-center">
+                        <span className="text-xs text-[#3B82F6] body-font">Click to explore →</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Bottom two resources */}
-                  <div className="flex justify-center gap-4">
+                  {/* Right two resources stacked */}
+                  <div className="flex flex-col gap-4">
                     {step.resources.slice(1).map((resource) => (
                       <div key={resource.id} className="w-[280px]">
                         <div
