@@ -367,7 +367,7 @@ export default function ProfessionalJourney() {
                 {step.resources.map((resource) => (
                   <div key={resource.id} className="relative">
                     <div
-                      className="bg-white rounded-xl p-5 shadow-md cursor-pointer transition-all duration-300 hover:shadow-lg border border-gray-100 h-full"
+                      className="bg-white rounded-xl p-5 shadow-md cursor-pointer transition-all duration-300 hover:shadow-lg border border-gray-100 h-full min-h-[280px] flex flex-col"
                       onClick={() => setSelectedResource(selectedResource === resource.id ? null : resource.id)}
                     >
                       {/* Resource Header */}
@@ -410,8 +410,8 @@ export default function ProfessionalJourney() {
                         <p className="text-sm text-[#64748B] body-font">{resource.useCase}</p>
                       </div>
 
-                      {/* Quick Capabilities */}
-                      <div className="space-y-1">
+                      {/* Quick Capabilities - flex-grow to fill remaining space */}
+                      <div className="space-y-1 flex-grow">
                         {resource.capabilities.slice(0, 2).map((capability, idx) => (
                           <div key={idx} className="flex items-center text-xs text-[#64748B] body-font">
                             <CheckCircle className="h-3 w-3 text-green-500 mr-1 flex-shrink-0" />
@@ -425,7 +425,7 @@ export default function ProfessionalJourney() {
                         )}
                       </div>
 
-                      {/* Click to explore */}
+                      {/* Click to explore - always at bottom */}
                       <div className="mt-3 text-center">
                         <span className="text-xs text-[#3B82F6] body-font">Click to explore →</span>
                       </div>
