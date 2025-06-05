@@ -14,7 +14,7 @@ import {
   Shield,
   User,
   Zap,
-  ArrowDown,
+  ArrowRight,
   MessageSquare,
   UserPlus,
   TrendingUp,
@@ -358,15 +358,15 @@ export default function ProfessionalJourney() {
           </p>
         </div>
 
-        {/* Process Steps */}
-        <div className="space-y-12">
+        {/* Horizontal Process Steps */}
+        <div className="flex flex-col md:flex-row gap-4 md:gap-2 overflow-x-auto pb-4">
           {processSteps.map((step, stepIndex) => (
-            <div key={step.id} className="relative">
+            <div key={step.id} className="relative flex-1 min-w-[280px]">
               {/* Step Header */}
-              <div className="flex items-center justify-center mb-8">
-                <div className="flex items-center bg-white rounded-full px-6 py-3 shadow-lg">
+              <div className="flex items-center justify-center mb-6">
+                <div className="flex items-center bg-white rounded-full px-4 py-2 shadow-lg">
                   <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center text-white mr-4"
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white mr-3"
                     style={{
                       background: `linear-gradient(135deg, ${step.gradientFrom}, ${step.gradientTo})`,
                     }}
@@ -374,25 +374,24 @@ export default function ProfessionalJourney() {
                     {step.icon}
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-gray-500 body-font">Step {step.stepNumber}</div>
-                    <div className="text-lg font-bold text-gray-800 header-font">{step.title}</div>
-                    <div className="text-sm text-gray-600 body-font">{step.description}</div>
+                    <div className="text-xs font-medium text-gray-500 body-font">Step {step.stepNumber}</div>
+                    <div className="text-base font-bold text-gray-800 header-font">{step.title}</div>
                   </div>
                 </div>
               </div>
 
               {/* Resources */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="space-y-4">
                 {step.resources.map((resource) => (
                   <div key={resource.id} className="relative">
                     <div
-                      className="bg-white rounded-2xl p-6 shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-xl border border-gray-100"
+                      className="bg-white rounded-2xl p-4 shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-xl border border-gray-100 h-full"
                       onClick={() => setSelectedResource(selectedResource === resource.id ? null : resource.id)}
                     >
                       {/* Resource Header */}
-                      <div className="flex items-center mb-4">
+                      <div className="flex items-center mb-3">
                         <div
-                          className="w-16 h-16 rounded-2xl flex items-center justify-center text-white mr-4"
+                          className="w-12 h-12 rounded-xl flex items-center justify-center text-white mr-3"
                           style={{
                             background: `linear-gradient(135deg, ${resource.gradientFrom}, ${resource.gradientTo})`,
                           }}
@@ -400,10 +399,10 @@ export default function ProfessionalJourney() {
                           {resource.icon}
                         </div>
                         <div className="flex-1">
-                          <h3 className="text-lg font-bold text-gray-800 header-font">{resource.title}</h3>
-                          <p className="text-sm text-gray-600 body-font">{resource.description}</p>
+                          <h3 className="text-base font-bold text-gray-800 header-font">{resource.title}</h3>
+                          <p className="text-xs text-gray-600 body-font">{resource.description}</p>
                           <div
-                            className={`mt-2 inline-flex items-center text-xs px-2 py-1 rounded-full font-medium ${
+                            className={`mt-1 inline-flex items-center text-xs px-2 py-0.5 rounded-full font-medium ${
                               resource.managedBy === "critter"
                                 ? "bg-green-100 text-green-700"
                                 : "bg-blue-100 text-blue-700"
@@ -411,55 +410,53 @@ export default function ProfessionalJourney() {
                           >
                             {resource.managedBy === "critter" ? (
                               <>
-                                <Shield className="h-3 w-3 mr-1" /> Critter Managed
+                                <Shield className="h-2 w-2 mr-1" /> Critter Managed
                               </>
                             ) : (
                               <>
-                                <User className="h-3 w-3 mr-1" /> You Manage
+                                <User className="h-2 w-2 mr-1" /> You Manage
                               </>
                             )}
                           </div>
                         </div>
                       </div>
 
-                      {/* Use Case */}
-                      <div className="bg-gray-50 rounded-xl p-4 mb-4">
-                        <div className="flex items-center mb-2">
-                          <Play className="h-4 w-4 text-gray-600 mr-2" />
-                          <span className="text-sm font-medium text-gray-800 header-font">Primary Use Case</span>
+                      {/* Use Case - Condensed for Step 3 */}
+                      {step.id === "step-3" ? (
+                        <div className="bg-gray-50 rounded-lg p-2 mb-2">
+                          <div className="flex items-center">
+                            <Play className="h-3 w-3 text-gray-600 mr-1" />
+                            <span className="text-xs font-medium text-gray-800 header-font">{resource.useCase}</span>
+                          </div>
                         </div>
-                        <p className="text-sm text-gray-600 body-font">{resource.useCase}</p>
-                      </div>
+                      ) : (
+                        <div className="bg-gray-50 rounded-xl p-3 mb-3">
+                          <div className="flex items-center mb-1">
+                            <Play className="h-4 w-4 text-gray-600 mr-2" />
+                            <span className="text-sm font-medium text-gray-800 header-font">Primary Use Case</span>
+                          </div>
+                          <p className="text-sm text-gray-600 body-font">{resource.useCase}</p>
+                        </div>
+                      )}
 
-                      {/* Quick Capabilities */}
-                      <div className="space-y-2">
-                        {resource.capabilities.slice(0, 3).map((capability, idx) => (
-                          <div key={idx} className="flex items-center text-sm text-gray-600 body-font">
-                            <CheckCircle className="h-3 w-3 text-green-500 mr-2 flex-shrink-0" />
+                      {/* Quick Capabilities - Fewer for Step 3 */}
+                      <div className="space-y-1">
+                        {resource.capabilities.slice(0, step.id === "step-3" ? 2 : 3).map((capability, idx) => (
+                          <div key={idx} className="flex items-center text-xs text-gray-600 body-font">
+                            <CheckCircle className="h-3 w-3 text-green-500 mr-1 flex-shrink-0" />
                             {capability}
                           </div>
                         ))}
-                        {resource.capabilities.length > 3 && (
+                        {resource.capabilities.length > (step.id === "step-3" ? 2 : 3) && (
                           <div className="text-xs text-gray-500 body-font">
-                            +{resource.capabilities.length - 3} more capabilities
+                            +{resource.capabilities.length - (step.id === "step-3" ? 2 : 3)} more
                           </div>
                         )}
                       </div>
 
-                      {/* Connections Indicator */}
-                      {resource.interactions.length > 0 && (
-                        <div className="mt-4 pt-4 border-t border-gray-200">
-                          <div className="flex items-center text-xs text-gray-500 body-font">
-                            <RotateCcw className="h-3 w-3 mr-1" />
-                            Connects to {resource.interactions.length} other resource
-                            {resource.interactions.length !== 1 ? "s" : ""}
-                          </div>
-                        </div>
-                      )}
-
                       {/* Click to explore */}
-                      <div className="mt-4 text-center">
-                        <span className="text-xs text-blue-600 body-font">Click to explore use case →</span>
+                      <div className="mt-3 text-center">
+                        <span className="text-xs text-blue-600 body-font">Click to explore →</span>
                       </div>
                     </div>
                   </div>
@@ -468,16 +465,32 @@ export default function ProfessionalJourney() {
 
               {/* Connection Arrow to Next Step */}
               {stepIndex < processSteps.length - 1 && (
-                <div className="flex justify-center">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-16 h-0.5 bg-gray-300"></div>
-                    <ArrowDown className="h-6 w-6 text-gray-400" />
-                    <div className="w-16 h-0.5 bg-gray-300"></div>
+                <div className="hidden md:flex items-center justify-center absolute -right-4 top-1/2 transform -translate-y-1/2 z-10">
+                  <div className="bg-white rounded-full p-2 shadow-md">
+                    <ArrowRight className="h-5 w-5 text-gray-400" />
                   </div>
                 </div>
               )}
             </div>
           ))}
+        </div>
+
+        {/* Management Legend */}
+        <div className="flex justify-center space-x-8 mt-8">
+          <div className="flex items-center bg-white bg-opacity-80 backdrop-blur-sm rounded-full px-4 py-2 shadow-md">
+            <Shield className="h-4 w-4 text-green-600 mr-2" />
+            <div>
+              <div className="text-sm font-bold text-gray-800 header-font">Critter Managed</div>
+              <div className="text-xs text-gray-600 body-font">We host and maintain these for you</div>
+            </div>
+          </div>
+          <div className="flex items-center bg-white bg-opacity-80 backdrop-blur-sm rounded-full px-4 py-2 shadow-md">
+            <User className="h-4 w-4 text-blue-600 mr-2" />
+            <div>
+              <div className="text-sm font-bold text-gray-800 header-font">You Manage</div>
+              <div className="text-xs text-gray-600 body-font">Your resources enhanced by Critter</div>
+            </div>
+          </div>
         </div>
       </div>
 
