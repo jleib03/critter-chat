@@ -118,7 +118,7 @@ const processSteps: ProcessStep[] = [
   {
     id: "step-2",
     stepNumber: 2,
-    title: "Run",
+    title: "Scale",
     description: "Optimize operations with additional tools",
     icon: <Zap className="h-6 w-6" />,
     color: critterColors.purple,
