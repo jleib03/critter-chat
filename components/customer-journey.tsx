@@ -10,282 +10,388 @@ import {
   FileText,
   Clock,
   CheckCircle,
-  ArrowRight,
-  Globe,
+  Star,
+  Shield,
+  Zap,
+  Heart,
+  Smartphone,
+  Users,
 } from "lucide-react"
 
-type CustomerStep = {
+type JourneyStep = {
   id: string
   title: string
-  description: string
+  subtitle: string
   icon: React.ReactNode
   color: string
-  details: string[]
-  requirements?: string[]
+  valueProps: string[]
+  tacticalActions: {
+    title: string
+    description: string
+    benefit: string
+  }[]
+  customerThought: string
+  businessValue: string
 }
 
-const customerSteps: CustomerStep[] = [
+const journeySteps: JourneyStep[] = [
   {
     id: "discover",
-    title: "Discover Your Professional",
-    description: "Find the right pet care professional for your needs",
-    icon: <Search className="h-6 w-6" />,
-    color: "#94ABD6",
-    details: [
-      "Browse professionals in your area",
-      "View profiles, services, and reviews",
-      "Check availability and pricing",
-      "Contact professionals directly",
-    ],
-  },
-  {
-    id: "intake",
-    title: "Complete Intake Process",
-    description: "Get onboarded with your chosen professional",
-    icon: <UserPlus className="h-6 w-6" />,
-    color: "#745E25",
-    details: [
-      "Fill out detailed pet information",
-      "Specify service preferences",
-      "Provide emergency contacts",
-      "Set communication preferences",
-    ],
-    requirements: ["Professional's custom intake link", "Pet details and photos", "Emergency contact information"],
-  },
-  {
-    id: "booking",
-    title: "Request Services",
-    description: "Book appointments without creating an account",
-    icon: <Calendar className="h-6 w-6" />,
+    title: "Discover",
+    subtitle: "Find your perfect pet care professional",
+    icon: <Search className="h-8 w-8" />,
     color: "#E75837",
-    details: [
-      "Request specific services",
-      "Choose preferred dates and times",
-      "Add special instructions",
-      "Receive confirmation from professional",
+    valueProps: ["No app downloads", "Instant browsing", "Real reviews", "Direct contact"],
+    tacticalActions: [
+      {
+        title: "Browse local professionals",
+        description: "Search by location, service type, and availability",
+        benefit: "Find exactly what you need, when you need it",
+      },
+      {
+        title: "Read authentic reviews",
+        description: "See real feedback from other pet parents",
+        benefit: "Make confident decisions with social proof",
+      },
+      {
+        title: "Compare services & pricing",
+        description: "View detailed service offerings and transparent pricing",
+        benefit: "No surprises - know exactly what you're getting",
+      },
     ],
-    requirements: ["Same email/name used in your profile", "Service details and preferences"],
+    customerThought: "I need someone I can trust with my furry family member",
+    businessValue: "Quality professionals vetted by real customer feedback",
+  },
+  {
+    id: "connect",
+    title: "Connect",
+    subtitle: "Get onboarded seamlessly",
+    icon: <UserPlus className="h-8 w-8" />,
+    color: "#7C3AED",
+    valueProps: ["Custom intake process", "One-time setup", "Secure data", "Personal touch"],
+    tacticalActions: [
+      {
+        title: "Complete personalized intake",
+        description: "Share your pet's unique needs, preferences, and medical info",
+        benefit: "Tailored care from day one",
+      },
+      {
+        title: "Set communication preferences",
+        description: "Choose how and when you want to receive updates",
+        benefit: "Stay informed your way",
+      },
+      {
+        title: "Establish emergency protocols",
+        description: "Provide emergency contacts and special instructions",
+        benefit: "Peace of mind for unexpected situations",
+      },
+    ],
+    customerThought: "I want them to know my pet as well as I do",
+    businessValue: "Professionals get complete context for exceptional care",
+  },
+  {
+    id: "book",
+    title: "Book",
+    subtitle: "Request services effortlessly",
+    icon: <Calendar className="h-8 w-8" />,
+    color: "#10B981",
+    valueProps: ["No account needed", "Flexible scheduling", "Instant confirmation", "Easy modifications"],
+    tacticalActions: [
+      {
+        title: "Request your preferred times",
+        description: "Pick dates and times that work with your schedule",
+        benefit: "Convenience that fits your life",
+      },
+      {
+        title: "Add special instructions",
+        description: "Include any specific needs or requests for this visit",
+        benefit: "Personalized service every time",
+      },
+      {
+        title: "Get instant confirmation",
+        description: "Receive immediate confirmation from your professional",
+        benefit: "No waiting, no uncertainty",
+      },
+    ],
+    customerThought: "This should work around my busy schedule",
+    businessValue: "Streamlined booking reduces back-and-forth communication",
   },
   {
     id: "support",
-    title: "Get Instant Support",
-    description: "Chat with your professional's AI assistant",
-    icon: <MessageSquare className="h-6 w-6" />,
-    color: "#059669",
-    details: [
-      "Ask questions about services",
-      "Get policy information",
-      "Check availability",
-      "Receive instant responses",
+    title: "Get Support",
+    subtitle: "Instant answers, anytime",
+    icon: <MessageSquare className="h-8 w-8" />,
+    color: "#3B82F6",
+    valueProps: ["24/7 availability", "Instant responses", "Professional knowledge", "No phone tag"],
+    tacticalActions: [
+      {
+        title: "Chat with AI assistant",
+        description: "Get immediate answers about policies, services, and availability",
+        benefit: "No waiting for business hours",
+      },
+      {
+        title: "Access professional knowledge",
+        description: "AI trained on your professional's specific expertise",
+        benefit: "Accurate, personalized information",
+      },
+      {
+        title: "Seamless handoff when needed",
+        description: "Complex questions automatically routed to your professional",
+        benefit: "Human touch when you need it most",
+      },
     ],
-    requirements: ["Professional's website with chat widget"],
+    customerThought: "I have questions and I need answers now",
+    businessValue: "Reduced support burden while improving customer satisfaction",
   },
   {
     id: "manage",
-    title: "Manage Your Information",
-    description: "Access schedules and invoices easily",
-    icon: <FileText className="h-6 w-6" />,
-    color: "#7C3AED",
-    details: [
-      "View upcoming appointments",
-      "Check past service history",
-      "Access outstanding invoices",
-      "Download receipts and records",
+    title: "Manage",
+    subtitle: "Stay organized effortlessly",
+    icon: <FileText className="h-8 w-8" />,
+    color: "#EC4899",
+    valueProps: ["All-in-one dashboard", "Real-time updates", "Complete history", "Easy access"],
+    tacticalActions: [
+      {
+        title: "View upcoming appointments",
+        description: "See your schedule at a glance with all important details",
+        benefit: "Never miss an appointment again",
+      },
+      {
+        title: "Access service history",
+        description: "Review past visits, notes, and photos from your professional",
+        benefit: "Track your pet's care journey",
+      },
+      {
+        title: "Download invoices & receipts",
+        description: "Get organized records for insurance or tax purposes",
+        benefit: "Simplified record keeping",
+      },
     ],
-    requirements: ["Same email/name used in your profile"],
+    customerThought: "I want to stay on top of my pet's care",
+    businessValue: "Transparent communication builds trust and loyalty",
   },
   {
-    id: "changes",
-    title: "Request Changes",
-    description: "Easily modify or cancel appointments",
-    icon: <Clock className="h-6 w-6" />,
-    color: "#DC2626",
-    details: [
-      "Request appointment cancellations",
-      "Ask for reschedule options",
-      "Submit via email or chat",
-      "Receive confirmation of changes",
+    id: "adjust",
+    title: "Adjust",
+    subtitle: "Flexible changes made simple",
+    icon: <Clock className="h-8 w-8" />,
+    color: "#F59E0B",
+    valueProps: ["Easy modifications", "Clear policies", "Quick responses", "No hassle"],
+    tacticalActions: [
+      {
+        title: "Request changes easily",
+        description: "Modify or cancel appointments through simple requests",
+        benefit: "Life happens - we get it",
+      },
+      {
+        title: "Understand policies clearly",
+        description: "Know exactly what to expect with transparent policies",
+        benefit: "No confusion or surprise fees",
+      },
+      {
+        title: "Get quick confirmations",
+        description: "Receive prompt responses to all change requests",
+        benefit: "Fast resolution when plans change",
+      },
     ],
-    requirements: ["Same email/name used in your profile", "Advance notice per professional's policy"],
+    customerThought: "Sometimes life gets in the way",
+    businessValue: "Clear policies and easy changes reduce conflicts",
   },
 ]
 
 export default function CustomerJourney() {
-  const [expandedStep, setExpandedStep] = useState<string | null>(null)
+  const [activeStep, setActiveStep] = useState<string>("discover")
+  const [hoveredAction, setHoveredAction] = useState<string | null>(null)
 
-  const toggleExpanded = (stepId: string) => {
-    setExpandedStep(expandedStep === stepId ? null : stepId)
-  }
+  const currentStep = journeySteps.find((step) => step.id === activeStep) || journeySteps[0]
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {/* Introduction */}
-      <div className="bg-gradient-to-r from-[#94ABD6] to-[#b0c1e3] rounded-xl p-8 text-white mb-8">
-        <h2 className="text-2xl font-bold mb-4 header-font">Customer Experience Journey</h2>
-        <p className="body-font mb-4">
-          Discover how easy it is to find, book, and manage pet care services through the Critter ecosystem - no app
-          download required for most features.
-        </p>
-        <div className="flex items-center text-sm opacity-90">
-          <Globe className="h-4 w-4 mr-2" />
-          <span className="body-font">Most features available directly through your professional's website</span>
+    <div className="max-w-6xl mx-auto">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-[#E75837] to-[#f07a5f] rounded-2xl p-8 text-white mb-8">
+        <div className="flex items-center mb-4">
+          <Heart className="h-8 w-8 mr-3" />
+          <div>
+            <h2 className="text-3xl font-bold header-font">Your Pet Care Journey</h2>
+            <p className="text-lg opacity-90 body-font">
+              Experience seamless pet care from discovery to ongoing support
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center text-sm opacity-90 mt-4">
+          <Smartphone className="h-4 w-4 mr-2" />
+          <span className="body-font">Works on any device - no app required</span>
         </div>
       </div>
 
-      {/* Journey Steps */}
-      <div className="space-y-6">
-        {customerSteps.map((step, index) => (
-          <div key={step.id} className="bg-white rounded-xl shadow-lg overflow-hidden">
-            {/* Header */}
-            <div
-              className="p-6 text-white relative overflow-hidden cursor-pointer"
-              style={{ backgroundColor: step.color }}
-              onClick={() => toggleExpanded(step.id)}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-4">
-                    {step.icon}
-                  </div>
-                  <div>
-                    <div className="text-sm opacity-90 body-font">Step {index + 1}</div>
-                    <h3 className="text-xl font-bold header-font">{step.title}</h3>
-                    <p className="text-sm opacity-90 body-font">{step.description}</p>
-                  </div>
-                </div>
-                <ArrowRight className={`h-5 w-5 transition-transform ${expandedStep === step.id ? "rotate-90" : ""}`} />
-              </div>
-
-              {/* Decorative elements */}
-              <div className="absolute -right-4 -top-4 w-24 h-24 bg-white bg-opacity-10 rounded-full" />
-              <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-white bg-opacity-5 rounded-full" />
-            </div>
-
-            {/* Expandable Content */}
-            <div
-              className={`transition-all duration-300 overflow-hidden ${
-                expandedStep === step.id ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+      {/* Interactive Journey Navigation */}
+      <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+        <h3 className="text-xl font-bold text-center mb-6 header-font">Your Journey Steps</h3>
+        <div className="flex flex-wrap justify-center gap-4">
+          {journeySteps.map((step, index) => (
+            <button
+              key={step.id}
+              onClick={() => setActiveStep(step.id)}
+              className={`flex items-center px-4 py-3 rounded-xl transition-all duration-300 ${
+                activeStep === step.id ? "shadow-lg transform scale-105" : "hover:shadow-md hover:scale-102"
               }`}
+              style={{
+                backgroundColor: activeStep === step.id ? step.color : "#F8FAFC",
+                color: activeStep === step.id ? "white" : "#64748B",
+              }}
             >
-              <div className="p-6 border-t border-gray-100">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* What You Can Do */}
-                  <div>
-                    <h4 className="font-bold text-gray-800 mb-3 header-font">What You Can Do</h4>
-                    <ul className="space-y-2">
-                      {step.details.map((detail, idx) => (
-                        <li key={idx} className="flex items-start text-sm text-gray-600 body-font">
-                          <CheckCircle className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                          {detail}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Requirements */}
-                  {step.requirements && (
-                    <div>
-                      <h4 className="font-bold text-gray-800 mb-3 header-font">What You'll Need</h4>
-                      <ul className="space-y-2">
-                        {step.requirements.map((req, idx) => (
-                          <li key={idx} className="flex items-start text-sm text-gray-600 body-font">
-                            <div className="w-2 h-2 bg-gray-400 rounded-full mr-2 mt-2 flex-shrink-0" />
-                            {req}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center mr-3"
+                style={{
+                  backgroundColor: activeStep === step.id ? "rgba(255,255,255,0.2)" : step.color,
+                  color: activeStep === step.id ? "white" : "white",
+                }}
+              >
+                <span className="text-xs font-bold">{index + 1}</span>
               </div>
-            </div>
-
-            {/* Always visible summary */}
-            {expandedStep !== step.id && (
-              <div className="p-4 bg-gray-50">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-600 body-font">
-                    {step.details.length} available actions
-                    {step.requirements && ` • ${step.requirements.length} requirements`}
-                  </div>
-                  <button
-                    onClick={() => toggleExpanded(step.id)}
-                    className="text-sm text-[#E75837] hover:text-[#d04e30] font-medium body-font"
-                  >
-                    View Details
-                  </button>
-                </div>
+              <div className="text-left">
+                <div className="font-bold text-sm header-font">{step.title}</div>
+                <div className="text-xs opacity-75 body-font">{step.subtitle}</div>
               </div>
-            )}
-          </div>
-        ))}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Key Benefits */}
-      <div className="mt-12 bg-white rounded-xl shadow-lg p-8">
-        <h3 className="text-xl font-bold mb-6 header-font">Why Choose Critter?</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="flex items-start">
-            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
-              <CheckCircle className="h-5 w-5 text-green-600" />
+      {/* Active Step Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {/* Left Side - Value Proposition */}
+        <div className="bg-white rounded-2xl shadow-lg p-8">
+          <div className="flex items-center mb-6">
+            <div
+              className="w-16 h-16 rounded-2xl flex items-center justify-center text-white mr-4 shadow-lg"
+              style={{ backgroundColor: currentStep.color }}
+            >
+              {currentStep.icon}
             </div>
             <div>
-              <h4 className="font-medium text-gray-800 mb-1 header-font">No App Required</h4>
-              <p className="text-sm text-gray-600 body-font">
-                Access most features directly through your professional's website without downloading anything.
-              </p>
+              <h3 className="text-2xl font-bold header-font">{currentStep.title}</h3>
+              <p className="text-[#64748B] body-font">{currentStep.subtitle}</p>
             </div>
           </div>
 
-          <div className="flex items-start">
-            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
-              <MessageSquare className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <h4 className="font-medium text-gray-800 mb-1 header-font">Instant Support</h4>
-              <p className="text-sm text-gray-600 body-font">
-                Get immediate answers from AI assistants trained on your professional's specific policies.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start">
-            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
-              <Calendar className="h-5 w-5 text-purple-600" />
-            </div>
-            <div>
-              <h4 className="font-medium text-gray-800 mb-1 header-font">Easy Booking</h4>
-              <p className="text-sm text-gray-600 body-font">
-                Request services and manage appointments without creating accounts or remembering passwords.
-              </p>
+          {/* Customer Thought */}
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 mb-6">
+            <div className="flex items-start">
+              <Users className="h-5 w-5 text-blue-600 mr-3 mt-1 flex-shrink-0" />
+              <div>
+                <div className="font-medium text-sm text-blue-800 header-font">What you're thinking:</div>
+                <p className="text-blue-700 italic body-font">"{currentStep.customerThought}"</p>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-start">
-            <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
-              <FileText className="h-5 w-5 text-orange-600" />
-            </div>
-            <div>
-              <h4 className="font-medium text-gray-800 mb-1 header-font">Complete Access</h4>
-              <p className="text-sm text-gray-600 body-font">
-                View your schedules, invoices, and service history all in one place.
-              </p>
+          {/* Value Props */}
+          <div className="mb-6">
+            <h4 className="font-bold text-[#1E293B] mb-3 header-font">Why you'll love this:</h4>
+            <div className="grid grid-cols-2 gap-3">
+              {currentStep.valueProps.map((prop, idx) => (
+                <div key={idx} className="flex items-center text-sm">
+                  <Star className="h-4 w-4 text-yellow-500 mr-2 flex-shrink-0" />
+                  <span className="body-font">{prop}</span>
+                </div>
+              ))}
             </div>
           </div>
+
+          {/* Business Value */}
+          <div className="bg-green-50 rounded-xl p-4">
+            <div className="flex items-start">
+              <Shield className="h-5 w-5 text-green-600 mr-3 mt-1 flex-shrink-0" />
+              <div>
+                <div className="font-medium text-sm text-green-800 header-font">The result:</div>
+                <p className="text-green-700 body-font">{currentStep.businessValue}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side - Tactical Actions */}
+        <div className="space-y-4">
+          <h4 className="text-xl font-bold header-font">What you'll do:</h4>
+          {currentStep.tacticalActions.map((action, idx) => (
+            <div
+              key={idx}
+              className="bg-white rounded-xl shadow-md p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-102"
+              onMouseEnter={() => setHoveredAction(`${currentStep.id}-${idx}`)}
+              onMouseLeave={() => setHoveredAction(null)}
+            >
+              <div className="flex items-start">
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-white mr-4 flex-shrink-0"
+                  style={{ backgroundColor: currentStep.color }}
+                >
+                  <span className="text-sm font-bold">{idx + 1}</span>
+                </div>
+                <div className="flex-1">
+                  <h5 className="font-bold text-[#1E293B] mb-2 header-font">{action.title}</h5>
+                  <p className="text-[#64748B] text-sm mb-3 body-font">{action.description}</p>
+                  <div
+                    className={`transition-all duration-300 ${
+                      hoveredAction === `${currentStep.id}-${idx}` ? "opacity-100 max-h-20" : "opacity-70 max-h-12"
+                    }`}
+                  >
+                    <div className="flex items-center">
+                      <Zap className="h-4 w-4 text-green-500 mr-2" />
+                      <span className="text-sm font-medium text-green-700 body-font">{action.benefit}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Journey Progress */}
+      <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+        <h4 className="text-lg font-bold text-center mb-4 header-font">Your Journey Progress</h4>
+        <div className="flex items-center justify-between">
+          {journeySteps.map((step, index) => (
+            <div key={step.id} className="flex items-center">
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center text-white transition-all duration-300 ${
+                  journeySteps.findIndex((s) => s.id === activeStep) >= index ? "scale-110" : "scale-100 opacity-50"
+                }`}
+                style={{
+                  backgroundColor: journeySteps.findIndex((s) => s.id === activeStep) >= index ? step.color : "#E5E7EB",
+                }}
+              >
+                {journeySteps.findIndex((s) => s.id === activeStep) > index ? (
+                  <CheckCircle className="h-6 w-6" />
+                ) : (
+                  <span className="text-sm font-bold">{index + 1}</span>
+                )}
+              </div>
+              {index < journeySteps.length - 1 && (
+                <div
+                  className={`w-12 h-1 mx-2 transition-all duration-300 ${
+                    journeySteps.findIndex((s) => s.id === activeStep) > index ? "bg-green-400" : "bg-gray-200"
+                  }`}
+                />
+              )}
+            </div>
+          ))}
         </div>
       </div>
 
       {/* CTA */}
-      <div className="mt-8 bg-gradient-to-r from-[#E75837] to-[#f07a5f] rounded-xl p-8 text-white text-center">
-        <h3 className="text-2xl font-bold mb-4 header-font">Ready to Experience Better Pet Care?</h3>
+      <div className="bg-gradient-to-r from-[#E75837] to-[#f07a5f] rounded-2xl p-8 text-white text-center">
+        <h3 className="text-2xl font-bold mb-4 header-font">Ready to Start Your Journey?</h3>
         <p className="mb-6 body-font">
-          Find a Critter professional in your area and discover how easy pet care booking can be.
+          Experience the future of pet care - where convenience meets exceptional service.
         </p>
         <a
           href="/findprofessional"
-          className="bg-white text-[#E75837] px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors body-font inline-block"
+          className="bg-white text-[#E75837] px-8 py-4 rounded-xl font-bold hover:bg-gray-100 transition-colors body-font inline-flex items-center shadow-lg"
         >
-          Find a Professional
+          <Search className="h-5 w-5 mr-2" />
+          Find Your Professional
         </a>
       </div>
     </div>
