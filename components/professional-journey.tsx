@@ -20,6 +20,8 @@ import {
   Rocket,
   Play,
   RotateCcw,
+  Sparkles,
+  Clock,
 } from "lucide-react"
 
 type ProcessStep = {
@@ -42,6 +44,7 @@ type ProcessResource = {
   color: string
   managedBy: "critter" | "professional"
   capabilities: string[]
+  futureEnhancements?: string[]
   useCaseDetails: {
     title: string
     description: string
@@ -182,6 +185,7 @@ const processSteps: ProcessStep[] = [
           "Booking modifications",
           "Cancellation requests",
         ],
+        futureEnhancements: ["Directly create bookings", "Show professional availability"],
         useCaseDetails: {
           title: "Customer Self-Service Booking",
           description: "Enable customers to book, modify, and cancel appointments without creating a Critter account",
@@ -230,6 +234,7 @@ const processSteps: ProcessStep[] = [
           "Availability checking",
           "Custom Training",
         ],
+        futureEnhancements: ["Public facing Critter profile"],
         useCaseDetails: {
           title: "AI Chatbot Support",
           description: "Provide instant customer support with an AI agent that knows your business",
@@ -275,6 +280,7 @@ const processSteps: ProcessStep[] = [
           "Social proof",
           "Community building",
         ],
+        futureEnhancements: ["Create leads and new requests directly in Critter Platform"],
         useCaseDetails: {
           title: "Custom Intake Links",
           description: "Convert social media followers into customers with tailored intake processes",
@@ -312,15 +318,35 @@ const processSteps: ProcessStep[] = [
 
 export default function ProfessionalJourney() {
   const [selectedResource, setSelectedResource] = useState<string | null>(null)
+  const [selectedFutureEnhancements, setSelectedFutureEnhancements] = useState<string | null>(null)
   const [hoveredInteraction, setHoveredInteraction] = useState<string | null>(null)
 
   const selectedResourceData = processSteps
     .flatMap((step) => step.resources)
     .find((resource) => resource.id === selectedResource)
 
+  const selectedFutureEnhancementsData = processSteps
+    .flatMap((step) => step.resources)
+    .find((resource) => resource.id === selectedFutureEnhancements)
+
   const getConnectedResourceTitle = (resourceId: string) => {
     const resource = processSteps.flatMap((step) => step.resources).find((r) => r.id === resourceId)
     return resource?.title || resourceId
+  }
+
+  const handleResourceClick = (resourceId: string, isGrowStep = false) => {
+    if (isGrowStep) {
+      // Single click for grow step - show regular details
+      setSelectedResource(selectedResource === resourceId ? null : resourceId)
+    } else {
+      // Regular click for other steps
+      setSelectedResource(selectedResource === resourceId ? null : resourceId)
+    }
+  }
+
+  const handleResourceDoubleClick = (resourceId: string) => {
+    // Double click for grow step - show future enhancements
+    setSelectedFutureEnhancements(selectedFutureEnhancements === resourceId ? null : resourceId)
   }
 
   return (
@@ -356,7 +382,7 @@ export default function ProfessionalJourney() {
                 <div key={resource.id} className="relative">
                   <div
                     className="bg-white rounded-xl p-5 shadow-md cursor-pointer transition-all duration-300 hover:shadow-lg border border-gray-100 h-full min-h-[280px] flex flex-col"
-                    onClick={() => setSelectedResource(selectedResource === resource.id ? null : resource.id)}
+                    onClick={() => handleResourceClick(resource.id)}
                   >
                     {/* Resource Header */}
                     <div className="flex items-center mb-4">
@@ -439,7 +465,7 @@ export default function ProfessionalJourney() {
                 <div key={resource.id} className="relative">
                   <div
                     className="bg-white rounded-xl p-5 shadow-md cursor-pointer transition-all duration-300 hover:shadow-lg border border-gray-100 h-full min-h-[280px] flex flex-col"
-                    onClick={() => setSelectedResource(selectedResource === resource.id ? null : resource.id)}
+                    onClick={() => handleResourceClick(resource.id)}
                   >
                     {/* Resource Header */}
                     <div className="flex items-center mb-4">
@@ -523,7 +549,8 @@ export default function ProfessionalJourney() {
                 <div key={resource.id} className="relative">
                   <div
                     className="bg-white rounded-xl p-5 shadow-md cursor-pointer transition-all duration-300 hover:shadow-lg border border-gray-100 h-full min-h-[280px] flex flex-col"
-                    onClick={() => setSelectedResource(selectedResource === resource.id ? null : resource.id)}
+                    onClick={() => handleResourceClick(resource.id, true)}
+                    onDoubleClick={() => handleResourceDoubleClick(resource.id)}
                   >
                     {/* Resource Header */}
                     <div className="flex items-center mb-4">
@@ -577,8 +604,14 @@ export default function ProfessionalJourney() {
                     </div>
 
                     {/* Click to explore */}
-                    <div className="mt-3 text-center">
+                    <div className="mt-3 text-center space-y-1">
                       <span className="text-xs text-[#3B82F6] body-font">Click to explore →</span>
+                      {resource.futureEnhancements && (
+                        <div className="flex items-center justify-center text-xs text-purple-600 body-font">
+                          <Sparkles className="h-3 w-3 mr-1" />
+                          Double-click for future features
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -778,11 +811,79 @@ export default function ProfessionalJourney() {
         </div>
       )}
 
+      {/* Future Enhancements Modal */}
+      {selectedFutureEnhancementsData && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 px-4">
+          <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl shadow-2xl max-w-2xl w-full border-2 border-purple-200">
+            <div className="p-6">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center">
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white mr-4 shadow-md">
+                    <Sparkles className="h-8 w-8" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold header-font text-[#1E293B] flex items-center">
+                      Future Enhancements
+                      <Clock className="h-5 w-5 ml-2 text-purple-600" />
+                    </h3>
+                    <p className="text-[#64748B] body-font text-sm">
+                      {selectedFutureEnhancementsData.title} - Coming Soon
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedFutureEnhancements(null)}
+                  className="p-2 hover:bg-white/50 rounded-full transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Future Enhancements Content */}
+              <div className="bg-white/70 rounded-xl p-6 backdrop-blur-sm">
+                <h4 className="font-bold text-[#1E293B] mb-4 header-font text-lg">Upcoming Features</h4>
+                <div className="space-y-3">
+                  {selectedFutureEnhancementsData.futureEnhancements?.map((enhancement, idx) => (
+                    <div key={idx} className="flex items-start">
+                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0">
+                        <Sparkles className="h-3 w-3 text-white" />
+                      </div>
+                      <div className="text-sm text-[#1E293B] body-font font-medium">{enhancement}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-6 p-4 bg-purple-100/50 rounded-lg">
+                  <p className="text-sm text-[#64748B] body-font text-center">
+                    These features are currently in development and will be available in future updates to enhance your{" "}
+                    {selectedFutureEnhancementsData.title.toLowerCase()} experience.
+                  </p>
+                </div>
+              </div>
+
+              {/* Close Button */}
+              <div className="mt-6 text-center">
+                <button
+                  onClick={() => setSelectedFutureEnhancements(null)}
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all text-sm font-medium body-font shadow-md"
+                >
+                  Got it!
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Enhanced Overlay */}
-      {selectedResourceData && (
+      {(selectedResourceData || selectedFutureEnhancementsData) && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40"
-          onClick={() => setSelectedResource(null)}
+          onClick={() => {
+            setSelectedResource(null)
+            setSelectedFutureEnhancements(null)
+          }}
         />
       )}
     </div>
