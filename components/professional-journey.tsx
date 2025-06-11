@@ -331,262 +331,249 @@ export default function ProfessionalJourney() {
 
   return (
     <div className="relative">
-      {/* Hero Section */}
-      <div className="mb-8">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl font-bold header-font mb-3 text-[#1E293B]">Your Business Growth Journey</h2>
+      {/* Process Steps Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Start Step */}
+        <div className="bg-[#F8FAFC] rounded-2xl shadow-md p-6">
+          <div className="flex items-center mb-4">
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center text-white mr-3 shadow-md"
+              style={{ backgroundColor: processSteps[0].color }}
+            >
+              {processSteps[0].icon}
+            </div>
+            <div>
+              <div className="text-xs font-medium text-[#64748B] body-font">Step {processSteps[0].stepNumber}</div>
+              <div className="text-xl font-bold text-[#1E293B] header-font">{processSteps[0].title}</div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {processSteps[0].resources.map((resource) => (
+              <div key={resource.id} className="relative">
+                <div
+                  className="bg-white rounded-xl p-5 shadow-md cursor-pointer transition-all duration-300 hover:shadow-lg border border-gray-100 h-full min-h-[280px] flex flex-col"
+                  onClick={() => setSelectedResource(selectedResource === resource.id ? null : resource.id)}
+                >
+                  {/* Resource Header */}
+                  <div className="flex items-center mb-4">
+                    <div
+                      className="w-12 h-12 rounded-xl flex items-center justify-center text-white mr-3 shadow-sm"
+                      style={{ backgroundColor: resource.color }}
+                    >
+                      {resource.icon}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-base font-bold text-[#1E293B] header-font">{resource.title}</h3>
+                      <p className="text-xs text-[#64748B] body-font">{resource.description}</p>
+                      <div
+                        className={`mt-1 inline-flex items-center text-xs px-2 py-0.5 rounded-full font-medium ${
+                          resource.managedBy === "critter" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
+                        }`}
+                      >
+                        {resource.managedBy === "critter" ? (
+                          <>
+                            <Shield className="h-2 w-2 mr-1" /> Critter Managed
+                          </>
+                        ) : (
+                          <>
+                            <User className="h-2 w-2 mr-1" /> You Manage
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Use Case */}
+                  <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                    <p className="text-sm text-[#64748B] body-font">{resource.useCase}</p>
+                  </div>
+
+                  {/* Quick Capabilities - flex-grow to fill remaining space */}
+                  <div className="space-y-1 flex-grow">
+                    {resource.capabilities.slice(0, 2).map((capability, idx) => (
+                      <div key={idx} className="flex items-center text-xs text-[#64748B] body-font">
+                        <CheckCircle className="h-3 w-3 text-green-500 mr-1 flex-shrink-0" />
+                        {capability}
+                      </div>
+                    ))}
+                    {resource.capabilities.length > 2 && (
+                      <div className="text-xs text-[#64748B] body-font">
+                        +{resource.capabilities.length - 2} more capabilities
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Click to explore - always at bottom */}
+                  <div className="mt-3 text-center">
+                    <span className="text-xs text-[#3B82F6] body-font">Click to explore →</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Process Steps Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Start Step */}
-          <div className="bg-[#F8FAFC] rounded-2xl shadow-md p-6">
-            <div className="flex items-center mb-4">
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-white mr-3 shadow-md"
-                style={{ backgroundColor: processSteps[0].color }}
-              >
-                {processSteps[0].icon}
-              </div>
-              <div>
-                <div className="text-xs font-medium text-[#64748B] body-font">Step {processSteps[0].stepNumber}</div>
-                <div className="text-xl font-bold text-[#1E293B] header-font">{processSteps[0].title}</div>
-              </div>
+        {/* Scale Step */}
+        <div className="bg-[#F8FAFC] rounded-2xl shadow-md p-6">
+          <div className="flex items-center mb-4">
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center text-white mr-3 shadow-md"
+              style={{ backgroundColor: processSteps[1].color }}
+            >
+              {processSteps[1].icon}
             </div>
-
-            <div className="space-y-4">
-              {processSteps[0].resources.map((resource) => (
-                <div key={resource.id} className="relative">
-                  <div
-                    className="bg-white rounded-xl p-5 shadow-md cursor-pointer transition-all duration-300 hover:shadow-lg border border-gray-100 h-full min-h-[280px] flex flex-col"
-                    onClick={() => setSelectedResource(selectedResource === resource.id ? null : resource.id)}
-                  >
-                    {/* Resource Header */}
-                    <div className="flex items-center mb-4">
-                      <div
-                        className="w-12 h-12 rounded-xl flex items-center justify-center text-white mr-3 shadow-sm"
-                        style={{ backgroundColor: resource.color }}
-                      >
-                        {resource.icon}
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-base font-bold text-[#1E293B] header-font">{resource.title}</h3>
-                        <p className="text-xs text-[#64748B] body-font">{resource.description}</p>
-                        <div
-                          className={`mt-1 inline-flex items-center text-xs px-2 py-0.5 rounded-full font-medium ${
-                            resource.managedBy === "critter"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-blue-100 text-blue-700"
-                          }`}
-                        >
-                          {resource.managedBy === "critter" ? (
-                            <>
-                              <Shield className="h-2 w-2 mr-1" /> Critter Managed
-                            </>
-                          ) : (
-                            <>
-                              <User className="h-2 w-2 mr-1" /> You Manage
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Use Case */}
-                    <div className="bg-gray-50 rounded-lg p-3 mb-3">
-                      <p className="text-sm text-[#64748B] body-font">{resource.useCase}</p>
-                    </div>
-
-                    {/* Quick Capabilities - flex-grow to fill remaining space */}
-                    <div className="space-y-1 flex-grow">
-                      {resource.capabilities.slice(0, 2).map((capability, idx) => (
-                        <div key={idx} className="flex items-center text-xs text-[#64748B] body-font">
-                          <CheckCircle className="h-3 w-3 text-green-500 mr-1 flex-shrink-0" />
-                          {capability}
-                        </div>
-                      ))}
-                      {resource.capabilities.length > 2 && (
-                        <div className="text-xs text-[#64748B] body-font">
-                          +{resource.capabilities.length - 2} more capabilities
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Click to explore - always at bottom */}
-                    <div className="mt-3 text-center">
-                      <span className="text-xs text-[#3B82F6] body-font">Click to explore →</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div>
+              <div className="text-xs font-medium text-[#64748B] body-font">Step {processSteps[1].stepNumber}</div>
+              <div className="text-xl font-bold text-[#1E293B] header-font">{processSteps[1].title}</div>
             </div>
           </div>
 
-          {/* Scale Step */}
-          <div className="bg-[#F8FAFC] rounded-2xl shadow-md p-6">
-            <div className="flex items-center mb-4">
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-white mr-3 shadow-md"
-                style={{ backgroundColor: processSteps[1].color }}
-              >
-                {processSteps[1].icon}
-              </div>
-              <div>
-                <div className="text-xs font-medium text-[#64748B] body-font">Step {processSteps[1].stepNumber}</div>
-                <div className="text-xl font-bold text-[#1E293B] header-font">{processSteps[1].title}</div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              {processSteps[1].resources.map((resource) => (
-                <div key={resource.id} className="relative">
-                  <div
-                    className="bg-white rounded-xl p-5 shadow-md cursor-pointer transition-all duration-300 hover:shadow-lg border border-gray-100 h-full min-h-[280px] flex flex-col"
-                    onClick={() => setSelectedResource(selectedResource === resource.id ? null : resource.id)}
-                  >
-                    {/* Resource Header */}
-                    <div className="flex items-center mb-4">
+          <div className="space-y-4">
+            {processSteps[1].resources.map((resource) => (
+              <div key={resource.id} className="relative">
+                <div
+                  className="bg-white rounded-xl p-5 shadow-md cursor-pointer transition-all duration-300 hover:shadow-lg border border-gray-100 h-full min-h-[280px] flex flex-col"
+                  onClick={() => setSelectedResource(selectedResource === resource.id ? null : resource.id)}
+                >
+                  {/* Resource Header */}
+                  <div className="flex items-center mb-4">
+                    <div
+                      className="w-12 h-12 rounded-xl flex items-center justify-center text-white mr-3 shadow-sm"
+                      style={{ backgroundColor: resource.color }}
+                    >
+                      {resource.icon}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-base font-bold text-[#1E293B] header-font">{resource.title}</h3>
+                      <p className="text-xs text-[#64748B] body-font">{resource.description}</p>
                       <div
-                        className="w-12 h-12 rounded-xl flex items-center justify-center text-white mr-3 shadow-sm"
-                        style={{ backgroundColor: resource.color }}
+                        className={`mt-1 inline-flex items-center text-xs px-2 py-0.5 rounded-full font-medium ${
+                          resource.managedBy === "critter" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
+                        }`}
                       >
-                        {resource.icon}
+                        {resource.managedBy === "critter" ? (
+                          <>
+                            <Shield className="h-2 w-2 mr-1" /> Critter Managed
+                          </>
+                        ) : (
+                          <>
+                            <User className="h-2 w-2 mr-1" /> You Manage
+                          </>
+                        )}
                       </div>
-                      <div className="flex-1">
-                        <h3 className="text-base font-bold text-[#1E293B] header-font">{resource.title}</h3>
-                        <p className="text-xs text-[#64748B] body-font">{resource.description}</p>
-                        <div
-                          className={`mt-1 inline-flex items-center text-xs px-2 py-0.5 rounded-full font-medium ${
-                            resource.managedBy === "critter"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-blue-100 text-blue-700"
-                          }`}
-                        >
-                          {resource.managedBy === "critter" ? (
-                            <>
-                              <Shield className="h-2 w-2 mr-1" /> Critter Managed
-                            </>
-                          ) : (
-                            <>
-                              <User className="h-2 w-2 mr-1" /> You Manage
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Use Case */}
-                    <div className="bg-gray-50 rounded-lg p-3 mb-3">
-                      <p className="text-sm text-[#64748B] body-font">{resource.useCase}</p>
-                    </div>
-
-                    {/* Quick Capabilities - flex-grow to fill remaining space */}
-                    <div className="space-y-1 flex-grow">
-                      {resource.capabilities.slice(0, 2).map((capability, idx) => (
-                        <div key={idx} className="flex items-center text-xs text-[#64748B] body-font">
-                          <CheckCircle className="h-3 w-3 text-green-500 mr-1 flex-shrink-0" />
-                          {capability}
-                        </div>
-                      ))}
-                      {resource.capabilities.length > 2 && (
-                        <div className="text-xs text-[#64748B] body-font">
-                          +{resource.capabilities.length - 2} more capabilities
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Click to explore - always at bottom */}
-                    <div className="mt-3 text-center">
-                      <span className="text-xs text-[#3B82F6] body-font">Click to explore →</span>
                     </div>
                   </div>
+
+                  {/* Use Case */}
+                  <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                    <p className="text-sm text-[#64748B] body-font">{resource.useCase}</p>
+                  </div>
+
+                  {/* Quick Capabilities - flex-grow to fill remaining space */}
+                  <div className="space-y-1 flex-grow">
+                    {resource.capabilities.slice(0, 2).map((capability, idx) => (
+                      <div key={idx} className="flex items-center text-xs text-[#64748B] body-font">
+                        <CheckCircle className="h-3 w-3 text-green-500 mr-1 flex-shrink-0" />
+                        {capability}
+                      </div>
+                    ))}
+                    {resource.capabilities.length > 2 && (
+                      <div className="text-xs text-[#64748B] body-font">
+                        +{resource.capabilities.length - 2} more capabilities
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Click to explore - always at bottom */}
+                  <div className="mt-3 text-center">
+                    <span className="text-xs text-[#3B82F6] body-font">Click to explore →</span>
+                  </div>
                 </div>
-              ))}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Grow Step - Full Width */}
+        <div className="lg:col-span-2 bg-[#F8FAFC] rounded-2xl shadow-md p-6">
+          <div className="flex items-center mb-4">
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center text-white mr-3 shadow-md"
+              style={{ backgroundColor: processSteps[2].color }}
+            >
+              {processSteps[2].icon}
+            </div>
+            <div>
+              <div className="text-xs font-medium text-[#64748B] body-font">Step {processSteps[2].stepNumber}</div>
+              <div className="text-xl font-bold text-[#1E293B] header-font">{processSteps[2].title}</div>
             </div>
           </div>
 
-          {/* Grow Step - Full Width */}
-          <div className="lg:col-span-2 bg-[#F8FAFC] rounded-2xl shadow-md p-6">
-            <div className="flex items-center mb-4">
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-white mr-3 shadow-md"
-                style={{ backgroundColor: processSteps[2].color }}
-              >
-                {processSteps[2].icon}
-              </div>
-              <div>
-                <div className="text-xs font-medium text-[#64748B] body-font">Step {processSteps[2].stepNumber}</div>
-                <div className="text-xl font-bold text-[#1E293B] header-font">{processSteps[2].title}</div>
-              </div>
-            </div>
-
-            {/* Horizontal layout for all 3 Grow resources */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {processSteps[2].resources.map((resource) => (
-                <div key={resource.id} className="relative">
-                  <div
-                    className="bg-white rounded-xl p-5 shadow-md cursor-pointer transition-all duration-300 hover:shadow-lg border border-gray-100 h-full min-h-[280px] flex flex-col"
-                    onClick={() => setSelectedResource(selectedResource === resource.id ? null : resource.id)}
-                  >
-                    {/* Resource Header */}
-                    <div className="flex items-center mb-4">
+          {/* Horizontal layout for all 3 Grow resources */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {processSteps[2].resources.map((resource) => (
+              <div key={resource.id} className="relative">
+                <div
+                  className="bg-white rounded-xl p-5 shadow-md cursor-pointer transition-all duration-300 hover:shadow-lg border border-gray-100 h-full min-h-[280px] flex flex-col"
+                  onClick={() => setSelectedResource(selectedResource === resource.id ? null : resource.id)}
+                >
+                  {/* Resource Header */}
+                  <div className="flex items-center mb-4">
+                    <div
+                      className="w-12 h-12 rounded-xl flex items-center justify-center text-white mr-3 shadow-sm"
+                      style={{ backgroundColor: resource.color }}
+                    >
+                      {resource.icon}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-base font-bold text-[#1E293B] header-font">{resource.title}</h3>
+                      <p className="text-xs text-[#64748B] body-font">{resource.description}</p>
                       <div
-                        className="w-12 h-12 rounded-xl flex items-center justify-center text-white mr-3 shadow-sm"
-                        style={{ backgroundColor: resource.color }}
+                        className={`mt-1 inline-flex items-center text-xs px-2 py-0.5 rounded-full font-medium ${
+                          resource.managedBy === "critter" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
+                        }`}
                       >
-                        {resource.icon}
+                        {resource.managedBy === "critter" ? (
+                          <>
+                            <Shield className="h-2 w-2 mr-1" /> Critter Managed
+                          </>
+                        ) : (
+                          <>
+                            <User className="h-2 w-2 mr-1" /> You Manage
+                          </>
+                        )}
                       </div>
-                      <div className="flex-1">
-                        <h3 className="text-base font-bold text-[#1E293B] header-font">{resource.title}</h3>
-                        <p className="text-xs text-[#64748B] body-font">{resource.description}</p>
-                        <div
-                          className={`mt-1 inline-flex items-center text-xs px-2 py-0.5 rounded-full font-medium ${
-                            resource.managedBy === "critter"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-blue-100 text-blue-700"
-                          }`}
-                        >
-                          {resource.managedBy === "critter" ? (
-                            <>
-                              <Shield className="h-2 w-2 mr-1" /> Critter Managed
-                            </>
-                          ) : (
-                            <>
-                              <User className="h-2 w-2 mr-1" /> You Manage
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Use Case */}
-                    <div className="bg-gray-50 rounded-lg p-3 mb-3">
-                      <p className="text-sm text-[#64748B] body-font">{resource.useCase}</p>
-                    </div>
-
-                    {/* Quick Capabilities */}
-                    <div className="space-y-1 flex-grow">
-                      {resource.capabilities.slice(0, 2).map((capability, idx) => (
-                        <div key={idx} className="flex items-center text-xs text-[#64748B] body-font">
-                          <CheckCircle className="h-3 w-3 text-green-500 mr-1 flex-shrink-0" />
-                          {capability}
-                        </div>
-                      ))}
-                      {resource.capabilities.length > 2 && (
-                        <div className="text-xs text-[#64748B] body-font">
-                          +{resource.capabilities.length - 2} more capabilities
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Click to explore */}
-                    <div className="mt-3 text-center">
-                      <span className="text-xs text-[#3B82F6] body-font">Click to explore →</span>
                     </div>
                   </div>
+
+                  {/* Use Case */}
+                  <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                    <p className="text-sm text-[#64748B] body-font">{resource.useCase}</p>
+                  </div>
+
+                  {/* Quick Capabilities */}
+                  <div className="space-y-1 flex-grow">
+                    {resource.capabilities.slice(0, 2).map((capability, idx) => (
+                      <div key={idx} className="flex items-center text-xs text-[#64748B] body-font">
+                        <CheckCircle className="h-3 w-3 text-green-500 mr-1 flex-shrink-0" />
+                        {capability}
+                      </div>
+                    ))}
+                    {resource.capabilities.length > 2 && (
+                      <div className="text-xs text-[#64748B] body-font">
+                        +{resource.capabilities.length - 2} more capabilities
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Click to explore */}
+                  <div className="mt-3 text-center">
+                    <span className="text-xs text-[#3B82F6] body-font">Click to explore →</span>
+                  </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
