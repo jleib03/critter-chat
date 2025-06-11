@@ -283,7 +283,7 @@ const processSteps: ProcessStep[] = [
             "Potential customer clicks link from your post",
             "They complete your custom intake form",
             "System collects customer and pet information",
-            "New lead appears in your Critter Platform",
+            "New lead is routed to you via email",
             "You follow up to schedule first appointment",
           ],
           connectsTo: {
