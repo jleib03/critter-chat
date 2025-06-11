@@ -2,11 +2,9 @@
 import { useState } from "react"
 import { Loader2, Copy, Check, Settings, Users, MessageSquare, Construction, ArrowRight } from "lucide-react"
 import Header from "../../../components/header"
-import PasswordProtection from "../../../components/password-protection"
 import { useRouter } from "next/navigation"
 
 export default function ProfessionalSetupPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [businessName, setBusinessName] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -17,17 +15,6 @@ export default function ProfessionalSetupPage() {
 
   const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
   const router = useRouter()
-
-  // If not authenticated, show password protection
-  if (!isAuthenticated) {
-    return (
-      <PasswordProtection
-        onAuthenticated={() => setIsAuthenticated(true)}
-        title="Critter Professional Access"
-        description="Enter your professional password to access setup tools and resources."
-      />
-    )
-  }
 
   const handleSetupClick = () => {
     setShowModal(true)
@@ -160,10 +147,12 @@ ${buttonHtml}`
                 </div>
 
                 {/* Custom Support Agent Tile - Coming Soon */}
-                <div
-                  onClick={() => router.push("/pro/custom-agent")}
-                  className="bg-white rounded-xl shadow-md p-6 text-center transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer border border-transparent hover:border-[#94ABD6]/20"
-                >
+                <div className="bg-white rounded-xl shadow-md p-6 text-center relative overflow-hidden">
+                  <div className="absolute top-3 right-3">
+                    <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                      Coming Soon
+                    </span>
+                  </div>
                   <div className="w-12 h-12 bg-[#f5f8fd] rounded-full flex items-center justify-center mx-auto mb-4">
                     <MessageSquare className="h-6 w-6 text-[#94ABD6]" />
                   </div>
@@ -171,9 +160,7 @@ ${buttonHtml}`
                   <p className="text-gray-600 body-font mb-4">
                     Create a personalized AI support agent trained on your business policies and FAQs.
                   </p>
-                  <span className="inline-flex items-center text-[#94ABD6] text-sm font-medium">
-                    Set up now <ArrowRight className="ml-1 h-4 w-4" />
-                  </span>
+                  <span className="inline-flex items-center text-gray-400 text-sm font-medium">Available soon</span>
                 </div>
 
                 {/* Under Construction Tile */}
