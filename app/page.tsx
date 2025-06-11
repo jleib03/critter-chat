@@ -75,7 +75,7 @@ export default function Page() {
                     className="inline-flex items-center px-6 py-3 bg-[#94ABD6] text-white rounded-lg hover:bg-[#7a94c7] transition-colors font-medium body-font"
                   >
                     <Settings className="h-5 w-5 mr-2" />
-                    Set-Up Home
+                    Critter Professionals Set-Up Home
                   </button>
                   <p className="text-sm text-gray-600 mt-2 body-font">Access professional tools and setup options</p>
                 </div>
