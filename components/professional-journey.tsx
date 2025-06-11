@@ -131,14 +131,7 @@ const processSteps: ProcessStep[] = [
         icon: <Settings className="h-8 w-8" />,
         color: critterColors.purple,
         managedBy: "critter",
-        capabilities: [
-          "Generate custom intake links",
-          "Configure AI support agent",
-          "Create booking URLs",
-          "Customize branding",
-          "Deploy website widgets",
-          "Manage integrations",
-        ],
+        capabilities: ["Generate custom intake links", "Configure and deploy AI support agent"],
         useCaseDetails: {
           title: "Configure Business Tools",
           description: "Set up additional resources to enhance your customer experience",
@@ -147,7 +140,6 @@ const processSteps: ProcessStep[] = [
             "Configure AI chatbot with your business data",
             "Generate custom intake links for new customers",
             "Create booking portal access for existing customers",
-            "Customize branding and messaging",
             "Get implementation code for your website",
           ],
           connectsTo: {
