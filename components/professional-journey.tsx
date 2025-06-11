@@ -331,6 +331,10 @@ export default function ProfessionalJourney() {
 
   return (
     <div className="relative">
+      {/* Sub-header */}
+      <div className="text-center mb-8">
+        <p className="text-lg text-[#64748B] body-font">Click on each step to explore the details</p>
+      </div>
       {/* Process Steps Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Start Step */}
