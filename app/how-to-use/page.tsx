@@ -13,3 +13,15 @@ export default function HowToUsePage() {
           <div className="text-center mb-8">
             <h1 className="text-4xl title-font mb-4 font-sangbleu">
               Explore the complete journey for professionals in the Critter ecosystem
+            </h1>
+          </div>
+
+          {/* Journey Content - Only showing Professional Journey */}
+          <div className="flex-1">
+            <ProfessionalJourney />
+          </div>
+        </div>
+      </main>
+    </div>
+  )
+}
