@@ -31,7 +31,6 @@ export default function HowToUsePage() {
             <h1 className="text-4xl title-font mb-4 font-sangbleu">
               Explore the complete professional journey in the Critter ecosystem
             </h1>
-            <p className="text-lg text-gray-600 body-font">Click on each step to explore the details</p>
           </div>
 
           {/* Journey Content - Only showing Professional Journey */}
