@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import type React from "react"
 
 import { Lock, Eye, EyeOff } from "lucide-react"
@@ -18,6 +18,13 @@ export default function PasswordProtection({
   title = "Professional Access Required",
   description = "Please enter the professional access password to continue.",
 }: PasswordProtectionProps) {
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    // Check if user is already authenticated in this session for pro pages
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem("critter_pro_authenticated") === "true"
+    }
+    return false
+  })
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
@@ -32,6 +39,8 @@ export default function PasswordProtection({
     await new Promise((resolve) => setTimeout(resolve, 500))
 
     if (password === PROFESSIONAL_PASSWORD) {
+      // Store authentication state in session
+      sessionStorage.setItem("critter_pro_authenticated", "true")
       onAuthenticated()
     } else {
       setError("Incorrect password. Please try again.")
@@ -40,6 +49,12 @@ export default function PasswordProtection({
 
     setIsSubmitting(false)
   }
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      onAuthenticated()
+    }
+  }, [isAuthenticated, onAuthenticated])
 
   return (
     <div className="min-h-screen bg-[#FBF8F3] flex items-center justify-center px-4">
