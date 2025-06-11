@@ -47,6 +47,9 @@ export default function Header() {
                 Professional Help Hub
               </Link>
             )}
+            <Link href="/pro/set-up" className="text-[#333] hover:text-[#E75837] transition-colors body-font">
+              Critter Pro Home
+            </Link>
             <Link
               href="https://critter.pet"
               target="_blank"
@@ -94,6 +97,9 @@ export default function Header() {
               Professional Help Hub
             </Link>
           )}
+          <Link href="/pro/set-up" className="text-[#333] hover:text-[#E75837] transition-colors text-sm body-font">
+            Critter Pro Home
+          </Link>
           <Link
             href="https://critter.pet"
             target="_blank"
