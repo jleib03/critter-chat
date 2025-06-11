@@ -400,10 +400,6 @@ export default function ProfessionalJourney() {
 
                     {/* Use Case */}
                     <div className="bg-gray-50 rounded-lg p-3 mb-3">
-                      <div className="flex items-center mb-1">
-                        <Play className="h-3 w-3 text-[#64748B] mr-2" />
-                        <span className="text-sm font-medium text-[#1E293B] header-font">Primary Use Case</span>
-                      </div>
                       <p className="text-sm text-[#64748B] body-font">{resource.useCase}</p>
                     </div>
 
@@ -487,10 +483,6 @@ export default function ProfessionalJourney() {
 
                     {/* Use Case */}
                     <div className="bg-gray-50 rounded-lg p-3 mb-3">
-                      <div className="flex items-center mb-1">
-                        <Play className="h-3 w-3 text-[#64748B] mr-2" />
-                        <span className="text-sm font-medium text-[#1E293B] header-font">Primary Use Case</span>
-                      </div>
                       <p className="text-sm text-[#64748B] body-font">{resource.useCase}</p>
                     </div>
 
@@ -575,10 +567,6 @@ export default function ProfessionalJourney() {
 
                     {/* Use Case */}
                     <div className="bg-gray-50 rounded-lg p-3 mb-3">
-                      <div className="flex items-center mb-1">
-                        <Play className="h-3 w-3 text-[#64748B] mr-2" />
-                        <span className="text-sm font-medium text-[#1E293B] header-font">Primary Use Case</span>
-                      </div>
                       <p className="text-sm text-[#64748B] body-font">{resource.useCase}</p>
                     </div>
 
@@ -604,24 +592,6 @@ export default function ProfessionalJourney() {
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Management Legend */}
-        <div className="flex justify-center space-x-6 mt-8">
-          <div className="flex items-center bg-white rounded-full px-4 py-2 shadow-sm">
-            <Shield className="h-4 w-4 text-green-600 mr-2" />
-            <div>
-              <div className="text-sm font-bold text-[#1E293B] header-font">Critter Managed</div>
-              <div className="text-xs text-[#64748B] body-font">We host and maintain these for you</div>
-            </div>
-          </div>
-          <div className="flex items-center bg-white rounded-full px-4 py-2 shadow-sm">
-            <User className="h-4 w-4 text-blue-600 mr-2" />
-            <div>
-              <div className="text-sm font-bold text-[#1E293B] header-font">You Manage</div>
-              <div className="text-xs text-[#64748B] body-font">Your resources enhanced by Critter</div>
             </div>
           </div>
         </div>
@@ -758,7 +728,18 @@ export default function ProfessionalJourney() {
             <div className="pt-6 border-t border-gray-200">
               <h4 className="font-bold text-[#1E293B] mb-3 header-font">Quick Actions</h4>
               <div className="space-y-3">
-                {selectedResourceData.url && (
+                {selectedResourceData.id === "critter-platform" && (
+                  <a
+                    href="https://app.critter.pet"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full bg-[#E75837] text-white px-4 py-3 rounded-xl hover:bg-[#d14e30] transition-all text-sm font-medium body-font flex items-center justify-center shadow-md"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Go to Critter Platform
+                  </a>
+                )}
+                {selectedResourceData.url && selectedResourceData.id !== "critter-platform" && (
                   <a
                     href={selectedResourceData.url}
                     target="_blank"
