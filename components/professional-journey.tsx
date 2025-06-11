@@ -335,9 +335,6 @@ export default function ProfessionalJourney() {
       <div className="mb-8">
         <div className="text-center mb-10">
           <h2 className="text-3xl font-bold header-font mb-3 text-[#1E293B]">Your Business Growth Journey</h2>
-          <p className="text-lg text-[#64748B] body-font max-w-2xl mx-auto">
-            Three steps to transform your pet care business with the Critter ecosystem
-          </p>
         </div>
 
         {/* Process Steps Grid */}
