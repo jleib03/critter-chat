@@ -228,7 +228,7 @@ const processSteps: ProcessStep[] = [
           "Service information",
           "Pricing details",
           "Availability checking",
-          "Seamless handoff to you",
+          "Custom Training",
         ],
         useCaseDetails: {
           title: "AI Chatbot Support",
@@ -238,8 +238,6 @@ const processSteps: ProcessStep[] = [
             "Clicks on chat widget in corner",
             "AI agent greets them with your custom message",
             "Agent answers questions about services, pricing, hours",
-            "For complex issues, seamlessly hands off to you",
-            "All conversations logged in your Critter Platform",
           ],
           connectsTo: {
             setup: "Chatbot configured and code generated in Professional Setup",
@@ -732,17 +730,29 @@ export default function ProfessionalJourney() {
                     Go to Critter Platform
                   </a>
                 )}
-                {selectedResourceData.url && selectedResourceData.id !== "critter-platform" && (
-                  <a
-                    href={selectedResourceData.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full bg-[#E75837] text-white px-4 py-3 rounded-xl hover:bg-[#d14e30] transition-all text-sm font-medium body-font flex items-center justify-center shadow-md"
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Access {selectedResourceData.title}
-                  </a>
-                )}
+                {selectedResourceData.url &&
+                  selectedResourceData.id !== "critter-platform" &&
+                  (selectedResourceData.id === "professional-website" ? (
+                    <a
+                      href="/pro/set-up#chatbot"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full bg-[#E75837] text-white px-4 py-3 rounded-xl hover:bg-[#d14e30] transition-all text-sm font-medium body-font flex items-center justify-center shadow-md"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Chatbot Set-up
+                    </a>
+                  ) : (
+                    <a
+                      href={selectedResourceData.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full bg-[#E75837] text-white px-4 py-3 rounded-xl hover:bg-[#d14e30] transition-all text-sm font-medium body-font flex items-center justify-center shadow-md"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Access {selectedResourceData.title}
+                    </a>
+                  ))}
                 <button
                   onClick={() => setSelectedResource(null)}
                   className="w-full bg-gray-100 text-[#1E293B] px-4 py-3 rounded-xl hover:bg-gray-200 transition-colors text-sm font-medium body-font"
