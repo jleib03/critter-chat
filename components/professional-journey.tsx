@@ -772,29 +772,6 @@ export default function ProfessionalJourney() {
           onClick={() => setSelectedResource(null)}
         />
       )}
-
-      {/* Summary */}
-      {!selectedResource && (
-        <div className="bg-white rounded-xl p-6 shadow-md">
-          <h3 className="text-xl font-bold mb-3 header-font text-center text-[#1E293B]">
-            Ready to Start Your Journey?
-          </h3>
-          <p className="text-[#64748B] body-font text-center mb-5">
-            Begin with Step 1 and progressively unlock more powerful tools as your business grows.
-          </p>
-          <div className="flex justify-center">
-            <a
-              href="https://critter.pet"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-[#E75837] text-white px-6 py-3 rounded-lg hover:bg-[#d14e30] hover:shadow-md transition-all text-base font-medium body-font flex items-center"
-            >
-              <Rocket className="h-4 w-4 mr-2" />
-              Start with Critter Platform
-            </a>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
