@@ -16,10 +16,9 @@ export default function HowToUsePage() {
         <div className="max-w-6xl mx-auto px-4 flex flex-col page-content">
           {/* Header Section */}
           <div className="text-center mb-8">
-            <h1 className="text-4xl title-font mb-4 font-sangbleu">How to Use Critter</h1>
-            <p className="text-gray-700 max-w-3xl mx-auto body-font">
-              Explore the complete journey for both professionals and customers in the Critter ecosystem.
-            </p>
+            <h1 className="text-4xl title-font mb-4 font-sangbleu">
+              Explore the complete journey for both professionals and customers in the Critter ecosystem
+            </h1>
           </div>
 
           {/* Toggle Buttons */}
