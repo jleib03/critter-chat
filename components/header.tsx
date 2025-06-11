@@ -1,10 +1,12 @@
 "use client"
 import Link from "next/link"
 import Image from "next/image"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 
 export default function Header() {
   const router = useRouter()
+  const pathname = usePathname()
+  const showProfessionalHelpHub = pathname?.startsWith("/pro/")
 
   return (
     <header className="w-full py-5 px-6">
@@ -40,9 +42,11 @@ export default function Header() {
           </div>
 
           <div className="flex space-x-3">
-            <Link href="/pro/how-to-use" className="text-[#333] hover:text-[#E75837] transition-colors body-font">
-              Professional Help Hub
-            </Link>
+            {showProfessionalHelpHub && (
+              <Link href="/pro/how-to-use" className="text-[#333] hover:text-[#E75837] transition-colors body-font">
+                Professional Help Hub
+              </Link>
+            )}
             <Link
               href="https://critter.pet"
               target="_blank"
@@ -82,9 +86,14 @@ export default function Header() {
         </Link>
 
         <div className="flex space-x-6">
-          <Link href="/pro/how-to-use" className="text-[#333] hover:text-[#E75837] transition-colors text-sm body-font">
-            Professional Help Hub
-          </Link>
+          {showProfessionalHelpHub && (
+            <Link
+              href="/pro/how-to-use"
+              className="text-[#333] hover:text-[#E75837] transition-colors text-sm body-font"
+            >
+              Professional Help Hub
+            </Link>
+          )}
           <Link
             href="https://critter.pet"
             target="_blank"
