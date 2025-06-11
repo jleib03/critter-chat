@@ -1,6 +1,6 @@
 "use client"
-import Header from "../../components/header"
-import ProfessionalJourney from "../../components/professional-journey"
+import Header from "../../../components/header"
+import ProfessionalJourney from "../../../components/professional-journey"
 
 export default function HowToUsePage() {
   return (
@@ -12,7 +12,7 @@ export default function HowToUsePage() {
           {/* Header Section */}
           <div className="text-center mb-8">
             <h1 className="text-4xl title-font mb-4 font-sangbleu">
-              Explore the complete journey for professionals in the Critter ecosystem
+              Explore the complete professional journey in the Critter ecosystem
             </h1>
           </div>
 
