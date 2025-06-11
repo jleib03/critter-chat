@@ -588,177 +588,190 @@ export default function ProfessionalJourney() {
         </div>
       </div>
 
-      {/* Enhanced Dynamic Side Panel */}
+      {/* Centered Modal for Resource Details */}
       {selectedResourceData && (
-        <div className="fixed right-0 top-0 h-full w-96 bg-white shadow-2xl z-50 transform transition-transform duration-300 overflow-y-auto border-l border-gray-200">
-          <div className="p-6">
-            {/* Enhanced Header */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center">
-                <div
-                  className="w-14 h-14 rounded-xl flex items-center justify-center text-white mr-4 shadow-md"
-                  style={{ backgroundColor: selectedResourceData.color }}
-                >
-                  {selectedResourceData.icon}
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold header-font text-[#1E293B]">{selectedResourceData.title}</h3>
-                  <p className="text-[#64748B] body-font text-sm mb-2">{selectedResourceData.description}</p>
+        <div className="fixed inset-0 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center">
                   <div
-                    className={`inline-flex items-center text-xs px-3 py-1 rounded-full font-medium ${
-                      selectedResourceData.managedBy === "critter"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-blue-100 text-blue-700"
-                    }`}
+                    className="w-14 h-14 rounded-xl flex items-center justify-center text-white mr-4 shadow-md"
+                    style={{ backgroundColor: selectedResourceData.color }}
                   >
-                    {selectedResourceData.managedBy === "critter" ? (
-                      <>
-                        <Shield className="h-3 w-3 mr-1" /> Critter Managed
-                      </>
-                    ) : (
-                      <>
-                        <User className="h-3 w-3 mr-1" /> You Manage
-                      </>
+                    {selectedResourceData.icon}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold header-font text-[#1E293B]">{selectedResourceData.title}</h3>
+                    <p className="text-[#64748B] body-font text-sm mb-2">{selectedResourceData.description}</p>
+                    <div
+                      className={`inline-flex items-center text-xs px-3 py-1 rounded-full font-medium ${
+                        selectedResourceData.managedBy === "critter"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-blue-100 text-blue-700"
+                      }`}
+                    >
+                      {selectedResourceData.managedBy === "critter" ? (
+                        <>
+                          <Shield className="h-3 w-3 mr-1" /> Critter Managed
+                        </>
+                      ) : (
+                        <>
+                          <User className="h-3 w-3 mr-1" /> You Manage
+                        </>
+                      )}
+                    </div>
+                    {selectedResourceData.url && (
+                      <a
+                        href={selectedResourceData.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#3B82F6] hover:text-blue-700 text-sm body-font flex items-center mt-2"
+                      >
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        Visit Resource
+                      </a>
                     )}
                   </div>
-                  {selectedResourceData.url && (
-                    <a
-                      href={selectedResourceData.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[#3B82F6] hover:text-blue-700 text-sm body-font flex items-center mt-2"
-                    >
-                      <ExternalLink className="h-3 w-3 mr-1" />
-                      Visit Resource
-                    </a>
-                  )}
                 </div>
-              </div>
-              <button
-                onClick={() => setSelectedResource(null)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Use Case Details */}
-            <div className="mb-6 p-4 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl">
-              <h4 className="font-bold text-[#1E293B] mb-2 header-font flex items-center">
-                <Play className="h-4 w-4 mr-2" />
-                {selectedResourceData.useCaseDetails.title}
-              </h4>
-              <p className="text-sm text-[#64748B] body-font mb-4">{selectedResourceData.useCaseDetails.description}</p>
-
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-[#1E293B] header-font">How it works:</div>
-                {selectedResourceData.useCaseDetails.steps.map((step, idx) => (
-                  <div key={idx} className="flex items-start text-sm text-[#64748B] body-font">
-                    <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold mr-2 mt-0.5 flex-shrink-0">
-                      {idx + 1}
-                    </div>
-                    {step}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Ecosystem Connections */}
-            {(selectedResourceData.useCaseDetails.connectsTo.setup ||
-              selectedResourceData.useCaseDetails.connectsTo.critter) && (
-              <div className="mb-6 p-4 bg-yellow-50 rounded-xl">
-                <h4 className="font-bold text-[#1E293B] mb-3 header-font flex items-center">
-                  <RotateCcw className="h-4 w-4 mr-2" />
-                  Ecosystem Connections
-                </h4>
-                <div className="space-y-3">
-                  {selectedResourceData.useCaseDetails.connectsTo.setup && (
-                    <div className="flex items-start">
-                      <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mr-3 flex-shrink-0">
-                        <Settings className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium text-[#1E293B] header-font">Professional Setup</div>
-                        <div className="text-xs text-[#64748B] body-font">
-                          {selectedResourceData.useCaseDetails.connectsTo.setup}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  {selectedResourceData.useCaseDetails.connectsTo.critter && (
-                    <div className="flex items-start">
-                      <div className="w-8 h-8 rounded-full bg-orange-100 text-[#E75837] flex items-center justify-center mr-3 flex-shrink-0">
-                        <Database className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium text-[#1E293B] header-font">Critter Platform</div>
-                        <div className="text-xs text-[#64748B] body-font">
-                          {selectedResourceData.useCaseDetails.connectsTo.critter}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* All Capabilities */}
-            <div className="mb-6">
-              <h4 className="font-bold text-[#1E293B] mb-3 header-font">All Capabilities</h4>
-              <ul className="space-y-2">
-                {selectedResourceData.capabilities.map((capability, idx) => (
-                  <li key={idx} className="flex items-start text-sm text-[#64748B] body-font">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                    {capability}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="pt-6 border-t border-gray-200">
-              <h4 className="font-bold text-[#1E293B] mb-3 header-font">Quick Actions</h4>
-              <div className="space-y-3">
-                {selectedResourceData.id === "critter-platform" && (
-                  <a
-                    href="https://app.critter.pet"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full bg-[#E75837] text-white px-4 py-3 rounded-xl hover:bg-[#d14e30] transition-all text-sm font-medium body-font flex items-center justify-center shadow-md"
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Go to Critter Platform
-                  </a>
-                )}
-                {selectedResourceData.url &&
-                  selectedResourceData.id !== "critter-platform" &&
-                  (selectedResourceData.id === "professional-website" ? (
-                    <a
-                      href="/pro/set-up#chatbot"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full bg-[#E75837] text-white px-4 py-3 rounded-xl hover:bg-[#d14e30] transition-all text-sm font-medium body-font flex items-center justify-center shadow-md"
-                    >
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      Chatbot Set-up
-                    </a>
-                  ) : (
-                    <a
-                      href={selectedResourceData.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full bg-[#E75837] text-white px-4 py-3 rounded-xl hover:bg-[#d14e30] transition-all text-sm font-medium body-font flex items-center justify-center shadow-md"
-                    >
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      Access {selectedResourceData.title}
-                    </a>
-                  ))}
                 <button
                   onClick={() => setSelectedResource(null)}
-                  className="w-full bg-gray-100 text-[#1E293B] px-4 py-3 rounded-xl hover:bg-gray-200 transition-colors text-sm font-medium body-font"
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                 >
-                  Explore Other Resources
+                  <X className="h-5 w-5" />
                 </button>
+              </div>
+
+              {/* Content in a two-column layout for larger screens */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Left Column */}
+                <div>
+                  {/* Use Case Details */}
+                  <div className="mb-6 p-4 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl">
+                    <h4 className="font-bold text-[#1E293B] mb-2 header-font flex items-center">
+                      <Play className="h-4 w-4 mr-2" />
+                      {selectedResourceData.useCaseDetails.title}
+                    </h4>
+                    <p className="text-sm text-[#64748B] body-font mb-4">
+                      {selectedResourceData.useCaseDetails.description}
+                    </p>
+
+                    <div className="space-y-2">
+                      <div className="text-sm font-medium text-[#1E293B] header-font">How it works:</div>
+                      {selectedResourceData.useCaseDetails.steps.map((step, idx) => (
+                        <div key={idx} className="flex items-start text-sm text-[#64748B] body-font">
+                          <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold mr-2 mt-0.5 flex-shrink-0">
+                            {idx + 1}
+                          </div>
+                          {step}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* All Capabilities */}
+                  <div className="mb-6">
+                    <h4 className="font-bold text-[#1E293B] mb-3 header-font">All Capabilities</h4>
+                    <ul className="space-y-2">
+                      {selectedResourceData.capabilities.map((capability, idx) => (
+                        <li key={idx} className="flex items-start text-sm text-[#64748B] body-font">
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                          {capability}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Right Column */}
+                <div>
+                  {/* Ecosystem Connections */}
+                  {(selectedResourceData.useCaseDetails.connectsTo.setup ||
+                    selectedResourceData.useCaseDetails.connectsTo.critter) && (
+                    <div className="mb-6 p-4 bg-yellow-50 rounded-xl">
+                      <h4 className="font-bold text-[#1E293B] mb-3 header-font flex items-center">
+                        <RotateCcw className="h-4 w-4 mr-2" />
+                        Ecosystem Connections
+                      </h4>
+                      <div className="space-y-3">
+                        {selectedResourceData.useCaseDetails.connectsTo.setup && (
+                          <div className="flex items-start">
+                            <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mr-3 flex-shrink-0">
+                              <Settings className="h-4 w-4" />
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium text-[#1E293B] header-font">Professional Setup</div>
+                              <div className="text-xs text-[#64748B] body-font">
+                                {selectedResourceData.useCaseDetails.connectsTo.setup}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        {selectedResourceData.useCaseDetails.connectsTo.critter && (
+                          <div className="flex items-start">
+                            <div className="w-8 h-8 rounded-full bg-orange-100 text-[#E75837] flex items-center justify-center mr-3 flex-shrink-0">
+                              <Database className="h-4 w-4" />
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium text-[#1E293B] header-font">Critter Platform</div>
+                              <div className="text-xs text-[#64748B] body-font">
+                                {selectedResourceData.useCaseDetails.connectsTo.critter}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Quick Actions */}
+                  <div className="pt-6 border-t border-gray-200">
+                    <h4 className="font-bold text-[#1E293B] mb-3 header-font">Quick Actions</h4>
+                    <div className="space-y-3">
+                      {selectedResourceData.id === "critter-platform" && (
+                        <a
+                          href="https://app.critter.pet"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full bg-[#E75837] text-white px-4 py-3 rounded-xl hover:bg-[#d14e30] transition-all text-sm font-medium body-font flex items-center justify-center shadow-md"
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Go to Critter Platform
+                        </a>
+                      )}
+                      {selectedResourceData.url &&
+                        selectedResourceData.id !== "critter-platform" &&
+                        (selectedResourceData.id === "professional-website" ? (
+                          <a
+                            href="/pro/set-up#chatbot"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full bg-[#E75837] text-white px-4 py-3 rounded-xl hover:bg-[#d14e30] transition-all text-sm font-medium body-font flex items-center justify-center shadow-md"
+                          >
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            Chatbot Set-up
+                          </a>
+                        ) : (
+                          <a
+                            href={selectedResourceData.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full bg-[#E75837] text-white px-4 py-3 rounded-xl hover:bg-[#d14e30] transition-all text-sm font-medium body-font flex items-center justify-center shadow-md"
+                          >
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            Access {selectedResourceData.title}
+                          </a>
+                        ))}
+                      <button
+                        onClick={() => setSelectedResource(null)}
+                        className="w-full bg-gray-100 text-[#1E293B] px-4 py-3 rounded-xl hover:bg-gray-200 transition-colors text-sm font-medium body-font"
+                      >
+                        Explore Other Resources
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -768,7 +781,7 @@ export default function ProfessionalJourney() {
       {/* Enhanced Overlay */}
       {selectedResourceData && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm z-40"
+          className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40"
           onClick={() => setSelectedResource(null)}
         />
       )}
