@@ -1,10 +1,14 @@
 "use client"
 import Link from "next/link"
 import Image from "next/image"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 
 export default function Header() {
   const router = useRouter()
+  const pathname = usePathname()
+
+  // Check if we're on the pro/set-up page
+  const isProSetupPage = pathname === "/pro/set-up"
 
   return (
     <header className="w-full py-5 px-6">
@@ -39,14 +43,21 @@ export default function Header() {
             </Link>
           </div>
 
-          <Link
-            href="https://critter.pet"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[#333] hover:text-[#E75837] transition-colors body-font"
-          >
-            Learn more
-          </Link>
+          <div className="flex space-x-3">
+            {isProSetupPage && (
+              <Link href="/how-to-use" className="text-[#333] hover:text-[#E75837] transition-colors body-font">
+                Learning Hub
+              </Link>
+            )}
+            <Link
+              href="https://critter.pet"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#333] hover:text-[#E75837] transition-colors body-font"
+            >
+              Learn more
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -76,14 +87,21 @@ export default function Header() {
           <Image src="/images/critter-logo.png" alt="Critter" width={120} height={40} className="h-8 w-auto" />
         </Link>
 
-        <Link
-          href="https://critter.pet"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[#333] hover:text-[#E75837] transition-colors text-sm body-font"
-        >
-          Learn more
-        </Link>
+        <div className="flex space-x-6">
+          {isProSetupPage && (
+            <Link href="/how-to-use" className="text-[#333] hover:text-[#E75837] transition-colors text-sm body-font">
+              Learning Hub
+            </Link>
+          )}
+          <Link
+            href="https://critter.pet"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#333] hover:text-[#E75837] transition-colors text-sm body-font"
+          >
+            Learn more
+          </Link>
+        </div>
       </div>
     </header>
   )
