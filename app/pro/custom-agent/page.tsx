@@ -12,7 +12,7 @@ import SuccessStep from "../../../components/custom-agent/success-step"
 import { Loader2, MessageSquare, CheckCircle2 } from "lucide-react"
 
 // Define the webhook URL
-const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/803d260b-1b17-4abf-8079-2d40225c29b0"
+const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/803d260b-1b17-4abf-8079-2d40225c29b0"
 
 export default function CustomAgentSetupPage() {
   const router = useRouter()

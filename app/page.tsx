@@ -3,7 +3,6 @@ import { useState } from "react"
 import Header from "../components/header"
 import LandingPage from "../components/landing-page"
 import BookingPage from "../components/booking-page"
-import { Settings } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 import NewCustomerIntake from "../components/new-customer-intake"
@@ -60,27 +59,6 @@ export default function Page() {
               onExistingCustomer={handleExistingCustomer}
               onNewCustomer={handleNewCustomer}
             />
-          )}
-
-          {/* Professional Access Section */}
-          {currentView === "landing" && (
-            <div className="mt-16 pt-8 border-t border-gray-200">
-              <div className="text-center">
-                <div className="max-w-md mx-auto">
-                  <h3 className="text-lg font-semibold mb-4 text-gray-800 header-font">
-                    Are you a Critter Professional?
-                  </h3>
-                  <button
-                    onClick={() => router.push("/pro/set-up")}
-                    className="inline-flex items-center px-6 py-3 bg-[#94ABD6] text-white rounded-lg hover:bg-[#7a94c7] transition-colors font-medium body-font"
-                  >
-                    <Settings className="h-5 w-5 mr-2" />
-                    Set-Up Home
-                  </button>
-                  <p className="text-sm text-gray-600 mt-2 body-font">Access professional tools and setup options</p>
-                </div>
-              </div>
-            </div>
           )}
 
           {currentView === "chat" && userInfo && (
