@@ -25,7 +25,7 @@ export default function SchedulePage() {
   const [showCustomerForm, setShowCustomerForm] = useState(false)
   const [showPetSelection, setShowPetSelection] = useState(false)
   const [showConfirmation, setShowConfirmation] = useState(false)
-  const [creatingBooking, setCreatingBooking] = useState(false) // New loading state
+  const [creatingBooking, setCreatingBooking] = useState(false)
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({ firstName: "", lastName: "", email: "" })
   const [pets, setPets] = useState<Pet[]>([])
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null)
@@ -128,53 +128,53 @@ export default function SchedulePage() {
     return endDate.toISOString()
   }
 
-  useEffect(() => {
-    const initializeSchedule = async () => {
-      try {
-        setLoading(true)
-        setError(null)
+  // Initialize or re-initialize schedule data
+  const initializeSchedule = async () => {
+    try {
+      setLoading(true)
+      setError(null)
 
-        // Generate session ID if it doesn't exist
-        if (!sessionIdRef.current) {
-          sessionIdRef.current = generateSessionId()
-        }
+      // Generate NEW session ID for each initialization
+      sessionIdRef.current = generateSessionId()
 
-        // Detect user's timezone
-        if (!userTimezoneRef.current) {
-          userTimezoneRef.current = JSON.stringify(detectUserTimezone())
-        }
+      // Detect user's timezone (refresh in case it changed)
+      userTimezoneRef.current = JSON.stringify(detectUserTimezone())
 
-        const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/5671c1dd-48f6-47a9-85ac-4e20cf261520"
+      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/5671c1dd-48f6-47a9-85ac-4e20cf261520"
 
-        const response = await fetch(webhookUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            professional_id: professionalId,
-            action: "initialize_schedule",
-            session_id: sessionIdRef.current,
-            timestamp: new Date().toISOString(),
-            user_timezone: JSON.parse(userTimezoneRef.current),
-          }),
-        })
+      console.log("Initializing schedule with session:", sessionIdRef.current)
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          professional_id: professionalId,
+          action: "initialize_schedule",
+          session_id: sessionIdRef.current,
+          timestamp: new Date().toISOString(),
+          user_timezone: JSON.parse(userTimezoneRef.current),
+        }),
+      })
 
-        const data = await response.json()
-        // The response is an array, so we take the first element
-        setWebhookData(data[0])
-      } catch (err) {
-        console.error("Error initializing schedule:", err)
-        setError("Failed to load scheduling data. Please try again.")
-      } finally {
-        setLoading(false)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
-    }
 
+      const data = await response.json()
+      // The response is an array, so we take the first element
+      setWebhookData(data[0])
+      console.log("Schedule data refreshed:", data[0])
+    } catch (err) {
+      console.error("Error initializing schedule:", err)
+      setError("Failed to load scheduling data. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     if (professionalId) {
       initializeSchedule()
     }
@@ -314,16 +314,21 @@ export default function SchedulePage() {
     setSelectedTimeSlot(null)
   }
 
-  const handleNewBooking = () => {
+  const handleNewBooking = async () => {
+    // Reset all state
     setSelectedService(null)
     setSelectedTimeSlot(null)
     setShowCustomerForm(false)
     setShowPetSelection(false)
     setShowConfirmation(false)
-    setCreatingBooking(false) // Reset loading state
+    setCreatingBooking(false)
     setCustomerInfo({ firstName: "", lastName: "", email: "" })
     setPets([])
     setSelectedPet(null)
+
+    // Re-initialize schedule data to get updated availability
+    console.log("Starting new booking - refreshing schedule data...")
+    await initializeSchedule()
   }
 
   if (loading) {
@@ -331,7 +336,9 @@ export default function SchedulePage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-[#E75837]" />
-          <p className="text-gray-600 body-font">Loading scheduling information...</p>
+          <p className="text-gray-600 body-font">
+            {showConfirmation ? "Refreshing schedule..." : "Loading scheduling information..."}
+          </p>
         </div>
       </div>
     )
@@ -345,7 +352,7 @@ export default function SchedulePage() {
             <h2 className="text-lg font-semibold text-red-800 mb-2 header-font">Error Loading Schedule</h2>
             <p className="text-red-600 body-font">{error}</p>
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => initializeSchedule()}
               className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors body-font"
             >
               Try Again
@@ -446,7 +453,8 @@ export default function SchedulePage() {
           {/* Debug: Show detected timezone */}
           {userTimezoneRef.current && (
             <div className="mt-2 text-xs text-gray-500 body-font">
-              Timezone: {JSON.parse(userTimezoneRef.current).timezone} ({JSON.parse(userTimezoneRef.current).offset})
+              Timezone: {JSON.parse(userTimezoneRef.current).timezone} ({JSON.parse(userTimezoneRef.current).offset}) |
+              Session: {sessionIdRef.current?.slice(-8)}
             </div>
           )}
         </div>
