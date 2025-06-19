@@ -25,6 +25,7 @@ export default function SchedulePage() {
   const [showCustomerForm, setShowCustomerForm] = useState(false)
   const [showPetSelection, setShowPetSelection] = useState(false)
   const [showConfirmation, setShowConfirmation] = useState(false)
+  const [creatingBooking, setCreatingBooking] = useState(false) // New loading state
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({ firstName: "", lastName: "", email: "" })
   const [pets, setPets] = useState<Pet[]>([])
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null)
@@ -198,6 +199,7 @@ export default function SchedulePage() {
 
   const handlePetSelect = async (pet: Pet) => {
     setSelectedPet(pet)
+    setCreatingBooking(true) // Start loading state
 
     // Create the final booking
     try {
@@ -290,12 +292,14 @@ export default function SchedulePage() {
       // Check if booking was successful
       if (result && result[0] && result[0].Output === "Booking Successfully Created") {
         setShowPetSelection(false)
+        setCreatingBooking(false) // End loading state
         setShowConfirmation(true)
       } else {
         throw new Error("Booking creation failed")
       }
     } catch (err) {
       console.error("Error creating booking:", err)
+      setCreatingBooking(false) // End loading state on error
       setError("Failed to create booking. Please try again.")
     }
   }
@@ -316,6 +320,7 @@ export default function SchedulePage() {
     setShowCustomerForm(false)
     setShowPetSelection(false)
     setShowConfirmation(false)
+    setCreatingBooking(false) // Reset loading state
     setCustomerInfo({ firstName: "", lastName: "", email: "" })
     setPets([])
     setSelectedPet(null)
@@ -356,6 +361,73 @@ export default function SchedulePage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600 body-font">No scheduling data available.</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show booking creation loading screen
+  if (creatingBooking) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-4xl mx-auto p-6">
+          {/* Header */}
+          <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+            <h1 className="text-3xl font-bold text-[#E75837] mb-2 header-font">
+              Book with {webhookData.professional_info.professional_name}
+            </h1>
+            <p className="text-gray-600 body-font">Creating your booking...</p>
+          </div>
+
+          {/* Loading Card */}
+          <div className="bg-white rounded-lg shadow-sm border p-8">
+            <div className="text-center">
+              <Loader2 className="w-12 h-12 animate-spin mx-auto mb-6 text-[#E75837]" />
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4 header-font">Creating Your Booking</h2>
+              <p className="text-gray-600 body-font mb-6">
+                Please wait while we confirm your appointment with {webhookData.professional_info.professional_name}.
+              </p>
+
+              {/* Booking Summary */}
+              <div className="bg-gray-50 rounded-lg p-6 max-w-md mx-auto">
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 body-font">Service:</span>
+                    <span className="font-medium body-font">{selectedService?.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 body-font">Date:</span>
+                    <span className="font-medium body-font">
+                      {selectedTimeSlot?.dayOfWeek},{" "}
+                      {new Date(selectedTimeSlot?.date || "").toLocaleDateString("en-US", {
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 body-font">Time:</span>
+                    <span className="font-medium body-font">{selectedTimeSlot?.startTime}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 body-font">Pet:</span>
+                    <span className="font-medium body-font">
+                      {selectedPet?.pet_name} ({selectedPet?.pet_type})
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 body-font">Customer:</span>
+                    <span className="font-medium body-font">
+                      {customerInfo.firstName} {customerInfo.lastName}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 text-sm text-gray-500 body-font">This should only take a few seconds...</div>
+            </div>
+          </div>
         </div>
       </div>
     )
