@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
 
@@ -42,12 +42,23 @@ export default function SchedulePage() {
   const [professionalData, setProfessionalData] = useState<ProfessionalData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const sessionIdRef = useRef<string | null>(null)
+
+  // Generate a unique session ID
+  const generateSessionId = () => {
+    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  }
 
   useEffect(() => {
     const initializeSchedule = async () => {
       try {
         setLoading(true)
         setError(null)
+
+        // Generate session ID if it doesn't exist
+        if (!sessionIdRef.current) {
+          sessionIdRef.current = generateSessionId()
+        }
 
         const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/5671c1dd-48f6-47a9-85ac-4e20cf261520"
 
@@ -59,6 +70,8 @@ export default function SchedulePage() {
           body: JSON.stringify({
             professional_id: professionalId,
             action: "initialize_schedule",
+            session_id: sessionIdRef.current,
+            timestamp: new Date().toISOString(),
           }),
         })
 
@@ -135,6 +148,17 @@ export default function SchedulePage() {
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4 header-font">Debug Information</h2>
           <div className="space-y-4">
+            <div>
+              <h3 className="font-medium text-gray-700 header-font">Session Info</h3>
+              <div className="bg-gray-100 p-3 rounded text-sm body-font">
+                <p>
+                  <strong>Session ID:</strong> {sessionIdRef.current}
+                </p>
+                <p>
+                  <strong>Professional ID:</strong> {professionalId}
+                </p>
+              </div>
+            </div>
             <div>
               <h3 className="font-medium text-gray-700 header-font">Services ({professionalData.services.length})</h3>
               <pre className="bg-gray-100 p-3 rounded text-sm overflow-auto body-font">
