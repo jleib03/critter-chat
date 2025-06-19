@@ -68,30 +68,53 @@ export default function SchedulePage() {
     }
   }
 
-  // Helper function to convert time string to datetime
-  const createDateTime = (dateStr: string, timeStr: string) => {
-    // Parse the time string (e.g., "12:00 PM")
-    const [time, period] = timeStr.split(" ")
-    const [hours, minutes] = time.split(":").map(Number)
+  // Helper function to convert local time to UTC
+  const convertLocalTimeToUTC = (dateStr: string, timeStr: string, userTimezone: string) => {
+    try {
+      // Parse the time string (e.g., "12:00 PM")
+      const [time, period] = timeStr.split(" ")
+      const [hours, minutes] = time.split(":").map(Number)
 
-    // Convert to 24-hour format
-    let hour24 = hours
-    if (period === "PM" && hours !== 12) {
-      hour24 = hours + 12
-    } else if (period === "AM" && hours === 12) {
-      hour24 = 0
+      // Convert to 24-hour format
+      let hour24 = hours
+      if (period === "PM" && hours !== 12) {
+        hour24 = hours + 12
+      } else if (period === "AM" && hours === 12) {
+        hour24 = 0
+      }
+
+      // Create a date object in the user's timezone
+      // We need to be careful here - the date string is in YYYY-MM-DD format
+      const [year, month, day] = dateStr.split("-").map(Number)
+
+      // Create date in user's local timezone
+      const localDate = new Date()
+      localDate.setFullYear(year, month - 1, day) // month is 0-indexed
+      localDate.setHours(hour24, minutes, 0, 0)
+
+      // Convert to UTC by getting the ISO string
+      return localDate.toISOString()
+    } catch (error) {
+      console.error("Error converting time to UTC:", error)
+      // Fallback: create basic UTC time
+      const [time, period] = timeStr.split(" ")
+      const [hours, minutes] = time.split(":").map(Number)
+      let hour24 = hours
+      if (period === "PM" && hours !== 12) {
+        hour24 = hours + 12
+      } else if (period === "AM" && hours === 12) {
+        hour24 = 0
+      }
+
+      const date = new Date(dateStr)
+      date.setUTCHours(hour24, minutes, 0, 0)
+      return date.toISOString()
     }
-
-    // Create datetime string in ISO format
-    const date = new Date(dateStr)
-    date.setHours(hour24, minutes, 0, 0)
-
-    return date.toISOString()
   }
 
-  // Helper function to calculate end datetime
-  const calculateEndDateTime = (startDateTime: string, durationNumber: number, durationUnit: string) => {
-    const startDate = new Date(startDateTime)
+  // Helper function to calculate end datetime in UTC
+  const calculateEndDateTimeUTC = (startDateTimeUTC: string, durationNumber: number, durationUnit: string) => {
+    const startDate = new Date(startDateTimeUTC)
     let durationInMinutes = durationNumber
 
     if (durationUnit === "Hours") {
@@ -180,20 +203,35 @@ export default function SchedulePage() {
     try {
       const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/5671c1dd-48f6-47a9-85ac-4e20cf261520"
 
-      // Create proper datetime values
-      const startDateTime = createDateTime(selectedTimeSlot!.date, selectedTimeSlot!.startTime)
-      const endDateTime = calculateEndDateTime(
-        startDateTime,
+      const userTimezoneData = JSON.parse(userTimezoneRef.current!)
+
+      // Convert local times to UTC
+      const startDateTimeUTC = convertLocalTimeToUTC(
+        selectedTimeSlot!.date,
+        selectedTimeSlot!.startTime,
+        userTimezoneData.timezone,
+      )
+
+      const endDateTimeUTC = calculateEndDateTimeUTC(
+        startDateTimeUTC,
         selectedService!.duration_number,
         selectedService!.duration_unit,
       )
+
+      // Also calculate what the end time would be in local time for display
+      const endTimeLocal = new Date(endDateTimeUTC).toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: userTimezoneData.timezone,
+      })
 
       const bookingData = {
         professional_id: professionalId,
         action: "create_booking",
         session_id: sessionIdRef.current,
         timestamp: new Date().toISOString(),
-        user_timezone: JSON.parse(userTimezoneRef.current!),
+        user_timezone: userTimezoneData,
         booking_details: {
           service_name: selectedService!.name,
           service_description: selectedService!.description,
@@ -201,12 +239,20 @@ export default function SchedulePage() {
           service_duration_unit: selectedService!.duration_unit,
           service_cost: selectedService!.customer_cost,
           service_currency: selectedService!.customer_cost_currency,
-          date: selectedTimeSlot!.date,
-          start: startDateTime,
-          end: endDateTime,
-          start_time_display: selectedTimeSlot!.startTime,
-          end_time_display: selectedTimeSlot!.endTime,
+
+          // UTC times for backend processing
+          start_utc: startDateTimeUTC,
+          end_utc: endDateTimeUTC,
+
+          // Local times for display/reference
+          date_local: selectedTimeSlot!.date,
+          start_time_local: selectedTimeSlot!.startTime,
+          end_time_local: endTimeLocal,
           day_of_week: selectedTimeSlot!.dayOfWeek,
+
+          // Timezone context
+          timezone: userTimezoneData.timezone,
+          timezone_offset: userTimezoneData.offset,
         },
         customer_info: {
           first_name: customerInfo.firstName.trim(),
@@ -224,7 +270,7 @@ export default function SchedulePage() {
         },
       }
 
-      console.log("Sending booking data:", bookingData)
+      console.log("Sending booking data with UTC times:", bookingData)
 
       const response = await fetch(webhookUrl, {
         method: "POST",
