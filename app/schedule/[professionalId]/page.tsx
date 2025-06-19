@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react"
 import { useParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import type { WebhookResponse, Service, SelectedTimeSlot, CustomerInfo } from "@/types/schedule"
-import { ServiceSelection } from "@/components/schedule/service-selection"
+import { ServiceSelectorBar } from "@/components/schedule/service-selector-bar"
 import { WeeklyCalendar } from "@/components/schedule/weekly-calendar"
 import { CustomerForm } from "@/components/schedule/customer-form"
 import { BookingConfirmation } from "@/components/schedule/booking-confirmation"
@@ -142,7 +142,7 @@ export default function SchedulePage() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
           <h1 className="text-3xl font-bold text-[#E75837] mb-2 header-font">
             Book with {webhookData.professional_info.professional_name}
           </h1>
@@ -169,26 +169,24 @@ export default function SchedulePage() {
             />
           </div>
         ) : (
-          <div className="space-y-6">
-            {/* Service Selection */}
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <ServiceSelection
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            {/* Service Selection Bar */}
+            <div className="mb-8">
+              <ServiceSelectorBar
                 servicesByCategory={webhookData.services.services_by_category}
                 selectedService={selectedService}
                 onServiceSelect={handleServiceSelect}
               />
             </div>
 
-            {/* Calendar */}
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <WeeklyCalendar
-                workingDays={webhookData.schedule.working_days}
-                bookingData={webhookData.bookings.all_booking_data}
-                selectedService={selectedService}
-                onTimeSlotSelect={handleTimeSlotSelect}
-                selectedTimeSlot={selectedTimeSlot}
-              />
-            </div>
+            {/* Full-width Calendar */}
+            <WeeklyCalendar
+              workingDays={webhookData.schedule.working_days}
+              bookingData={webhookData.bookings.all_booking_data}
+              selectedService={selectedService}
+              onTimeSlotSelect={handleTimeSlotSelect}
+              selectedTimeSlot={selectedTimeSlot}
+            />
           </div>
         )}
       </div>

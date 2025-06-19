@@ -76,11 +76,7 @@ export function WeeklyCalendar({
 
     const bookings = getBookingsForDate(date)
 
-    // Generate slots every 30 minutes, but limit to show only first 8 slots per day for better formatting
-    let slotCount = 0
-    const maxSlotsPerDay = 8
-
-    for (let time = startTime; time + serviceDuration <= endTime && slotCount < maxSlotsPerDay; time += 30) {
+    for (let time = startTime; time + serviceDuration <= endTime; time += 30) {
       const slotStart = time
       const slotEnd = time + serviceDuration
 
@@ -112,7 +108,6 @@ export function WeeklyCalendar({
           endTime: formatTime(Math.floor(slotEnd / 60), slotEnd % 60),
           dayOfWeek: getDayName(date),
         })
-        slotCount++
       }
     }
 
@@ -128,20 +123,10 @@ export function WeeklyCalendar({
 
   if (!selectedService) {
     return (
-      <div className="space-y-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 header-font">Available Times</h2>
-          <p className="text-gray-600 body-font">Select a service first to see available time slots.</p>
-        </div>
-        <Card>
-          <CardContent className="p-12 text-center">
-            <Clock className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-500 mb-2 header-font">Choose a Service</h3>
-            <p className="text-gray-400 body-font">
-              Please select a service from the left to view available appointments.
-            </p>
-          </CardContent>
-        </Card>
+      <div className="text-center py-16">
+        <Clock className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+        <h3 className="text-xl font-semibold text-gray-500 mb-2 header-font">Select a Service</h3>
+        <p className="text-gray-400 body-font">Choose a service above to see available appointment times.</p>
       </div>
     )
   }
@@ -154,17 +139,19 @@ export function WeeklyCalendar({
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 header-font">Available Times</h2>
-          <p className="text-gray-600 body-font">Select a time slot for {selectedService.name}</p>
+          <p className="text-gray-600 body-font">
+            Select a time slot for <span className="font-medium">{selectedService.name}</span>
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => navigateWeek("prev")}>
             <ChevronLeft className="w-4 h-4" />
           </Button>
-          <span className="text-sm font-medium body-font px-3">
-            Week of{" "}
+          <span className="text-sm font-medium body-font px-4 min-w-[120px] text-center">
             {currentWeekStart.toLocaleDateString("en-US", {
-              month: "short",
+              month: "long",
               day: "numeric",
+              year: "numeric",
             })}
           </span>
           <Button variant="outline" size="sm" onClick={() => navigateWeek("next")}>
@@ -173,8 +160,8 @@ export function WeeklyCalendar({
         </div>
       </div>
 
-      {/* Calendar Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-3">
+      {/* Full-width Calendar Grid */}
+      <div className="grid grid-cols-7 gap-4">
         {weekDates.map((date, index) => {
           const dayName = getDayName(date)
           const workingHours = getWorkingHours(dayName)
@@ -183,13 +170,13 @@ export function WeeklyCalendar({
           const timeSlots = workingHours ? generateTimeSlots(date, workingHours, serviceDuration) : []
 
           return (
-            <Card key={index} className={`${isToday ? "ring-2 ring-[#E75837]" : ""} min-h-[300px]`}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-center">
+            <Card key={index} className={`${isToday ? "ring-2 ring-[#E75837]" : ""} h-fit`}>
+              <CardHeader className="pb-3 text-center">
+                <CardTitle className="space-y-1">
                   <div className={`text-sm font-semibold header-font ${isToday ? "text-[#E75837]" : "text-gray-900"}`}>
-                    {dayName.substring(0, 3)}
+                    {dayName}
                   </div>
-                  <div className="text-lg font-bold text-gray-900">{date.getDate()}</div>
+                  <div className="text-2xl font-bold text-gray-900">{date.getDate()}</div>
                   <div className="text-xs text-gray-500 font-normal">
                     {date.toLocaleDateString("en-US", { month: "short" })}
                   </div>
@@ -198,7 +185,7 @@ export function WeeklyCalendar({
               <CardContent className="pt-0">
                 {isPast ? (
                   <div className="text-center py-8">
-                    <p className="text-sm text-gray-400 body-font">Past Date</p>
+                    <p className="text-sm text-gray-400 body-font">Past date</p>
                   </div>
                 ) : !workingHours ? (
                   <div className="text-center py-8">
@@ -206,11 +193,11 @@ export function WeeklyCalendar({
                   </div>
                 ) : timeSlots.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-sm text-gray-400 body-font">No Available Times</p>
+                    <p className="text-sm text-gray-400 body-font">No available times</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {timeSlots.map((slot, slotIndex) => (
+                    {timeSlots.slice(0, 10).map((slot, slotIndex) => (
                       <Button
                         key={slotIndex}
                         variant="outline"
@@ -225,8 +212,10 @@ export function WeeklyCalendar({
                         {slot.startTime}
                       </Button>
                     ))}
-                    {timeSlots.length >= 8 && (
-                      <p className="text-xs text-gray-400 text-center body-font mt-2">+ more times available</p>
+                    {timeSlots.length > 10 && (
+                      <p className="text-xs text-gray-400 text-center body-font mt-2">
+                        +{timeSlots.length - 10} more times
+                      </p>
                     )}
                   </div>
                 )}
