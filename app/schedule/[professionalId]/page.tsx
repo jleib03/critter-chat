@@ -199,8 +199,13 @@ export default function SchedulePage() {
       const result = await response.json()
       console.log("Booking created:", result)
 
-      setShowPetSelection(false)
-      setShowConfirmation(true)
+      // Check if booking was successful
+      if (result && result[0] && result[0].Output === "Booking Successfully Created") {
+        setShowPetSelection(false)
+        setShowConfirmation(true)
+      } else {
+        throw new Error("Booking creation failed")
+      }
     } catch (err) {
       console.error("Error creating booking:", err)
       setError("Failed to create booking. Please try again.")
