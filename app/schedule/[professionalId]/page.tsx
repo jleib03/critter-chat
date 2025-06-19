@@ -3,9 +3,11 @@
 import { useEffect, useState, useRef } from "react"
 import { useParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
-import type { WebhookResponse, Service, SelectedTimeSlot } from "@/types/schedule"
+import type { WebhookResponse, Service, SelectedTimeSlot, CustomerInfo } from "@/types/schedule"
 import { ServiceSelection } from "@/components/schedule/service-selection"
 import { WeeklyCalendar } from "@/components/schedule/weekly-calendar"
+import { CustomerForm } from "@/components/schedule/customer-form"
+import { BookingConfirmation } from "@/components/schedule/booking-confirmation"
 
 export default function SchedulePage() {
   const params = useParams()
@@ -17,6 +19,10 @@ export default function SchedulePage() {
   const [selectedService, setSelectedService] = useState<Service | null>(null)
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<SelectedTimeSlot | null>(null)
   const sessionIdRef = useRef<string | null>(null)
+
+  const [showCustomerForm, setShowCustomerForm] = useState(false)
+  const [showConfirmation, setShowConfirmation] = useState(false)
+  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({ firstName: "", lastName: "", email: "" })
 
   // Generate a unique session ID
   const generateSessionId = () => {
@@ -76,6 +82,20 @@ export default function SchedulePage() {
 
   const handleTimeSlotSelect = (slot: SelectedTimeSlot) => {
     setSelectedTimeSlot(slot)
+    setShowCustomerForm(true)
+  }
+
+  const handleBookingComplete = () => {
+    setShowConfirmation(true)
+    setShowCustomerForm(false)
+  }
+
+  const handleNewBooking = () => {
+    setSelectedService(null)
+    setSelectedTimeSlot(null)
+    setShowCustomerForm(false)
+    setShowConfirmation(false)
+    setCustomerInfo({ firstName: "", lastName: "", email: "" })
   }
 
   if (loading) {
@@ -129,61 +149,43 @@ export default function SchedulePage() {
           <p className="text-gray-600 body-font">Select a service and available time slot to book your appointment.</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Service Selection */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <ServiceSelection
-              servicesByCategory={webhookData.services.services_by_category}
-              selectedService={selectedService}
-              onServiceSelect={handleServiceSelect}
-            />
-          </div>
-
-          {/* Calendar */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <WeeklyCalendar
-              workingDays={webhookData.schedule.working_days}
-              bookingData={webhookData.bookings.all_booking_data}
-              selectedService={selectedService}
-              onTimeSlotSelect={handleTimeSlotSelect}
-              selectedTimeSlot={selectedTimeSlot}
-            />
-          </div>
-        </div>
-
-        {/* Selected Summary */}
-        {selectedService && selectedTimeSlot && (
-          <div className="bg-white rounded-lg shadow-md p-6 mt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 header-font">Booking Summary</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm body-font">
-              <div>
-                <span className="text-gray-500">Service:</span>
-                <p className="font-medium">{selectedService.name}</p>
-              </div>
-              <div>
-                <span className="text-gray-500">Date & Time:</span>
-                <p className="font-medium">
-                  {selectedTimeSlot.dayOfWeek},{" "}
-                  {new Date(selectedTimeSlot.date).toLocaleDateString("en-US", {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })}{" "}
-                  at {selectedTimeSlot.startTime}
-                </p>
-              </div>
-              <div>
-                <span className="text-gray-500">Duration:</span>
-                <p className="font-medium">
-                  {selectedService.duration_number} {selectedService.duration_unit.toLowerCase()}
-                </p>
-              </div>
+        {showConfirmation ? (
+          <BookingConfirmation
+            selectedService={selectedService!}
+            selectedTimeSlot={selectedTimeSlot!}
+            customerInfo={customerInfo}
+            professionalName={webhookData.professional_info.professional_name}
+            onNewBooking={handleNewBooking}
+          />
+        ) : showCustomerForm && selectedService && selectedTimeSlot ? (
+          <CustomerForm
+            selectedService={selectedService}
+            selectedTimeSlot={selectedTimeSlot}
+            professionalId={professionalId}
+            professionalName={webhookData.professional_info.professional_name}
+            sessionId={sessionIdRef.current!}
+            onBookingComplete={handleBookingComplete}
+          />
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Service Selection */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <ServiceSelection
+                servicesByCategory={webhookData.services.services_by_category}
+                selectedService={selectedService}
+                onServiceSelect={handleServiceSelect}
+              />
             </div>
 
-            <div className="mt-4 pt-4 border-t">
-              <p className="text-sm text-gray-600 body-font">
-                Next: Enter your contact information to complete the booking
-              </p>
+            {/* Calendar */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <WeeklyCalendar
+                workingDays={webhookData.schedule.working_days}
+                bookingData={webhookData.bookings.all_booking_data}
+                selectedService={selectedService}
+                onTimeSlotSelect={handleTimeSlotSelect}
+                selectedTimeSlot={selectedTimeSlot}
+              />
             </div>
           </div>
         )}

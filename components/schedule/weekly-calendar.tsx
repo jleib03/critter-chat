@@ -161,7 +161,7 @@ export function WeeklyCalendar({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+      <div className="grid grid-cols-7 gap-4">
         {weekDates.map((date, index) => {
           const dayName = getDayName(date)
           const workingHours = getWorkingHours(dayName)
@@ -188,13 +188,13 @@ export function WeeklyCalendar({
                     <p className="text-xs text-gray-400 body-font">Not available</p>
                   </div>
                 ) : (
-                  <div className="space-y-1">
+                  <div className="space-y-1 max-h-96 overflow-y-auto">
                     {generateTimeSlots(date, workingHours, serviceDuration).map((slot, slotIndex) => (
                       <Button
                         key={slotIndex}
                         variant="outline"
                         size="sm"
-                        className={`w-full text-xs body-font ${
+                        className={`w-full text-xs py-1 px-2 h-8 body-font ${
                           selectedTimeSlot?.date === slot.date && selectedTimeSlot?.startTime === slot.startTime
                             ? "bg-[#E75837] text-white border-[#E75837] hover:bg-[#d14a2a]"
                             : "hover:bg-gray-50"
