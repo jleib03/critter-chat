@@ -78,3 +78,20 @@ export type CustomerInfo = {
   lastName: string
   email: string
 }
+
+export type Pet = {
+  pet_id: string
+  pet_name: string
+  pet_type: string
+  breed?: string
+  age?: string
+  weight?: string
+  special_notes?: string
+}
+
+export type PetResponse = {
+  customer_found: boolean
+  customer_id?: string
+  pets: Pet[]
+  message?: string
+}

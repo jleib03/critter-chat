@@ -3,10 +3,11 @@
 import { useEffect, useState, useRef } from "react"
 import { useParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
-import type { WebhookResponse, Service, SelectedTimeSlot, CustomerInfo } from "@/types/schedule"
+import type { WebhookResponse, Service, SelectedTimeSlot, CustomerInfo, Pet, PetResponse } from "@/types/schedule"
 import { ServiceSelectorBar } from "@/components/schedule/service-selector-bar"
 import { WeeklyCalendar } from "@/components/schedule/weekly-calendar"
 import { CustomerForm } from "@/components/schedule/customer-form"
+import { PetSelection } from "@/components/schedule/pet-selection"
 import { BookingConfirmation } from "@/components/schedule/booking-confirmation"
 
 export default function SchedulePage() {
@@ -21,8 +22,11 @@ export default function SchedulePage() {
   const sessionIdRef = useRef<string | null>(null)
 
   const [showCustomerForm, setShowCustomerForm] = useState(false)
+  const [showPetSelection, setShowPetSelection] = useState(false)
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({ firstName: "", lastName: "", email: "" })
+  const [pets, setPets] = useState<Pet[]>([])
+  const [selectedPet, setSelectedPet] = useState<Pet | null>(null)
 
   // Generate a unique session ID
   const generateSessionId = () => {
@@ -85,17 +89,95 @@ export default function SchedulePage() {
     setShowCustomerForm(true)
   }
 
-  const handleBookingComplete = () => {
-    setShowConfirmation(true)
+  const handlePetsReceived = (customerInfo: CustomerInfo, petResponse: PetResponse) => {
+    setCustomerInfo(customerInfo)
+    setPets(petResponse.pets || [])
     setShowCustomerForm(false)
+    setShowPetSelection(true)
+  }
+
+  const handlePetSelect = async (pet: Pet) => {
+    setSelectedPet(pet)
+
+    // Create the final booking
+    try {
+      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/5671c1dd-48f6-47a9-85ac-4e20cf261520"
+
+      const bookingData = {
+        professional_id: professionalId,
+        action: "create_booking",
+        session_id: sessionIdRef.current,
+        timestamp: new Date().toISOString(),
+        booking_details: {
+          service_name: selectedService!.name,
+          service_description: selectedService!.description,
+          service_duration: selectedService!.duration_number,
+          service_duration_unit: selectedService!.duration_unit,
+          service_cost: selectedService!.customer_cost,
+          service_currency: selectedService!.customer_cost_currency,
+          date: selectedTimeSlot!.date,
+          start_time: selectedTimeSlot!.startTime,
+          end_time: selectedTimeSlot!.endTime,
+          day_of_week: selectedTimeSlot!.dayOfWeek,
+        },
+        customer_info: {
+          first_name: customerInfo.firstName.trim(),
+          last_name: customerInfo.lastName.trim(),
+          email: customerInfo.email.trim().toLowerCase(),
+        },
+        pet_info: {
+          pet_id: pet.pet_id,
+          pet_name: pet.pet_name,
+          pet_type: pet.pet_type,
+          breed: pet.breed,
+          age: pet.age,
+          weight: pet.weight,
+          special_notes: pet.special_notes,
+        },
+      }
+
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(bookingData),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      console.log("Booking created:", result)
+
+      setShowPetSelection(false)
+      setShowConfirmation(true)
+    } catch (err) {
+      console.error("Error creating booking:", err)
+      setError("Failed to create booking. Please try again.")
+    }
+  }
+
+  const handleBackToCustomerForm = () => {
+    setShowPetSelection(false)
+    setShowCustomerForm(true)
+  }
+
+  const handleBackToSchedule = () => {
+    setShowCustomerForm(false)
+    setSelectedTimeSlot(null)
   }
 
   const handleNewBooking = () => {
     setSelectedService(null)
     setSelectedTimeSlot(null)
     setShowCustomerForm(false)
+    setShowPetSelection(false)
     setShowConfirmation(false)
     setCustomerInfo({ firstName: "", lastName: "", email: "" })
+    setPets([])
+    setSelectedPet(null)
   }
 
   if (loading) {
@@ -154,20 +236,30 @@ export default function SchedulePage() {
             selectedService={selectedService!}
             selectedTimeSlot={selectedTimeSlot!}
             customerInfo={customerInfo}
+            selectedPet={selectedPet!}
             professionalName={webhookData.professional_info.professional_name}
             onNewBooking={handleNewBooking}
           />
+        ) : showPetSelection ? (
+          <PetSelection
+            pets={pets}
+            customerInfo={customerInfo}
+            selectedService={selectedService!}
+            selectedTimeSlot={selectedTimeSlot!}
+            professionalName={webhookData.professional_info.professional_name}
+            onPetSelect={handlePetSelect}
+            onBack={handleBackToCustomerForm}
+          />
         ) : showCustomerForm && selectedService && selectedTimeSlot ? (
-          <div className="max-w-2xl mx-auto">
-            <CustomerForm
-              selectedService={selectedService}
-              selectedTimeSlot={selectedTimeSlot}
-              professionalId={professionalId}
-              professionalName={webhookData.professional_info.professional_name}
-              sessionId={sessionIdRef.current!}
-              onBookingComplete={handleBookingComplete}
-            />
-          </div>
+          <CustomerForm
+            selectedService={selectedService}
+            selectedTimeSlot={selectedTimeSlot}
+            professionalId={professionalId}
+            professionalName={webhookData.professional_info.professional_name}
+            sessionId={sessionIdRef.current!}
+            onPetsReceived={handlePetsReceived}
+            onBack={handleBackToSchedule}
+          />
         ) : (
           <div className="bg-white rounded-lg shadow-sm border p-6">
             {/* Service Selection Bar */}
