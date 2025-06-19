@@ -33,6 +33,42 @@ export default function SchedulePage() {
     return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   }
 
+  // Helper function to convert time string to datetime
+  const createDateTime = (dateStr: string, timeStr: string) => {
+    // Parse the time string (e.g., "12:00 PM")
+    const [time, period] = timeStr.split(" ")
+    const [hours, minutes] = time.split(":").map(Number)
+
+    // Convert to 24-hour format
+    let hour24 = hours
+    if (period === "PM" && hours !== 12) {
+      hour24 = hours + 12
+    } else if (period === "AM" && hours === 12) {
+      hour24 = 0
+    }
+
+    // Create datetime string in ISO format
+    const date = new Date(dateStr)
+    date.setHours(hour24, minutes, 0, 0)
+
+    return date.toISOString()
+  }
+
+  // Helper function to calculate end datetime
+  const calculateEndDateTime = (startDateTime: string, durationNumber: number, durationUnit: string) => {
+    const startDate = new Date(startDateTime)
+    let durationInMinutes = durationNumber
+
+    if (durationUnit === "Hours") {
+      durationInMinutes = durationNumber * 60
+    } else if (durationUnit === "Days") {
+      durationInMinutes = durationNumber * 24 * 60
+    }
+
+    const endDate = new Date(startDate.getTime() + durationInMinutes * 60 * 1000)
+    return endDate.toISOString()
+  }
+
   useEffect(() => {
     const initializeSchedule = async () => {
       try {
@@ -103,6 +139,14 @@ export default function SchedulePage() {
     try {
       const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/5671c1dd-48f6-47a9-85ac-4e20cf261520"
 
+      // Create proper datetime values
+      const startDateTime = createDateTime(selectedTimeSlot!.date, selectedTimeSlot!.startTime)
+      const endDateTime = calculateEndDateTime(
+        startDateTime,
+        selectedService!.duration_number,
+        selectedService!.duration_unit,
+      )
+
       const bookingData = {
         professional_id: professionalId,
         action: "create_booking",
@@ -116,8 +160,10 @@ export default function SchedulePage() {
           service_cost: selectedService!.customer_cost,
           service_currency: selectedService!.customer_cost_currency,
           date: selectedTimeSlot!.date,
-          start_time: selectedTimeSlot!.startTime,
-          end_time: selectedTimeSlot!.endTime,
+          start: startDateTime,
+          end: endDateTime,
+          start_time_display: selectedTimeSlot!.startTime,
+          end_time_display: selectedTimeSlot!.endTime,
           day_of_week: selectedTimeSlot!.dayOfWeek,
         },
         customer_info: {
@@ -135,6 +181,8 @@ export default function SchedulePage() {
           special_notes: pet.special_notes,
         },
       }
+
+      console.log("Sending booking data:", bookingData)
 
       const response = await fetch(webhookUrl, {
         method: "POST",
