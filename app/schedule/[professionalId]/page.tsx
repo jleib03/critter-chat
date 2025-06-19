@@ -3,45 +3,19 @@
 import { useEffect, useState, useRef } from "react"
 import { useParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
-
-type AvailabilityHours = {
-  [key: string]: {
-    start: string
-    end: string
-    available: boolean
-  }
-}
-
-type Booking = {
-  id: string
-  date: string
-  startTime: string
-  endTime: string
-  service: string
-  customerName: string
-}
-
-type Service = {
-  id: string
-  name: string
-  duration: number // in minutes
-  description?: string
-}
-
-type ProfessionalData = {
-  professionalId: string
-  availabilityHours: AvailabilityHours
-  services: Service[]
-  existingBookings: Booking[]
-}
+import type { WebhookResponse, Service, SelectedTimeSlot } from "@/types/schedule"
+import { ServiceSelection } from "@/components/schedule/service-selection"
+import { WeeklyCalendar } from "@/components/schedule/weekly-calendar"
 
 export default function SchedulePage() {
   const params = useParams()
   const professionalId = params.professionalId as string
 
-  const [professionalData, setProfessionalData] = useState<ProfessionalData | null>(null)
+  const [webhookData, setWebhookData] = useState<WebhookResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedService, setSelectedService] = useState<Service | null>(null)
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<SelectedTimeSlot | null>(null)
   const sessionIdRef = useRef<string | null>(null)
 
   // Generate a unique session ID
@@ -80,7 +54,8 @@ export default function SchedulePage() {
         }
 
         const data = await response.json()
-        setProfessionalData(data)
+        // The response is an array, so we take the first element
+        setWebhookData(data[0])
       } catch (err) {
         console.error("Error initializing schedule:", err)
         setError("Failed to load scheduling data. Please try again.")
@@ -93,6 +68,15 @@ export default function SchedulePage() {
       initializeSchedule()
     }
   }, [professionalId])
+
+  const handleServiceSelect = (service: Service) => {
+    setSelectedService(service)
+    setSelectedTimeSlot(null) // Reset time slot when service changes
+  }
+
+  const handleTimeSlotSelect = (slot: SelectedTimeSlot) => {
+    setSelectedTimeSlot(slot)
+  }
 
   if (loading) {
     return (
@@ -124,7 +108,7 @@ export default function SchedulePage() {
     )
   }
 
-  if (!professionalData) {
+  if (!webhookData) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -136,63 +120,73 @@ export default function SchedulePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Header */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h1 className="text-3xl font-bold text-[#E75837] mb-2 header-font">
-            Schedule with Professional {professionalId}
+            Book with {webhookData.professional_info.professional_name}
           </h1>
           <p className="text-gray-600 body-font">Select a service and available time slot to book your appointment.</p>
         </div>
 
-        {/* Debug Information - Remove in production */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4 header-font">Debug Information</h2>
-          <div className="space-y-4">
-            <div>
-              <h3 className="font-medium text-gray-700 header-font">Session Info</h3>
-              <div className="bg-gray-100 p-3 rounded text-sm body-font">
-                <p>
-                  <strong>Session ID:</strong> {sessionIdRef.current}
-                </p>
-                <p>
-                  <strong>Professional ID:</strong> {professionalId}
-                </p>
-              </div>
-            </div>
-            <div>
-              <h3 className="font-medium text-gray-700 header-font">Services ({professionalData.services.length})</h3>
-              <pre className="bg-gray-100 p-3 rounded text-sm overflow-auto body-font">
-                {JSON.stringify(professionalData.services, null, 2)}
-              </pre>
-            </div>
-            <div>
-              <h3 className="font-medium text-gray-700 header-font">Availability Hours</h3>
-              <pre className="bg-gray-100 p-3 rounded text-sm overflow-auto body-font">
-                {JSON.stringify(professionalData.availabilityHours, null, 2)}
-              </pre>
-            </div>
-            <div>
-              <h3 className="font-medium text-gray-700 header-font">
-                Existing Bookings ({professionalData.existingBookings.length})
-              </h3>
-              <pre className="bg-gray-100 p-3 rounded text-sm overflow-auto body-font">
-                {JSON.stringify(professionalData.existingBookings, null, 2)}
-              </pre>
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Service Selection */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <ServiceSelection
+              servicesByCategory={webhookData.services.services_by_category}
+              selectedService={selectedService}
+              onServiceSelect={handleServiceSelect}
+            />
+          </div>
+
+          {/* Calendar */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <WeeklyCalendar
+              workingDays={webhookData.schedule.working_days}
+              bookingData={webhookData.bookings.all_booking_data}
+              selectedService={selectedService}
+              onTimeSlotSelect={handleTimeSlotSelect}
+              selectedTimeSlot={selectedTimeSlot}
+            />
           </div>
         </div>
 
-        {/* Placeholder for future components */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4 header-font">Coming Next</h2>
-          <div className="space-y-2 text-gray-600 body-font">
-            <p>• Service selection component</p>
-            <p>• Weekly schedule view</p>
-            <p>• Available time slot selection</p>
-            <p>• Customer information form</p>
-            <p>• Booking confirmation</p>
+        {/* Selected Summary */}
+        {selectedService && selectedTimeSlot && (
+          <div className="bg-white rounded-lg shadow-md p-6 mt-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 header-font">Booking Summary</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm body-font">
+              <div>
+                <span className="text-gray-500">Service:</span>
+                <p className="font-medium">{selectedService.name}</p>
+              </div>
+              <div>
+                <span className="text-gray-500">Date & Time:</span>
+                <p className="font-medium">
+                  {selectedTimeSlot.dayOfWeek},{" "}
+                  {new Date(selectedTimeSlot.date).toLocaleDateString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}{" "}
+                  at {selectedTimeSlot.startTime}
+                </p>
+              </div>
+              <div>
+                <span className="text-gray-500">Duration:</span>
+                <p className="font-medium">
+                  {selectedService.duration_number} {selectedService.duration_unit.toLowerCase()}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 pt-4 border-t">
+              <p className="text-sm text-gray-600 body-font">
+                Next: Enter your contact information to complete the booking
+              </p>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )
