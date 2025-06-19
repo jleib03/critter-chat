@@ -20,6 +20,7 @@ export default function SchedulePage() {
   const [selectedService, setSelectedService] = useState<Service | null>(null)
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<SelectedTimeSlot | null>(null)
   const sessionIdRef = useRef<string | null>(null)
+  const userTimezoneRef = useRef<string | null>(null)
 
   const [showCustomerForm, setShowCustomerForm] = useState(false)
   const [showPetSelection, setShowPetSelection] = useState(false)
@@ -31,6 +32,40 @@ export default function SchedulePage() {
   // Generate a unique session ID
   const generateSessionId = () => {
     return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  }
+
+  // Detect user's timezone
+  const detectUserTimezone = () => {
+    try {
+      // Get the user's timezone using Intl API
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+
+      // Also get timezone offset for additional context
+      const now = new Date()
+      const offsetMinutes = now.getTimezoneOffset()
+      const offsetHours = Math.abs(offsetMinutes / 60)
+      const offsetSign = offsetMinutes <= 0 ? "+" : "-"
+      const offsetString = `UTC${offsetSign}${offsetHours.toString().padStart(2, "0")}:${Math.abs(offsetMinutes % 60)
+        .toString()
+        .padStart(2, "0")}`
+
+      return {
+        timezone: timezone,
+        offset: offsetString,
+        offsetMinutes: offsetMinutes,
+        timestamp: now.toISOString(),
+        localTime: now.toLocaleString(),
+      }
+    } catch (error) {
+      console.error("Error detecting timezone:", error)
+      return {
+        timezone: "UTC",
+        offset: "UTC+00:00",
+        offsetMinutes: 0,
+        timestamp: new Date().toISOString(),
+        localTime: new Date().toLocaleString(),
+      }
+    }
   }
 
   // Helper function to convert time string to datetime
@@ -80,6 +115,11 @@ export default function SchedulePage() {
           sessionIdRef.current = generateSessionId()
         }
 
+        // Detect user's timezone
+        if (!userTimezoneRef.current) {
+          userTimezoneRef.current = JSON.stringify(detectUserTimezone())
+        }
+
         const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/5671c1dd-48f6-47a9-85ac-4e20cf261520"
 
         const response = await fetch(webhookUrl, {
@@ -92,6 +132,7 @@ export default function SchedulePage() {
             action: "initialize_schedule",
             session_id: sessionIdRef.current,
             timestamp: new Date().toISOString(),
+            user_timezone: JSON.parse(userTimezoneRef.current),
           }),
         })
 
@@ -152,6 +193,7 @@ export default function SchedulePage() {
         action: "create_booking",
         session_id: sessionIdRef.current,
         timestamp: new Date().toISOString(),
+        user_timezone: JSON.parse(userTimezoneRef.current!),
         booking_details: {
           service_name: selectedService!.name,
           service_description: selectedService!.description,
@@ -282,6 +324,13 @@ export default function SchedulePage() {
             Book with {webhookData.professional_info.professional_name}
           </h1>
           <p className="text-gray-600 body-font">Select a service and available time slot to book your appointment.</p>
+
+          {/* Debug: Show detected timezone */}
+          {userTimezoneRef.current && (
+            <div className="mt-2 text-xs text-gray-500 body-font">
+              Timezone: {JSON.parse(userTimezoneRef.current).timezone} ({JSON.parse(userTimezoneRef.current).offset})
+            </div>
+          )}
         </div>
 
         {showConfirmation ? (

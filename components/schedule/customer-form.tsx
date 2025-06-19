@@ -37,6 +37,37 @@ export function CustomerForm({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Detect user's timezone
+  const detectUserTimezone = () => {
+    try {
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+      const now = new Date()
+      const offsetMinutes = now.getTimezoneOffset()
+      const offsetHours = Math.abs(offsetMinutes / 60)
+      const offsetSign = offsetMinutes <= 0 ? "+" : "-"
+      const offsetString = `UTC${offsetSign}${offsetHours.toString().padStart(2, "0")}:${Math.abs(offsetMinutes % 60)
+        .toString()
+        .padStart(2, "0")}`
+
+      return {
+        timezone: timezone,
+        offset: offsetString,
+        offsetMinutes: offsetMinutes,
+        timestamp: now.toISOString(),
+        localTime: now.toLocaleString(),
+      }
+    } catch (error) {
+      console.error("Error detecting timezone:", error)
+      return {
+        timezone: "UTC",
+        offset: "UTC+00:00",
+        offsetMinutes: 0,
+        timestamp: new Date().toISOString(),
+        localTime: new Date().toLocaleString(),
+      }
+    }
+  }
+
   const handleInputChange = (field: keyof CustomerInfo, value: string) => {
     setCustomerInfo((prev) => ({ ...prev, [field]: value }))
   }
@@ -69,6 +100,7 @@ export function CustomerForm({
         action: "get_customer_pets",
         session_id: sessionId,
         timestamp: new Date().toISOString(),
+        user_timezone: detectUserTimezone(),
         customer_info: {
           first_name: customerInfo.firstName.trim(),
           last_name: customerInfo.lastName.trim(),
