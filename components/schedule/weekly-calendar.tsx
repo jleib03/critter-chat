@@ -76,7 +76,11 @@ export function WeeklyCalendar({
 
     const bookings = getBookingsForDate(date)
 
-    for (let time = startTime; time + serviceDuration <= endTime; time += 30) {
+    // Generate slots every 30 minutes, but limit to show only first 8 slots per day for better formatting
+    let slotCount = 0
+    const maxSlotsPerDay = 8
+
+    for (let time = startTime; time + serviceDuration <= endTime && slotCount < maxSlotsPerDay; time += 30) {
       const slotStart = time
       const slotEnd = time + serviceDuration
 
@@ -95,8 +99,6 @@ export function WeeklyCalendar({
       if (!hasConflict) {
         const startHours = Math.floor(slotStart / 60)
         const startMins = slotStart % 60
-        const endHours = Math.floor(slotEnd / 60)
-        const endMins = slotEnd % 60
 
         const formatTime = (hours: number, minutes: number) => {
           const period = hours >= 12 ? "PM" : "AM"
@@ -107,9 +109,10 @@ export function WeeklyCalendar({
         slots.push({
           date: formatDate(date),
           startTime: formatTime(startHours, startMins),
-          endTime: formatTime(endHours, endMins),
+          endTime: formatTime(Math.floor(slotEnd / 60), slotEnd % 60),
           dayOfWeek: getDayName(date),
         })
+        slotCount++
       }
     }
 
@@ -125,34 +128,43 @@ export function WeeklyCalendar({
 
   if (!selectedService) {
     return (
-      <Card>
-        <CardContent className="p-8 text-center">
-          <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2 header-font">Select a Service First</h3>
-          <p className="text-gray-600 body-font">Please choose a service to see available time slots.</p>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 header-font">Available Times</h2>
+          <p className="text-gray-600 body-font">Select a service first to see available time slots.</p>
+        </div>
+        <Card>
+          <CardContent className="p-12 text-center">
+            <Clock className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-500 mb-2 header-font">Choose a Service</h3>
+            <p className="text-gray-400 body-font">
+              Please select a service from the left to view available appointments.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     )
   }
 
   const serviceDuration = getServiceDurationInMinutes(selectedService)
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Header with navigation */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 header-font">Available Times</h2>
-          <p className="text-gray-600 body-font">Select an available time slot for {selectedService.name}</p>
+          <p className="text-gray-600 body-font">Select a time slot for {selectedService.name}</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => navigateWeek("prev")}>
             <ChevronLeft className="w-4 h-4" />
           </Button>
-          <span className="text-sm font-medium body-font px-4">
+          <span className="text-sm font-medium body-font px-3">
+            Week of{" "}
             {currentWeekStart.toLocaleDateString("en-US", {
-              month: "long",
+              month: "short",
               day: "numeric",
-              year: "numeric",
             })}
           </span>
           <Button variant="outline" size="sm" onClick={() => navigateWeek("next")}>
@@ -161,49 +173,61 @@ export function WeeklyCalendar({
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-4">
+      {/* Calendar Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-3">
         {weekDates.map((date, index) => {
           const dayName = getDayName(date)
           const workingHours = getWorkingHours(dayName)
           const isToday = formatDate(date) === formatDate(new Date())
           const isPast = date < new Date(new Date().setHours(0, 0, 0, 0))
+          const timeSlots = workingHours ? generateTimeSlots(date, workingHours, serviceDuration) : []
 
           return (
-            <Card key={index} className={`${isToday ? "ring-2 ring-[#E75837]" : ""}`}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-center header-font">
-                  <div className={`${isToday ? "text-[#E75837]" : "text-gray-900"}`}>{dayName}</div>
+            <Card key={index} className={`${isToday ? "ring-2 ring-[#E75837]" : ""} min-h-[300px]`}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-center">
+                  <div className={`text-sm font-semibold header-font ${isToday ? "text-[#E75837]" : "text-gray-900"}`}>
+                    {dayName.substring(0, 3)}
+                  </div>
+                  <div className="text-lg font-bold text-gray-900">{date.getDate()}</div>
                   <div className="text-xs text-gray-500 font-normal">
-                    {date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    {date.toLocaleDateString("en-US", { month: "short" })}
                   </div>
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
                 {isPast ? (
-                  <div className="text-center py-4">
-                    <p className="text-xs text-gray-400 body-font">Past date</p>
+                  <div className="text-center py-8">
+                    <p className="text-sm text-gray-400 body-font">Past Date</p>
                   </div>
                 ) : !workingHours ? (
-                  <div className="text-center py-4">
-                    <p className="text-xs text-gray-400 body-font">Not available</p>
+                  <div className="text-center py-8">
+                    <p className="text-sm text-gray-400 body-font">Closed</p>
+                  </div>
+                ) : timeSlots.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-sm text-gray-400 body-font">No Available Times</p>
                   </div>
                 ) : (
-                  <div className="space-y-1 max-h-96 overflow-y-auto">
-                    {generateTimeSlots(date, workingHours, serviceDuration).map((slot, slotIndex) => (
+                  <div className="space-y-2">
+                    {timeSlots.map((slot, slotIndex) => (
                       <Button
                         key={slotIndex}
                         variant="outline"
                         size="sm"
-                        className={`w-full text-xs py-1 px-2 h-8 body-font ${
+                        className={`w-full text-xs py-2 h-8 body-font transition-all ${
                           selectedTimeSlot?.date === slot.date && selectedTimeSlot?.startTime === slot.startTime
-                            ? "bg-[#E75837] text-white border-[#E75837] hover:bg-[#d14a2a]"
-                            : "hover:bg-gray-50"
+                            ? "bg-[#E75837] text-white border-[#E75837] hover:bg-[#d14a2a] shadow-md"
+                            : "hover:bg-gray-50 hover:border-gray-300"
                         }`}
                         onClick={() => onTimeSlotSelect(slot)}
                       >
                         {slot.startTime}
                       </Button>
                     ))}
+                    {timeSlots.length >= 8 && (
+                      <p className="text-xs text-gray-400 text-center body-font mt-2">+ more times available</p>
+                    )}
                   </div>
                 )}
               </CardContent>

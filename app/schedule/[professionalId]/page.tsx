@@ -158,18 +158,20 @@ export default function SchedulePage() {
             onNewBooking={handleNewBooking}
           />
         ) : showCustomerForm && selectedService && selectedTimeSlot ? (
-          <CustomerForm
-            selectedService={selectedService}
-            selectedTimeSlot={selectedTimeSlot}
-            professionalId={professionalId}
-            professionalName={webhookData.professional_info.professional_name}
-            sessionId={sessionIdRef.current!}
-            onBookingComplete={handleBookingComplete}
-          />
+          <div className="max-w-2xl mx-auto">
+            <CustomerForm
+              selectedService={selectedService}
+              selectedTimeSlot={selectedTimeSlot}
+              professionalId={professionalId}
+              professionalName={webhookData.professional_info.professional_name}
+              sessionId={sessionIdRef.current!}
+              onBookingComplete={handleBookingComplete}
+            />
+          </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-6">
             {/* Service Selection */}
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="bg-white rounded-lg shadow-sm border p-6">
               <ServiceSelection
                 servicesByCategory={webhookData.services.services_by_category}
                 selectedService={selectedService}
@@ -178,7 +180,7 @@ export default function SchedulePage() {
             </div>
 
             {/* Calendar */}
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="bg-white rounded-lg shadow-sm border p-6">
               <WeeklyCalendar
                 workingDays={webhookData.schedule.working_days}
                 bookingData={webhookData.bookings.all_booking_data}
