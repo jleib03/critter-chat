@@ -4,7 +4,7 @@ import { useState } from "react"
 import type { BookingData, WorkingDay, Service, SelectedTimeSlot } from "@/types/schedule"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, Clock } from "lucide-react"
+import { ChevronLeft, ChevronRight, Clock, ChevronDown, ChevronUp } from "lucide-react"
 
 type WeeklyCalendarProps = {
   workingDays: WorkingDay[]
@@ -30,6 +30,9 @@ export function WeeklyCalendar({
     return monday
   })
 
+  // Track which days are expanded to show all time slots
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set())
+
   const getWeekDates = (startDate: Date) => {
     const dates = []
     for (let i = 0; i < 7; i++) {
@@ -46,6 +49,18 @@ export function WeeklyCalendar({
     const newDate = new Date(currentWeekStart)
     newDate.setDate(currentWeekStart.getDate() + (direction === "next" ? 7 : -7))
     setCurrentWeekStart(newDate)
+    // Reset expanded days when navigating weeks
+    setExpandedDays(new Set())
+  }
+
+  const toggleDayExpansion = (dateStr: string) => {
+    const newExpanded = new Set(expandedDays)
+    if (newExpanded.has(dateStr)) {
+      newExpanded.delete(dateStr)
+    } else {
+      newExpanded.add(dateStr)
+    }
+    setExpandedDays(newExpanded)
   }
 
   const formatDate = (date: Date) => {
@@ -168,6 +183,11 @@ export function WeeklyCalendar({
           const isToday = formatDate(date) === formatDate(new Date())
           const isPast = date < new Date(new Date().setHours(0, 0, 0, 0))
           const timeSlots = workingHours ? generateTimeSlots(date, workingHours, serviceDuration) : []
+          const dateStr = formatDate(date)
+          const isExpanded = expandedDays.has(dateStr)
+          const initialSlotCount = 8
+          const hasMoreSlots = timeSlots.length > initialSlotCount
+          const displayedSlots = isExpanded ? timeSlots : timeSlots.slice(0, initialSlotCount)
 
           return (
             <Card key={index} className={`${isToday ? "ring-2 ring-[#E75837]" : ""} h-fit`}>
@@ -197,7 +217,7 @@ export function WeeklyCalendar({
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {timeSlots.slice(0, 10).map((slot, slotIndex) => (
+                    {displayedSlots.map((slot, slotIndex) => (
                       <Button
                         key={slotIndex}
                         variant="outline"
@@ -212,10 +232,25 @@ export function WeeklyCalendar({
                         {slot.startTime}
                       </Button>
                     ))}
-                    {timeSlots.length > 10 && (
-                      <p className="text-xs text-gray-400 text-center body-font mt-2">
-                        +{timeSlots.length - 10} more times
-                      </p>
+
+                    {hasMoreSlots && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full text-xs py-2 h-8 text-gray-500 hover:text-gray-700 hover:bg-gray-50 body-font"
+                        onClick={() => toggleDayExpansion(dateStr)}
+                      >
+                        {isExpanded ? (
+                          <>
+                            <ChevronUp className="w-3 h-3 mr-1" />
+                            Show less
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="w-3 h-3 mr-1" />+{timeSlots.length - initialSlotCount} more times
+                          </>
+                        )}
+                      </Button>
                     )}
                   </div>
                 )}
