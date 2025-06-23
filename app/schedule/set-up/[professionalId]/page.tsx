@@ -111,115 +111,167 @@ export default function ProfessionalSetupPage() {
       const data = await response.json()
       console.log("Raw webhook response:", data)
 
-      // Process the raw array format from your webhook
+      // Process the webhook response - handle both structured and raw formats
       if (Array.isArray(data)) {
         console.log("Processing array response with", data.length, "items")
 
-        // Separate the different data types from the array
-        const employees: any[] = []
-        let scheduleData: any = null
-        let professionalInfo: any = null
+        // Look for structured webhook_response objects first
+        const webhookResponses = data.filter((item) => item.webhook_response && item.webhook_response.success)
 
-        data.forEach((item, index) => {
-          console.log(`Processing item ${index}:`, item)
+        if (webhookResponses.length > 0) {
+          // Use the most recent webhook response (last one in array)
+          const latestResponse = webhookResponses[webhookResponses.length - 1]
+          const configData = latestResponse.webhook_response.config_data
 
-          // Skip empty objects
-          if (!item || Object.keys(item).length === 0) {
-            return
+          console.log("Found structured webhook response:", configData)
+
+          // Process structured configuration data
+          setBusinessName(configData.business_name || "")
+          setLastUpdated(configData.last_updated || new Date().toISOString())
+
+          // Process employees from structured data
+          if (configData.employees && Array.isArray(configData.employees)) {
+            console.log("Loading employees from structured config:", configData.employees.length)
+
+            // Convert structured employees to frontend format
+            const processedEmployees: WebhookEmployee[] = configData.employees.map((emp: any) => ({
+              employee_id: emp.employee_id,
+              name: emp.name,
+              role: emp.role || "Staff Member",
+              email: emp.email || "",
+              is_active: emp.is_active ?? true,
+              working_days: emp.working_days.map((day: any) => ({
+                day: day.day,
+                start_time: day.start_time.substring(0, 5), // Convert "08:00:00" to "08:00"
+                end_time: day.end_time.substring(0, 5), // Convert "20:00:00" to "20:00"
+                is_working: day.is_working,
+              })),
+              services: emp.services || [],
+            }))
+
+            setEmployees(processedEmployees)
+            console.log("Processed structured employees:", processedEmployees.length)
           }
 
-          // Check if this is employee data
-          if (item.first_name && item.last_name && item.email) {
-            console.log("Found employee:", item.first_name, item.last_name)
-            employees.push(item)
+          // Process capacity rules from structured data
+          if (configData.capacity_rules) {
+            setCapacityRules(configData.capacity_rules)
           }
-          // Check if this is schedule data
-          else if (item.professional_id && item.monday_start) {
-            console.log("Found schedule data for professional:", item.professional_id)
-            scheduleData = item
-            professionalInfo = item
+
+          // Process blocked times from structured data
+          if (configData.blocked_times && Array.isArray(configData.blocked_times)) {
+            setBlockedTimes(configData.blocked_times)
           }
-        })
+        } else {
+          // Fallback to raw data processing (original logic)
+          console.log("No structured responses found, processing raw data")
 
-        console.log("Processed data:")
-        console.log("- Employees found:", employees.length)
-        console.log("- Schedule data:", scheduleData ? "found" : "not found")
+          // Separate the different data types from the array
+          const employees: any[] = []
+          let scheduleData: any = null
+          let professionalInfo: any = null
 
-        // Convert raw employee data to proper format
-        const processedEmployees: WebhookEmployee[] = employees.map((emp, index) => {
-          // Convert schedule data to working days format
-          const workingDays = scheduleData
-            ? [
-                {
-                  day: "Monday",
-                  start_time: scheduleData.monday_start?.substring(0, 5) || "09:00",
-                  end_time: scheduleData.monday_end?.substring(0, 5) || "17:00",
-                  is_working: !!scheduleData.monday_working,
-                },
-                {
-                  day: "Tuesday",
-                  start_time: scheduleData.tuesday_start?.substring(0, 5) || "09:00",
-                  end_time: scheduleData.tuesday_end?.substring(0, 5) || "17:00",
-                  is_working: !!scheduleData.tuesday_working,
-                },
-                {
-                  day: "Wednesday",
-                  start_time: scheduleData.wednesday_start?.substring(0, 5) || "09:00",
-                  end_time: scheduleData.wednesday_end?.substring(0, 5) || "17:00",
-                  is_working: !!scheduleData.wednesday_working,
-                },
-                {
-                  day: "Thursday",
-                  start_time: scheduleData.thursday_start?.substring(0, 5) || "09:00",
-                  end_time: scheduleData.thursday_end?.substring(0, 5) || "17:00",
-                  is_working: !!scheduleData.thursday_working,
-                },
-                {
-                  day: "Friday",
-                  start_time: scheduleData.friday_start?.substring(0, 5) || "09:00",
-                  end_time: scheduleData.friday_end?.substring(0, 5) || "17:00",
-                  is_working: !!scheduleData.friday_working,
-                },
-                {
-                  day: "Saturday",
-                  start_time: scheduleData.saturday_start?.substring(0, 5) || "09:00",
-                  end_time: scheduleData.saturday_end?.substring(0, 5) || "17:00",
-                  is_working: !!scheduleData.saturday_working,
-                },
-                {
-                  day: "Sunday",
-                  start_time: scheduleData.sunday_start?.substring(0, 5) || "09:00",
-                  end_time: scheduleData.sunday_end?.substring(0, 5) || "17:00",
-                  is_working: !!scheduleData.sunday_working,
-                },
-              ]
-            : [...DEFAULT_WORKING_DAYS]
+          data.forEach((item, index) => {
+            console.log(`Processing item ${index}:`, item)
 
-          return {
-            employee_id: `emp_${professionalId}_${Date.now()}_${index + 1}`,
-            name: `${emp.first_name} ${emp.last_name}`.trim(),
-            role: "Staff Member", // Default role
-            email: emp.email || "",
-            is_active: true,
-            working_days: workingDays,
-            services: [],
-          }
-        })
+            // Skip empty objects and webhook_response objects
+            if (!item || Object.keys(item).length === 0 || item.webhook_response) {
+              return
+            }
 
-        console.log("Processed employees:", processedEmployees)
+            // Check if this is employee data
+            if (item.first_name && item.last_name && item.email) {
+              console.log("Found raw employee:", item.first_name, item.last_name)
+              employees.push(item)
+            }
+            // Check if this is schedule data
+            else if (item.professional_id && item.monday_start) {
+              console.log("Found schedule data for professional:", item.professional_id)
+              scheduleData = item
+              professionalInfo = item
+            }
+          })
 
-        // Set the state with processed data
-        setBusinessName(employees[0]?.first_name || "")
-        setEmployees(processedEmployees)
-        setCapacityRules({
-          ...DEFAULT_CAPACITY_RULES,
-          max_concurrent_bookings: Math.max(1, Math.floor(processedEmployees.length / 2)),
-          max_bookings_per_day: processedEmployees.length * 8,
-        })
-        setBlockedTimes([])
-        setLastUpdated(new Date().toISOString())
+          console.log("Processed raw data:")
+          console.log("- Employees found:", employees.length)
+          console.log("- Schedule data:", scheduleData ? "found" : "not found")
 
-        console.log("Configuration loaded successfully with", processedEmployees.length, "employees")
+          // Convert raw employee data to proper format (original logic)
+          const processedEmployees: WebhookEmployee[] = employees.map((emp, index) => {
+            // Convert schedule data to working days format
+            const workingDays = scheduleData
+              ? [
+                  {
+                    day: "Monday",
+                    start_time: scheduleData.monday_start?.substring(0, 5) || "09:00",
+                    end_time: scheduleData.monday_end?.substring(0, 5) || "17:00",
+                    is_working: !!scheduleData.monday_working,
+                  },
+                  {
+                    day: "Tuesday",
+                    start_time: scheduleData.tuesday_start?.substring(0, 5) || "09:00",
+                    end_time: scheduleData.tuesday_end?.substring(0, 5) || "17:00",
+                    is_working: !!scheduleData.tuesday_working,
+                  },
+                  {
+                    day: "Wednesday",
+                    start_time: scheduleData.wednesday_start?.substring(0, 5) || "09:00",
+                    end_time: scheduleData.wednesday_end?.substring(0, 5) || "17:00",
+                    is_working: !!scheduleData.wednesday_working,
+                  },
+                  {
+                    day: "Thursday",
+                    start_time: scheduleData.thursday_start?.substring(0, 5) || "09:00",
+                    end_time: scheduleData.thursday_end?.substring(0, 5) || "17:00",
+                    is_working: !!scheduleData.thursday_working,
+                  },
+                  {
+                    day: "Friday",
+                    start_time: scheduleData.friday_start?.substring(0, 5) || "09:00",
+                    end_time: scheduleData.friday_end?.substring(0, 5) || "17:00",
+                    is_working: !!scheduleData.friday_working,
+                  },
+                  {
+                    day: "Saturday",
+                    start_time: scheduleData.saturday_start?.substring(0, 5) || "09:00",
+                    end_time: scheduleData.saturday_end?.substring(0, 5) || "17:00",
+                    is_working: !!scheduleData.saturday_working,
+                  },
+                  {
+                    day: "Sunday",
+                    start_time: scheduleData.sunday_start?.substring(0, 5) || "09:00",
+                    end_time: scheduleData.sunday_end?.substring(0, 5) || "17:00",
+                    is_working: !!scheduleData.sunday_working,
+                  },
+                ]
+              : [...DEFAULT_WORKING_DAYS]
+
+            return {
+              employee_id: `emp_${professionalId}_${Date.now()}_${index + 1}`,
+              name: `${emp.first_name} ${emp.last_name}`.trim(),
+              role: "Staff Member", // Default role
+              email: emp.email || "",
+              is_active: true,
+              working_days: workingDays,
+              services: [],
+            }
+          })
+
+          console.log("Processed raw employees:", processedEmployees)
+
+          // Set the state with processed data
+          setBusinessName(employees[0]?.first_name || "")
+          setEmployees(processedEmployees)
+          setCapacityRules({
+            ...DEFAULT_CAPACITY_RULES,
+            max_concurrent_bookings: Math.max(1, Math.floor(processedEmployees.length / 2)),
+            max_bookings_per_day: processedEmployees.length * 8,
+          })
+          setBlockedTimes([])
+          setLastUpdated(new Date().toISOString())
+        }
+
+        console.log("Configuration loaded successfully")
       } else {
         console.log("Unexpected response format:", data)
         // Fallback to defaults
