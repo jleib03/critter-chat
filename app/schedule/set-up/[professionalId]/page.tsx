@@ -111,54 +111,118 @@ export default function ProfessionalSetupPage() {
       const data = await response.json()
       console.log("Raw webhook response:", data)
 
-      // Handle the webhook response format
-      let configData = null
-
+      // Process the raw array format from your webhook
       if (Array.isArray(data)) {
-        // If it's an array, look for the config data
-        const configResponse = data.find((item) => item.success || item.config_data)
-        if (configResponse) {
-          configData = configResponse.config_data || configResponse
-        }
-      } else if (data.config_data) {
-        configData = data.config_data
-      } else if (data.success) {
-        configData = data
-      }
+        console.log("Processing array response with", data.length, "items")
 
-      if (configData) {
-        console.log("Processing config data:", configData)
+        // Separate the different data types from the array
+        const employees: any[] = []
+        let scheduleData: any = null
+        let professionalInfo: any = null
 
-        // Set basic info
-        setBusinessName(configData.business_name || "")
-        setLastUpdated(configData.last_updated || "")
+        data.forEach((item, index) => {
+          console.log(`Processing item ${index}:`, item)
 
-        // Process employees from webhook data
-        if (configData.employees && Array.isArray(configData.employees)) {
-          console.log("Loading employees from config:", configData.employees)
-          setEmployees(configData.employees)
-        } else {
-          console.log("No employees found in config data")
-          setEmployees([])
-        }
+          // Skip empty objects
+          if (!item || Object.keys(item).length === 0) {
+            return
+          }
 
-        // Process capacity rules
-        if (configData.capacity_rules) {
-          setCapacityRules(configData.capacity_rules)
-        } else {
-          setCapacityRules(DEFAULT_CAPACITY_RULES)
-        }
+          // Check if this is employee data
+          if (item.first_name && item.last_name && item.email) {
+            console.log("Found employee:", item.first_name, item.last_name)
+            employees.push(item)
+          }
+          // Check if this is schedule data
+          else if (item.professional_id && item.monday_start) {
+            console.log("Found schedule data for professional:", item.professional_id)
+            scheduleData = item
+            professionalInfo = item
+          }
+        })
 
-        // Process blocked times
-        if (configData.blocked_times && Array.isArray(configData.blocked_times)) {
-          setBlockedTimes(configData.blocked_times)
-        } else {
-          setBlockedTimes([])
-        }
+        console.log("Processed data:")
+        console.log("- Employees found:", employees.length)
+        console.log("- Schedule data:", scheduleData ? "found" : "not found")
 
-        console.log("Configuration loaded successfully")
+        // Convert raw employee data to proper format
+        const processedEmployees: WebhookEmployee[] = employees.map((emp, index) => {
+          // Convert schedule data to working days format
+          const workingDays = scheduleData
+            ? [
+                {
+                  day: "Monday",
+                  start_time: scheduleData.monday_start?.substring(0, 5) || "09:00",
+                  end_time: scheduleData.monday_end?.substring(0, 5) || "17:00",
+                  is_working: !!scheduleData.monday_working,
+                },
+                {
+                  day: "Tuesday",
+                  start_time: scheduleData.tuesday_start?.substring(0, 5) || "09:00",
+                  end_time: scheduleData.tuesday_end?.substring(0, 5) || "17:00",
+                  is_working: !!scheduleData.tuesday_working,
+                },
+                {
+                  day: "Wednesday",
+                  start_time: scheduleData.wednesday_start?.substring(0, 5) || "09:00",
+                  end_time: scheduleData.wednesday_end?.substring(0, 5) || "17:00",
+                  is_working: !!scheduleData.wednesday_working,
+                },
+                {
+                  day: "Thursday",
+                  start_time: scheduleData.thursday_start?.substring(0, 5) || "09:00",
+                  end_time: scheduleData.thursday_end?.substring(0, 5) || "17:00",
+                  is_working: !!scheduleData.thursday_working,
+                },
+                {
+                  day: "Friday",
+                  start_time: scheduleData.friday_start?.substring(0, 5) || "09:00",
+                  end_time: scheduleData.friday_end?.substring(0, 5) || "17:00",
+                  is_working: !!scheduleData.friday_working,
+                },
+                {
+                  day: "Saturday",
+                  start_time: scheduleData.saturday_start?.substring(0, 5) || "09:00",
+                  end_time: scheduleData.saturday_end?.substring(0, 5) || "17:00",
+                  is_working: !!scheduleData.saturday_working,
+                },
+                {
+                  day: "Sunday",
+                  start_time: scheduleData.sunday_start?.substring(0, 5) || "09:00",
+                  end_time: scheduleData.sunday_end?.substring(0, 5) || "17:00",
+                  is_working: !!scheduleData.sunday_working,
+                },
+              ]
+            : [...DEFAULT_WORKING_DAYS]
+
+          return {
+            employee_id: `emp_${professionalId}_${Date.now()}_${index + 1}`,
+            name: `${emp.first_name} ${emp.last_name}`.trim(),
+            role: "Staff Member", // Default role
+            email: emp.email || "",
+            is_active: true,
+            working_days: workingDays,
+            services: [],
+          }
+        })
+
+        console.log("Processed employees:", processedEmployees)
+
+        // Set the state with processed data
+        setBusinessName(employees[0]?.first_name || "")
+        setEmployees(processedEmployees)
+        setCapacityRules({
+          ...DEFAULT_CAPACITY_RULES,
+          max_concurrent_bookings: Math.max(1, Math.floor(processedEmployees.length / 2)),
+          max_bookings_per_day: processedEmployees.length * 8,
+        })
+        setBlockedTimes([])
+        setLastUpdated(new Date().toISOString())
+
+        console.log("Configuration loaded successfully with", processedEmployees.length, "employees")
       } else {
-        console.log("No configuration data found, using defaults")
+        console.log("Unexpected response format:", data)
+        // Fallback to defaults
         setBusinessName("")
         setEmployees([])
         setCapacityRules(DEFAULT_CAPACITY_RULES)
