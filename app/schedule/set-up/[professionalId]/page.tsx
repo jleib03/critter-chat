@@ -11,158 +11,285 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { Trash2, Plus, Users, Clock, Shield, Calendar, ExternalLink } from "lucide-react"
-import { loadProfessionalConfig, saveProfessionalConfig } from "@/utils/professional-config"
-import type { ProfessionalConfig, Employee, BlockedTime } from "@/types/professional-config"
-import { DEFAULT_WORKING_DAYS, DEFAULT_CAPACITY_RULES } from "@/types/professional-config"
+import { Loader2, Trash2, Plus, Users, Clock, Shield, Calendar, ExternalLink, AlertCircle } from "lucide-react"
+import type {
+  GetConfigWebhookPayload,
+  SaveConfigWebhookPayload,
+  ConfigWebhookResponse,
+  SaveConfigWebhookResponse,
+  WebhookEmployee,
+  WebhookBlockedTime,
+  WebhookCapacityRules,
+} from "@/types/webhook-config"
+
+const DEFAULT_WORKING_DAYS = [
+  { day: "Monday", start_time: "09:00", end_time: "17:00", is_working: true },
+  { day: "Tuesday", start_time: "09:00", end_time: "17:00", is_working: true },
+  { day: "Wednesday", start_time: "09:00", end_time: "17:00", is_working: true },
+  { day: "Thursday", start_time: "09:00", end_time: "17:00", is_working: true },
+  { day: "Friday", start_time: "09:00", end_time: "17:00", is_working: true },
+  { day: "Saturday", start_time: "09:00", end_time: "15:00", is_working: false },
+  { day: "Sunday", start_time: "09:00", end_time: "15:00", is_working: false },
+]
+
+const DEFAULT_CAPACITY_RULES: WebhookCapacityRules = {
+  max_concurrent_bookings: 1,
+  buffer_time_between_bookings: 15,
+  max_bookings_per_day: 8,
+  allow_overlapping: false,
+  require_all_employees_for_service: false,
+}
 
 export default function ProfessionalSetupPage() {
   const params = useParams()
   const professionalId = params.professionalId as string
 
-  const [config, setConfig] = useState<ProfessionalConfig>({
-    professionalId,
-    businessName: "",
-    employees: [],
-    capacityRules: DEFAULT_CAPACITY_RULES,
-    blockedTimes: [],
-    lastUpdated: new Date().toISOString(),
-  })
+  // State management
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState("business")
 
-  const [newEmployee, setNewEmployee] = useState<Partial<Employee>>({
+  // Configuration state
+  const [businessName, setBusinessName] = useState("")
+  const [employees, setEmployees] = useState<WebhookEmployee[]>([])
+  const [capacityRules, setCapacityRules] = useState<WebhookCapacityRules>(DEFAULT_CAPACITY_RULES)
+  const [blockedTimes, setBlockedTimes] = useState<WebhookBlockedTime[]>([])
+  const [lastUpdated, setLastUpdated] = useState<string>("")
+
+  // Form state for adding new items
+  const [newEmployee, setNewEmployee] = useState<Partial<WebhookEmployee>>({
     name: "",
     role: "",
     email: "",
-    isActive: true,
-    workingDays: [...DEFAULT_WORKING_DAYS],
+    is_active: true,
+    working_days: [...DEFAULT_WORKING_DAYS],
     services: [],
   })
 
-  const [newBlockedTime, setNewBlockedTime] = useState<Partial<BlockedTime>>({
+  const [newBlockedTime, setNewBlockedTime] = useState<Partial<WebhookBlockedTime>>({
     date: "",
-    startTime: "09:00",
-    endTime: "17:00",
+    start_time: "09:00",
+    end_time: "17:00",
     reason: "",
-    isRecurring: false,
+    is_recurring: false,
   })
 
-  const [activeTab, setActiveTab] = useState("business")
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle")
+  // Generate session ID
+  const generateSessionId = () => {
+    return `setup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  }
 
   // Load existing configuration
-  useEffect(() => {
-    const existingConfig = loadProfessionalConfig(professionalId)
-    if (existingConfig) {
-      setConfig(existingConfig)
-    }
-  }, [professionalId])
+  const loadConfiguration = async () => {
+    try {
+      setLoading(true)
+      setError(null)
 
-  const handleSave = () => {
-    setSaveStatus("saving")
-    const updatedConfig = {
-      ...config,
-      lastUpdated: new Date().toISOString(),
-    }
+      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/5671c1dd-48f6-47a9-85ac-4e20cf261520"
 
-    const success = saveProfessionalConfig(updatedConfig)
-    if (success) {
-      setConfig(updatedConfig)
-      setSaveStatus("saved")
-      setTimeout(() => setSaveStatus("idle"), 2000)
-    } else {
-      setSaveStatus("error")
-      setTimeout(() => setSaveStatus("idle"), 3000)
+      const payload: GetConfigWebhookPayload = {
+        action: "get_professional_config",
+        professional_id: professionalId,
+        session_id: generateSessionId(),
+        timestamp: new Date().toISOString(),
+      }
+
+      console.log("Loading professional configuration:", payload)
+
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data: ConfigWebhookResponse[] = await response.json()
+      const configResponse = data[0]
+
+      if (configResponse.success && configResponse.config_data) {
+        const config = configResponse.config_data
+        setBusinessName(config.business_name || "")
+        setEmployees(config.employees || [])
+        setCapacityRules(config.capacity_rules || DEFAULT_CAPACITY_RULES)
+        setBlockedTimes(config.blocked_times || [])
+        setLastUpdated(config.last_updated || "")
+        console.log("Configuration loaded successfully:", config)
+      } else {
+        // No existing configuration, use defaults
+        console.log("No existing configuration found, using defaults")
+        setBusinessName("")
+        setEmployees([])
+        setCapacityRules(DEFAULT_CAPACITY_RULES)
+        setBlockedTimes([])
+      }
+    } catch (err) {
+      console.error("Error loading configuration:", err)
+      setError("Failed to load configuration. Please try again.")
+    } finally {
+      setLoading(false)
     }
   }
 
+  // Save configuration
+  const saveConfiguration = async () => {
+    try {
+      setSaving(true)
+      setError(null)
+
+      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/5671c1dd-48f6-47a9-85ac-4e20cf261520"
+
+      const payload: SaveConfigWebhookPayload = {
+        action: "save_professional_config",
+        professional_id: professionalId,
+        session_id: generateSessionId(),
+        timestamp: new Date().toISOString(),
+        config_data: {
+          business_name: businessName,
+          employees: employees,
+          capacity_rules: capacityRules,
+          blocked_times: blockedTimes,
+        },
+      }
+
+      console.log("Saving professional configuration:", payload)
+
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data: SaveConfigWebhookResponse[] = await response.json()
+      const saveResponse = data[0]
+
+      if (saveResponse.success) {
+        setLastUpdated(new Date().toISOString())
+        console.log("Configuration saved successfully:", saveResponse.message)
+
+        // Show success message briefly
+        setTimeout(() => {
+          // Could add a success toast here
+        }, 2000)
+      } else {
+        throw new Error(saveResponse.message || "Failed to save configuration")
+      }
+    } catch (err) {
+      console.error("Error saving configuration:", err)
+      setError(err instanceof Error ? err.message : "Failed to save configuration")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Load configuration on mount
+  useEffect(() => {
+    if (professionalId) {
+      loadConfiguration()
+    }
+  }, [professionalId])
+
+  // Employee management functions
   const addEmployee = () => {
     if (!newEmployee.name || !newEmployee.role) return
 
-    const employee: Employee = {
-      id: `emp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    const employee: WebhookEmployee = {
+      employee_id: `emp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       name: newEmployee.name,
       role: newEmployee.role,
       email: newEmployee.email || "",
-      isActive: newEmployee.isActive ?? true,
-      workingDays: newEmployee.workingDays || [...DEFAULT_WORKING_DAYS],
+      is_active: newEmployee.is_active ?? true,
+      working_days: newEmployee.working_days || [...DEFAULT_WORKING_DAYS],
       services: newEmployee.services || [],
     }
 
-    setConfig((prev) => ({
-      ...prev,
-      employees: [...prev.employees, employee],
-    }))
-
+    setEmployees((prev) => [...prev, employee])
     setNewEmployee({
       name: "",
       role: "",
       email: "",
-      isActive: true,
-      workingDays: [...DEFAULT_WORKING_DAYS],
+      is_active: true,
+      working_days: [...DEFAULT_WORKING_DAYS],
       services: [],
     })
   }
 
   const removeEmployee = (employeeId: string) => {
-    setConfig((prev) => ({
-      ...prev,
-      employees: prev.employees.filter((emp) => emp.id !== employeeId),
-    }))
+    setEmployees((prev) => prev.filter((emp) => emp.employee_id !== employeeId))
   }
 
-  const updateEmployee = (employeeId: string, updates: Partial<Employee>) => {
-    setConfig((prev) => ({
-      ...prev,
-      employees: prev.employees.map((emp) => (emp.id === employeeId ? { ...emp, ...updates } : emp)),
-    }))
+  const updateEmployee = (employeeId: string, updates: Partial<WebhookEmployee>) => {
+    setEmployees((prev) => prev.map((emp) => (emp.employee_id === employeeId ? { ...emp, ...updates } : emp)))
   }
 
+  // Blocked time management functions
   const addBlockedTime = () => {
-    if (!newBlockedTime.date || !newBlockedTime.startTime || !newBlockedTime.endTime) return
+    if (!newBlockedTime.date || !newBlockedTime.start_time || !newBlockedTime.end_time) return
 
-    const blockedTime: BlockedTime = {
-      id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    const blockedTime: WebhookBlockedTime = {
+      blocked_time_id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      employee_id: newBlockedTime.employee_id,
       date: newBlockedTime.date,
-      startTime: newBlockedTime.startTime,
-      endTime: newBlockedTime.endTime,
+      start_time: newBlockedTime.start_time,
+      end_time: newBlockedTime.end_time,
       reason: newBlockedTime.reason || "",
-      employeeId: newBlockedTime.employeeId,
-      isRecurring: newBlockedTime.isRecurring ?? false,
-      recurrencePattern: newBlockedTime.recurrencePattern,
+      is_recurring: newBlockedTime.is_recurring ?? false,
+      recurrence_pattern: newBlockedTime.recurrence_pattern,
     }
 
-    setConfig((prev) => ({
-      ...prev,
-      blockedTimes: [...prev.blockedTimes, blockedTime],
-    }))
-
+    setBlockedTimes((prev) => [...prev, blockedTime])
     setNewBlockedTime({
       date: "",
-      startTime: "09:00",
-      endTime: "17:00",
+      start_time: "09:00",
+      end_time: "17:00",
       reason: "",
-      isRecurring: false,
+      is_recurring: false,
     })
   }
 
   const removeBlockedTime = (blockedTimeId: string) => {
-    setConfig((prev) => ({
-      ...prev,
-      blockedTimes: prev.blockedTimes.filter((bt) => bt.id !== blockedTimeId),
-    }))
+    setBlockedTimes((prev) => prev.filter((bt) => bt.blocked_time_id !== blockedTimeId))
   }
 
-  const getSaveButtonText = () => {
-    switch (saveStatus) {
-      case "saving":
-        return "Saving..."
-      case "saved":
-        return "✓ Saved"
-      case "error":
-        return "Error - Try Again"
-      default:
-        return "Save Configuration"
-    }
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-[#E75837]" />
+          <p className="text-gray-600 body-font">Loading configuration...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-4" />
+            <h2 className="text-lg font-semibold text-red-800 mb-2 header-font">Configuration Error</h2>
+            <p className="text-red-600 body-font mb-4">{error}</p>
+            <Button onClick={loadConfiguration} variant="outline">
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -174,6 +301,11 @@ export default function ProfessionalSetupPage() {
             <div>
               <h1 className="text-3xl font-bold text-[#E75837] mb-2 header-font">Team & Capacity Setup</h1>
               <p className="text-gray-600 body-font">Configure your team, working hours, and booking capacity rules.</p>
+              {lastUpdated && (
+                <p className="text-sm text-gray-500 body-font mt-2">
+                  Last updated: {new Date(lastUpdated).toLocaleString()}
+                </p>
+              )}
             </div>
             <div className="flex gap-3">
               <a
@@ -185,18 +317,15 @@ export default function ProfessionalSetupPage() {
                 <ExternalLink className="w-4 h-4" />
                 Preview Booking Page
               </a>
-              <Button
-                onClick={handleSave}
-                disabled={saveStatus === "saving"}
-                className={`${
-                  saveStatus === "saved"
-                    ? "bg-green-600 hover:bg-green-700"
-                    : saveStatus === "error"
-                      ? "bg-red-600 hover:bg-red-700"
-                      : "bg-[#E75837] hover:bg-[#d14a2a]"
-                }`}
-              >
-                {getSaveButtonText()}
+              <Button onClick={saveConfiguration} disabled={saving} className="bg-[#E75837] hover:bg-[#d14a2a]">
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Configuration"
+                )}
               </Button>
             </div>
           </div>
@@ -211,7 +340,7 @@ export default function ProfessionalSetupPage() {
             </TabsTrigger>
             <TabsTrigger value="team" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
-              Team Management
+              Team ({employees.length})
             </TabsTrigger>
             <TabsTrigger value="capacity" className="flex items-center gap-2">
               <Clock className="w-4 h-4" />
@@ -219,7 +348,7 @@ export default function ProfessionalSetupPage() {
             </TabsTrigger>
             <TabsTrigger value="blocked" className="flex items-center gap-2">
               <Shield className="w-4 h-4" />
-              Blocked Time
+              Blocked Time ({blockedTimes.length})
             </TabsTrigger>
           </TabsList>
 
@@ -236,8 +365,8 @@ export default function ProfessionalSetupPage() {
                   </Label>
                   <Input
                     id="businessName"
-                    value={config.businessName}
-                    onChange={(e) => setConfig((prev) => ({ ...prev, businessName: e.target.value }))}
+                    value={businessName}
+                    onChange={(e) => setBusinessName(e.target.value)}
                     placeholder="Enter your business name"
                     className="body-font"
                   />
@@ -258,7 +387,7 @@ export default function ProfessionalSetupPage() {
           {/* Team Management Tab */}
           <TabsContent value="team">
             <div className="space-y-6">
-              {/* Add New Employee */}
+              {/* Add New Employee Card */}
               <Card>
                 <CardHeader>
                   <CardTitle className="header-font">Add Team Member</CardTitle>
@@ -312,8 +441,8 @@ export default function ProfessionalSetupPage() {
 
               {/* Existing Employees */}
               <div className="space-y-4">
-                {config.employees.map((employee) => (
-                  <Card key={employee.id}>
+                {employees.map((employee) => (
+                  <Card key={employee.employee_id}>
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-start">
                         <div>
@@ -323,16 +452,18 @@ export default function ProfessionalSetupPage() {
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="flex items-center gap-2">
-                            <Label htmlFor={`active-${employee.id}`} className="body-font text-sm">
+                            <Label htmlFor={`active-${employee.employee_id}`} className="body-font text-sm">
                               Active
                             </Label>
                             <Switch
-                              id={`active-${employee.id}`}
-                              checked={employee.isActive}
-                              onCheckedChange={(checked) => updateEmployee(employee.id, { isActive: checked })}
+                              id={`active-${employee.employee_id}`}
+                              checked={employee.is_active}
+                              onCheckedChange={(checked) =>
+                                updateEmployee(employee.employee_id!, { is_active: checked })
+                              }
                             />
                           </div>
-                          <Button variant="outline" size="sm" onClick={() => removeEmployee(employee.id)}>
+                          <Button variant="outline" size="sm" onClick={() => removeEmployee(employee.employee_id!)}>
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
@@ -342,37 +473,37 @@ export default function ProfessionalSetupPage() {
                       <div className="space-y-3">
                         <h4 className="font-medium header-font">Working Hours</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {employee.workingDays.map((day, dayIndex) => (
+                          {employee.working_days.map((day, dayIndex) => (
                             <div key={day.day} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
                               <Switch
-                                checked={day.isWorking}
+                                checked={day.is_working}
                                 onCheckedChange={(checked) => {
-                                  const updatedDays = [...employee.workingDays]
-                                  updatedDays[dayIndex] = { ...day, isWorking: checked }
-                                  updateEmployee(employee.id, { workingDays: updatedDays })
+                                  const updatedDays = [...employee.working_days]
+                                  updatedDays[dayIndex] = { ...day, is_working: checked }
+                                  updateEmployee(employee.employee_id!, { working_days: updatedDays })
                                 }}
                               />
                               <span className="text-sm font-medium body-font w-12">{day.day.slice(0, 3)}</span>
-                              {day.isWorking && (
+                              {day.is_working && (
                                 <div className="flex items-center gap-1">
                                   <Input
                                     type="time"
-                                    value={day.start}
+                                    value={day.start_time}
                                     onChange={(e) => {
-                                      const updatedDays = [...employee.workingDays]
-                                      updatedDays[dayIndex] = { ...day, start: e.target.value }
-                                      updateEmployee(employee.id, { workingDays: updatedDays })
+                                      const updatedDays = [...employee.working_days]
+                                      updatedDays[dayIndex] = { ...day, start_time: e.target.value }
+                                      updateEmployee(employee.employee_id!, { working_days: updatedDays })
                                     }}
                                     className="w-20 h-8 text-xs"
                                   />
                                   <span className="text-xs text-gray-500">-</span>
                                   <Input
                                     type="time"
-                                    value={day.end}
+                                    value={day.end_time}
                                     onChange={(e) => {
-                                      const updatedDays = [...employee.workingDays]
-                                      updatedDays[dayIndex] = { ...day, end: e.target.value }
-                                      updateEmployee(employee.id, { workingDays: updatedDays })
+                                      const updatedDays = [...employee.working_days]
+                                      updatedDays[dayIndex] = { ...day, end_time: e.target.value }
+                                      updateEmployee(employee.employee_id!, { working_days: updatedDays })
                                     }}
                                     className="w-20 h-8 text-xs"
                                   />
@@ -386,7 +517,7 @@ export default function ProfessionalSetupPage() {
                   </Card>
                 ))}
 
-                {config.employees.length === 0 && (
+                {employees.length === 0 && (
                   <Card>
                     <CardContent className="text-center py-8">
                       <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -415,14 +546,11 @@ export default function ProfessionalSetupPage() {
                       id="maxConcurrent"
                       type="number"
                       min="1"
-                      value={config.capacityRules.maxConcurrentBookings}
+                      value={capacityRules.max_concurrent_bookings}
                       onChange={(e) =>
-                        setConfig((prev) => ({
+                        setCapacityRules((prev) => ({
                           ...prev,
-                          capacityRules: {
-                            ...prev.capacityRules,
-                            maxConcurrentBookings: Number.parseInt(e.target.value) || 1,
-                          },
+                          max_concurrent_bookings: Number.parseInt(e.target.value) || 1,
                         }))
                       }
                       className="body-font"
@@ -440,14 +568,11 @@ export default function ProfessionalSetupPage() {
                       id="bufferTime"
                       type="number"
                       min="0"
-                      value={config.capacityRules.bufferTimeBetweenBookings}
+                      value={capacityRules.buffer_time_between_bookings}
                       onChange={(e) =>
-                        setConfig((prev) => ({
+                        setCapacityRules((prev) => ({
                           ...prev,
-                          capacityRules: {
-                            ...prev.capacityRules,
-                            bufferTimeBetweenBookings: Number.parseInt(e.target.value) || 0,
-                          },
+                          buffer_time_between_bookings: Number.parseInt(e.target.value) || 0,
                         }))
                       }
                       className="body-font"
@@ -465,14 +590,11 @@ export default function ProfessionalSetupPage() {
                       id="maxDaily"
                       type="number"
                       min="1"
-                      value={config.capacityRules.maxBookingsPerDay}
+                      value={capacityRules.max_bookings_per_day}
                       onChange={(e) =>
-                        setConfig((prev) => ({
+                        setCapacityRules((prev) => ({
                           ...prev,
-                          capacityRules: {
-                            ...prev.capacityRules,
-                            maxBookingsPerDay: Number.parseInt(e.target.value) || 1,
-                          },
+                          max_bookings_per_day: Number.parseInt(e.target.value) || 1,
                         }))
                       }
                       className="body-font"
@@ -490,11 +612,11 @@ export default function ProfessionalSetupPage() {
                       </div>
                       <Switch
                         id="allowOverlapping"
-                        checked={config.capacityRules.allowOverlapping}
+                        checked={capacityRules.allow_overlapping}
                         onCheckedChange={(checked) =>
-                          setConfig((prev) => ({
+                          setCapacityRules((prev) => ({
                             ...prev,
-                            capacityRules: { ...prev.capacityRules, allowOverlapping: checked },
+                            allow_overlapping: checked,
                           }))
                         }
                       />
@@ -509,11 +631,11 @@ export default function ProfessionalSetupPage() {
                       </div>
                       <Switch
                         id="requireAllEmployees"
-                        checked={config.capacityRules.requireAllEmployeesForService}
+                        checked={capacityRules.require_all_employees_for_service}
                         onCheckedChange={(checked) =>
-                          setConfig((prev) => ({
+                          setCapacityRules((prev) => ({
                             ...prev,
-                            capacityRules: { ...prev.capacityRules, requireAllEmployeesForService: checked },
+                            require_all_employees_for_service: checked,
                           }))
                         }
                       />
@@ -527,7 +649,7 @@ export default function ProfessionalSetupPage() {
           {/* Blocked Time Tab */}
           <TabsContent value="blocked">
             <div className="space-y-6">
-              {/* Add Blocked Time */}
+              {/* Add Blocked Time Card */}
               <Card>
                 <CardHeader>
                   <CardTitle className="header-font">Block Time</CardTitle>
@@ -553,8 +675,8 @@ export default function ProfessionalSetupPage() {
                       <Input
                         id="blockStart"
                         type="time"
-                        value={newBlockedTime.startTime}
-                        onChange={(e) => setNewBlockedTime((prev) => ({ ...prev, startTime: e.target.value }))}
+                        value={newBlockedTime.start_time}
+                        onChange={(e) => setNewBlockedTime((prev) => ({ ...prev, start_time: e.target.value }))}
                         className="body-font"
                       />
                     </div>
@@ -565,8 +687,8 @@ export default function ProfessionalSetupPage() {
                       <Input
                         id="blockEnd"
                         type="time"
-                        value={newBlockedTime.endTime}
-                        onChange={(e) => setNewBlockedTime((prev) => ({ ...prev, endTime: e.target.value }))}
+                        value={newBlockedTime.end_time}
+                        onChange={(e) => setNewBlockedTime((prev) => ({ ...prev, end_time: e.target.value }))}
                         className="body-font"
                       />
                     </div>
@@ -575,11 +697,11 @@ export default function ProfessionalSetupPage() {
                         Specific Employee
                       </Label>
                       <Select
-                        value={newBlockedTime.employeeId || "all"}
+                        value={newBlockedTime.employee_id || "all"}
                         onValueChange={(value) =>
                           setNewBlockedTime((prev) => ({
                             ...prev,
-                            employeeId: value === "all" ? undefined : value,
+                            employee_id: value === "all" ? undefined : value,
                           }))
                         }
                       >
@@ -588,8 +710,8 @@ export default function ProfessionalSetupPage() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">All employees</SelectItem>
-                          {config.employees.map((emp) => (
-                            <SelectItem key={emp.id} value={emp.id}>
+                          {employees.map((emp) => (
+                            <SelectItem key={emp.employee_id} value={emp.employee_id!}>
                               {emp.name}
                             </SelectItem>
                           ))}
@@ -615,21 +737,21 @@ export default function ProfessionalSetupPage() {
                     <div className="flex items-center gap-2">
                       <Switch
                         id="isRecurring"
-                        checked={newBlockedTime.isRecurring}
-                        onCheckedChange={(checked) => setNewBlockedTime((prev) => ({ ...prev, isRecurring: checked }))}
+                        checked={newBlockedTime.is_recurring}
+                        onCheckedChange={(checked) => setNewBlockedTime((prev) => ({ ...prev, is_recurring: checked }))}
                       />
                       <Label htmlFor="isRecurring" className="body-font">
                         Recurring
                       </Label>
                     </div>
 
-                    {newBlockedTime.isRecurring && (
+                    {newBlockedTime.is_recurring && (
                       <Select
-                        value={newBlockedTime.recurrencePattern || "weekly"}
+                        value={newBlockedTime.recurrence_pattern || "weekly"}
                         onValueChange={(value) =>
                           setNewBlockedTime((prev) => ({
                             ...prev,
-                            recurrencePattern: value as "weekly" | "monthly",
+                            recurrence_pattern: value as "weekly" | "monthly",
                           }))
                         }
                       >
@@ -646,7 +768,7 @@ export default function ProfessionalSetupPage() {
 
                   <Button
                     onClick={addBlockedTime}
-                    disabled={!newBlockedTime.date || !newBlockedTime.startTime || !newBlockedTime.endTime}
+                    disabled={!newBlockedTime.date || !newBlockedTime.start_time || !newBlockedTime.end_time}
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Block Time
@@ -656,8 +778,8 @@ export default function ProfessionalSetupPage() {
 
               {/* Existing Blocked Times */}
               <div className="space-y-4">
-                {config.blockedTimes.map((blockedTime) => (
-                  <Card key={blockedTime.id}>
+                {blockedTimes.map((blockedTime) => (
+                  <Card key={blockedTime.blocked_time_id}>
                     <CardContent className="pt-6">
                       <div className="flex justify-between items-start">
                         <div className="space-y-2">
@@ -671,23 +793,23 @@ export default function ProfessionalSetupPage() {
                                 day: "numeric",
                               })}
                             </span>
-                            {blockedTime.isRecurring && (
+                            {blockedTime.is_recurring && (
                               <Badge variant="secondary" className="text-xs">
-                                {blockedTime.recurrencePattern}
+                                {blockedTime.recurrence_pattern}
                               </Badge>
                             )}
                           </div>
                           <div className="flex items-center gap-2">
                             <Clock className="w-4 h-4 text-gray-500" />
                             <span className="body-font">
-                              {blockedTime.startTime} - {blockedTime.endTime}
+                              {blockedTime.start_time} - {blockedTime.end_time}
                             </span>
                           </div>
-                          {blockedTime.employeeId && (
+                          {blockedTime.employee_id && (
                             <div className="flex items-center gap-2">
                               <Users className="w-4 h-4 text-gray-500" />
                               <span className="body-font">
-                                {config.employees.find((emp) => emp.id === blockedTime.employeeId)?.name ||
+                                {employees.find((emp) => emp.employee_id === blockedTime.employee_id)?.name ||
                                   "Unknown Employee"}
                               </span>
                             </div>
@@ -696,7 +818,11 @@ export default function ProfessionalSetupPage() {
                             <p className="text-gray-600 body-font text-sm">{blockedTime.reason}</p>
                           )}
                         </div>
-                        <Button variant="outline" size="sm" onClick={() => removeBlockedTime(blockedTime.id)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeBlockedTime(blockedTime.blocked_time_id!)}
+                        >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -704,7 +830,7 @@ export default function ProfessionalSetupPage() {
                   </Card>
                 ))}
 
-                {config.blockedTimes.length === 0 && (
+                {blockedTimes.length === 0 && (
                   <Card>
                     <CardContent className="text-center py-8">
                       <Shield className="w-12 h-12 text-gray-300 mx-auto mb-4" />
