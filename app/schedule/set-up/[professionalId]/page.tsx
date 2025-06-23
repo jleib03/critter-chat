@@ -134,20 +134,48 @@ export default function ProfessionalSetupPage() {
             console.log("Loading employees from structured config:", configData.employees.length)
 
             // Convert structured employees to frontend format
-            const processedEmployees: WebhookEmployee[] = configData.employees.map((emp: any) => ({
-              employee_id: emp.employee_id,
-              name: emp.name,
-              role: emp.role || "Staff Member",
-              email: emp.email || "",
-              is_active: emp.is_active ?? true,
-              working_days: emp.working_days.map((day: any) => ({
-                day: day.day,
-                start_time: day.start_time.substring(0, 5), // Convert "08:00:00" to "08:00"
-                end_time: day.end_time.substring(0, 5), // Convert "20:00:00" to "20:00"
-                is_working: day.is_working,
-              })),
-              services: emp.services || [],
-            }))
+            const processedEmployees: WebhookEmployee[] = configData.employees.map((emp: any) => {
+              // Process each employee's individual working days
+              const workingDays = emp.working_days
+                ? emp.working_days.map((day: any) => ({
+                    day: day.day,
+                    start_time: day.start_time.substring(0, 5), // Convert "08:00:00" to "08:00"
+                    end_time: day.end_time.substring(0, 5), // Convert "20:00:00" to "20:00"
+                    is_working: day.is_working,
+                  }))
+                : [...DEFAULT_WORKING_DAYS]
+
+              // Fill in missing days if the employee doesn't have all 7 days
+              const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+              const existingDays = workingDays.map((d: any) => d.day)
+
+              dayNames.forEach((dayName) => {
+                if (!existingDays.includes(dayName)) {
+                  workingDays.push({
+                    day: dayName,
+                    start_time: "09:00",
+                    end_time: "17:00",
+                    is_working: false,
+                  })
+                }
+              })
+
+              // Sort working days to ensure consistent order
+              const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+              workingDays.sort((a: any, b: any) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day))
+
+              console.log(`Processing employee ${emp.name} with ${workingDays.length} working days:`, workingDays)
+
+              return {
+                employee_id: emp.employee_id,
+                name: emp.name,
+                role: emp.role || "Staff Member",
+                email: emp.email || "",
+                is_active: emp.is_active ?? true,
+                working_days: workingDays,
+                services: emp.services || [],
+              }
+            })
 
             setEmployees(processedEmployees)
             console.log("Processed structured employees:", processedEmployees.length)
