@@ -9,6 +9,8 @@ import { WeeklyCalendar } from "@/components/schedule/weekly-calendar"
 import { CustomerForm } from "@/components/schedule/customer-form"
 import { PetSelection } from "@/components/schedule/pet-selection"
 import { BookingConfirmation } from "@/components/schedule/booking-confirmation"
+import { loadProfessionalConfig } from "@/utils/professional-config"
+import type { ProfessionalConfig } from "@/types/professional-config"
 
 export default function SchedulePage() {
   const params = useParams()
@@ -29,6 +31,7 @@ export default function SchedulePage() {
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({ firstName: "", lastName: "", email: "" })
   const [pets, setPets] = useState<Pet[]>([])
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null)
+  const [professionalConfig, setProfessionalConfig] = useState<ProfessionalConfig | null>(null)
 
   // Generate a unique session ID
   const generateSessionId = () => {
@@ -38,10 +41,7 @@ export default function SchedulePage() {
   // Detect user's timezone
   const detectUserTimezone = () => {
     try {
-      // Get the user's timezone using Intl API
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-
-      // Also get timezone offset for additional context
       const now = new Date()
       const offsetMinutes = now.getTimezoneOffset()
       const offsetHours = Math.abs(offsetMinutes / 60)
@@ -69,14 +69,23 @@ export default function SchedulePage() {
     }
   }
 
+  // Load professional configuration
+  const loadProfessionalConfiguration = () => {
+    try {
+      const config = loadProfessionalConfig(professionalId)
+      setProfessionalConfig(config)
+      console.log("Professional configuration loaded:", config)
+    } catch (error) {
+      console.error("Error loading professional configuration:", error)
+    }
+  }
+
   // Helper function to convert local time to UTC
   const convertLocalTimeToUTC = (dateStr: string, timeStr: string, userTimezone: string) => {
     try {
-      // Parse the time string (e.g., "12:00 PM")
       const [time, period] = timeStr.split(" ")
       const [hours, minutes] = time.split(":").map(Number)
 
-      // Convert to 24-hour format
       let hour24 = hours
       if (period === "PM" && hours !== 12) {
         hour24 = hours + 12
@@ -84,20 +93,14 @@ export default function SchedulePage() {
         hour24 = 0
       }
 
-      // Create a date object in the user's timezone
-      // We need to be careful here - the date string is in YYYY-MM-DD format
       const [year, month, day] = dateStr.split("-").map(Number)
-
-      // Create date in user's local timezone
       const localDate = new Date()
-      localDate.setFullYear(year, month - 1, day) // month is 0-indexed
+      localDate.setFullYear(year, month - 1, day)
       localDate.setHours(hour24, minutes, 0, 0)
 
-      // Convert to UTC by getting the ISO string
       return localDate.toISOString()
     } catch (error) {
       console.error("Error converting time to UTC:", error)
-      // Fallback: create basic UTC time
       const [time, period] = timeStr.split(" ")
       const [hours, minutes] = time.split(":").map(Number)
       let hour24 = hours
@@ -134,11 +137,9 @@ export default function SchedulePage() {
       setLoading(true)
       setError(null)
 
-      // Generate NEW session ID for each initialization
       sessionIdRef.current = generateSessionId()
-
-      // Detect user's timezone (refresh in case it changed)
       userTimezoneRef.current = JSON.stringify(detectUserTimezone())
+      loadProfessionalConfiguration()
 
       const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/5671c1dd-48f6-47a9-85ac-4e20cf261520"
 
@@ -163,7 +164,6 @@ export default function SchedulePage() {
       }
 
       const data = await response.json()
-      // The response is an array, so we take the first element
       setWebhookData(data[0])
       console.log("Schedule data refreshed:", data[0])
     } catch (err) {
@@ -182,7 +182,7 @@ export default function SchedulePage() {
 
   const handleServiceSelect = (service: Service) => {
     setSelectedService(service)
-    setSelectedTimeSlot(null) // Reset time slot when service changes
+    setSelectedTimeSlot(null)
   }
 
   const handleTimeSlotSelect = (slot: SelectedTimeSlot) => {
@@ -199,15 +199,12 @@ export default function SchedulePage() {
 
   const handlePetSelect = async (pet: Pet) => {
     setSelectedPet(pet)
-    setCreatingBooking(true) // Start loading state
+    setCreatingBooking(true)
 
-    // Create the final booking
     try {
       const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/5671c1dd-48f6-47a9-85ac-4e20cf261520"
-
       const userTimezoneData = JSON.parse(userTimezoneRef.current!)
 
-      // Convert local times to UTC
       const startDateTimeUTC = convertLocalTimeToUTC(
         selectedTimeSlot!.date,
         selectedTimeSlot!.startTime,
@@ -220,7 +217,6 @@ export default function SchedulePage() {
         selectedService!.duration_unit,
       )
 
-      // Also calculate what the end time would be in local time for display
       const endTimeLocal = new Date(endDateTimeUTC).toLocaleTimeString("en-US", {
         hour: "numeric",
         minute: "2-digit",
@@ -242,17 +238,14 @@ export default function SchedulePage() {
           service_cost: selectedService!.customer_cost,
           service_currency: selectedService!.customer_cost_currency,
 
-          // UTC times for backend processing
           start_utc: startDateTimeUTC,
           end_utc: endDateTimeUTC,
 
-          // Local times for display/reference
           date_local: selectedTimeSlot!.date,
           start_time_local: selectedTimeSlot!.startTime,
           end_time_local: endTimeLocal,
           day_of_week: selectedTimeSlot!.dayOfWeek,
 
-          // Timezone context
           timezone: userTimezoneData.timezone,
           timezone_offset: userTimezoneData.offset,
         },
@@ -289,17 +282,16 @@ export default function SchedulePage() {
       const result = await response.json()
       console.log("Booking created:", result)
 
-      // Check if booking was successful
       if (result && result[0] && result[0].Output === "Booking Successfully Created") {
         setShowPetSelection(false)
-        setCreatingBooking(false) // End loading state
+        setCreatingBooking(false)
         setShowConfirmation(true)
       } else {
         throw new Error("Booking creation failed")
       }
     } catch (err) {
       console.error("Error creating booking:", err)
-      setCreatingBooking(false) // End loading state on error
+      setCreatingBooking(false)
       setError("Failed to create booking. Please try again.")
     }
   }
@@ -315,7 +307,6 @@ export default function SchedulePage() {
   }
 
   const handleNewBooking = async () => {
-    // Reset all state
     setSelectedService(null)
     setSelectedTimeSlot(null)
     setShowCustomerForm(false)
@@ -326,7 +317,6 @@ export default function SchedulePage() {
     setPets([])
     setSelectedPet(null)
 
-    // Re-initialize schedule data to get updated availability
     console.log("Starting new booking - refreshing schedule data...")
     await initializeSchedule()
   }
@@ -373,12 +363,10 @@ export default function SchedulePage() {
     )
   }
 
-  // Show booking creation loading screen
   if (creatingBooking) {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-4xl mx-auto p-6">
-          {/* Header */}
           <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
             <h1 className="text-3xl font-bold text-[#E75837] mb-2 header-font">
               Book with {webhookData.professional_info.professional_name}
@@ -386,7 +374,6 @@ export default function SchedulePage() {
             <p className="text-gray-600 body-font">Creating your booking...</p>
           </div>
 
-          {/* Loading Card */}
           <div className="bg-white rounded-lg shadow-sm border p-8">
             <div className="text-center">
               <Loader2 className="w-12 h-12 animate-spin mx-auto mb-6 text-[#E75837]" />
@@ -395,7 +382,6 @@ export default function SchedulePage() {
                 Please wait while we confirm your appointment with {webhookData.professional_info.professional_name}.
               </p>
 
-              {/* Booking Summary */}
               <div className="bg-gray-50 rounded-lg p-6 max-w-md mx-auto">
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
@@ -443,20 +429,51 @@ export default function SchedulePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto p-6">
-        {/* Header */}
         <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-          <h1 className="text-3xl font-bold text-[#E75837] mb-2 header-font">
-            Book with {webhookData.professional_info.professional_name}
-          </h1>
-          <p className="text-gray-600 body-font">Select a service and available time slot to book your appointment.</p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold text-[#E75837] mb-2 header-font">
+                Book with {webhookData.professional_info.professional_name}
+              </h1>
+              <p className="text-gray-600 body-font">
+                Select a service and available time slot to book your appointment.
+              </p>
 
-          {/* Debug: Show detected timezone */}
-          {userTimezoneRef.current && (
-            <div className="mt-2 text-xs text-gray-500 body-font">
-              Timezone: {JSON.parse(userTimezoneRef.current).timezone} ({JSON.parse(userTimezoneRef.current).offset}) |
-              Session: {sessionIdRef.current?.slice(-8)}
+              <div className="mt-3 flex items-center gap-4 text-sm">
+                {professionalConfig ? (
+                  <div className="flex items-center gap-2 text-green-600">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="body-font">
+                      Team configured ({professionalConfig.employees.filter((e) => e.isActive).length} active staff)
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-amber-600">
+                    <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                    <span className="body-font">Using default availability</span>
+                  </div>
+                )}
+
+                {userTimezoneRef.current && (
+                  <div className="text-xs text-gray-500 body-font">
+                    Timezone: {JSON.parse(userTimezoneRef.current).timezone} (
+                    {JSON.parse(userTimezoneRef.current).offset}) | Session: {sessionIdRef.current?.slice(-8)}
+                  </div>
+                )}
+              </div>
             </div>
-          )}
+
+            <div className="flex gap-2">
+              <a
+                href={`/schedule/set-up/${professionalId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors body-font"
+              >
+                ⚙️ Setup Team & Capacity
+              </a>
+            </div>
+          </div>
         </div>
 
         {showConfirmation ? (
@@ -490,7 +507,6 @@ export default function SchedulePage() {
           />
         ) : (
           <div className="bg-white rounded-lg shadow-sm border p-6">
-            {/* Service Selection Bar */}
             <div className="mb-8">
               <ServiceSelectorBar
                 servicesByCategory={webhookData.services.services_by_category}
@@ -499,13 +515,14 @@ export default function SchedulePage() {
               />
             </div>
 
-            {/* Full-width Calendar */}
             <WeeklyCalendar
               workingDays={webhookData.schedule.working_days}
               bookingData={webhookData.bookings.all_booking_data}
               selectedService={selectedService}
               onTimeSlotSelect={handleTimeSlotSelect}
               selectedTimeSlot={selectedTimeSlot}
+              professionalId={professionalId}
+              professionalConfig={professionalConfig}
             />
           </div>
         )}

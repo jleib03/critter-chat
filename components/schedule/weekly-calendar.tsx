@@ -5,6 +5,8 @@ import type { BookingData, WorkingDay, Service, SelectedTimeSlot } from "@/types
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, Clock, ChevronDown, ChevronUp } from "lucide-react"
+import { canAccommodateBooking } from "@/utils/professional-config"
+import type { ProfessionalConfig } from "@/types/professional-config"
 
 type WeeklyCalendarProps = {
   workingDays: WorkingDay[]
@@ -12,6 +14,8 @@ type WeeklyCalendarProps = {
   selectedService: Service | null
   onTimeSlotSelect: (slot: SelectedTimeSlot) => void
   selectedTimeSlot: SelectedTimeSlot | null
+  professionalId: string
+  professionalConfig: ProfessionalConfig | null
 }
 
 export function WeeklyCalendar({
@@ -20,6 +24,8 @@ export function WeeklyCalendar({
   selectedService,
   onTimeSlotSelect,
   selectedTimeSlot,
+  professionalId,
+  professionalConfig,
 }: WeeklyCalendarProps) {
   const [currentWeekStart, setCurrentWeekStart] = useState(() => {
     const today = new Date()
@@ -90,12 +96,28 @@ export function WeeklyCalendar({
     const endTime = endHour * 60 + endMinute
 
     const bookings = getBookingsForDate(date)
+    const dayName = getDayName(date)
 
     for (let time = startTime; time + serviceDuration <= endTime; time += 30) {
       const slotStart = time
       const slotEnd = time + serviceDuration
 
-      // Check if this slot conflicts with existing bookings
+      const startHours = Math.floor(slotStart / 60)
+      const startMins = slotStart % 60
+      const endHours = Math.floor(slotEnd / 60)
+      const endMins = slotEnd % 60
+
+      const formatTime = (hours: number, minutes: number) => {
+        const period = hours >= 12 ? "PM" : "AM"
+        const displayHours = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours
+        return `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`
+      }
+
+      const startTimeFormatted = formatTime(startHours, startMins)
+      const endTimeFormatted = formatTime(endHours, endMins)
+      const dateStr = formatDate(date)
+
+      // Check if this slot conflicts with existing bookings (original logic)
       const hasConflict = bookings.some((booking) => {
         if (!booking.start || !booking.end) return false
 
@@ -107,21 +129,33 @@ export function WeeklyCalendar({
         return slotStart < bookingEndMinutes && slotEnd > bookingStartMinutes
       })
 
-      if (!hasConflict) {
-        const startHours = Math.floor(slotStart / 60)
-        const startMins = slotStart % 60
+      // If professional config is available, use capacity management
+      let canBook = !hasConflict
+      let availableEmployees = []
+      let capacityReason = ""
 
-        const formatTime = (hours: number, minutes: number) => {
-          const period = hours >= 12 ? "PM" : "AM"
-          const displayHours = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours
-          return `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`
-        }
+      if (professionalConfig && !hasConflict) {
+        const capacityCheck = canAccommodateBooking(
+          professionalConfig,
+          dateStr,
+          startTimeFormatted,
+          endTimeFormatted,
+          dayName,
+          bookings,
+        )
+        canBook = capacityCheck.canBook
+        availableEmployees = capacityCheck.availableEmployees
+        capacityReason = capacityCheck.reason || ""
+      }
 
+      if (canBook) {
         slots.push({
-          date: formatDate(date),
-          startTime: formatTime(startHours, startMins),
-          endTime: formatTime(Math.floor(slotEnd / 60), slotEnd % 60),
-          dayOfWeek: getDayName(date),
+          date: dateStr,
+          startTime: startTimeFormatted,
+          endTime: endTimeFormatted,
+          dayOfWeek: dayName,
+          availableEmployees: availableEmployees.length,
+          employeeNames: availableEmployees.map((emp) => emp.name).join(", "),
         })
       }
     }
@@ -222,14 +256,22 @@ export function WeeklyCalendar({
                         key={slotIndex}
                         variant="outline"
                         size="sm"
-                        className={`w-full text-xs py-2 h-8 body-font transition-all ${
+                        className={`w-full text-xs py-2 h-auto min-h-[2rem] body-font transition-all ${
                           selectedTimeSlot?.date === slot.date && selectedTimeSlot?.startTime === slot.startTime
                             ? "bg-[#E75837] text-white border-[#E75837] hover:bg-[#d14a2a] shadow-md"
                             : "hover:bg-gray-50 hover:border-gray-300"
                         }`}
                         onClick={() => onTimeSlotSelect(slot)}
+                        title={
+                          professionalConfig && slot.employeeNames ? `Available: ${slot.employeeNames}` : undefined
+                        }
                       >
-                        {slot.startTime}
+                        <div className="flex flex-col items-center">
+                          <span>{slot.startTime}</span>
+                          {professionalConfig && slot.availableEmployees > 0 && (
+                            <span className="text-[10px] opacity-75 mt-0.5">{slot.availableEmployees} staff</span>
+                          )}
+                        </div>
                       </Button>
                     ))}
 
