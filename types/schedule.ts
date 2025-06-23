@@ -1,9 +1,134 @@
-export type SelectedTimeSlot = {
-  date: string
-  startTime: string
-  endTime: string
-  dayOfWeek: string
-  availableEmployees?: number
-  employeeNames?: string
+export type WebhookResponse = {
+  professional_id: string
+  monday_start: string
+  monday_end: string
+  tuesday_start: string
+  tuesday_end: string
+  wednesday_start: string
+  wednesday_end: string
+  thursday_start: string
+  thursday_end: string
+  friday_start: string
+  friday_end: string
+  saturday_start: string
+  saturday_end: string
+  sunday_start: string
+  sunday_end: string
+  monday_working: string
+  tuesday_working: string
+  wednesday_working: string
+  thursday_working: string
+  friday_working: string
+  saturday_working: string
+  sunday_working: string
+  // Booking data entries
+  booking_id?: string | null
+  start?: string | null
+  end?: string | null
+  start_local?: string | null
+  start_formatted?: string
+  end_local?: string | null
+  end_formatted?: string | null
+  timezone_used?: string
+  timezone_offset_hours?: string | null
+  timezone_offset_minutes?: string | null
+  is_recurring?: boolean | null
+  occurrence_type?: string | null
+  customer_id?: string | null
+  assignee_id?: string | null
+  customer_first_name?: string | null
+  customer_last_name?: string | null
+  customer_email?: string | null
+  professional_name?: string
+  booking_date?: string
+  booking_date_local?: string
+  booking_date_formatted?: string
+  day_of_week?: string
+  month_year?: string
+  week_number?: string
+  month_number?: string
+  quarter?: string
+  // Service data
+  name?: string
+  description?: string
+  duration_unit?: string
+  duration_number?: number
+  customer_cost?: string
+  customer_cost_currency?: string
+  // Webhook response with config
+  webhook_response?: {
+    success: boolean
+    config_data: {
+      employees: Array<{
+        name: string
+        role: string
+        email: string
+        services: string[]
+        is_active: boolean
+        employee_id: string
+        working_days: Array<{
+          day: string
+          end_time: string
+          is_working: boolean
+          start_time: string
+        }>
+      }>
+      created_at: string
+      last_updated: string
+      blocked_times: any[]
+      business_name: string
+      capacity_rules: {
+        allow_overlapping: boolean
+        max_bookings_per_day: number
+        max_concurrent_bookings: number
+        buffer_time_between_bookings: number
+        require_all_employees_for_service: boolean
+      }
+      webhook_status: string
+      professional_id: string
+    }
+  }
 }
-</merged_code>
+
+export type ParsedWebhookData = {
+  professional_info: {
+    professional_id: string
+    professional_name: string
+  }
+  schedule: {
+    working_days: WorkingDay[]
+  }
+  bookings: {
+    all_booking_data: BookingData[]
+  }
+  services: {
+    services_by_category: {
+      [category: string]: Service[]
+    }
+  }
+  config?: {
+    employees: Array<{
+      name: string
+      role: string
+      email: string
+      services: string[]
+      is_active: boolean
+      employee_id: string
+      working_days: Array<{
+        day: string
+        end_time: string
+        is_working: boolean
+        start_time: string
+      }>
+    }>
+    capacity_rules: {
+      allow_overlapping: boolean
+      max_bookings_per_day: number
+      max_concurrent_bookings: number
+      buffer_time_between_bookings: number
+      require_all_employees_for_service: boolean
+    }
+    blocked_times: any[]
+    business_name: string
+  }
+}

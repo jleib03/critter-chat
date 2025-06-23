@@ -12,6 +12,28 @@ import { BookingConfirmation } from "@/components/schedule/booking-confirmation"
 import { loadProfessionalConfig } from "@/utils/professional-config"
 import type { ProfessionalConfig } from "@/types/professional-config"
 
+interface ParsedWebhookData {
+  professional_info: {
+    professional_id: string
+    professional_name: string
+  }
+  schedule: {
+    working_days: {
+      day: string
+      start: string
+      end: string
+      isWorking: boolean
+    }[]
+  }
+  bookings: {
+    all_booking_data: any[]
+  }
+  services: {
+    services_by_category: { [category: string]: Service[] }
+  }
+  config: any
+}
+
 export default function SchedulePage() {
   const params = useParams()
   const professionalId = params.professionalId as string
@@ -133,7 +155,7 @@ export default function SchedulePage() {
     return endDate.toISOString()
   }
 
-  // Initialize or re-initialize schedule data
+  // Update the initializeSchedule function to parse the new webhook format
   const initializeSchedule = async () => {
     try {
       setLoading(true)
@@ -165,15 +187,160 @@ export default function SchedulePage() {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      const data = await response.json()
-      setWebhookData(data[0])
-      console.log("Schedule data refreshed:", data[0])
+      const rawData = await response.json()
+      console.log("Raw webhook data:", rawData)
+
+      // Parse the new webhook format
+      const parsedData = parseWebhookData(rawData)
+      setWebhookData(parsedData)
+
+      // If professional config is available in webhook, use it
+      if (parsedData.config) {
+        const configForProfessionalConfig = {
+          professionalId: professionalId,
+          businessName: parsedData.config.business_name,
+          employees: parsedData.config.employees.map((emp) => ({
+            id: emp.employee_id,
+            name: emp.name,
+            role: emp.role,
+            email: emp.email,
+            isActive: emp.is_active,
+            workingDays: emp.working_days.map((wd) => ({
+              day: wd.day,
+              start: wd.start_time,
+              end: wd.end_time,
+              isWorking: wd.is_working,
+            })),
+            services: emp.services,
+          })),
+          capacityRules: {
+            maxConcurrentBookings: parsedData.config.capacity_rules.max_concurrent_bookings,
+            bufferTimeBetweenBookings: parsedData.config.capacity_rules.buffer_time_between_bookings,
+            maxBookingsPerDay: parsedData.config.capacity_rules.max_bookings_per_day,
+            allowOverlapping: parsedData.config.capacity_rules.allow_overlapping,
+            requireAllEmployeesForService: parsedData.config.capacity_rules.require_all_employees_for_service,
+          },
+          blockedTimes: parsedData.config.blocked_times,
+          lastUpdated: new Date().toISOString(),
+        }
+        setProfessionalConfig(configForProfessionalConfig)
+        console.log("Professional configuration loaded from webhook:", configForProfessionalConfig)
+      }
+
+      console.log("Schedule data loaded:", parsedData)
     } catch (err) {
       console.error("Error initializing schedule:", err)
       setError("Failed to load scheduling data. Please try again.")
     } finally {
       setLoading(false)
     }
+  }
+
+  // Add the parseWebhookData function
+  const parseWebhookData = (rawData: any[]): ParsedWebhookData => {
+    // Find the first entry with working hours (schedule data)
+    const scheduleEntry = rawData.find((entry) => entry.monday_start)
+
+    // Find all booking entries
+    const bookingEntries = rawData.filter(
+      (entry) => entry.booking_date_formatted && !entry.name && !entry.webhook_response,
+    )
+
+    // Find all service entries
+    const serviceEntries = rawData.filter((entry) => entry.name && entry.duration_unit)
+
+    // Find webhook response with config
+    const configEntry = rawData.find((entry) => entry.webhook_response?.success)
+
+    // Parse working days from schedule entry
+    const workingDays = scheduleEntry
+      ? [
+          {
+            day: "Monday",
+            start: scheduleEntry.monday_start,
+            end: scheduleEntry.monday_end,
+            isWorking: !!scheduleEntry.monday_working,
+          },
+          {
+            day: "Tuesday",
+            start: scheduleEntry.tuesday_start,
+            end: scheduleEntry.tuesday_end,
+            isWorking: !!scheduleEntry.tuesday_working,
+          },
+          {
+            day: "Wednesday",
+            start: scheduleEntry.wednesday_start,
+            end: scheduleEntry.wednesday_end,
+            isWorking: !!scheduleEntry.wednesday_working,
+          },
+          {
+            day: "Thursday",
+            start: scheduleEntry.thursday_start,
+            end: scheduleEntry.thursday_end,
+            isWorking: !!scheduleEntry.thursday_working,
+          },
+          {
+            day: "Friday",
+            start: scheduleEntry.friday_start,
+            end: scheduleEntry.friday_end,
+            isWorking: !!scheduleEntry.friday_working,
+          },
+          {
+            day: "Saturday",
+            start: scheduleEntry.saturday_start,
+            end: scheduleEntry.saturday_end,
+            isWorking: !!scheduleEntry.saturday_working,
+          },
+          {
+            day: "Sunday",
+            start: scheduleEntry.sunday_start,
+            end: scheduleEntry.sunday_end,
+            isWorking: !!scheduleEntry.sunday_working,
+          },
+        ]
+      : []
+
+    // Parse services and group by category
+    const servicesByCategory: { [category: string]: Service[] } = {}
+    serviceEntries.forEach((service) => {
+      const category = getCategoryFromService(service.name)
+      if (!servicesByCategory[category]) {
+        servicesByCategory[category] = []
+      }
+      servicesByCategory[category].push({
+        name: service.name,
+        description: service.description || "",
+        duration_unit: service.duration_unit,
+        duration_number: service.duration_number,
+        customer_cost: service.customer_cost,
+        customer_cost_currency: service.customer_cost_currency,
+      })
+    })
+
+    return {
+      professional_info: {
+        professional_id: scheduleEntry?.professional_id || professionalId,
+        professional_name: bookingEntries[0]?.professional_name || "Professional",
+      },
+      schedule: {
+        working_days: workingDays,
+      },
+      bookings: {
+        all_booking_data: bookingEntries,
+      },
+      services: {
+        services_by_category: servicesByCategory,
+      },
+      config: configEntry?.webhook_response?.config_data,
+    }
+  }
+
+  // Helper function to categorize services
+  const getCategoryFromService = (serviceName: string): string => {
+    if (serviceName.toLowerCase().includes("boarding")) return "Boarding"
+    if (serviceName.toLowerCase().includes("groom")) return "Grooming"
+    if (serviceName.toLowerCase().includes("add on") || serviceName.toLowerCase().includes("addon")) return "Add-Ons"
+    return "Services"
   }
 
   useEffect(() => {
