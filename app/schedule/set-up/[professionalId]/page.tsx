@@ -15,7 +15,6 @@ import { Loader2, Trash2, Plus, Users, Clock, Shield, Calendar, ExternalLink, Al
 import type {
   GetConfigWebhookPayload,
   SaveConfigWebhookPayload,
-  SaveConfigWebhookResponse,
   WebhookEmployee,
   WebhookBlockedTime,
   WebhookCapacityRules,
@@ -351,19 +350,34 @@ export default function ProfessionalSetupPage() {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      const data: SaveConfigWebhookResponse[] = await response.json()
-      const saveResponse = data[0]
+      const data = await response.json()
+      console.log("Save response:", data)
 
-      if (saveResponse.success) {
-        setLastUpdated(new Date().toISOString())
-        console.log("Configuration saved successfully:", saveResponse.message)
+      // Handle the new response format with "load successful" messages
+      if (Array.isArray(data)) {
+        const successCount = data.filter((item) => item.output === "load successful").length
 
-        // Show success message briefly
-        setTimeout(() => {
-          // Could add a success toast here
-        }, 2000)
+        if (successCount > 0) {
+          setLastUpdated(new Date().toISOString())
+          console.log(`Configuration saved successfully: ${successCount} operations completed`)
+
+          // Show success message briefly
+          setTimeout(() => {
+            // Could add a success toast here
+          }, 2000)
+        } else {
+          throw new Error("Save operation did not complete successfully")
+        }
       } else {
-        throw new Error(saveResponse.message || "Failed to save configuration")
+        // Fallback for other response formats
+        const saveResponse = data[0] || data
+
+        if (saveResponse.success || saveResponse.output === "load successful") {
+          setLastUpdated(new Date().toISOString())
+          console.log("Configuration saved successfully:", saveResponse.message || saveResponse.output)
+        } else {
+          throw new Error(saveResponse.message || "Failed to save configuration")
+        }
       }
     } catch (err) {
       console.error("Error saving configuration:", err)
