@@ -15,7 +15,6 @@ import { Loader2, Trash2, Plus, Users, Clock, Shield, Calendar, ExternalLink, Al
 import type {
   GetConfigWebhookPayload,
   SaveConfigWebhookPayload,
-  ConfigWebhookResponse,
   SaveConfigWebhookResponse,
   WebhookEmployee,
   WebhookBlockedTime,
@@ -109,20 +108,57 @@ export default function ProfessionalSetupPage() {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      const data: ConfigWebhookResponse[] = await response.json()
-      const configResponse = data[0]
+      const data = await response.json()
+      console.log("Raw webhook response:", data)
 
-      if (configResponse.success && configResponse.config_data) {
-        const config = configResponse.config_data
-        setBusinessName(config.business_name || "")
-        setEmployees(config.employees || [])
-        setCapacityRules(config.capacity_rules || DEFAULT_CAPACITY_RULES)
-        setBlockedTimes(config.blocked_times || [])
-        setLastUpdated(config.last_updated || "")
-        console.log("Configuration loaded successfully:", config)
+      // Handle the webhook response format
+      let configData = null
+
+      if (Array.isArray(data)) {
+        // If it's an array, look for the config data
+        const configResponse = data.find((item) => item.success || item.config_data)
+        if (configResponse) {
+          configData = configResponse.config_data || configResponse
+        }
+      } else if (data.config_data) {
+        configData = data.config_data
+      } else if (data.success) {
+        configData = data
+      }
+
+      if (configData) {
+        console.log("Processing config data:", configData)
+
+        // Set basic info
+        setBusinessName(configData.business_name || "")
+        setLastUpdated(configData.last_updated || "")
+
+        // Process employees from webhook data
+        if (configData.employees && Array.isArray(configData.employees)) {
+          console.log("Loading employees from config:", configData.employees)
+          setEmployees(configData.employees)
+        } else {
+          console.log("No employees found in config data")
+          setEmployees([])
+        }
+
+        // Process capacity rules
+        if (configData.capacity_rules) {
+          setCapacityRules(configData.capacity_rules)
+        } else {
+          setCapacityRules(DEFAULT_CAPACITY_RULES)
+        }
+
+        // Process blocked times
+        if (configData.blocked_times && Array.isArray(configData.blocked_times)) {
+          setBlockedTimes(configData.blocked_times)
+        } else {
+          setBlockedTimes([])
+        }
+
+        console.log("Configuration loaded successfully")
       } else {
-        // No existing configuration, use defaults
-        console.log("No existing configuration found, using defaults")
+        console.log("No configuration data found, using defaults")
         setBusinessName("")
         setEmployees([])
         setCapacityRules(DEFAULT_CAPACITY_RULES)
