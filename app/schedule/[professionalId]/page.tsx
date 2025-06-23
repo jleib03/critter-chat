@@ -43,17 +43,21 @@ export default function SchedulePage() {
     try {
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
       const now = new Date()
+
       const offsetMinutes = now.getTimezoneOffset()
-      const offsetHours = Math.abs(offsetMinutes / 60)
+      const offsetHours = Math.floor(Math.abs(offsetMinutes) / 60)
+      const offsetMins = Math.abs(offsetMinutes) % 60
       const offsetSign = offsetMinutes <= 0 ? "+" : "-"
-      const offsetString = `UTC${offsetSign}${offsetHours.toString().padStart(2, "0")}:${Math.abs(offsetMinutes % 60)
+
+      // Keep the chain on ONE line to avoid the stray-semicolon parse error
+      const offsetString = `UTC${offsetSign}${offsetHours
         .toString()
-        .padStart(2, "0")}`
+        .padStart(2, "0")}:${offsetMins.toString().padStart(2, "0")}`
 
       return {
-        timezone: timezone,
+        timezone,
         offset: offsetString,
-        offsetMinutes: offsetMinutes,
+        offsetMinutes,
         timestamp: now.toISOString(),
         localTime: now.toLocaleString(),
       }
