@@ -1,30 +1,14 @@
 // n8n Function Node: Handle Setup Data Flow
 // Final working version - no placeholder declarations
 
-// Declare $input and $ variables
-const $input = {
-  all: () => [
-    { json: { first_name: "John", last_name: "Doe", email: "john.doe@example.com" } },
-    { json: { date: "2023-10-01", name: "Holiday" } },
-    { json: { monday_start: "09:00", professional_id: "123" } },
-    { json: { config_data: { business_name: "Example Business" }, webhook_response: "success" } },
-  ],
-}
-
+// Declare variables
+const $input = { all: () => [] } // Placeholder for $input
 const $ = {
-  "Get Schedule Avail": {
-    all: () => [{ json: { monday_start: "09:00", professional_id: "123" } }],
-  },
-  "Get Holidays Avail": {
-    all: () => [{ json: { date: "2023-10-01", name: "Holiday" } }],
-  },
-  "Get Employees": {
-    all: () => [{ json: { first_name: "John", last_name: "Doe", email: "john.doe@example.com" } }],
-  },
-  "Availability Set-Up": {
-    all: () => [{ json: { config_data: { business_name: "Example Business" }, webhook_response: "success" } }],
-  },
-}
+  "Get Schedule Avail": { all: () => [] },
+  "Get Holidays Avail": { all: () => [] },
+  "Get Employees": { all: () => [] },
+  "Availability Set-Up": { all: () => [] },
+} // Placeholder for $
 
 const allInputs = $input.all()
 
@@ -56,6 +40,7 @@ allInputs.forEach((input, index) => {
 
 // Try to access data from previous nodes directly using your exact node names
 try {
+  // Access schedule availability data (1st node)
   const scheduleNode = $("Get Schedule Avail").all()
   if (scheduleNode && scheduleNode.length > 0) {
     scheduleAvailData = scheduleNode[0].json
@@ -65,6 +50,7 @@ try {
 }
 
 try {
+  // Access holidays data (2nd node)
   const holidaysNode = $("Get Holidays Avail").all()
   if (holidaysNode && holidaysNode.length > 0) {
     holidaysData = holidaysNode.map((item) => item.json)
@@ -74,6 +60,7 @@ try {
 }
 
 try {
+  // Access employees data (3rd node)
   const employeesNode = $("Get Employees").all()
   if (employeesNode && employeesNode.length > 0) {
     employeesData = employeesNode.map((item) => item.json)
@@ -83,6 +70,7 @@ try {
 }
 
 try {
+  // Access availability setup data (4th node)
   const setupNode = $("Availability Set-Up").all()
   if (setupNode && setupNode.length > 0) {
     availabilitySetupData = setupNode[0].json
@@ -102,10 +90,12 @@ console.log("Processing setup data for professional:", professionalId)
 console.log("Schedule data:", scheduleAvailData ? "found" : "not found")
 console.log("Holiday records:", holidaysData.length)
 console.log("Employee records:", employeesData.length)
+console.log("Setup data:", availabilitySetupData ? "found" : "not found")
 
 // Helper function to convert schedule availability to working days
 function convertScheduleToWorkingDays(scheduleData) {
   if (!scheduleData) {
+    // Return default working days if no schedule data
     return [
       { day: "Monday", start_time: "09:00", end_time: "17:00", is_working: false },
       { day: "Tuesday", start_time: "09:00", end_time: "17:00", is_working: false },
@@ -175,8 +165,8 @@ function processEmployeeData(employeesData, defaultWorkingDays) {
     role: emp.role || "Staff Member",
     email: emp.email || "",
     is_active: true,
-    working_days: [...defaultWorkingDays],
-    services: [],
+    working_days: [...defaultWorkingDays], // Use the business schedule as default
+    services: [], // Empty services array - can be configured in setup
   }))
 }
 
@@ -188,7 +178,7 @@ function convertHolidaysToBlockedTimes(holidaysData) {
 
   return holidaysData.map((holiday, index) => ({
     blocked_time_id: `holiday_${professionalId}_${index + 1}`,
-    employee_id: null,
+    employee_id: null, // Holidays apply to all employees
     employee_name: null,
     date: holiday.date || holiday.holiday_date,
     start_time: "00:00",
@@ -204,11 +194,12 @@ const defaultWorkingDays = convertScheduleToWorkingDays(scheduleAvailData)
 const processedEmployees = processEmployeeData(employeesData, defaultWorkingDays)
 const holidayBlockedTimes = convertHolidaysToBlockedTimes(holidaysData)
 
-// Extract business name
+// Extract business name from existing config or employee data
 let businessName = ""
 if (availabilitySetupData?.config_data?.business_name) {
   businessName = availabilitySetupData.config_data.business_name
 } else if (employeesData.length > 0) {
+  // Try to extract business name from first employee's name
   const firstEmployee = employeesData[0]
   if (firstEmployee.first_name && firstEmployee.first_name !== firstEmployee.last_name) {
     businessName = firstEmployee.first_name
@@ -219,22 +210,31 @@ if (availabilitySetupData?.config_data?.business_name) {
 const output = {
   success: true,
   message: "Configuration loaded successfully",
+
   config_data: {
     professional_id: professionalId,
     business_name: businessName,
     last_updated: new Date().toISOString(),
     created_at: availabilitySetupData?.config_data?.created_at || new Date().toISOString(),
     webhook_status: "loaded",
+
+    // Processed employees with default working schedules
     employees: processedEmployees,
+
+    // Default capacity rules based on employee count
     capacity_rules: availabilitySetupData?.config_data?.capacity_rules || {
       max_concurrent_bookings: Math.max(1, Math.floor(processedEmployees.length / 2)),
       buffer_time_between_bookings: 15,
-      max_bookings_per_day: processedEmployees.length * 8,
+      max_bookings_per_day: processedEmployees.length * 8, // 8 bookings per employee per day
       allow_overlapping: false,
       require_all_employees_for_service: false,
     },
+
+    // Combine existing blocked times with holidays
     blocked_times: [...(availabilitySetupData?.config_data?.blocked_times || []), ...holidayBlockedTimes],
   },
+
+  // Debug info
   debug_info: {
     inputs_received: allInputs.length,
     data_types_found: {
@@ -251,10 +251,13 @@ const output = {
   },
 }
 
-// Function to return in the correct n8n format
-function returnOutput(outputData) {
-  return [{ json: outputData }]
+// Log for debugging
+console.log("Generated config response:", JSON.stringify(output, null, 2))
+
+// Function to return the output in the exact format n8n expects
+function returnOutput() {
+  return [{ json: output }]
 }
 
 // Call the function to return the output
-returnOutput(output)
+returnOutput()
