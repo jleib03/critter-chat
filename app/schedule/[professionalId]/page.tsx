@@ -38,26 +38,24 @@ export default function SchedulePage() {
     return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   }
 
-  // Detect user's timezone
+  // Detect user's timezone - simplified to avoid parsing issues
   const detectUserTimezone = () => {
     try {
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
       const now = new Date()
-
       const offsetMinutes = now.getTimezoneOffset()
       const offsetHours = Math.floor(Math.abs(offsetMinutes) / 60)
       const offsetMins = Math.abs(offsetMinutes) % 60
       const offsetSign = offsetMinutes <= 0 ? "+" : "-"
 
-      // Keep the chain on ONE line to avoid the stray-semicolon parse error
-      const offsetString = `UTC${offsetSign}${offsetHours
-        .toString()
-        .padStart(2, "0")}:${offsetMins.toString().padStart(2, "0")}`
+      const hoursStr = offsetHours.toString().padStart(2, "0")
+      const minsStr = offsetMins.toString().padStart(2, "0")
+      const offsetString = `UTC${offsetSign}${hoursStr}:${minsStr}`
 
       return {
-        timezone,
+        timezone: timezone,
         offset: offsetString,
-        offsetMinutes,
+        offsetMinutes: offsetMinutes,
         timestamp: now.toISOString(),
         localTime: now.toLocaleString(),
       }
