@@ -4,8 +4,8 @@ import { useState } from "react"
 import type { BookingData, WorkingDay, Service, SelectedTimeSlot } from "@/types/schedule"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, Clock, ChevronDown, ChevronUp } from "lucide-react"
-import { canAccommodateBooking } from "@/utils/professional-config"
+import { ChevronLeft, ChevronRight, Clock, ChevronDown, ChevronUp, Users } from "lucide-react"
+import { calculateAvailableSlots } from "@/utils/professional-config"
 import type { ProfessionalConfig } from "@/types/professional-config"
 
 type WeeklyCalendarProps = {
@@ -79,12 +79,12 @@ export function WeeklyCalendar({
 
   const getWorkingHours = (dayName: string) => {
     const workingDay = workingDays.find((wd) => wd.day === dayName)
-    return workingDay ? { start: workingDay.start, end: workingDay.end } : null
+    return workingDay && workingDay.isWorking ? { start: workingDay.start, end: workingDay.end } : null
   }
 
   const getBookingsForDate = (date: Date) => {
     const dateStr = formatDate(date)
-    return bookingData.filter((booking) => booking.booking_date_formatted === dateStr && booking.booking_id !== null)
+    return bookingData.filter((booking) => booking.booking_date_formatted === dateStr)
   }
 
   const generateTimeSlots = (date: Date, workingHours: { start: string; end: string }, serviceDuration: number) => {
@@ -117,25 +117,9 @@ export function WeeklyCalendar({
       const endTimeFormatted = formatTime(endHours, endMins)
       const dateStr = formatDate(date)
 
-      // Check if this slot conflicts with existing bookings (original logic)
-      const hasConflict = bookings.some((booking) => {
-        if (!booking.start || !booking.end) return false
-
-        const bookingStart = new Date(booking.start)
-        const bookingEnd = new Date(booking.end)
-        const bookingStartMinutes = bookingStart.getHours() * 60 + bookingStart.getMinutes()
-        const bookingEndMinutes = bookingEnd.getHours() * 60 + bookingEnd.getMinutes()
-
-        return slotStart < bookingEndMinutes && slotEnd > bookingStartMinutes
-      })
-
-      // If professional config is available, use capacity management
-      let canBook = !hasConflict
-      let availableEmployees = []
-      let capacityReason = ""
-
-      if (professionalConfig && !hasConflict) {
-        const capacityCheck = canAccommodateBooking(
+      // If professional config is available, use enhanced capacity calculation
+      if (professionalConfig) {
+        const slotInfo = calculateAvailableSlots(
           professionalConfig,
           dateStr,
           startTimeFormatted,
@@ -143,20 +127,46 @@ export function WeeklyCalendar({
           dayName,
           bookings,
         )
-        canBook = capacityCheck.canBook
-        availableEmployees = capacityCheck.availableEmployees
-        capacityReason = capacityCheck.reason || ""
-      }
 
-      if (canBook) {
-        slots.push({
-          date: dateStr,
-          startTime: startTimeFormatted,
-          endTime: endTimeFormatted,
-          dayOfWeek: dayName,
-          availableEmployees: availableEmployees.length,
-          employeeNames: availableEmployees.map((emp) => emp.name).join(", "),
+        if (slotInfo.availableSlots > 0) {
+          slots.push({
+            date: dateStr,
+            startTime: startTimeFormatted,
+            endTime: endTimeFormatted,
+            dayOfWeek: dayName,
+            availableSlots: slotInfo.availableSlots,
+            totalCapacity: slotInfo.totalCapacity,
+            availableEmployees: slotInfo.availableEmployees.length,
+            employeeNames: slotInfo.availableEmployees.map((emp) => emp.name).join(", "),
+            existingBookingsCount: slotInfo.existingBookingsCount,
+          })
+        }
+      } else {
+        // Fallback to original logic for backwards compatibility
+        const hasConflict = bookings.some((booking) => {
+          if (!booking.start || !booking.end) return false
+
+          const bookingStart = new Date(booking.start)
+          const bookingEnd = new Date(booking.end)
+          const bookingStartMinutes = bookingStart.getHours() * 60 + bookingStart.getMinutes()
+          const bookingEndMinutes = bookingEnd.getHours() * 60 + bookingEnd.getMinutes()
+
+          return slotStart < bookingEndMinutes && slotEnd > bookingStartMinutes
         })
+
+        if (!hasConflict) {
+          slots.push({
+            date: dateStr,
+            startTime: startTimeFormatted,
+            endTime: endTimeFormatted,
+            dayOfWeek: dayName,
+            availableSlots: 1,
+            totalCapacity: 1,
+            availableEmployees: 1,
+            employeeNames: "Available",
+            existingBookingsCount: 0,
+          })
+        }
       }
     }
 
@@ -190,6 +200,11 @@ export function WeeklyCalendar({
           <h2 className="text-2xl font-bold text-gray-900 header-font">Available Times</h2>
           <p className="text-gray-600 body-font">
             Select a time slot for <span className="font-medium">{selectedService.name}</span>
+            {professionalConfig && (
+              <span className="text-sm text-gray-500 ml-2">
+                (Showing capacity: {professionalConfig.capacityRules.maxConcurrentBookings} max concurrent)
+              </span>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -251,29 +266,54 @@ export function WeeklyCalendar({
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {displayedSlots.map((slot, slotIndex) => (
-                      <Button
-                        key={slotIndex}
-                        variant="outline"
-                        size="sm"
-                        className={`w-full text-xs py-2 h-auto min-h-[2rem] body-font transition-all ${
-                          selectedTimeSlot?.date === slot.date && selectedTimeSlot?.startTime === slot.startTime
-                            ? "bg-[#E75837] text-white border-[#E75837] hover:bg-[#d14a2a] shadow-md"
-                            : "hover:bg-gray-50 hover:border-gray-300"
-                        }`}
-                        onClick={() => onTimeSlotSelect(slot)}
-                        title={
-                          professionalConfig && slot.employeeNames ? `Available: ${slot.employeeNames}` : undefined
-                        }
-                      >
-                        <div className="flex flex-col items-center">
-                          <span>{slot.startTime}</span>
-                          {professionalConfig && slot.availableEmployees > 0 && (
-                            <span className="text-[10px] opacity-75 mt-0.5">{slot.availableEmployees} staff</span>
-                          )}
-                        </div>
-                      </Button>
-                    ))}
+                    {displayedSlots.map((slot, slotIndex) => {
+                      const isSelected =
+                        selectedTimeSlot?.date === slot.date && selectedTimeSlot?.startTime === slot.startTime
+
+                      return (
+                        <Button
+                          key={slotIndex}
+                          variant="outline"
+                          size="sm"
+                          className={`w-full text-xs py-3 h-auto min-h-[3rem] body-font transition-all ${
+                            isSelected
+                              ? "bg-[#E75837] text-white border-[#E75837] hover:bg-[#d14a2a] shadow-md"
+                              : "hover:bg-gray-50 hover:border-gray-300"
+                          }`}
+                          onClick={() => onTimeSlotSelect(slot)}
+                          title={
+                            professionalConfig && slot.employeeNames
+                              ? `Available staff: ${slot.employeeNames}\nExisting bookings: ${slot.existingBookingsCount}\nCapacity: ${slot.availableSlots}/${slot.totalCapacity}`
+                              : undefined
+                          }
+                        >
+                          <div className="flex flex-col items-center w-full">
+                            <span className="font-medium">{slot.startTime}</span>
+
+                            {professionalConfig && (
+                              <div className="flex items-center justify-between w-full mt-1 text-[10px] opacity-75">
+                                <div className="flex items-center gap-1">
+                                  <Users className="w-2.5 h-2.5" />
+                                  <span>{slot.availableSlots}</span>
+                                </div>
+
+                                {slot.existingBookingsCount > 0 && (
+                                  <div className="text-orange-600">{slot.existingBookingsCount} booked</div>
+                                )}
+
+                                <div className="text-gray-500">
+                                  {slot.availableSlots}/{slot.totalCapacity}
+                                </div>
+                              </div>
+                            )}
+
+                            {!professionalConfig && slot.availableEmployees > 0 && (
+                              <span className="text-[10px] opacity-75 mt-0.5">Available</span>
+                            )}
+                          </div>
+                        </Button>
+                      )
+                    })}
 
                     {hasMoreSlots && (
                       <Button

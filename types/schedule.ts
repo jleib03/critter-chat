@@ -1,3 +1,81 @@
+export type SelectedTimeSlot = {
+  date: string
+  startTime: string
+  endTime: string
+  dayOfWeek: string
+  availableSlots?: number
+  totalCapacity?: number
+  availableEmployees?: number
+  employeeNames?: string
+  existingBookingsCount?: number
+}
+
+export type WorkingDay = {
+  day: string
+  start: string
+  end: string
+  isWorking: boolean
+}
+
+export type BookingData = {
+  booking_id?: string | null
+  start?: string | null
+  end?: string | null
+  start_local?: string | null
+  start_formatted?: string
+  end_local?: string | null
+  end_formatted?: string | null
+  timezone_used?: string
+  timezone_offset_hours?: string | null
+  timezone_offset_minutes?: string | null
+  is_recurring?: boolean | null
+  occurrence_type?: string | null
+  professional_id?: string
+  customer_id?: string | null
+  assignee_id?: string | null
+  customer_first_name?: string | null
+  customer_last_name?: string | null
+  customer_email?: string | null
+  professional_name?: string
+  booking_date?: string
+  booking_date_local?: string
+  booking_date_formatted?: string
+  day_of_week?: string
+  month_year?: string
+  week_number?: string
+  month_number?: string
+  quarter?: string
+}
+
+export type Service = {
+  name: string
+  description: string
+  duration_unit: string
+  duration_number: number
+  customer_cost: string
+  customer_cost_currency: string
+}
+
+export type CustomerInfo = {
+  firstName: string
+  lastName: string
+  email: string
+}
+
+export type Pet = {
+  pet_id: string
+  pet_name: string
+  pet_type: string
+  breed: string
+  age: string
+  weight: string
+  special_notes: string
+}
+
+export type PetResponse = {
+  pets: Pet[]
+}
+
 export type WebhookResponse = {
   professional_id: string
   monday_start: string
