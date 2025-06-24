@@ -19,6 +19,8 @@ import {
 } from "lucide-react"
 import Header from "../../components/header"
 import LiveChatWidget from "../../components/live-chat-widget"
+import { loadChatConfig, getDefaultChatConfig } from "../../utils/chat-config"
+import type { ChatAgentConfig } from "../../types/chat-config"
 
 // Sample data for Sally Grooming - will be replaced with webhook data later
 const SAMPLE_PROFESSIONAL_DATA = {
@@ -65,14 +67,41 @@ export default function ProfessionalLandingPage() {
   const params = useParams()
   const professionalId = params.professionalId as string
   const [professionalData, setProfessionalData] = useState(SAMPLE_PROFESSIONAL_DATA)
+  const [chatConfig, setChatConfig] = useState<ChatAgentConfig | null>(null)
+  const [isChatConfigLoading, setIsChatConfigLoading] = useState(true)
   const [loading, setLoading] = useState(false)
 
-  // TODO: Replace with actual webhook call
+  // Load professional data and chat configuration
   useEffect(() => {
-    // For now, just use sample data
-    // Later: fetch professional data via webhook using professionalId
-    console.log("Loading professional data for ID:", professionalId)
-  }, [professionalId])
+    const loadData = async () => {
+      console.log("Loading professional data for ID:", professionalId)
+
+      // Load chat configuration via webhook
+      setIsChatConfigLoading(true)
+      try {
+        const config = await loadChatConfig(professionalId)
+        if (config) {
+          setChatConfig(config)
+        } else {
+          // Use default configuration if webhook fails
+          setChatConfig(getDefaultChatConfig(professionalData.name))
+        }
+      } catch (error) {
+        console.error("Failed to load chat config:", error)
+        setChatConfig(getDefaultChatConfig(professionalData.name))
+      } finally {
+        setIsChatConfigLoading(false)
+      }
+
+      // TODO: Also load professional data via webhook
+      // const professionalConfig = await loadProfessionalConfig(professionalId)
+      // if (professionalConfig) {
+      //   setProfessionalData(professionalConfig)
+      // }
+    }
+
+    loadData()
+  }, [professionalId, professionalData.name])
 
   const getCurrentDayHours = () => {
     const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
@@ -187,10 +216,10 @@ export default function ProfessionalLandingPage() {
 
                 <div className="bg-gradient-to-br from-[#94ABD6] to-[#7a90ba] rounded-xl p-6 text-white">
                   <h3 className="text-xl font-bold mb-2 header-font">Have Questions?</h3>
-                  <p className="text-white/90 mb-4 body-font">Chat with our support assistant</p>
+                  <p className="text-white/90 mb-4 body-font">Chat with our booking assistant</p>
                   <div className="inline-flex items-center gap-2 bg-white text-[#94ABD6] px-4 py-2 rounded-lg font-medium body-font">
                     <MessageCircle className="w-4 h-4" />
-                    Click the chat button below
+                    {isChatConfigLoading ? "Loading chat..." : "Click the chat button below"}
                     <ArrowRight className="w-4 h-4" />
                   </div>
                 </div>
@@ -290,8 +319,13 @@ export default function ProfessionalLandingPage() {
           </div>
         </div>
 
-        {/* Live Chat Widget */}
-        <LiveChatWidget professionalId={professionalId} />
+        {/* Live Chat Widget - Now with dynamic configuration */}
+        <LiveChatWidget
+          professionalId={professionalId}
+          professionalName={professionalData.name}
+          chatConfig={chatConfig}
+          isConfigLoading={isChatConfigLoading}
+        />
       </main>
     </div>
   )
