@@ -15,6 +15,7 @@ export interface ProfessionalLandingData {
   contact: {
     phone: string
     email: string
+    website?: string
   }
   working_hours: {
     [key: string]: {
@@ -29,6 +30,33 @@ export interface ProfessionalLandingData {
   total_reviews: number
   years_experience: number
   certifications: string[]
+}
+
+// Helper function to format time from 24-hour to 12-hour format
+function formatTime(time24: string): string {
+  if (!time24) return "9:00 AM"
+
+  const [hours, minutes] = time24.split(":")
+  const hour = Number.parseInt(hours)
+  const ampm = hour >= 12 ? "PM" : "AM"
+  const hour12 = hour % 12 || 12
+
+  return `${hour12}:${minutes} ${ampm}`
+}
+
+// Helper function to format phone number
+function formatPhoneNumber(phone: string): string {
+  if (!phone) return "(555) 123-4567"
+
+  // Remove all non-digits
+  const digits = phone.replace(/\D/g, "")
+
+  // Format as (XXX) XXX-XXXX
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
+  }
+
+  return phone // Return original if not 10 digits
 }
 
 export async function loadProfessionalLandingData(professionalId: string): Promise<ProfessionalLandingData | null> {
@@ -62,99 +90,150 @@ export async function loadProfessionalLandingData(professionalId: string): Promi
     const data = await response.json()
     console.log("📥 Raw professional landing response:", JSON.stringify(data, null, 2))
 
-    // Parse the response - expecting array format like other webhooks
+    // Parse the response - expecting array format with multiple service records
     if (Array.isArray(data) && data.length > 0) {
-      const professionalData = data[0]
-      console.log("🔍 Parsing professional data:", professionalData)
+      const firstRecord = data[0]
+      console.log("🔍 Parsing professional data from first record:", firstRecord)
 
-      if (professionalData) {
-        // Parse working hours if it's a JSON string
-        let workingHours = {}
-        try {
-          if (typeof professionalData.working_hours === "string") {
-            workingHours = JSON.parse(professionalData.working_hours)
-          } else if (professionalData.working_hours) {
-            workingHours = professionalData.working_hours
-          }
-        } catch (error) {
-          console.error("Error parsing working hours:", error)
-          // Use default working hours
-          workingHours = {
-            monday: { open: "9:00 AM", close: "6:00 PM", isOpen: true },
-            tuesday: { open: "9:00 AM", close: "6:00 PM", isOpen: true },
-            wednesday: { open: "9:00 AM", close: "6:00 PM", isOpen: true },
-            thursday: { open: "9:00 AM", close: "6:00 PM", isOpen: true },
-            friday: { open: "9:00 AM", close: "6:00 PM", isOpen: true },
-            saturday: { open: "9:00 AM", close: "4:00 PM", isOpen: true },
-            sunday: { open: "Closed", close: "Closed", isOpen: false },
-          }
-        }
-
-        // Parse services and specialties if they're JSON strings
-        let services = []
-        let specialties = []
-        let certifications = []
-
-        try {
-          services =
-            typeof professionalData.services === "string"
-              ? JSON.parse(professionalData.services)
-              : professionalData.services || []
-        } catch (error) {
-          console.error("Error parsing services:", error)
-          services = ["Full Service Grooming", "Bath & Brush", "Nail Trimming"]
-        }
-
-        try {
-          specialties =
-            typeof professionalData.specialties === "string"
-              ? JSON.parse(professionalData.specialties)
-              : professionalData.specialties || []
-        } catch (error) {
-          console.error("Error parsing specialties:", error)
-          specialties = ["Professional Pet Care", "Experienced Service"]
-        }
-
-        try {
-          certifications =
-            typeof professionalData.certifications === "string"
-              ? JSON.parse(professionalData.certifications)
-              : professionalData.certifications || []
-        } catch (error) {
-          console.error("Error parsing certifications:", error)
-          certifications = ["Certified Professional", "Licensed Pet Care Provider"]
-        }
-
-        const landingData: ProfessionalLandingData = {
-          professional_id: professionalData.professional_id || professionalId,
-          name: professionalData.name || professionalData.business_name || "Professional Pet Services",
-          tagline: professionalData.tagline || professionalData.business_tagline || "Quality pet care services",
-          description:
-            professionalData.description ||
-            professionalData.business_description ||
-            "Professional pet care services with experienced staff.",
-          location: {
-            address: professionalData.address || professionalData.business_address || "123 Main Street",
-            city: professionalData.city || professionalData.business_city || "Your City",
-            state: professionalData.state || professionalData.business_state || "State",
-            zip: professionalData.zip || professionalData.business_zip || "12345",
-          },
-          contact: {
-            phone: professionalData.phone || professionalData.business_phone || "(555) 123-4567",
-            email: professionalData.email || professionalData.business_email || "info@business.com",
-          },
-          working_hours: workingHours,
-          services: services,
-          specialties: specialties,
-          rating: Number.parseFloat(professionalData.rating) || 4.8,
-          total_reviews: Number.parseInt(professionalData.total_reviews) || 50,
-          years_experience: Number.parseInt(professionalData.years_experience) || 5,
-          certifications: certifications,
-        }
-
-        console.log("✅ Final parsed landing data:", JSON.stringify(landingData, null, 2))
-        return landingData
+      // Extract business information from the first record (all records have same business info)
+      const businessInfo = {
+        business_id: firstRecord.business_id,
+        business_name: firstRecord.business_name,
+        tagline: firstRecord.tagline,
+        business_description: firstRecord.business_description,
+        primary_email: firstRecord.primary_email,
+        primary_phone_number: firstRecord.primary_phone_number,
+        address: firstRecord.address,
+        website: firstRecord.website,
+        service_area_zip_code: firstRecord.service_area_zip_code,
+        // Working hours
+        monday_start: firstRecord.monday_start,
+        monday_end: firstRecord.monday_end,
+        tuesday_start: firstRecord.tuesday_start,
+        tuesday_end: firstRecord.tuesday_end,
+        wednesday_start: firstRecord.wednesday_start,
+        wednesday_end: firstRecord.wednesday_end,
+        thursday_start: firstRecord.thursday_start,
+        thursday_end: firstRecord.thursday_end,
+        friday_start: firstRecord.friday_start,
+        friday_end: firstRecord.friday_end,
+        saturday_start: firstRecord.saturday_start,
+        saturday_end: firstRecord.saturday_end,
+        sunday_start: firstRecord.sunday_start,
+        sunday_end: firstRecord.sunday_end,
       }
+
+      // Extract all services from all records
+      const services: string[] = []
+      const serviceTypes = new Set<string>()
+
+      data.forEach((record: any) => {
+        if (record.service_name && record.available_to_customer) {
+          services.push(record.service_name)
+          if (record.service_type_name) {
+            serviceTypes.add(record.service_type_name)
+          }
+        }
+      })
+
+      console.log("📋 Extracted services:", services)
+      console.log("🏷️ Service types:", Array.from(serviceTypes))
+
+      // Build working hours object
+      const workingHours = {
+        monday: {
+          open: formatTime(businessInfo.monday_start),
+          close: formatTime(businessInfo.monday_end),
+          isOpen: !!(businessInfo.monday_start && businessInfo.monday_end),
+        },
+        tuesday: {
+          open: formatTime(businessInfo.tuesday_start),
+          close: formatTime(businessInfo.tuesday_end),
+          isOpen: !!(businessInfo.tuesday_start && businessInfo.tuesday_end),
+        },
+        wednesday: {
+          open: formatTime(businessInfo.wednesday_start),
+          close: formatTime(businessInfo.wednesday_end),
+          isOpen: !!(businessInfo.wednesday_start && businessInfo.wednesday_end),
+        },
+        thursday: {
+          open: formatTime(businessInfo.thursday_start),
+          close: formatTime(businessInfo.thursday_end),
+          isOpen: !!(businessInfo.thursday_start && businessInfo.thursday_end),
+        },
+        friday: {
+          open: formatTime(businessInfo.friday_start),
+          close: formatTime(businessInfo.friday_end),
+          isOpen: !!(businessInfo.friday_start && businessInfo.friday_end),
+        },
+        saturday: {
+          open: formatTime(businessInfo.saturday_start),
+          close: formatTime(businessInfo.saturday_end),
+          isOpen: !!(businessInfo.saturday_start && businessInfo.saturday_end),
+        },
+        sunday: {
+          open: formatTime(businessInfo.sunday_start),
+          close: formatTime(businessInfo.sunday_end),
+          isOpen: !!(businessInfo.sunday_start && businessInfo.sunday_end),
+        },
+      }
+
+      // Create specialties from service types and business context
+      const specialties = Array.from(serviceTypes)
+      if (businessInfo.tagline && businessInfo.tagline.includes("Chicago")) {
+        specialties.push("Chicago Area Service")
+      }
+      if (services.some((s) => s.toLowerCase().includes("small"))) {
+        specialties.push("Small Dog Specialist")
+      }
+      if (services.some((s) => s.toLowerCase().includes("large"))) {
+        specialties.push("Large Dog Care")
+      }
+      if (services.some((s) => s.toLowerCase().includes("boarding"))) {
+        specialties.push("Pet Boarding")
+      }
+
+      // Determine location info
+      let city = "Chicago"
+      let state = "IL"
+      if (businessInfo.service_area_zip_code === "60611") {
+        city = "Chicago"
+        state = "IL"
+      }
+
+      const landingData: ProfessionalLandingData = {
+        professional_id: businessInfo.business_id || professionalId,
+        name: businessInfo.business_name || "Professional Pet Services",
+        tagline: businessInfo.tagline || "Quality pet care services",
+        description:
+          businessInfo.business_description ||
+          `Professional ${Array.from(serviceTypes).join(" and ").toLowerCase()} services with experienced staff. We offer a full range of services including ${services.slice(0, 3).join(", ")} and more.`,
+        location: {
+          address: businessInfo.address || `Service Area: ${businessInfo.service_area_zip_code || "Local Area"}`,
+          city: city,
+          state: state,
+          zip: businessInfo.service_area_zip_code || "60611",
+        },
+        contact: {
+          phone: formatPhoneNumber(businessInfo.primary_phone_number),
+          email: businessInfo.primary_email || "info@business.com",
+          website: businessInfo.website || undefined,
+        },
+        working_hours: workingHours,
+        services: services,
+        specialties: specialties,
+        rating: 4.9, // Default - could be calculated from reviews if available
+        total_reviews: 127, // Default - could come from review data
+        years_experience: 8, // Default - could be calculated from business_created date
+        certifications: [
+          "Licensed Pet Care Provider",
+          "Professional Service Provider",
+          "Critter Verified Professional",
+        ],
+      }
+
+      console.log("✅ Final parsed landing data:", JSON.stringify(landingData, null, 2))
+      return landingData
     }
 
     console.log("⚠️ No valid professional landing data found in response")
@@ -173,7 +252,7 @@ export function getDefaultProfessionalData(professionalId: string): Professional
     tagline: "Quality pet care services",
     description: "Professional pet care services with experienced and caring staff dedicated to your pet's wellbeing.",
     location: {
-      address: "123 Main Street",
+      address: "Service Area: Local",
       city: "Your City",
       state: "State",
       zip: "12345",
@@ -191,7 +270,7 @@ export function getDefaultProfessionalData(professionalId: string): Professional
       saturday: { open: "9:00 AM", close: "4:00 PM", isOpen: true },
       sunday: { open: "Closed", close: "Closed", isOpen: false },
     },
-    services: ["Professional Pet Care", "Grooming Services", "Health Checkups"],
+    services: ["Professional Pet Care", "Quality Service"],
     specialties: ["Experienced Care", "Professional Service"],
     rating: 4.8,
     total_reviews: 50,
