@@ -16,104 +16,117 @@ import {
   CheckCircle,
   Heart,
   Scissors,
+  Loader2,
 } from "lucide-react"
 import Header from "../../components/header"
 import LiveChatWidget from "../../components/live-chat-widget"
 import { loadChatConfig, getDefaultChatConfig } from "../../utils/chat-config"
+import { loadProfessionalLandingData, getDefaultProfessionalData } from "../../utils/professional-landing-config"
 import type { ChatAgentConfig } from "../../types/chat-config"
-
-// Sample data for Sally Grooming - will be replaced with webhook data later
-const SAMPLE_PROFESSIONAL_DATA = {
-  professional_id: "151",
-  name: "Sally Grooming",
-  tagline: "Premium pet grooming services with love and care",
-  description:
-    "With over 10 years of experience in professional pet grooming, Sally provides top-quality grooming services for dogs and cats of all sizes. We specialize in breed-specific cuts, nail trimming, teeth cleaning, and spa treatments that will leave your pet looking and feeling their best.",
-  location: {
-    address: "123 Pet Care Lane, Chicago, IL 60601",
-    city: "Chicago",
-    state: "IL",
-    zip: "60601",
-  },
-  contact: {
-    phone: "(555) 123-4567",
-    email: "hello@sallygrooming.com",
-  },
-  working_hours: {
-    monday: { open: "9:00 AM", close: "6:00 PM", isOpen: true },
-    tuesday: { open: "9:00 AM", close: "6:00 PM", isOpen: true },
-    wednesday: { open: "9:00 AM", close: "6:00 PM", isOpen: true },
-    thursday: { open: "9:00 AM", close: "6:00 PM", isOpen: true },
-    friday: { open: "9:00 AM", close: "6:00 PM", isOpen: true },
-    saturday: { open: "9:00 AM", close: "4:00 PM", isOpen: true },
-    sunday: { open: "Closed", close: "Closed", isOpen: false },
-  },
-  services: [
-    "Full Service Grooming",
-    "Bath & Brush",
-    "Nail Trimming",
-    "Teeth Cleaning",
-    "Flea & Tick Treatment",
-    "De-shedding Treatment",
-  ],
-  specialties: ["Large Dog Grooming", "Senior Pet Care", "Anxious Pet Handling", "Breed-Specific Cuts"],
-  rating: 4.9,
-  total_reviews: 127,
-  years_experience: 10,
-  certifications: ["Certified Professional Groomer", "Pet First Aid Certified", "Canine Behavior Specialist"],
-}
+import type { ProfessionalLandingData } from "../../utils/professional-landing-config"
 
 export default function ProfessionalLandingPage() {
   const params = useParams()
   const professionalId = params.professionalId as string
-  const [professionalData, setProfessionalData] = useState(SAMPLE_PROFESSIONAL_DATA)
+  const [professionalData, setProfessionalData] = useState<ProfessionalLandingData | null>(null)
   const [chatConfig, setChatConfig] = useState<ChatAgentConfig | null>(null)
   const [isChatConfigLoading, setIsChatConfigLoading] = useState(true)
-  const [loading, setLoading] = useState(false)
+  const [isProfessionalDataLoading, setIsProfessionalDataLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   // Load professional data and chat configuration
   useEffect(() => {
     const loadData = async () => {
-      console.log("Loading professional data for ID:", professionalId)
-      console.log("Webhook URL:", process.env.NEXT_PUBLIC_WEBHOOK_URL)
+      console.log("🔍 Loading data for professional ID:", professionalId)
 
-      // Load chat configuration via webhook
-      setIsChatConfigLoading(true)
+      // Load professional landing data
+      setIsProfessionalDataLoading(true)
       try {
-        console.log("Attempting to load chat config...")
-        const config = await loadChatConfig(professionalId)
-        console.log("Chat config result:", config)
+        console.log("📊 Loading professional landing data...")
+        const landingData = await loadProfessionalLandingData(professionalId)
 
-        if (config) {
-          console.log("Using loaded chat config")
-          setChatConfig(config)
+        if (landingData) {
+          console.log("✅ Professional data loaded successfully")
+          setProfessionalData(landingData)
         } else {
-          console.log("Using default chat config")
-          // Use default configuration if webhook fails
-          setChatConfig(getDefaultChatConfig(professionalData.name))
+          console.log("⚠️ Using default professional data")
+          setProfessionalData(getDefaultProfessionalData(professionalId))
         }
       } catch (error) {
-        console.error("Failed to load chat config:", error)
-        console.log("Falling back to default chat config")
-        setChatConfig(getDefaultChatConfig(professionalData.name))
+        console.error("💥 Failed to load professional data:", error)
+        setProfessionalData(getDefaultProfessionalData(professionalId))
+        setError("Failed to load professional information")
+      } finally {
+        setIsProfessionalDataLoading(false)
+      }
+
+      // Load chat configuration
+      setIsChatConfigLoading(true)
+      try {
+        console.log("💬 Loading chat configuration...")
+        const config = await loadChatConfig(professionalId)
+
+        if (config) {
+          console.log("✅ Chat config loaded successfully")
+          setChatConfig(config)
+        } else {
+          console.log("⚠️ Using default chat config")
+          const defaultName = professionalData?.name || "Professional Pet Services"
+          setChatConfig(getDefaultChatConfig(defaultName))
+        }
+      } catch (error) {
+        console.error("💥 Failed to load chat config:", error)
+        const defaultName = professionalData?.name || "Professional Pet Services"
+        setChatConfig(getDefaultChatConfig(defaultName))
       } finally {
         setIsChatConfigLoading(false)
       }
-
-      // TODO: Also load professional data via webhook
-      // const professionalConfig = await loadProfessionalConfig(professionalId)
-      // if (professionalConfig) {
-      //   setProfessionalData(professionalConfig)
-      // }
     }
 
     loadData()
-  }, [professionalId, professionalData.name])
+  }, [professionalId])
 
   const getCurrentDayHours = () => {
+    if (!professionalData) return { open: "9:00 AM", close: "6:00 PM", isOpen: true }
+
     const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
     const today = days[new Date().getDay()]
-    return professionalData.working_hours[today as keyof typeof professionalData.working_hours]
+    return professionalData.working_hours[today] || { open: "9:00 AM", close: "6:00 PM", isOpen: true }
+  }
+
+  // Show loading state while data is being fetched
+  if (isProfessionalDataLoading) {
+    return (
+      <div className="min-h-screen bg-[#FBF8F3]">
+        <Header />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-[#E75837]" />
+            <p className="text-gray-600 body-font">Loading professional information...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state if data couldn't be loaded
+  if (!professionalData) {
+    return (
+      <div className="min-h-screen bg-[#FBF8F3]">
+        <Header />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <p className="text-red-600 body-font mb-4">Failed to load professional information</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#d04e30] transition-colors body-font"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   const todayHours = getCurrentDayHours()
@@ -197,7 +210,7 @@ export default function ProfessionalLandingPage() {
               <div className="space-y-4">
                 <div className="bg-gradient-to-br from-[#E75837] to-[#d04e30] rounded-xl p-6 text-white">
                   <h3 className="text-xl font-bold mb-2 header-font">Book an Appointment</h3>
-                  <p className="text-white/90 mb-4 body-font">Schedule your pet's grooming session online</p>
+                  <p className="text-white/90 mb-4 body-font">Schedule your pet's service online</p>
                   <Link
                     href={`/schedule/${professionalId}`}
                     className="inline-flex items-center gap-2 bg-white text-[#E75837] px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors body-font"
@@ -305,7 +318,7 @@ export default function ProfessionalLandingPage() {
               Ready to Book with {professionalData.name}?
             </h2>
             <p className="text-xl text-gray-600 mb-8 body-font">
-              Give your pet the care they deserve with our professional grooming services
+              Give your pet the care they deserve with our professional services
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
