@@ -369,7 +369,8 @@ export default function SchedulePage() {
       }
     })
 
-    setShowBookingTypeSelection(true)
+    // Remove this line to allow multiple selection before proceeding
+    // setShowBookingTypeSelection(true)
   }
 
   const handleBookingTypeSelect = (type: BookingType, config?: RecurringConfig) => {
@@ -761,7 +762,14 @@ export default function SchedulePage() {
                 servicesByCategory={webhookData.services.services_by_category}
                 selectedServices={selectedServices}
                 onServiceSelect={handleServiceSelect}
+                onContinue={() => setShowBookingTypeSelection(true)}
               />
+              <button
+                onClick={() => setShowBookingTypeSelection(true)}
+                className="mt-4 px-4 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#c4462b] transition-colors body-font"
+              >
+                Continue
+              </button>
             </div>
 
             <WeeklyCalendar
@@ -783,7 +791,16 @@ export default function SchedulePage() {
                 servicesByCategory={webhookData.services.services_by_category}
                 selectedServices={[]}
                 onServiceSelect={handleServiceSelect}
+                onContinue={() => setShowBookingTypeSelection(true)}
               />
+              {selectedServices.length > 0 && (
+                <button
+                  onClick={() => setShowBookingTypeSelection(true)}
+                  className="mt-4 px-4 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#c4462b] transition-colors body-font"
+                >
+                  Continue
+                </button>
+              )}
             </div>
 
             <WeeklyCalendar

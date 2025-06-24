@@ -2,16 +2,22 @@
 
 import type { Service, ServicesByCategory } from "@/types/schedule"
 import { Button } from "@/components/ui/button"
-import { Clock, DollarSign, ChevronDown, X } from "lucide-react"
+import { Clock, DollarSign, ChevronDown, X, ArrowRight } from "lucide-react"
 import { useState } from "react"
 
 type ServiceSelectorBarProps = {
   servicesByCategory: ServicesByCategory
   selectedServices: Service[]
   onServiceSelect: (service: Service) => void
+  onContinue?: () => void
 }
 
-export function ServiceSelectorBar({ servicesByCategory, selectedServices, onServiceSelect }: ServiceSelectorBarProps) {
+export function ServiceSelectorBar({
+  servicesByCategory,
+  selectedServices,
+  onServiceSelect,
+  onContinue,
+}: ServiceSelectorBarProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   const formatDuration = (duration: number, unit: string) => {
@@ -71,9 +77,16 @@ export function ServiceSelectorBar({ servicesByCategory, selectedServices, onSer
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-gray-900 header-font">Select Services</h2>
         {selectedServices.length > 0 && (
-          <div className="text-sm text-gray-600 body-font">
-            {selectedServices.length} service{selectedServices.length !== 1 ? "s" : ""} •{" "}
-            {Math.ceil(totalDurationMinutes / 60)}h {totalDurationMinutes % 60}m • ${totalCost.toFixed(0)}
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-gray-600 body-font">
+              {selectedServices.length} service{selectedServices.length !== 1 ? "s" : ""} •{" "}
+              {Math.floor(totalDurationMinutes / 60)}h {totalDurationMinutes % 60}m • ${totalCost.toFixed(0)}
+            </div>
+            {onContinue && (
+              <Button onClick={onContinue} className="bg-[#E75837] hover:bg-[#d14a2a] text-white body-font" size="sm">
+                Continue <ArrowRight className="w-4 h-4 ml-1" />
+              </Button>
+            )}
           </div>
         )}
       </div>
