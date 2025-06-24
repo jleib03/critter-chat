@@ -91,28 +91,51 @@ export function ServiceSelectorBar({
         )}
       </div>
 
-      {/* Selected Services Display */}
+      {/* Selected Services Summary */}
       {selectedServices.length > 0 && (
-        <div className="mb-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
-          <div className="flex flex-wrap gap-2">
+        <div className="mb-6 p-4 bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg border-2 border-orange-200">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold text-gray-900 header-font">Selected Services</h3>
+            <div className="text-sm font-medium text-[#E75837] body-font">
+              {selectedServices.length} service{selectedServices.length !== 1 ? "s" : ""} •
+              {Math.floor(totalDurationMinutes / 60) > 0 && ` ${Math.floor(totalDurationMinutes / 60)}h`}
+              {totalDurationMinutes % 60 > 0 && ` ${totalDurationMinutes % 60}m`} • ${totalCost.toFixed(0)}
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2 mb-4">
             {selectedServices.map((service, index) => (
               <div
                 key={`selected-${index}`}
-                className="flex items-center gap-2 bg-white px-3 py-1 rounded-full border border-orange-300 text-sm"
+                className="flex items-center gap-2 bg-white px-3 py-2 rounded-full border-2 border-orange-300 shadow-sm"
               >
-                <span className="body-font">{service.name}</span>
-                <span className="text-gray-500 body-font">
+                <div className="w-4 h-4 bg-[#E75837] text-white rounded-full flex items-center justify-center text-xs font-bold">
+                  ✓
+                </div>
+                <span className="font-medium body-font">{service.name}</span>
+                <span className="text-gray-500 text-sm body-font">
                   {formatDuration(service.duration_number, service.duration_unit)}
                 </span>
                 <button
                   onClick={() => removeService(service)}
-                  className="text-gray-400 hover:text-red-500 transition-colors"
+                  className="text-gray-400 hover:text-red-500 transition-colors ml-1"
                 >
-                  <X className="w-3 h-3" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             ))}
           </div>
+          {onContinue && (
+            <div className="flex justify-center">
+              <Button
+                onClick={onContinue}
+                className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-8 py-3 text-lg font-semibold body-font shadow-lg hover:shadow-xl transition-all"
+                size="lg"
+              >
+                Continue with {selectedServices.length} Service{selectedServices.length !== 1 ? "s" : ""}
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
@@ -142,19 +165,27 @@ export function ServiceSelectorBar({
                   onClick={() => {
                     onServiceSelect(service)
                   }}
-                  className={`w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors ${
-                    isServiceSelected(service) ? "bg-orange-50 border-orange-200" : ""
+                  className={`w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-all duration-200 ${
+                    isServiceSelected(service) ? "bg-orange-50 border-l-4 border-l-[#E75837] shadow-sm" : ""
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium text-gray-900 header-font">{service.name}</h4>
-                        {isServiceSelected(service) && (
-                          <div className="w-4 h-4 bg-[#E75837] text-white rounded-full flex items-center justify-center text-xs">
-                            ✓
-                          </div>
-                        )}
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                            isServiceSelected(service)
+                              ? "bg-[#E75837] border-[#E75837] text-white"
+                              : "border-gray-300 hover:border-[#E75837]"
+                          }`}
+                        >
+                          {isServiceSelected(service) && <span className="text-xs font-bold">✓</span>}
+                        </div>
+                        <h4
+                          className={`font-medium ${isServiceSelected(service) ? "text-[#E75837]" : "text-gray-900"} header-font`}
+                        >
+                          {service.name}
+                        </h4>
                       </div>
                       {service.description && (
                         <p className="text-sm text-gray-600 mt-1 body-font line-clamp-1">{service.description}</p>

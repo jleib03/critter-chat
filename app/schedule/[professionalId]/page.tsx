@@ -764,12 +764,6 @@ export default function SchedulePage() {
                 onServiceSelect={handleServiceSelect}
                 onContinue={() => setShowBookingTypeSelection(true)}
               />
-              <button
-                onClick={() => setShowBookingTypeSelection(true)}
-                className="mt-4 px-4 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#c4462b] transition-colors body-font"
-              >
-                Continue
-              </button>
             </div>
 
             <WeeklyCalendar
@@ -793,14 +787,6 @@ export default function SchedulePage() {
                 onServiceSelect={handleServiceSelect}
                 onContinue={() => setShowBookingTypeSelection(true)}
               />
-              {selectedServices.length > 0 && (
-                <button
-                  onClick={() => setShowBookingTypeSelection(true)}
-                  className="mt-4 px-4 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#c4462b] transition-colors body-font"
-                >
-                  Continue
-                </button>
-              )}
             </div>
 
             <WeeklyCalendar
