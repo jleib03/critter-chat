@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, Clock, ChevronDown, ChevronUp, Users } from "lucide-react"
 import { calculateAvailableSlots } from "@/utils/professional-config"
 import type { ProfessionalConfig } from "@/types/professional-config"
+import type { BookingType, RecurringConfig } from "./booking-type-selection"
 
 type WeeklyCalendarProps = {
   workingDays: WorkingDay[]
@@ -16,6 +17,8 @@ type WeeklyCalendarProps = {
   selectedTimeSlot: SelectedTimeSlot | null
   professionalId: string
   professionalConfig: ProfessionalConfig | null
+  bookingType?: BookingType
+  recurringConfig?: RecurringConfig | null
 }
 
 export function WeeklyCalendar({
@@ -26,6 +29,8 @@ export function WeeklyCalendar({
   selectedTimeSlot,
   professionalId,
   professionalConfig,
+  bookingType,
+  recurringConfig,
 }: WeeklyCalendarProps) {
   const [currentWeekStart, setCurrentWeekStart] = useState(() => {
     const today = new Date()
@@ -130,6 +135,14 @@ export function WeeklyCalendar({
 
         // Only show slots that have availability
         if (slotInfo.availableSlots > 0) {
+          // For recurring bookings, check if this slot works for all recurring dates
+          if (
+            bookingType === "recurring" &&
+            !isSlotValidForRecurring(date, startTimeFormatted, endTimeFormatted, dayName)
+          ) {
+            continue // Skip this slot if it doesn't work for the full recurring schedule
+          }
+
           slots.push({
             date: dateStr,
             startTime: startTimeFormatted,
@@ -175,6 +188,91 @@ export function WeeklyCalendar({
     return slots
   }
 
+  const isSlotValidForRecurring = (date: Date, startTime: string, endTime: string, dayName: string) => {
+    if (bookingType !== "recurring" || !recurringConfig) return true
+
+    const serviceDuration = getServiceDurationInMinutes(selectedService!)
+    const startDate = new Date(date)
+    const endDate = new Date(recurringConfig.endDate)
+
+    // Generate all recurring dates
+    const recurringDates = []
+    const currentDate = new Date(startDate)
+
+    while (currentDate <= endDate) {
+      recurringDates.push(new Date(currentDate))
+
+      if (recurringConfig.unit === "days") {
+        currentDate.setDate(currentDate.getDate() + recurringConfig.frequency)
+      } else if (recurringConfig.unit === "weeks") {
+        currentDate.setDate(currentDate.getDate() + recurringConfig.frequency * 7)
+      } else if (recurringConfig.unit === "months") {
+        currentDate.setMonth(currentDate.getMonth() + recurringConfig.frequency)
+      }
+    }
+
+    // Check if all recurring dates have availability
+    for (const recurringDate of recurringDates) {
+      const recurringDayName = getDayName(recurringDate)
+      const recurringWorkingHours = getWorkingHours(recurringDayName)
+
+      // Check if the professional works on this day
+      if (!recurringWorkingHours) return false
+
+      // Check if the time slot fits within working hours
+      const [startHour, startMinute] = startTime.split(/[:\s]/)
+      const isPM = startTime.includes("PM")
+      let hour24 = Number.parseInt(startHour)
+      if (isPM && hour24 !== 12) hour24 += 12
+      if (!isPM && hour24 === 12) hour24 = 0
+
+      const slotStartMinutes = hour24 * 60 + Number.parseInt(startMinute)
+      const slotEndMinutes = slotStartMinutes + serviceDuration
+
+      const [workStartHour, workStartMinute] = recurringWorkingHours.start.split(":").map(Number)
+      const [workEndHour, workEndMinute] = recurringWorkingHours.end.split(":").map(Number)
+      const workStartMinutes = workStartHour * 60 + workStartMinute
+      const workEndMinutes = workEndHour * 60 + workEndMinute
+
+      if (slotStartMinutes < workStartMinutes || slotEndMinutes > workEndMinutes) {
+        return false
+      }
+
+      // Check for conflicts with existing bookings on this date
+      const recurringDateStr = formatDate(recurringDate)
+      const bookingsOnDate = bookingData.filter((booking) => booking.booking_date_formatted === recurringDateStr)
+
+      if (professionalConfig) {
+        const slotInfo = calculateAvailableSlots(
+          professionalConfig,
+          recurringDateStr,
+          startTime,
+          endTime,
+          recurringDayName,
+          bookingsOnDate,
+        )
+
+        if (slotInfo.availableSlots <= 0) return false
+      } else {
+        // Fallback logic for basic conflict checking
+        const hasConflict = bookingsOnDate.some((booking) => {
+          if (!booking.start || !booking.end || !booking.booking_id) return false
+
+          const bookingStart = new Date(booking.start)
+          const bookingEnd = new Date(booking.end)
+          const bookingStartMinutes = bookingStart.getHours() * 60 + bookingStart.getMinutes()
+          const bookingEndMinutes = bookingEnd.getHours() * 60 + bookingEnd.getMinutes()
+
+          return slotStartMinutes < bookingEndMinutes && slotEndMinutes > bookingStartMinutes
+        })
+
+        if (hasConflict) return false
+      }
+    }
+
+    return true
+  }
+
   const getServiceDurationInMinutes = (service: Service) => {
     if (service.duration_unit === "Minutes") return service.duration_number
     if (service.duration_unit === "Hours") return service.duration_number * 60
@@ -202,6 +300,12 @@ export function WeeklyCalendar({
           <h2 className="text-2xl font-bold text-gray-900 header-font">Available Times</h2>
           <p className="text-gray-600 body-font">
             Select a time slot for <span className="font-medium">{selectedService.name}</span>
+            {bookingType === "recurring" && recurringConfig && (
+              <span className="text-sm text-[#E75837] ml-2 font-medium">
+                (Recurring every {recurringConfig.frequency} {recurringConfig.unit} until{" "}
+                {new Date(recurringConfig.endDate).toLocaleDateString()})
+              </span>
+            )}
             {professionalConfig && (
               <span className="text-sm text-gray-500 ml-2">
                 (Staff schedules → Capacity rules → Existing bookings → Available slots)

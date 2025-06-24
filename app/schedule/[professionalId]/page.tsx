@@ -11,6 +11,11 @@ import { PetSelection } from "@/components/schedule/pet-selection"
 import { BookingConfirmation } from "@/components/schedule/booking-confirmation"
 import { loadProfessionalConfig } from "@/utils/professional-config"
 import type { ProfessionalConfig } from "@/types/professional-config"
+import {
+  BookingTypeSelection,
+  type BookingType,
+  type RecurringConfig,
+} from "@/components/schedule/booking-type-selection"
 
 interface ParsedWebhookData {
   professional_info: {
@@ -54,6 +59,10 @@ export default function SchedulePage() {
   const [pets, setPets] = useState<Pet[]>([])
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null)
   const [professionalConfig, setProfessionalConfig] = useState<ProfessionalConfig | null>(null)
+
+  const [showBookingTypeSelection, setShowBookingTypeSelection] = useState(false)
+  const [bookingType, setBookingType] = useState<BookingType | null>(null)
+  const [recurringConfig, setRecurringConfig] = useState<RecurringConfig | null>(null)
 
   // Generate a unique session ID
   const generateSessionId = () => {
@@ -352,6 +361,25 @@ export default function SchedulePage() {
   const handleServiceSelect = (service: Service) => {
     setSelectedService(service)
     setSelectedTimeSlot(null)
+    setShowBookingTypeSelection(true)
+  }
+
+  const handleBookingTypeSelect = (type: BookingType, config?: RecurringConfig) => {
+    setBookingType(type)
+    setRecurringConfig(config || null)
+    setShowBookingTypeSelection(false)
+  }
+
+  const handleBackToBookingType = () => {
+    setShowBookingTypeSelection(true)
+    setSelectedTimeSlot(null)
+  }
+
+  const handleBackToServices = () => {
+    setSelectedService(null)
+    setShowBookingTypeSelection(false)
+    setBookingType(null)
+    setRecurringConfig(null)
   }
 
   const handleTimeSlotSelect = (slot: SelectedTimeSlot) => {
@@ -485,6 +513,9 @@ export default function SchedulePage() {
     setCustomerInfo({ firstName: "", lastName: "", email: "" })
     setPets([])
     setSelectedPet(null)
+    setShowBookingTypeSelection(false)
+    setBookingType(null)
+    setRecurringConfig(null)
 
     console.log("Starting new booking - refreshing schedule data...")
     await initializeSchedule()
@@ -674,6 +705,34 @@ export default function SchedulePage() {
             onPetsReceived={handlePetsReceived}
             onBack={handleBackToSchedule}
           />
+        ) : showBookingTypeSelection && selectedService ? (
+          <BookingTypeSelection
+            selectedService={selectedService}
+            onBookingTypeSelect={handleBookingTypeSelect}
+            onBack={handleBackToServices}
+          />
+        ) : selectedService && bookingType ? (
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            <div className="mb-8">
+              <ServiceSelectorBar
+                servicesByCategory={webhookData.services.services_by_category}
+                selectedService={selectedService}
+                onServiceSelect={handleServiceSelect}
+              />
+            </div>
+
+            <WeeklyCalendar
+              workingDays={webhookData.schedule.working_days}
+              bookingData={webhookData.bookings.all_booking_data}
+              selectedService={selectedService}
+              onTimeSlotSelect={handleTimeSlotSelect}
+              selectedTimeSlot={selectedTimeSlot}
+              professionalId={professionalId}
+              professionalConfig={professionalConfig}
+              bookingType={bookingType}
+              recurringConfig={recurringConfig}
+            />
+          </div>
         ) : (
           <div className="bg-white rounded-lg shadow-sm border p-6">
             <div className="mb-8">
