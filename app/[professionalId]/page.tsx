@@ -18,6 +18,7 @@ import {
   Scissors,
 } from "lucide-react"
 import Header from "../../components/header"
+import LiveChatWidget from "../../components/live-chat-widget"
 
 // Sample data for Sally Grooming - will be replaced with webhook data later
 const SAMPLE_PROFESSIONAL_DATA = {
@@ -187,11 +188,11 @@ export default function ProfessionalLandingPage() {
                 <div className="bg-gradient-to-br from-[#94ABD6] to-[#7a90ba] rounded-xl p-6 text-white">
                   <h3 className="text-xl font-bold mb-2 header-font">Have Questions?</h3>
                   <p className="text-white/90 mb-4 body-font">Chat with our booking assistant</p>
-                  <button className="inline-flex items-center gap-2 bg-white text-[#94ABD6] px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors body-font">
+                  <div className="inline-flex items-center gap-2 bg-white text-[#94ABD6] px-4 py-2 rounded-lg font-medium body-font">
                     <MessageCircle className="w-4 h-4" />
-                    Start Chat
+                    Click the chat button below
                     <ArrowRight className="w-4 h-4" />
-                  </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -288,6 +289,20 @@ export default function ProfessionalLandingPage() {
             </div>
           </div>
         </div>
+
+        {/* Live Chat Widget */}
+        <LiveChatWidget
+          professionalId={professionalId}
+          agentConfig={{
+            chatName: `${professionalData.name} Support`,
+            chatWelcomeMessage: `Hi! I'm here to help you with ${professionalData.name}. I can assist with booking appointments, answering questions about our services, and helping with any other inquiries. How can I help you today?`,
+            widgetConfig: {
+              primaryColor: "#E75837",
+              position: "bottom-right",
+              size: "medium",
+            },
+          }}
+        />
       </main>
     </div>
   )
