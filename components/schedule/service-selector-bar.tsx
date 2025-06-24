@@ -106,51 +106,64 @@ export function ServiceSelectorBar({
         )}
       </div>
 
-      {/* Selected Services Summary */}
+      {/* Selected Services Summary - Improved Design */}
       {selectedServices.length > 0 && (
-        <div className="mb-6 p-4 bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg border-2 border-orange-200">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold text-gray-900 header-font">Selected Services</h3>
-            <div className="text-sm font-medium text-[#E75837] body-font">
-              {selectedServices.length} service{selectedServices.length !== 1 ? "s" : ""} •
-              {Math.floor(totalDurationMinutes / 60) > 0 && ` ${Math.floor(totalDurationMinutes / 60)}h`}
-              {totalDurationMinutes % 60 > 0 && ` ${totalDurationMinutes % 60}m`} • ${totalCost.toFixed(0)}
+        <div className="mb-6 p-6 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border border-orange-200">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-[#E75837] rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">{selectedServices.length}</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 header-font">Selected Services</h3>
+                <p className="text-sm text-gray-600 body-font">
+                  {Math.floor(totalDurationMinutes / 60) > 0 && `${Math.floor(totalDurationMinutes / 60)}h `}
+                  {totalDurationMinutes % 60 > 0 && `${totalDurationMinutes % 60}m`} • ${totalCost.toFixed(0)} total
+                </p>
+              </div>
             </div>
+            {onContinue && (
+              <Button
+                onClick={onContinue}
+                className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-6 py-2 font-semibold body-font shadow-lg hover:shadow-xl transition-all"
+              >
+                Continue <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            )}
           </div>
-          <div className="flex flex-wrap gap-2 mb-4">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {selectedServices.map((service, index) => (
               <div
                 key={`selected-${index}`}
-                className="flex items-center gap-2 bg-white px-3 py-2 rounded-full border-2 border-orange-300 shadow-sm"
+                className="flex items-center justify-between bg-white px-4 py-3 rounded-lg border border-orange-200 shadow-sm"
               >
-                <div className="w-4 h-4 bg-[#E75837] text-white rounded-full flex items-center justify-center text-xs font-bold">
-                  ✓
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-6 bg-[#E75837] text-white rounded-full flex items-center justify-center text-xs font-bold">
+                    ✓
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-900 body-font">{service.name}</span>
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className="text-xs text-gray-500 body-font">
+                        {formatDuration(service.duration_number, service.duration_unit)}
+                      </span>
+                      <span className="text-xs font-medium text-[#E75837] body-font">
+                        {formatPrice(service.customer_cost)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <span className="font-medium body-font">{service.name}</span>
-                <span className="text-gray-500 text-sm body-font">
-                  {formatDuration(service.duration_number, service.duration_unit)}
-                </span>
                 <button
                   onClick={() => removeService(service)}
-                  className="text-gray-400 hover:text-red-500 transition-colors ml-1"
+                  className="text-gray-400 hover:text-red-500 transition-colors p-1 hover:bg-red-50 rounded-full"
+                  title="Remove service"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
             ))}
           </div>
-          {onContinue && (
-            <div className="flex justify-center">
-              <Button
-                onClick={onContinue}
-                className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-8 py-3 text-lg font-semibold body-font shadow-lg hover:shadow-xl transition-all"
-                size="lg"
-              >
-                Continue with {selectedServices.length} Service{selectedServices.length !== 1 ? "s" : ""}
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-            </div>
-          )}
         </div>
       )}
 

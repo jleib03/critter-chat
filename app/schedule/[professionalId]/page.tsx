@@ -756,13 +756,8 @@ export default function SchedulePage() {
             bookingType={bookingType}
             recurringConfig={recurringConfig}
           />
-        ) : showBookingTypeSelection && selectedServices.length > 0 ? (
-          <BookingTypeSelection
-            selectedService={selectedServices[0]}
-            onBookingTypeSelect={handleBookingTypeSelect}
-            onBack={handleBackToServices}
-          />
-        ) : selectedServices.length > 0 && bookingType ? (
+        ) : selectedServices.length > 0 && bookingType && !showBookingTypeSelection ? (
+          // Only show calendar after booking type is selected
           <div className="bg-white rounded-lg shadow-sm border p-6">
             <div className="mb-8">
               <ServiceSelectorBar
@@ -785,25 +780,20 @@ export default function SchedulePage() {
               recurringConfig={recurringConfig}
             />
           </div>
+        ) : showBookingTypeSelection && selectedServices.length > 0 ? (
+          <BookingTypeSelection
+            selectedService={selectedServices[0]}
+            onBookingTypeSelect={handleBookingTypeSelect}
+            onBack={handleBackToServices}
+          />
         ) : (
+          // Initial service selection - no calendar
           <div className="bg-white rounded-lg shadow-sm border p-6">
-            <div className="mb-8">
-              <ServiceSelectorBar
-                servicesByCategory={webhookData.services.services_by_category}
-                selectedServices={selectedServices}
-                onServiceSelect={handleServiceSelect}
-                onContinue={() => setShowBookingTypeSelection(true)}
-              />
-            </div>
-
-            <WeeklyCalendar
-              workingDays={webhookData.schedule.working_days}
-              bookingData={webhookData.bookings.all_booking_data}
+            <ServiceSelectorBar
+              servicesByCategory={webhookData.services.services_by_category}
               selectedServices={selectedServices}
-              onTimeSlotSelect={handleTimeSlotSelect}
-              selectedTimeSlot={selectedTimeSlot}
-              professionalId={professionalId}
-              professionalConfig={professionalConfig}
+              onServiceSelect={handleServiceSelect}
+              onContinue={() => setShowBookingTypeSelection(true)}
             />
           </div>
         )}
