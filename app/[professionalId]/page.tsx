@@ -74,25 +74,27 @@ export default function ProfessionalLandingPage() {
   // Load professional data and chat configuration
   useEffect(() => {
     const loadData = async () => {
-      console.log("🔍 Environment Check:")
-      console.log("NEXT_PUBLIC_WEBHOOK_URL:", process.env.NEXT_PUBLIC_WEBHOOK_URL)
-      console.log("NEXT_PUBLIC_API_URL:", process.env.NEXT_PUBLIC_API_URL)
-      console.log("Professional ID:", professionalId)
+      console.log("Loading professional data for ID:", professionalId)
+      console.log("Webhook URL:", process.env.NEXT_PUBLIC_WEBHOOK_URL)
 
       // Load chat configuration via webhook
       setIsChatConfigLoading(true)
       try {
+        console.log("Attempting to load chat config...")
         const config = await loadChatConfig(professionalId)
+        console.log("Chat config result:", config)
+
         if (config) {
-          console.log("✅ Chat config loaded successfully")
+          console.log("Using loaded chat config")
           setChatConfig(config)
         } else {
-          console.log("⚠️ Using default chat config")
+          console.log("Using default chat config")
           // Use default configuration if webhook fails
           setChatConfig(getDefaultChatConfig(professionalData.name))
         }
       } catch (error) {
-        console.error("💥 Failed to load chat config:", error)
+        console.error("Failed to load chat config:", error)
+        console.log("Falling back to default chat config")
         setChatConfig(getDefaultChatConfig(professionalData.name))
       } finally {
         setIsChatConfigLoading(false)
