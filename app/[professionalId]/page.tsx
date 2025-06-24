@@ -304,9 +304,9 @@ export default function ProfessionalLandingPage() {
         <div className="max-w-6xl mx-auto px-4 py-12">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Services - Now grouped by type with smart icons */}
-            <div className="w-full">
+            <div className="w-full flex-1">
               <h2 className="text-2xl font-bold text-gray-900 mb-6 header-font">Our Services</h2>
-              <div className="space-y-4 w-full min-h-[200px]">
+              <div className="space-y-4 w-full min-h-[200px] flex flex-col">
                 {professionalData.service_groups.map((group: ServiceGroup) => {
                   const IconComponent = getServiceIcon(group.type)
                   const iconColor = getServiceColor(group.type)
@@ -315,7 +315,8 @@ export default function ProfessionalLandingPage() {
                   return (
                     <div
                       key={group.type}
-                      className="bg-white rounded-lg border border-gray-200 overflow-hidden w-full max-w-none"
+                      className="bg-white rounded-lg border border-gray-200 overflow-hidden w-full max-w-none flex-shrink-0"
+                      style={{ minWidth: "100%", width: "100%" }}
                     >
                       {/* Group Header */}
                       <button
