@@ -156,19 +156,18 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-gray-500" />
           <span className="text-sm body-font">
-            {new Date(selectedTimeSlot.startTime).toLocaleDateString("en-US", {
-              weekday: "long",
-              year: "numeric",
+            {selectedTimeSlot.dayOfWeek},{" "}
+            {new Date(selectedTimeSlot.date).toLocaleDateString("en-US", {
               month: "long",
               day: "numeric",
+              year: "numeric",
             })}
           </span>
         </div>
         <div className="flex items-center gap-2">
           <Clock className="w-4 h-4 text-gray-500" />
           <span className="text-sm body-font">
-            {new Date(selectedTimeSlot.startTime).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })} -{" "}
-            {new Date(selectedTimeSlot.endTime).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+            {selectedTimeSlot.startTime} - {selectedTimeSlot.endTime}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -201,18 +200,6 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
                   month: "long",
                   day: "numeric",
                 })}
-              </span>
-            </div>
-            <div className="flex justify-between md:col-span-2">
-              <span className="text-blue-700 body-font">Total Appointments:</span>
-              <span className="font-medium text-blue-900 body-font">
-                {recurringConfig.totalAppointments} appointments
-              </span>
-            </div>
-            <div className="flex justify-between md:col-span-2">
-              <span className="text-blue-700 body-font">Total Cost:</span>
-              <span className="font-medium text-blue-900 body-font text-lg">
-                ${(Number.parseFloat(selectedService.customer_cost) * recurringConfig.totalAppointments).toFixed(0)}
               </span>
             </div>
           </div>
