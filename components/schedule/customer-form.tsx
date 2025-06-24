@@ -263,4 +263,5 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
   )
 }
 
+export { CustomerForm }
 export default CustomerForm
