@@ -313,11 +313,11 @@ export default function ProfessionalLandingPage() {
                   const isExpanded = expandedGroups.has(group.type)
 
                   return (
-                    <div key={group.type} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                    <div key={group.type} className="bg-white rounded-lg border border-gray-200 overflow-hidden w-full">
                       {/* Group Header */}
                       <button
                         onClick={() => toggleGroup(group.type)}
-                        className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+                        className="w-full flex items-center justify-between p-6 hover:bg-gray-50 transition-colors min-h-[80px]"
                       >
                         <div className="flex items-center gap-3">
                           <IconComponent className={`w-5 h-5 ${iconColor}`} />
