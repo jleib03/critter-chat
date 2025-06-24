@@ -359,18 +359,25 @@ export default function SchedulePage() {
   }, [professionalId])
 
   const handleServiceSelect = (service: Service) => {
+    console.log("handleServiceSelect called with:", service.name)
     setSelectedTimeSlot(null)
 
     setSelectedServices((prevServices) => {
-      if (prevServices.find((s) => s.name === service.name)) {
-        return prevServices.filter((s) => s.name !== service.name)
+      console.log("Previous services:", prevServices)
+      const isAlreadySelected = prevServices.find((s) => s.name === service.name)
+
+      if (isAlreadySelected) {
+        console.log("Removing service:", service.name)
+        const newServices = prevServices.filter((s) => s.name !== service.name)
+        console.log("New services after removal:", newServices)
+        return newServices
       } else {
-        return [...prevServices, service]
+        console.log("Adding service:", service.name)
+        const newServices = [...prevServices, service]
+        console.log("New services after addition:", newServices)
+        return newServices
       }
     })
-
-    // Remove this line to allow multiple selection before proceeding
-    // setShowBookingTypeSelection(true)
   }
 
   const handleBookingTypeSelect = (type: BookingType, config?: RecurringConfig) => {
@@ -783,7 +790,7 @@ export default function SchedulePage() {
             <div className="mb-8">
               <ServiceSelectorBar
                 servicesByCategory={webhookData.services.services_by_category}
-                selectedServices={[]}
+                selectedServices={selectedServices}
                 onServiceSelect={handleServiceSelect}
                 onContinue={() => setShowBookingTypeSelection(true)}
               />
@@ -792,7 +799,7 @@ export default function SchedulePage() {
             <WeeklyCalendar
               workingDays={webhookData.schedule.working_days}
               bookingData={webhookData.bookings.all_booking_data}
-              selectedServices={[]}
+              selectedServices={selectedServices}
               onTimeSlotSelect={handleTimeSlotSelect}
               selectedTimeSlot={selectedTimeSlot}
               professionalId={professionalId}
