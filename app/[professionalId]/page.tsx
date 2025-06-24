@@ -17,11 +17,16 @@ import {
   Heart,
   Scissors,
   Loader2,
+  RefreshCw,
 } from "lucide-react"
 import Header from "../../components/header"
 import LiveChatWidget from "../../components/live-chat-widget"
 import { loadChatConfig, getDefaultChatConfig } from "../../utils/chat-config"
-import { loadProfessionalLandingData, getDefaultProfessionalData } from "../../utils/professional-landing-config"
+import {
+  loadProfessionalLandingData,
+  getDefaultProfessionalData,
+  clearProfessionalCache,
+} from "../../utils/professional-landing-config"
 import type { ChatAgentConfig } from "../../types/chat-config"
 import type { ProfessionalLandingData } from "../../utils/professional-landing-config"
 
@@ -32,33 +37,57 @@ export default function ProfessionalLandingPage() {
   const [chatConfig, setChatConfig] = useState<ChatAgentConfig | null>(null)
   const [isChatConfigLoading, setIsChatConfigLoading] = useState(true)
   const [isProfessionalDataLoading, setIsProfessionalDataLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [dataSource, setDataSource] = useState<"cache" | "webhook" | "default">("default")
+
+  // Function to load professional data
+  const loadProfessionalData = async (forceRefresh = false) => {
+    setIsProfessionalDataLoading(true)
+    if (forceRefresh) {
+      setIsRefreshing(true)
+    }
+
+    try {
+      console.log("📊 Loading professional landing data...")
+      const landingData = await loadProfessionalLandingData(professionalId, forceRefresh)
+
+      if (landingData) {
+        console.log("✅ Professional data loaded successfully")
+        setProfessionalData(landingData)
+        setDataSource("webhook")
+        setError(null)
+      } else {
+        console.log("⚠️ Using default professional data")
+        setProfessionalData(getDefaultProfessionalData(professionalId))
+        setDataSource("default")
+        setError("Could not load professional information")
+      }
+    } catch (error) {
+      console.error("💥 Failed to load professional data:", error)
+      setProfessionalData(getDefaultProfessionalData(professionalId))
+      setDataSource("default")
+      setError("Failed to load professional information")
+    } finally {
+      setIsProfessionalDataLoading(false)
+      setIsRefreshing(false)
+    }
+  }
+
+  // Function to handle refresh
+  const handleRefresh = async () => {
+    console.log("🔄 Refreshing professional data...")
+    clearProfessionalCache(professionalId)
+    await loadProfessionalData(true)
+  }
 
   // Load professional data and chat configuration
   useEffect(() => {
     const loadData = async () => {
       console.log("🔍 Loading data for professional ID:", professionalId)
 
-      // Load professional landing data
-      setIsProfessionalDataLoading(true)
-      try {
-        console.log("📊 Loading professional landing data...")
-        const landingData = await loadProfessionalLandingData(professionalId)
-
-        if (landingData) {
-          console.log("✅ Professional data loaded successfully")
-          setProfessionalData(landingData)
-        } else {
-          console.log("⚠️ Using default professional data")
-          setProfessionalData(getDefaultProfessionalData(professionalId))
-        }
-      } catch (error) {
-        console.error("💥 Failed to load professional data:", error)
-        setProfessionalData(getDefaultProfessionalData(professionalId))
-        setError("Failed to load professional information")
-      } finally {
-        setIsProfessionalDataLoading(false)
-      }
+      // Load professional landing data (with caching)
+      await loadProfessionalData(false)
 
       // Load chat configuration
       setIsChatConfigLoading(true)
@@ -95,7 +124,7 @@ export default function ProfessionalLandingPage() {
   }
 
   // Show loading state while data is being fetched
-  if (isProfessionalDataLoading) {
+  if (isProfessionalDataLoading && !isRefreshing) {
     return (
       <div className="min-h-screen bg-[#FBF8F3]">
         <Header />
@@ -118,7 +147,7 @@ export default function ProfessionalLandingPage() {
           <div className="text-center">
             <p className="text-red-600 body-font mb-4">Failed to load professional information</p>
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => loadProfessionalData(true)}
               className="px-4 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#d04e30] transition-colors body-font"
             >
               Try Again
@@ -136,6 +165,40 @@ export default function ProfessionalLandingPage() {
       <Header />
 
       <main className="pt-8">
+        {/* Data Source Indicator & Refresh Button */}
+        <div className="max-w-6xl mx-auto px-4 mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              {dataSource === "cache" && (
+                <>
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>Data loaded from cache</span>
+                </>
+              )}
+              {dataSource === "webhook" && (
+                <>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span>Fresh data loaded</span>
+                </>
+              )}
+              {dataSource === "default" && (
+                <>
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                  <span>Using default data</span>
+                </>
+              )}
+            </div>
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="flex items-center gap-2 px-3 py-1 text-sm text-gray-600 hover:text-[#E75837] transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
+              {isRefreshing ? "Refreshing..." : "Refresh"}
+            </button>
+          </div>
+        </div>
+
         {/* Hero Section */}
         <div className="bg-white border-b border-gray-200">
           <div className="max-w-6xl mx-auto px-4 py-12">
@@ -203,6 +266,17 @@ export default function ProfessionalLandingPage() {
                     <Mail className="w-4 h-4" />
                     {professionalData.contact.email}
                   </a>
+                  {professionalData.contact.website && (
+                    <a
+                      href={`https://${professionalData.contact.website}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors body-font"
+                    >
+                      <span>🌐</span>
+                      {professionalData.contact.website}
+                    </a>
+                  )}
                 </div>
               </div>
 
@@ -254,10 +328,10 @@ export default function ProfessionalLandingPage() {
             {/* Services */}
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-6 header-font">Our Services</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+              <div className="grid grid-cols-1 gap-3 mb-8">
                 {professionalData.services.map((service, index) => (
                   <div key={index} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
-                    <Heart className="w-5 h-5 text-[#E75837]" />
+                    <Heart className="w-5 h-5 text-[#E75837] flex-shrink-0" />
                     <span className="body-font">{service}</span>
                   </div>
                 ))}

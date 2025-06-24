@@ -1,5 +1,10 @@
-// Utility for loading professional landing page data
+// Utility for loading professional landing page data with local storage caching
 const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/803d260b-1b17-4abf-8079-2d40225c29b0"
+
+// Cache configuration
+const CACHE_KEY_PREFIX = "critter_professional_data_"
+const CACHE_EXPIRY_HOURS = 24 // Cache for 24 hours
+const CACHE_VERSION = "v1" // Increment this to invalidate all caches
 
 export interface ProfessionalLandingData {
   professional_id: string
@@ -32,6 +37,98 @@ export interface ProfessionalLandingData {
   certifications: string[]
 }
 
+interface CachedData {
+  data: ProfessionalLandingData
+  timestamp: number
+  version: string
+}
+
+// Helper function to get cache key
+function getCacheKey(professionalId: string): string {
+  return `${CACHE_KEY_PREFIX}${professionalId}`
+}
+
+// Helper function to check if cache is valid
+function isCacheValid(cachedItem: CachedData): boolean {
+  const now = Date.now()
+  const cacheAge = now - cachedItem.timestamp
+  const maxAge = CACHE_EXPIRY_HOURS * 60 * 60 * 1000 // Convert hours to milliseconds
+
+  return cachedItem.version === CACHE_VERSION && cacheAge < maxAge
+}
+
+// Helper function to get data from local storage
+function getFromCache(professionalId: string): ProfessionalLandingData | null {
+  try {
+    const cacheKey = getCacheKey(professionalId)
+    const cachedString = localStorage.getItem(cacheKey)
+
+    if (!cachedString) {
+      console.log("📦 No cached data found for professional:", professionalId)
+      return null
+    }
+
+    const cachedItem: CachedData = JSON.parse(cachedString)
+
+    if (isCacheValid(cachedItem)) {
+      console.log("✅ Using cached data for professional:", professionalId)
+      console.log("🕒 Cache age:", Math.round((Date.now() - cachedItem.timestamp) / (1000 * 60)), "minutes")
+      return cachedItem.data
+    } else {
+      console.log("⏰ Cache expired for professional:", professionalId)
+      localStorage.removeItem(cacheKey)
+      return null
+    }
+  } catch (error) {
+    console.error("💥 Error reading from cache:", error)
+    return null
+  }
+}
+
+// Helper function to save data to local storage
+function saveToCache(professionalId: string, data: ProfessionalLandingData): void {
+  try {
+    const cacheKey = getCacheKey(professionalId)
+    const cachedItem: CachedData = {
+      data,
+      timestamp: Date.now(),
+      version: CACHE_VERSION,
+    }
+
+    localStorage.setItem(cacheKey, JSON.stringify(cachedItem))
+    console.log("💾 Saved professional data to cache:", professionalId)
+  } catch (error) {
+    console.error("💥 Error saving to cache:", error)
+  }
+}
+
+// Helper function to clear cache for a specific professional
+export function clearProfessionalCache(professionalId: string): void {
+  try {
+    const cacheKey = getCacheKey(professionalId)
+    localStorage.removeItem(cacheKey)
+    console.log("🗑️ Cleared cache for professional:", professionalId)
+  } catch (error) {
+    console.error("💥 Error clearing cache:", error)
+  }
+}
+
+// Helper function to clear all professional caches
+export function clearAllProfessionalCaches(): void {
+  try {
+    const keys = Object.keys(localStorage)
+    const professionalKeys = keys.filter((key) => key.startsWith(CACHE_KEY_PREFIX))
+
+    professionalKeys.forEach((key) => {
+      localStorage.removeItem(key)
+    })
+
+    console.log("🗑️ Cleared all professional caches:", professionalKeys.length, "items")
+  } catch (error) {
+    console.error("💥 Error clearing all caches:", error)
+  }
+}
+
 // Helper function to format time from 24-hour to 12-hour format
 function formatTime(time24: string): string {
   if (!time24) return "9:00 AM"
@@ -59,9 +156,23 @@ function formatPhoneNumber(phone: string): string {
   return phone // Return original if not 10 digits
 }
 
-export async function loadProfessionalLandingData(professionalId: string): Promise<ProfessionalLandingData | null> {
+export async function loadProfessionalLandingData(
+  professionalId: string,
+  forceRefresh = false,
+): Promise<ProfessionalLandingData | null> {
   try {
     console.log("🚀 Loading professional landing data for ID:", professionalId)
+    console.log("🔄 Force refresh:", forceRefresh)
+
+    // Check cache first (unless force refresh is requested)
+    if (!forceRefresh) {
+      const cachedData = getFromCache(professionalId)
+      if (cachedData) {
+        return cachedData
+      }
+    }
+
+    console.log("🌐 Fetching fresh data from webhook...")
     console.log("🔗 Using webhook URL:", WEBHOOK_URL)
 
     const payload = {
@@ -233,6 +344,10 @@ export async function loadProfessionalLandingData(professionalId: string): Promi
       }
 
       console.log("✅ Final parsed landing data:", JSON.stringify(landingData, null, 2))
+
+      // Save to cache
+      saveToCache(professionalId, landingData)
+
       return landingData
     }
 
