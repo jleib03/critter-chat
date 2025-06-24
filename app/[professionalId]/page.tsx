@@ -16,8 +16,6 @@ import {
   CheckCircle,
   Scissors,
   Loader2,
-  ChevronDown,
-  ChevronUp,
 } from "lucide-react"
 import Header from "../../components/header"
 import LiveChatWidget from "../../components/live-chat-widget"
@@ -35,18 +33,6 @@ export default function ProfessionalLandingPage() {
   const [isChatConfigLoading, setIsChatConfigLoading] = useState(true)
   const [isProfessionalDataLoading, setIsProfessionalDataLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
-
-  // Function to toggle service group expansion
-  const toggleGroup = (groupType: string) => {
-    const newExpanded = new Set(expandedGroups)
-    if (newExpanded.has(groupType)) {
-      newExpanded.delete(groupType)
-    } else {
-      newExpanded.add(groupType)
-    }
-    setExpandedGroups(newExpanded)
-  }
 
   // Function to load professional data
   const loadProfessionalData = async (forceRefresh = false) => {
@@ -60,10 +46,6 @@ export default function ProfessionalLandingPage() {
         console.log("✅ Professional data loaded successfully")
         setProfessionalData(landingData)
         setError(null)
-        // Auto-expand first service group
-        if (landingData.service_groups.length > 0) {
-          setExpandedGroups(new Set([landingData.service_groups[0].type]))
-        }
       } else {
         console.log("⚠️ Using default professional data")
         setProfessionalData(getDefaultProfessionalData(professionalId))
@@ -310,55 +292,42 @@ export default function ProfessionalLandingPage() {
                 {professionalData.service_groups.map((group: ServiceGroup) => {
                   const IconComponent = getServiceIcon(group.type)
                   const iconColor = getServiceColor(group.type)
-                  const isExpanded = expandedGroups.has(group.type)
 
                   return (
                     <div key={group.type} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                      {/* Group Header */}
-                      <button
-                        onClick={() => toggleGroup(group.type)}
-                        className="w-full flex items-center justify-between p-6 hover:bg-gray-50 transition-colors min-h-[80px]"
-                      >
-                        <div className="flex items-center gap-3">
-                          <IconComponent className={`w-5 h-5 ${iconColor}`} />
-                          <div className="text-left">
-                            <h3 className="font-semibold text-gray-900 header-font">{group.type_display}</h3>
-                            <p className="text-sm text-gray-500 body-font">
-                              {group.services.length} service{group.services.length !== 1 ? "s" : ""}
-                            </p>
-                          </div>
+                      {/* Group Header - No longer clickable */}
+                      <div className="flex items-center gap-3 p-6 border-b border-gray-100">
+                        <IconComponent className={`w-5 h-5 ${iconColor}`} />
+                        <div>
+                          <h3 className="font-semibold text-gray-900 header-font">{group.type_display}</h3>
+                          <p className="text-sm text-gray-500 body-font">
+                            {group.services.length} service{group.services.length !== 1 ? "s" : ""}
+                          </p>
                         </div>
-                        {isExpanded ? (
-                          <ChevronUp className="w-5 h-5 text-gray-400" />
-                        ) : (
-                          <ChevronDown className="w-5 h-5 text-gray-400" />
-                        )}
-                      </button>
+                      </div>
 
-                      {/* Group Services */}
-                      {isExpanded && (
-                        <div className="border-t border-gray-100">
-                          {group.services.map((service, index) => (
-                            <div key={service.id} className="p-4 border-b border-gray-50 last:border-b-0">
-                              <div className="flex justify-between items-start mb-2">
-                                <h4 className="font-medium text-gray-900 body-font">{service.name}</h4>
-                                {service.cost && (
-                                  <span className="text-[#E75837] font-semibold body-font">{service.cost}</span>
-                                )}
-                              </div>
-                              {service.description && (
-                                <p className="text-sm text-gray-600 mb-2 body-font">{service.description}</p>
+                      {/* Group Services - Always visible */}
+                      <div>
+                        {group.services.map((service, index) => (
+                          <div key={service.id} className="p-4 border-b border-gray-50 last:border-b-0">
+                            <div className="flex justify-between items-start mb-2">
+                              <h4 className="font-medium text-gray-900 body-font">{service.name}</h4>
+                              {service.cost && (
+                                <span className="text-[#E75837] font-semibold body-font">{service.cost}</span>
                               )}
-                              <div className="flex items-center gap-4 text-xs text-gray-500">
-                                <span className="flex items-center gap-1">
-                                  <Clock className="w-3 h-3" />
-                                  {service.duration}
-                                </span>
-                              </div>
                             </div>
-                          ))}
-                        </div>
-                      )}
+                            {service.description && (
+                              <p className="text-sm text-gray-600 mb-2 body-font">{service.description}</p>
+                            )}
+                            <div className="flex items-center gap-4 text-xs text-gray-500">
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {service.duration}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )
                 })}
