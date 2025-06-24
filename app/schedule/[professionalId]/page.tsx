@@ -460,10 +460,9 @@ export default function SchedulePage() {
         session_id: sessionIdRef.current,
         timestamp: new Date().toISOString(),
         user_timezone: userTimezoneData,
-        booking_type: bookingType, // Add this line
+        booking_type: bookingType,
         ...(bookingType === "recurring" &&
           recurringConfig && {
-            // Add this block
             recurring_details: {
               frequency: recurringConfig.frequency,
               unit: recurringConfig.unit,
