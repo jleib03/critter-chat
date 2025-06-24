@@ -113,44 +113,74 @@ export const calculateAvailableSlots = (
   totalCapacity: number
   workingEmployees: Employee[]
   existingBookingsCount: number
+  capacityBreakdown: {
+    employeesWorking: number
+    capacityLimit: number
+    finalCapacity: number
+    existingBookings: number
+    availableSlots: number
+  }
   reason?: string
 } => {
-  // Step 1: Find employees working at this specific time
+  // LAYER 1: Find employees working at this specific time
   const workingEmployees = getEmployeesWorkingAtTime(config, date, startTime, endTime, dayName)
+  const employeesWorkingCount = workingEmployees.length
 
-  if (workingEmployees.length === 0) {
+  if (employeesWorkingCount === 0) {
     return {
       availableSlots: 0,
       totalCapacity: 0,
       workingEmployees: [],
       existingBookingsCount: 0,
+      capacityBreakdown: {
+        employeesWorking: 0,
+        capacityLimit: 0,
+        finalCapacity: 0,
+        existingBookings: 0,
+        availableSlots: 0,
+      },
       reason: "No employees working at this time",
     }
   }
 
   const { capacityRules } = config
 
-  // Step 2: Check if we require all employees for service
+  // LAYER 2: Apply capacity constraints
+  let finalCapacity = employeesWorkingCount
+
+  // Constraint 1: Require all employees for service
   if (capacityRules.requireAllEmployeesForService) {
     const allActiveEmployees = getActiveEmployees(config)
     if (workingEmployees.length < allActiveEmployees.length) {
       return {
         availableSlots: 0,
-        totalCapacity: workingEmployees.length,
+        totalCapacity: 0,
         workingEmployees,
         existingBookingsCount: 0,
+        capacityBreakdown: {
+          employeesWorking: employeesWorkingCount,
+          capacityLimit: allActiveEmployees.length,
+          finalCapacity: 0,
+          existingBookings: 0,
+          availableSlots: 0,
+        },
         reason: "All team members required but not all are working at this time",
       }
     }
   }
 
-  // Step 3: Count existing bookings that overlap with this time slot
+  // Constraint 2: Max concurrent bookings limit
+  if (capacityRules.maxConcurrentBookings > 0) {
+    finalCapacity = Math.min(finalCapacity, capacityRules.maxConcurrentBookings)
+  }
+
+  // LAYER 3: Count existing bookings that overlap with this time slot
   const slotStart = timeToMinutes(startTime)
   const slotEnd = timeToMinutes(endTime)
 
   const overlappingBookings = existingBookings.filter((booking) => {
     if (booking.booking_date_formatted !== date) return false
-    if (!booking.start || !booking.end) return false
+    if (!booking.start || !booking.end || !booking.booking_id) return false
 
     const bookingStart = new Date(booking.start)
     const bookingEnd = new Date(booking.end)
@@ -162,7 +192,9 @@ export const calculateAvailableSlots = (
 
   const existingBookingsCount = overlappingBookings.length
 
-  // Step 4: Check daily booking limit
+  // LAYER 4: Apply additional business rule constraints
+
+  // Constraint 3: Daily booking limit
   const dailyBookings = existingBookings.filter(
     (booking) => booking.booking_date_formatted === date && booking.booking_id !== null,
   )
@@ -170,18 +202,25 @@ export const calculateAvailableSlots = (
   if (dailyBookings.length >= capacityRules.maxBookingsPerDay) {
     return {
       availableSlots: 0,
-      totalCapacity: workingEmployees.length,
+      totalCapacity: finalCapacity,
       workingEmployees,
       existingBookingsCount,
+      capacityBreakdown: {
+        employeesWorking: employeesWorkingCount,
+        capacityLimit: capacityRules.maxConcurrentBookings,
+        finalCapacity,
+        existingBookings: existingBookingsCount,
+        availableSlots: 0,
+      },
       reason: `Daily booking limit (${capacityRules.maxBookingsPerDay}) reached`,
     }
   }
 
-  // Step 5: Check buffer time conflicts
+  // Constraint 4: Buffer time conflicts
   if (capacityRules.bufferTimeBetweenBookings > 0) {
     const hasBufferConflict = existingBookings.some((booking) => {
       if (booking.booking_date_formatted !== date) return false
-      if (!booking.start || !booking.end) return false
+      if (!booking.start || !booking.end || !booking.booking_id) return false
 
       const bookingStart = new Date(booking.start)
       const bookingEnd = new Date(booking.end)
@@ -200,35 +239,36 @@ export const calculateAvailableSlots = (
     if (hasBufferConflict) {
       return {
         availableSlots: 0,
-        totalCapacity: workingEmployees.length,
+        totalCapacity: finalCapacity,
         workingEmployees,
         existingBookingsCount,
+        capacityBreakdown: {
+          employeesWorking: employeesWorkingCount,
+          capacityLimit: capacityRules.maxConcurrentBookings,
+          finalCapacity,
+          existingBookings: existingBookingsCount,
+          availableSlots: 0,
+        },
         reason: `Buffer time of ${capacityRules.bufferTimeBetweenBookings} minutes required between bookings`,
       }
     }
   }
 
-  // Step 6: Calculate total capacity based on employees working and capacity rules
-  let totalCapacity = workingEmployees.length
-
-  // Apply capacity rule constraints if they're more restrictive
-  if (capacityRules.maxConcurrentBookings > 0) {
-    totalCapacity = Math.min(totalCapacity, capacityRules.maxConcurrentBookings)
-  }
-
-  // If not allowing overlapping, each employee can only handle one booking
-  if (!capacityRules.allowOverlapping) {
-    // This is already handled by using employee count as base capacity
-  }
-
-  // Step 7: Calculate available slots
-  const availableSlots = Math.max(0, totalCapacity - existingBookingsCount)
+  // FINAL CALCULATION: Available slots = Final capacity - Existing bookings
+  const availableSlots = Math.max(0, finalCapacity - existingBookingsCount)
 
   return {
     availableSlots,
-    totalCapacity,
+    totalCapacity: finalCapacity,
     workingEmployees,
     existingBookingsCount,
+    capacityBreakdown: {
+      employeesWorking: employeesWorkingCount,
+      capacityLimit: capacityRules.maxConcurrentBookings,
+      finalCapacity,
+      existingBookings: existingBookingsCount,
+      availableSlots,
+    },
   }
 }
 

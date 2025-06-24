@@ -4,7 +4,7 @@ import { useState } from "react"
 import type { BookingData, WorkingDay, Service, SelectedTimeSlot } from "@/types/schedule"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, Clock, ChevronDown, ChevronUp, Users } from "lucide-react"
+import { ChevronLeft, ChevronRight, Clock, ChevronDown, ChevronUp, Users, Calendar } from "lucide-react"
 import { calculateAvailableSlots } from "@/utils/professional-config"
 import type { ProfessionalConfig } from "@/types/professional-config"
 
@@ -128,6 +128,7 @@ export function WeeklyCalendar({
           bookings,
         )
 
+        // Only show slots that have availability
         if (slotInfo.availableSlots > 0) {
           slots.push({
             date: dateStr,
@@ -139,12 +140,13 @@ export function WeeklyCalendar({
             availableEmployees: slotInfo.workingEmployees.length,
             employeeNames: slotInfo.workingEmployees.map((emp) => emp.name).join(", "),
             existingBookingsCount: slotInfo.existingBookingsCount,
+            capacityBreakdown: slotInfo.capacityBreakdown,
           })
         }
       } else {
         // Fallback to original logic for backwards compatibility
         const hasConflict = bookings.some((booking) => {
-          if (!booking.start || !booking.end) return false
+          if (!booking.start || !booking.end || !booking.booking_id) return false
 
           const bookingStart = new Date(booking.start)
           const bookingEnd = new Date(booking.end)
@@ -202,7 +204,7 @@ export function WeeklyCalendar({
             Select a time slot for <span className="font-medium">{selectedService.name}</span>
             {professionalConfig && (
               <span className="text-sm text-gray-500 ml-2">
-                (Based on employee schedules + max {professionalConfig.capacityRules.maxConcurrentBookings} concurrent)
+                (Staff schedules → Capacity rules → Existing bookings → Available slots)
               </span>
             )}
           </p>
@@ -264,7 +266,7 @@ export function WeeklyCalendar({
                   <div className="text-center py-8">
                     <p className="text-sm text-gray-400 body-font">No available times</p>
                     {professionalConfig && (
-                      <p className="text-xs text-gray-400 body-font mt-1">Check employee schedules</p>
+                      <p className="text-xs text-gray-400 body-font mt-1">All slots booked or no staff scheduled</p>
                     )}
                   </div>
                 ) : (
@@ -275,30 +277,36 @@ export function WeeklyCalendar({
 
                       // Color coding based on availability
                       let availabilityColor = "text-green-600"
+                      if (slot.availableSlots <= 2) availabilityColor = "text-yellow-600"
                       if (slot.availableSlots <= 1) availabilityColor = "text-orange-600"
-                      if (slot.availableSlots === 0) availabilityColor = "text-red-600"
+
+                      // Create detailed tooltip showing the layered calculation
+                      const tooltipText =
+                        professionalConfig && slot.capacityBreakdown
+                          ? `Layer 1 - Staff working: ${slot.capacityBreakdown.employeesWorking} (${slot.employeeNames})
+Layer 2 - Capacity limit: ${slot.capacityBreakdown.capacityLimit > 0 ? slot.capacityBreakdown.capacityLimit : "No limit"}
+Layer 3 - Final capacity: ${slot.capacityBreakdown.finalCapacity}
+Layer 4 - Existing bookings: ${slot.capacityBreakdown.existingBookings}
+Result - Available slots: ${slot.capacityBreakdown.availableSlots}`
+                          : undefined
 
                       return (
                         <Button
                           key={slotIndex}
                           variant="outline"
                           size="sm"
-                          className={`w-full text-xs py-3 h-auto min-h-[3rem] body-font transition-all ${
+                          className={`w-full text-xs py-3 h-auto min-h-[3.5rem] body-font transition-all ${
                             isSelected
                               ? "bg-[#E75837] text-white border-[#E75837] hover:bg-[#d14a2a] shadow-md"
                               : "hover:bg-gray-50 hover:border-gray-300"
                           }`}
                           onClick={() => onTimeSlotSelect(slot)}
-                          title={
-                            professionalConfig && slot.employeeNames
-                              ? `Working staff: ${slot.employeeNames}\nExisting bookings: ${slot.existingBookingsCount}\nAvailable slots: ${slot.availableSlots}/${slot.totalCapacity}`
-                              : undefined
-                          }
+                          title={tooltipText}
                         >
                           <div className="flex flex-col items-center w-full">
                             <span className="font-medium">{slot.startTime}</span>
 
-                            {professionalConfig && (
+                            {professionalConfig && slot.capacityBreakdown && (
                               <div className="flex items-center justify-between w-full mt-1 text-[10px] opacity-75">
                                 <div className="flex items-center gap-1">
                                   <Users className="w-2.5 h-2.5" />
@@ -309,12 +317,13 @@ export function WeeklyCalendar({
 
                                 {slot.existingBookingsCount > 0 && (
                                   <div className={isSelected ? "text-white opacity-75" : "text-orange-600"}>
-                                    {slot.existingBookingsCount} booked
+                                    <Calendar className="w-2.5 h-2.5 inline mr-0.5" />
+                                    {slot.existingBookingsCount}
                                   </div>
                                 )}
 
                                 <div className={isSelected ? "text-white opacity-75" : "text-gray-500"}>
-                                  {slot.availableEmployees} staff
+                                  {slot.capacityBreakdown.employeesWorking} staff
                                 </div>
                               </div>
                             )}
