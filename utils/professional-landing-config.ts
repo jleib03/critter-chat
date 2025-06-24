@@ -6,6 +6,23 @@ const CACHE_KEY_PREFIX = "critter_professional_data_"
 const CACHE_EXPIRY_HOURS = 24 // Cache for 24 hours
 const CACHE_VERSION = "v1" // Increment this to invalidate all caches
 
+export interface ServiceItem {
+  id: string
+  name: string
+  description: string
+  duration: string
+  cost: string
+  type: string
+  type_display: string
+  sort_order: number
+}
+
+export interface ServiceGroup {
+  type: string
+  type_display: string
+  services: ServiceItem[]
+}
+
 export interface ProfessionalLandingData {
   professional_id: string
   name: string
@@ -29,7 +46,8 @@ export interface ProfessionalLandingData {
       isOpen: boolean
     }
   }
-  services: string[]
+  services: ServiceItem[]
+  service_groups: ServiceGroup[]
   specialties: string[]
   rating: number
   total_reviews: number
@@ -156,6 +174,55 @@ function formatPhoneNumber(phone: string): string {
   return phone // Return original if not 10 digits
 }
 
+// Helper function to format duration
+function formatDuration(duration: number, unit: string): string {
+  if (unit.toLowerCase() === "hours") {
+    return duration === 1 ? "1 hour" : `${duration} hours`
+  } else if (unit.toLowerCase() === "minutes") {
+    return duration === 1 ? "1 minute" : `${duration} minutes`
+  } else if (unit.toLowerCase() === "days") {
+    return duration === 1 ? "1 day" : `${duration} days`
+  }
+  return `${duration} ${unit.toLowerCase()}`
+}
+
+// Helper function to get service type display name
+function getServiceTypeDisplayName(serviceType: string): string {
+  const type = serviceType.toLowerCase()
+
+  switch (type) {
+    case "grooming":
+      return "Grooming Services"
+    case "boarding":
+      return "Boarding & Lodging"
+    case "sitting":
+    case "pet sitting":
+      return "Pet Sitting"
+    case "walking":
+    case "dog walking":
+      return "Dog Walking"
+    case "veterinary":
+    case "vet":
+    case "medical":
+      return "Veterinary Care"
+    case "transport":
+    case "transportation":
+      return "Pet Transportation"
+    case "training":
+      return "Training & Behavior"
+    case "emergency":
+      return "Emergency Services"
+    case "daycare":
+      return "Pet Daycare"
+    case "specialty":
+      return "Specialty Services"
+    case "consultation":
+      return "Consultations"
+    default:
+      return serviceType
+  }
+}
+
 export async function loadProfessionalLandingData(
   professionalId: string,
   forceRefresh = false,
@@ -234,21 +301,46 @@ export async function loadProfessionalLandingData(
         sunday_end: firstRecord.sunday_end,
       }
 
-      // Extract all services from all records
-      const services: string[] = []
+      // Extract all services from all records with detailed information
+      const services: ServiceItem[] = []
       const serviceTypes = new Set<string>()
 
       data.forEach((record: any) => {
         if (record.service_name && record.available_to_customer) {
-          services.push(record.service_name)
-          if (record.service_type_name) {
-            serviceTypes.add(record.service_type_name)
+          const serviceItem: ServiceItem = {
+            id: record.service_id,
+            name: record.service_name,
+            description: record.service_description || "",
+            duration: formatDuration(record.duration_number, record.duration_unit),
+            cost: record.customer_cost ? `$${record.customer_cost}` : "",
+            type: record.service_type_name || "General",
+            type_display: getServiceTypeDisplayName(record.service_type_name || "General"),
+            sort_order: record.service_sort_order || 999,
           }
+
+          services.push(serviceItem)
+          serviceTypes.add(record.service_type_name || "General")
+        }
+      })
+
+      // Sort services by sort_order
+      services.sort((a, b) => a.sort_order - b.sort_order)
+
+      // Group services by type
+      const serviceGroups: ServiceGroup[] = []
+      serviceTypes.forEach((type) => {
+        const typeServices = services.filter((service) => service.type === type)
+        if (typeServices.length > 0) {
+          serviceGroups.push({
+            type: type,
+            type_display: getServiceTypeDisplayName(type),
+            services: typeServices,
+          })
         }
       })
 
       console.log("📋 Extracted services:", services)
-      console.log("🏷️ Service types:", Array.from(serviceTypes))
+      console.log("🏷️ Service groups:", serviceGroups)
 
       // Build working hours object
       const workingHours = {
@@ -290,18 +382,15 @@ export async function loadProfessionalLandingData(
       }
 
       // Create specialties from service types and business context
-      const specialties = Array.from(serviceTypes)
+      const specialties = Array.from(serviceTypes).map((type) => getServiceTypeDisplayName(type))
       if (businessInfo.tagline && businessInfo.tagline.includes("Chicago")) {
         specialties.push("Chicago Area Service")
       }
-      if (services.some((s) => s.toLowerCase().includes("small"))) {
+      if (services.some((s) => s.name.toLowerCase().includes("small"))) {
         specialties.push("Small Dog Specialist")
       }
-      if (services.some((s) => s.toLowerCase().includes("large"))) {
+      if (services.some((s) => s.name.toLowerCase().includes("large"))) {
         specialties.push("Large Dog Care")
-      }
-      if (services.some((s) => s.toLowerCase().includes("boarding"))) {
-        specialties.push("Pet Boarding")
       }
 
       // Determine location info
@@ -318,7 +407,13 @@ export async function loadProfessionalLandingData(
         tagline: businessInfo.tagline || "Quality pet care services",
         description:
           businessInfo.business_description ||
-          `Professional ${Array.from(serviceTypes).join(" and ").toLowerCase()} services with experienced staff. We offer a full range of services including ${services.slice(0, 3).join(", ")} and more.`,
+          `Professional ${Array.from(serviceTypes)
+            .map((type) => getServiceTypeDisplayName(type))
+            .join(" and ")
+            .toLowerCase()} services with experienced staff. We offer a full range of services including ${services
+            .slice(0, 3)
+            .map((s) => s.name)
+            .join(", ")} and more.`,
         location: {
           address: businessInfo.address || `Service Area: ${businessInfo.service_area_zip_code || "Local Area"}`,
           city: city,
@@ -332,6 +427,7 @@ export async function loadProfessionalLandingData(
         },
         working_hours: workingHours,
         services: services,
+        service_groups: serviceGroups,
         specialties: specialties,
         rating: 4.9, // Default - could be calculated from reviews if available
         total_reviews: 127, // Default - could come from review data
@@ -385,7 +481,8 @@ export function getDefaultProfessionalData(professionalId: string): Professional
       saturday: { open: "9:00 AM", close: "4:00 PM", isOpen: true },
       sunday: { open: "Closed", close: "Closed", isOpen: false },
     },
-    services: ["Professional Pet Care", "Quality Service"],
+    services: [],
+    service_groups: [],
     specialties: ["Experienced Care", "Professional Service"],
     rating: 4.8,
     total_reviews: 50,
