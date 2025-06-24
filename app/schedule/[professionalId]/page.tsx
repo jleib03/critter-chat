@@ -435,10 +435,6 @@ export default function SchedulePage() {
               frequency: recurringConfig.frequency,
               unit: recurringConfig.unit,
               end_date: recurringConfig.endDate,
-              total_appointments: recurringConfig.totalAppointments,
-              total_cost: (
-                Number.parseFloat(selectedService!.customer_cost) * recurringConfig.totalAppointments
-              ).toFixed(2),
             },
           }),
         booking_details: {

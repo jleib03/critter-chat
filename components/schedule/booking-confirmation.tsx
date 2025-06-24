@@ -145,13 +145,6 @@ export function BookingConfirmation({
                           day: "numeric",
                         })}
                       </div>
-                      <div>Total appointments: {recurringConfig.totalAppointments}</div>
-                      <div className="font-medium">
-                        Total cost: $
-                        {(Number.parseFloat(selectedService.customer_cost) * recurringConfig.totalAppointments).toFixed(
-                          0,
-                        )}
-                      </div>
                     </div>
                   </div>
                 </div>
