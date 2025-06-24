@@ -4,7 +4,7 @@ import { useState } from "react"
 import type { BookingData, WorkingDay, Service, SelectedTimeSlot } from "@/types/schedule"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, Clock, ChevronDown, ChevronUp, Users, Calendar } from "lucide-react"
+import { ChevronLeft, ChevronRight, Clock, ChevronDown, ChevronUp, Users } from "lucide-react"
 import { calculateAvailableSlots } from "@/utils/professional-config"
 import type { ProfessionalConfig } from "@/types/professional-config"
 
@@ -307,23 +307,14 @@ Result - Available slots: ${slot.capacityBreakdown.availableSlots}`
                             <span className="font-medium">{slot.startTime}</span>
 
                             {professionalConfig && slot.capacityBreakdown && (
-                              <div className="flex items-center justify-between w-full mt-1 text-[10px] opacity-75">
+                              <div className="flex items-center justify-center mt-1">
                                 <div className="flex items-center gap-1">
                                   <Users className="w-2.5 h-2.5" />
-                                  <span className={isSelected ? "text-white" : availabilityColor}>
+                                  <span
+                                    className={`text-[10px] font-medium ${isSelected ? "text-white" : availabilityColor}`}
+                                  >
                                     {slot.availableSlots}
                                   </span>
-                                </div>
-
-                                {slot.existingBookingsCount > 0 && (
-                                  <div className={isSelected ? "text-white opacity-75" : "text-orange-600"}>
-                                    <Calendar className="w-2.5 h-2.5 inline mr-0.5" />
-                                    {slot.existingBookingsCount}
-                                  </div>
-                                )}
-
-                                <div className={isSelected ? "text-white opacity-75" : "text-gray-500"}>
-                                  {slot.capacityBreakdown.employeesWorking} staff
                                 </div>
                               </div>
                             )}
