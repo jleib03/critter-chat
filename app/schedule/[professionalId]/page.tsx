@@ -746,7 +746,7 @@ export default function SchedulePage() {
           />
         ) : showCustomerForm && selectedServices.length > 0 && selectedTimeSlot ? (
           <CustomerForm
-            selectedService={selectedServices[0]}
+            selectedServices={selectedServices}
             selectedTimeSlot={selectedTimeSlot}
             professionalId={professionalId}
             professionalName={webhookData.professional_info.professional_name}
