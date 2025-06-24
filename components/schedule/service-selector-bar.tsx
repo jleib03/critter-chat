@@ -1,6 +1,4 @@
 "use client"
-
-import type React from "react"
 import { useState } from "react"
 
 interface Service {
@@ -15,7 +13,8 @@ interface ServiceSelectorBarProps {
   onServiceSelect: (serviceId: string) => void
 }
 
-const ServiceSelectorBar: React.FC<ServiceSelectorBarProps> = ({ services, selectedServices, onServiceSelect }) => {
+export function ServiceSelectorBar(props: ServiceSelectorBarProps) {
+  const { services, selectedServices, onServiceSelect } = props
   const [expanded, setExpanded] = useState(false)
 
   const handleServiceClick = (serviceId: string) => {
@@ -70,5 +69,3 @@ const ServiceSelectorBar: React.FC<ServiceSelectorBarProps> = ({ services, selec
     </div>
   )
 }
-
-export default ServiceSelectorBar
