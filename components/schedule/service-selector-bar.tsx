@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import type { Service, ServicesByCategory } from "@/types/schedule"
 import { Button } from "@/components/ui/button"
 import { Clock, DollarSign, ChevronDown, X, ArrowRight } from "lucide-react"
@@ -38,8 +40,8 @@ export function ServiceSelectorBar({
     return `${duration} ${unit.toLowerCase()}`
   }
 
-  const formatPrice = (price: string) => {
-    return `$${Number.parseFloat(price).toFixed(0)}`
+  const formatPrice = (price: string | number) => {
+    return `$${Number.parseFloat(price.toString()).toFixed(0)}`
   }
 
   const calculateTotalDuration = () => {
@@ -56,7 +58,7 @@ export function ServiceSelectorBar({
 
   const calculateTotalCost = () => {
     return selectedServices.reduce((total, service) => {
-      return total + Number.parseFloat(service.customer_cost)
+      return total + Number.parseFloat(service.customer_cost.toString())
     }, 0)
   }
 
@@ -64,13 +66,26 @@ export function ServiceSelectorBar({
     return selectedServices.some((s) => s.name === service.name)
   }
 
-  const removeService = (serviceToRemove: Service) => {
-    onServiceSelect(serviceToRemove) // This will toggle it off
+  const handleServiceClick = (service: Service, event: React.MouseEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
+    console.log("Service clicked:", service.name)
+    onServiceSelect(service)
   }
 
-  const allServices = Object.values(servicesByCategory).flat()
+  const removeService = (serviceToRemove: Service) => {
+    onServiceSelect(serviceToRemove)
+  }
+
   const totalDurationMinutes = calculateTotalDuration()
   const totalCost = calculateTotalCost()
+
+  // Debug logging
+  console.log("ServiceSelectorBar render:", {
+    servicesByCategory,
+    selectedServices,
+    isOpen,
+  })
 
   return (
     <div className="relative">
@@ -154,61 +169,71 @@ export function ServiceSelectorBar({
 
       {isOpen && (
         <div className="absolute top-full left-0 right-0 z-50 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto">
-          {Object.entries(servicesByCategory).map(([category, services]) => (
-            <div key={category}>
-              <div className="px-4 py-2 bg-gray-50 border-b">
-                <h3 className="text-sm font-medium text-[#E75837] capitalize header-font">{category}</h3>
+          {Object.entries(servicesByCategory).length === 0 ? (
+            <div className="px-4 py-3 text-gray-500 text-center">No services available</div>
+          ) : (
+            Object.entries(servicesByCategory).map(([category, services]) => (
+              <div key={category}>
+                <div className="px-4 py-2 bg-gray-50 border-b">
+                  <h3 className="text-sm font-medium text-[#E75837] capitalize header-font">{category}</h3>
+                </div>
+                {services && services.length > 0 ? (
+                  services.map((service, index) => {
+                    const selected = isServiceSelected(service)
+                    return (
+                      <div
+                        key={`${category}-${index}`}
+                        onClick={(e) => handleServiceClick(service, e)}
+                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-all duration-200 cursor-pointer ${
+                          selected ? "bg-orange-50 border-l-4 border-l-[#E75837] shadow-sm" : ""
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                                  selected
+                                    ? "bg-[#E75837] border-[#E75837] text-white"
+                                    : "border-gray-300 hover:border-[#E75837]"
+                                }`}
+                              >
+                                {selected && <span className="text-xs font-bold">✓</span>}
+                              </div>
+                              <h4
+                                className={`font-medium ${selected ? "text-[#E75837]" : "text-gray-900"} header-font`}
+                              >
+                                {service.name}
+                              </h4>
+                            </div>
+                            {service.description && (
+                              <p className="text-sm text-gray-600 mt-1 ml-8 body-font line-clamp-1">
+                                {service.description}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-4 mt-2 ml-8">
+                              <div className="flex items-center gap-1 text-xs text-gray-500">
+                                <Clock className="w-3 h-3" />
+                                <span className="body-font">
+                                  {formatDuration(service.duration_number, service.duration_unit)}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1 text-xs text-gray-500">
+                                <DollarSign className="w-3 h-3" />
+                                <span className="body-font font-medium">{formatPrice(service.customer_cost)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })
+                ) : (
+                  <div className="px-4 py-3 text-gray-500 text-center">No services in this category</div>
+                )}
               </div>
-              {services.map((service, index) => (
-                <button
-                  key={`${category}-${index}`}
-                  onClick={() => {
-                    onServiceSelect(service)
-                    // Don't close dropdown immediately to allow multiple selections
-                  }}
-                  className={`w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-all duration-200 cursor-pointer ${
-                    isServiceSelected(service) ? "bg-orange-50 border-l-4 border-l-[#E75837] shadow-sm" : ""
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                            isServiceSelected(service)
-                              ? "bg-[#E75837] border-[#E75837] text-white"
-                              : "border-gray-300 hover:border-[#E75837]"
-                          }`}
-                        >
-                          {isServiceSelected(service) && <span className="text-xs font-bold">✓</span>}
-                        </div>
-                        <h4
-                          className={`font-medium ${isServiceSelected(service) ? "text-[#E75837]" : "text-gray-900"} header-font`}
-                        >
-                          {service.name}
-                        </h4>
-                      </div>
-                      {service.description && (
-                        <p className="text-sm text-gray-600 mt-1 body-font line-clamp-1">{service.description}</p>
-                      )}
-                      <div className="flex items-center gap-4 mt-2">
-                        <div className="flex items-center gap-1 text-xs text-gray-500">
-                          <Clock className="w-3 h-3" />
-                          <span className="body-font">
-                            {formatDuration(service.duration_number, service.duration_unit)}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-gray-500">
-                          <DollarSign className="w-3 h-3" />
-                          <span className="body-font font-medium">{formatPrice(service.customer_cost)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          ))}
+            ))
+          )}
         </div>
       )}
     </div>
