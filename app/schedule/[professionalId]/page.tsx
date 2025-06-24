@@ -738,7 +738,7 @@ export default function SchedulePage() {
           <PetSelection
             pets={pets}
             customerInfo={customerInfo}
-            selectedService={selectedServices[0]!}
+            selectedServices={selectedServices}
             selectedTimeSlot={selectedTimeSlot!}
             professionalName={webhookData.professional_info.professional_name}
             onPetSelect={handlePetSelect}
