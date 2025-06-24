@@ -210,3 +210,10 @@ export type ParsedWebhookData = {
     business_name: string
   }
 }
+
+export type RecurringConfig = {
+  frequency: number
+  unit: "day" | "week" | "month"
+  endDate: string
+  totalAppointments: number
+}
