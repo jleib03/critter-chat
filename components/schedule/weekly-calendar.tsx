@@ -136,8 +136,8 @@ export function WeeklyCalendar({
             dayOfWeek: dayName,
             availableSlots: slotInfo.availableSlots,
             totalCapacity: slotInfo.totalCapacity,
-            availableEmployees: slotInfo.availableEmployees.length,
-            employeeNames: slotInfo.availableEmployees.map((emp) => emp.name).join(", "),
+            availableEmployees: slotInfo.workingEmployees.length,
+            employeeNames: slotInfo.workingEmployees.map((emp) => emp.name).join(", "),
             existingBookingsCount: slotInfo.existingBookingsCount,
           })
         }
@@ -202,7 +202,7 @@ export function WeeklyCalendar({
             Select a time slot for <span className="font-medium">{selectedService.name}</span>
             {professionalConfig && (
               <span className="text-sm text-gray-500 ml-2">
-                (Showing capacity: {professionalConfig.capacityRules.maxConcurrentBookings} max concurrent)
+                (Based on employee schedules + max {professionalConfig.capacityRules.maxConcurrentBookings} concurrent)
               </span>
             )}
           </p>
@@ -263,12 +263,20 @@ export function WeeklyCalendar({
                 ) : timeSlots.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-sm text-gray-400 body-font">No available times</p>
+                    {professionalConfig && (
+                      <p className="text-xs text-gray-400 body-font mt-1">Check employee schedules</p>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-2">
                     {displayedSlots.map((slot, slotIndex) => {
                       const isSelected =
                         selectedTimeSlot?.date === slot.date && selectedTimeSlot?.startTime === slot.startTime
+
+                      // Color coding based on availability
+                      let availabilityColor = "text-green-600"
+                      if (slot.availableSlots <= 1) availabilityColor = "text-orange-600"
+                      if (slot.availableSlots === 0) availabilityColor = "text-red-600"
 
                       return (
                         <Button
@@ -283,7 +291,7 @@ export function WeeklyCalendar({
                           onClick={() => onTimeSlotSelect(slot)}
                           title={
                             professionalConfig && slot.employeeNames
-                              ? `Available staff: ${slot.employeeNames}\nExisting bookings: ${slot.existingBookingsCount}\nCapacity: ${slot.availableSlots}/${slot.totalCapacity}`
+                              ? `Working staff: ${slot.employeeNames}\nExisting bookings: ${slot.existingBookingsCount}\nAvailable slots: ${slot.availableSlots}/${slot.totalCapacity}`
                               : undefined
                           }
                         >
@@ -294,15 +302,19 @@ export function WeeklyCalendar({
                               <div className="flex items-center justify-between w-full mt-1 text-[10px] opacity-75">
                                 <div className="flex items-center gap-1">
                                   <Users className="w-2.5 h-2.5" />
-                                  <span>{slot.availableSlots}</span>
+                                  <span className={isSelected ? "text-white" : availabilityColor}>
+                                    {slot.availableSlots}
+                                  </span>
                                 </div>
 
                                 {slot.existingBookingsCount > 0 && (
-                                  <div className="text-orange-600">{slot.existingBookingsCount} booked</div>
+                                  <div className={isSelected ? "text-white opacity-75" : "text-orange-600"}>
+                                    {slot.existingBookingsCount} booked
+                                  </div>
                                 )}
 
-                                <div className="text-gray-500">
-                                  {slot.availableSlots}/{slot.totalCapacity}
+                                <div className={isSelected ? "text-white opacity-75" : "text-gray-500"}>
+                                  {slot.availableEmployees} staff
                                 </div>
                               </div>
                             )}
