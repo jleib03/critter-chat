@@ -187,7 +187,7 @@ export default function ProfessionalLandingPage() {
 
                 <div className="bg-gradient-to-br from-[#94ABD6] to-[#7a90ba] rounded-xl p-6 text-white">
                   <h3 className="text-xl font-bold mb-2 header-font">Have Questions?</h3>
-                  <p className="text-white/90 mb-4 body-font">Chat with our booking assistant</p>
+                  <p className="text-white/90 mb-4 body-font">Chat with our support assistant</p>
                   <div className="inline-flex items-center gap-2 bg-white text-[#94ABD6] px-4 py-2 rounded-lg font-medium body-font">
                     <MessageCircle className="w-4 h-4" />
                     Click the chat button below
@@ -291,18 +291,7 @@ export default function ProfessionalLandingPage() {
         </div>
 
         {/* Live Chat Widget */}
-        <LiveChatWidget
-          professionalId={professionalId}
-          agentConfig={{
-            chatName: `${professionalData.name} Support`,
-            chatWelcomeMessage: `Hi! I'm here to help you with ${professionalData.name}. I can assist with booking appointments, answering questions about our services, and helping with any other inquiries. How can I help you today?`,
-            widgetConfig: {
-              primaryColor: "#E75837",
-              position: "bottom-right",
-              size: "medium",
-            },
-          }}
-        />
+        <LiveChatWidget professionalId={professionalId} />
       </main>
     </div>
   )

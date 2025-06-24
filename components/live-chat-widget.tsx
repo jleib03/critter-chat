@@ -9,45 +9,177 @@ type ChatMessage = {
   isUser: boolean
 }
 
-type LiveChatWidgetProps = {
-  professionalId: string
-  agentConfig?: {
-    chatName: string
-    chatWelcomeMessage: string
-    widgetConfig?: {
-      primaryColor: string
-      position: string
-      size: string
-    }
+type AgentConfig = {
+  chatName: string
+  chatWelcomeMessage: string
+  widgetConfig: {
+    primaryColor: string
+    position: string
+    size: string
   }
+  cancellationPolicy?: string
+  newCustomerProcess?: string
+  animalRestrictions?: string
+  serviceDetails?: string
+  additionalInfo?: string
 }
 
-export default function LiveChatWidget({ professionalId, agentConfig }: LiveChatWidgetProps) {
+type LiveChatWidgetProps = {
+  professionalId: string
+}
+
+// Define the webhook URL - same as used in custom agent setup
+const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/803d260b-1b17-4abf-8079-2d40225c29b0"
+
+export default function LiveChatWidget({ professionalId }: LiveChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputValue, setInputValue] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [agentConfig, setAgentConfig] = useState<AgentConfig | null>(null)
+  const [configLoading, setConfigLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  // Default configuration - will be replaced with professional-specific config
-  const chatName = agentConfig?.chatName || "Critter Support"
-  const primaryColor = agentConfig?.widgetConfig?.primaryColor || "#E75837"
-  const welcomeMessage =
-    agentConfig?.chatWelcomeMessage ||
-    "Hi! I'm here to help you with booking appointments and answering questions about our services. How can I assist you today?"
+  // Default configuration fallback
+  const defaultConfig: AgentConfig = {
+    chatName: "Critter Support",
+    chatWelcomeMessage: "Hello! I'm your Critter professional's virtual assistant. How can I help you today?",
+    widgetConfig: {
+      primaryColor: "#E75837",
+      position: "bottom-right",
+      size: "medium",
+    },
+  }
 
-  // Initialize chat with welcome message
+  // Function to parse webhook response for configuration
+  const parseConfigResponse = (data: any): AgentConfig | null => {
+    try {
+      console.log("Raw config response data:", data)
+
+      // Handle array response
+      if (Array.isArray(data) && data.length > 0) {
+        const configData = data[0]
+
+        if (configData) {
+          return {
+            chatName: configData.chat_name || defaultConfig.chatName,
+            chatWelcomeMessage: configData.chat_welcome_message || defaultConfig.chatWelcomeMessage,
+            widgetConfig: {
+              primaryColor: configData.widget_primary_color || defaultConfig.widgetConfig.primaryColor,
+              position: configData.widget_position || defaultConfig.widgetConfig.position,
+              size: configData.widget_size || defaultConfig.widgetConfig.size,
+            },
+            cancellationPolicy: configData.cancellation_policy || "",
+            newCustomerProcess: configData.new_customer_process || "",
+            animalRestrictions: configData.animal_restrictions || "",
+            serviceDetails: configData.service_details || "",
+            additionalInfo: configData.additional_info || "",
+          }
+        }
+      }
+
+      return null
+    } catch (error) {
+      console.error("Error parsing config response:", error)
+      return null
+    }
+  }
+
+  // Function to parse webhook response for chat messages
+  const parseWebhookResponse = (data: any): string => {
+    try {
+      console.log("Raw chat response data:", data)
+
+      // Handle array response
+      if (Array.isArray(data) && data.length > 0) {
+        const firstItem = data[0]
+
+        // Since n8n now handles all formatting, we just need to extract the output
+        if (firstItem.output) {
+          return firstItem.output
+        }
+
+        // Fallback for other response formats
+        if (firstItem.response) return firstItem.response
+        if (typeof firstItem === "string") return firstItem
+        return String(firstItem)
+      }
+
+      // Handle direct object response
+      if (data && typeof data === "object") {
+        if (data.output) return data.output
+        if (data.response) return data.response
+      }
+
+      // Handle direct string response
+      if (typeof data === "string") {
+        return data
+      }
+
+      // Fallback
+      return "I'm sorry, I couldn't process that request."
+    } catch (error) {
+      console.error("Error parsing webhook response:", error)
+      return "I'm sorry, there was an error processing your request."
+    }
+  }
+
+  // Load agent configuration when component mounts or professionalId changes
   useEffect(() => {
-    if (isOpen && messages.length === 0) {
+    const loadAgentConfig = async () => {
+      if (!professionalId) return
+
+      setConfigLoading(true)
+      try {
+        const response = await fetch(WEBHOOK_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            action: "get_widget_customization",
+            professionalId: professionalId,
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status}`)
+        }
+
+        const data = await response.json()
+        console.log("Agent config response:", data)
+
+        const config = parseConfigResponse(data)
+        if (config) {
+          setAgentConfig(config)
+        } else {
+          // Use default config if no custom config found
+          setAgentConfig(defaultConfig)
+        }
+      } catch (error) {
+        console.error("Error loading agent config:", error)
+        // Use default config on error
+        setAgentConfig(defaultConfig)
+      } finally {
+        setConfigLoading(false)
+      }
+    }
+
+    loadAgentConfig()
+  }, [professionalId])
+
+  // Initialize chat with welcome message when config is loaded
+  useEffect(() => {
+    if (isOpen && messages.length === 0 && agentConfig) {
       setMessages([
         {
-          text: welcomeMessage,
+          text: agentConfig.chatWelcomeMessage,
           isUser: false,
         },
       ])
     }
-  }, [isOpen, messages.length, welcomeMessage])
+  }, [isOpen, messages.length, agentConfig])
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -55,7 +187,7 @@ export default function LiveChatWidget({ professionalId, agentConfig }: LiveChat
   }, [messages])
 
   const sendMessage = async (message: string) => {
-    if (!message.trim() || isLoading) return
+    if (!message.trim() || isLoading || !agentConfig) return
 
     // Add user message
     const userMessage: ChatMessage = { text: message, isUser: true }
@@ -64,46 +196,51 @@ export default function LiveChatWidget({ professionalId, agentConfig }: LiveChat
     setIsLoading(true)
 
     try {
-      // TODO: Replace with actual API endpoint for the professional's chat agent
-      const response = await fetch(`${process.env.NEXT_PUBLIC_WEBHOOK_URL}/chat-agent`, {
+      // Use the same webhook endpoint as the custom agent setup
+      const response = await fetch(WEBHOOK_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          message: message,
+          action: "support_conversation",
           professionalId: professionalId,
-          conversationHistory: messages.slice(-5), // Send last 5 messages for context
+          message: message,
+          userInfo: {
+            source: "live_chat_widget",
+            sessionId: "chat_" + Date.now(),
+            timestamp: new Date().toISOString(),
+          },
         }),
       })
 
       if (!response.ok) {
-        throw new Error("Failed to get response")
+        throw new Error(`Error: ${response.status}`)
       }
 
       const data = await response.json()
+      console.log("Chat agent response:", data)
 
-      // Add bot response
-      const botMessage: ChatMessage = {
-        text:
-          data.response ||
-          "I'm sorry, I'm having trouble responding right now. Please try again or contact us directly.",
-        isUser: false,
-      }
+      // Parse the response using our existing function
+      const responseMessage = parseWebhookResponse(data)
 
-      setMessages((prev) => [...prev, botMessage])
+      // Add agent response to chat
+      setTimeout(() => {
+        setMessages((prev) => [...prev, { text: responseMessage, isUser: false }])
+        setIsLoading(false)
+      }, 1000)
     } catch (error) {
       console.error("Chat error:", error)
-
-      // Add error message
-      const errorMessage: ChatMessage = {
-        text: "I'm sorry, I'm having trouble connecting right now. Please try again in a moment or contact us directly for immediate assistance.",
-        isUser: false,
-      }
-
-      setMessages((prev) => [...prev, errorMessage])
-    } finally {
-      setIsLoading(false)
+      setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          {
+            text: "I'm sorry, I'm having trouble connecting right now. Please try again in a moment or contact us directly for immediate assistance.",
+            isUser: false,
+          },
+        ])
+        setIsLoading(false)
+      }, 1000)
     }
   }
 
@@ -130,13 +267,21 @@ export default function LiveChatWidget({ professionalId, agentConfig }: LiveChat
     setIsMinimized(false)
   }
 
+  // Don't render if config is still loading
+  if (configLoading || !agentConfig) {
+    return null
+  }
+
+  const { chatName, widgetConfig } = agentConfig
+  const primaryColor = widgetConfig.primaryColor
+
   return (
     <>
       {/* Chat Button - Fixed position */}
       {!isOpen && (
         <button
           onClick={openChat}
-          className="fixed bottom-6 right-6 w-16 h-16 rounded-full text-white shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-50"
+          className="fixed bottom-6 right-6 w-16 h-16 rounded-full text-white shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-50 hover:scale-105"
           style={{ backgroundColor: primaryColor }}
           aria-label="Open chat"
         >
