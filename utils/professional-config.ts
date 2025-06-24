@@ -182,21 +182,16 @@ export const calculateAvailableSlots = (
     if (booking.booking_date_formatted !== date) return false
     if (!booking.start || !booking.end || !booking.booking_id) return false
 
-    // Convert local times to UTC for comparison
     const bookingStart = new Date(booking.start)
     const bookingEnd = new Date(booking.end)
-    const slotStartUTC = new Date(`${date}T${startTime}:00`).getTime()
-    const slotEndUTC = new Date(`${date}T${endTime}:00`).getTime()
-
-    console.log("Booking Start (UTC):", bookingStart.toISOString())
-    console.log("Booking End (UTC):", bookingEnd.toISOString())
-    console.log("Slot Start (UTC):", new Date(slotStartUTC).toISOString())
-    console.log("Slot End (UTC):", new Date(slotEndUTC).toISOString())
 
     const bookingStartMinutes = bookingStart.getHours() * 60 + bookingStart.getMinutes()
     const bookingEndMinutes = bookingEnd.getHours() * 60 + bookingEnd.getMinutes()
 
-    return slotStartUTC < bookingEnd.getTime() && slotEndUTC > bookingStart.getTime()
+    const slotStartMinutes = timeToMinutes(startTime)
+    const slotEndMinutes = timeToMinutes(endTime)
+
+    return slotStartMinutes < bookingEndMinutes && slotEndMinutes > bookingStartMinutes
   })
 
   const existingBookingsCount = overlappingBookings.length
@@ -298,8 +293,24 @@ export const canAccommodateBooking = (
   }
 }
 
-// Helper function to convert time string to minutes
+// Helper: convert either "HH:MM" or "H:MM AM/PM" → minutes past midnight
 const timeToMinutes = (timeStr: string): number => {
+  const hasPeriod = timeStr.toUpperCase().includes("AM") || timeStr.toUpperCase().includes("PM")
+
+  if (hasPeriod) {
+    // Handle "1:30 PM" format
+    const [time, period] = timeStr.trim().split(" ")
+    const [rawHours, rawMinutes] = time.split(":")
+    let hours = Number(rawHours)
+    const minutes = Number(rawMinutes)
+
+    if (period.toUpperCase() === "PM" && hours < 12) hours += 12
+    if (period.toUpperCase() === "AM" && hours === 12) hours = 0
+
+    return hours * 60 + minutes
+  }
+
+  // Fallback "13:30" format
   const [hours, minutes] = timeStr.split(":").map(Number)
   return hours * 60 + minutes
 }
