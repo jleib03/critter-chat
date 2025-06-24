@@ -3,8 +3,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, Calendar, Clock, DollarSign, User, PawPrint, Mail } from "lucide-react"
-import type { Service, SelectedTimeSlot, CustomerInfo, Pet } from "@/types/schedule"
+import { CheckCircle, Calendar, Clock, DollarSign, User, PawPrint, Mail, Repeat } from "lucide-react"
+import type { Service, SelectedTimeSlot, CustomerInfo, Pet, RecurringConfig } from "@/types/schedule"
 
 type BookingConfirmationProps = {
   selectedService: Service
@@ -13,6 +13,8 @@ type BookingConfirmationProps = {
   selectedPet: Pet
   professionalName: string
   onNewBooking: () => void
+  bookingType?: "one-time" | "recurring"
+  recurringConfig?: RecurringConfig | null
 }
 
 export function BookingConfirmation({
@@ -22,6 +24,8 @@ export function BookingConfirmation({
   selectedPet,
   professionalName,
   onNewBooking,
+  bookingType,
+  recurringConfig,
 }: BookingConfirmationProps) {
   const formatPrice = (price: string) => {
     return `$${Number.parseFloat(price).toFixed(0)}`
@@ -119,6 +123,39 @@ export function BookingConfirmation({
                   </div>
                 </div>
               </div>
+
+              {bookingType === "recurring" && recurringConfig && (
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2 header-font">Recurring Schedule</h3>
+                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Repeat className="w-4 h-4 text-blue-500" />
+                      <span className="font-medium body-font text-blue-900">
+                        Every {recurringConfig.frequency} {recurringConfig.unit.toLowerCase()}
+                        {recurringConfig.frequency > 1 ? "s" : ""}
+                      </span>
+                    </div>
+                    <div className="text-sm text-blue-700 body-font space-y-1">
+                      <div>
+                        Until:{" "}
+                        {new Date(recurringConfig.endDate).toLocaleDateString("en-US", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </div>
+                      <div>Total appointments: {recurringConfig.totalAppointments}</div>
+                      <div className="font-medium">
+                        Total cost: $
+                        {(Number.parseFloat(selectedService.customer_cost) * recurringConfig.totalAppointments).toFixed(
+                          0,
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Customer & Pet Information */}

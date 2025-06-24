@@ -2,19 +2,38 @@
 
 import type React from "react"
 import { useState } from "react"
-import type { Service, SelectedTimeSlot, PetResponse, BookingType, RecurringConfig } from "@/types"
+import { User, Calendar, Clock, DollarSign, ArrowLeft, Repeat } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/use-toast"
+import { createCustomer } from "@/lib/actions/customer.actions"
+import { createPet } from "@/lib/actions/pet.actions"
+import type { Service, SelectedTimeSlot } from "@/lib/types"
+import { useRouter } from "next/navigation"
 
 type CustomerInfo = {
   firstName: string
   lastName: string
   email: string
   phone: string
+  address: string
+  city: string
+  state: string
+  zip: string
   notes: string
+}
+
+type PetResponse = {
+  petId: string
+}
+
+type RecurringConfig = {
+  frequency: number
+  unit: "day" | "week" | "month"
+  endDate: string
+  totalAppointments: number
 }
 
 type CustomerFormProps = {
@@ -25,8 +44,8 @@ type CustomerFormProps = {
   sessionId: string
   onPetsReceived: (customerInfo: CustomerInfo, petResponse: PetResponse) => void
   onBack: () => void
-  bookingType?: BookingType
-  recurringConfig?: RecurringConfig
+  bookingType?: "one-time" | "recurring"
+  recurringConfig?: RecurringConfig | null
 }
 
 const CustomerForm: React.FC<CustomerFormProps> = ({
@@ -40,129 +59,263 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
   bookingType,
   recurringConfig,
 }) => {
-  const [firstName, setFirstName] = useState("")
-  const [lastName, setLastName] = useState("")
-  const [email, setEmail] = useState("")
-  const [phone, setPhone] = useState("")
-  const [notes, setNotes] = useState("")
   const { toast } = useToast()
+  const router = useRouter()
+
+  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    state: "",
+    zip: "",
+    notes: "",
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!firstName || !lastName || !email || !phone) {
+    if (!customerInfo.firstName || !customerInfo.lastName || !customerInfo.email || !customerInfo.phone) {
       toast({
-        variant: "destructive",
         title: "Error",
-        description: "Please fill in all required fields.",
+        description: "Please fill out all required fields.",
+        variant: "destructive",
       })
       return
     }
 
-    const customerInfo: CustomerInfo = {
-      firstName,
-      lastName,
-      email,
-      phone,
-      notes,
-    }
+    try {
+      const customerResponse = await createCustomer({
+        firstName: customerInfo.firstName,
+        lastName: customerInfo.lastName,
+        email: customerInfo.email,
+        phone: customerInfo.phone,
+        address: customerInfo.address,
+        city: customerInfo.city,
+        state: customerInfo.state,
+        zip: customerInfo.zip,
+        notes: customerInfo.notes,
+      })
 
-    // Mock pet response data
-    const petResponse: PetResponse = {
-      pets: [
-        {
-          id: "pet-1",
-          name: "Buddy",
-          breed: "Golden Retriever",
-        },
-      ],
-    }
+      if (customerResponse && customerResponse.id) {
+        const petResponse = await createPet({
+          name: `${customerInfo.firstName}'s Pet`,
+          customerId: customerResponse.id,
+          animal: "Unknown",
+          breed: "Unknown",
+        })
 
-    onPetsReceived(customerInfo, petResponse)
+        if (petResponse && petResponse.id) {
+          onPetsReceived(customerInfo, { petId: petResponse.id })
+          toast({
+            title: "Success",
+            description: "Customer and pet created successfully!",
+          })
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to create pet.",
+            variant: "destructive",
+          })
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to create customer.",
+          variant: "destructive",
+        })
+      }
+    } catch (error: any) {
+      console.error("Error creating customer and pet:", error)
+      toast({
+        title: "Error",
+        description: error.message || "Something went wrong.",
+        variant: "destructive",
+      })
+    }
   }
 
   return (
-    <div className="flex flex-col md:flex-row gap-8">
-      <div className="md:w-1/2">
-        <h2 className="text-2xl font-semibold mb-4 header-font">Customer Information</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="flex flex-col max-w-2xl mx-auto">
+      <Button variant="ghost" onClick={onBack} className="self-start mb-4">
+        <ArrowLeft className="mr-2 w-4 h-4" />
+        Back
+      </Button>
+
+      <h2 className="text-2xl font-semibold mb-6 header-font">Booking Summary</h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="flex items-center gap-2">
+          <User className="w-4 h-4 text-gray-500" />
+          <span className="text-sm body-font">{professionalName}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-gray-500" />
+          <span className="text-sm body-font">
+            {new Date(selectedTimeSlot.startTime).toLocaleDateString("en-US", {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Clock className="w-4 h-4 text-gray-500" />
+          <span className="text-sm body-font">
+            {new Date(selectedTimeSlot.startTime).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })} -{" "}
+            {new Date(selectedTimeSlot.endTime).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <DollarSign className="w-4 h-4 text-gray-500" />
+          <span className="text-sm body-font">Service Cost: ${selectedService.customer_cost}</span>
+        </div>
+      </div>
+
+      {/* Add this after the service details grid and before the form */}
+      {bookingType === "recurring" && recurringConfig && (
+        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h3 className="font-semibold text-blue-900 mb-3 header-font flex items-center gap-2">
+            <Repeat className="w-4 h-4" />
+            Recurring Booking Details
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div className="flex justify-between">
+              <span className="text-blue-700 body-font">Frequency:</span>
+              <span className="font-medium text-blue-900 body-font">
+                Every {recurringConfig.frequency} {recurringConfig.unit.toLowerCase()}
+                {recurringConfig.frequency > 1 ? "s" : ""}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-blue-700 body-font">End Date:</span>
+              <span className="font-medium text-blue-900 body-font">
+                {new Date(recurringConfig.endDate).toLocaleDateString("en-US", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </span>
+            </div>
+            <div className="flex justify-between md:col-span-2">
+              <span className="text-blue-700 body-font">Total Appointments:</span>
+              <span className="font-medium text-blue-900 body-font">
+                {recurringConfig.totalAppointments} appointments
+              </span>
+            </div>
+            <div className="flex justify-between md:col-span-2">
+              <span className="text-blue-700 body-font">Total Cost:</span>
+              <span className="font-medium text-blue-900 body-font text-lg">
+                ${(Number.parseFloat(selectedService.customer_cost) * recurringConfig.totalAppointments).toFixed(0)}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div>
+          <Label htmlFor="firstName">First Name</Label>
+          <Input
+            type="text"
+            id="firstName"
+            placeholder="John"
+            required
+            value={customerInfo.firstName}
+            onChange={(e) => setCustomerInfo({ ...customerInfo, firstName: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label htmlFor="lastName">Last Name</Label>
+          <Input
+            type="text"
+            id="lastName"
+            placeholder="Doe"
+            required
+            value={customerInfo.lastName}
+            onChange={(e) => setCustomerInfo({ ...customerInfo, lastName: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label htmlFor="email">Email</Label>
+          <Input
+            type="email"
+            id="email"
+            placeholder="john.doe@example.com"
+            required
+            value={customerInfo.email}
+            onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label htmlFor="phone">Phone</Label>
+          <Input
+            type="tel"
+            id="phone"
+            placeholder="123-456-7890"
+            required
+            value={customerInfo.phone}
+            onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label htmlFor="address">Address</Label>
+          <Input
+            type="text"
+            id="address"
+            placeholder="123 Main St"
+            value={customerInfo.address}
+            onChange={(e) => setCustomerInfo({ ...customerInfo, address: e.target.value })}
+          />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <Label htmlFor="firstName">First Name</Label>
+            <Label htmlFor="city">City</Label>
             <Input
               type="text"
-              id="firstName"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              required
+              id="city"
+              placeholder="Anytown"
+              value={customerInfo.city}
+              onChange={(e) => setCustomerInfo({ ...customerInfo, city: e.target.value })}
             />
           </div>
           <div>
-            <Label htmlFor="lastName">Last Name</Label>
-            <Input type="text" id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+            <Label htmlFor="state">State</Label>
+            <Input
+              type="text"
+              id="state"
+              placeholder="CA"
+              value={customerInfo.state}
+              onChange={(e) => setCustomerInfo({ ...customerInfo, state: e.target.value })}
+            />
           </div>
           <div>
-            <Label htmlFor="email">Email</Label>
-            <Input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          </div>
-          <div>
-            <Label htmlFor="phone">Phone</Label>
-            <Input type="tel" id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} required />
-          </div>
-          <div>
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
-          </div>
-          <div className="flex justify-between">
-            <Button type="button" variant="secondary" onClick={onBack}>
-              Back
-            </Button>
-            <Button type="submit">Next: Confirm</Button>
-          </div>
-        </form>
-      </div>
-
-      <div className="md:w-1/2">
-        <h2 className="text-2xl font-semibold mb-4 header-font">Booking Summary</h2>
-        <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-          <h3 className="font-medium text-gray-900 mb-2 header-font">{selectedService.name}</h3>
-          <p className="text-sm text-gray-800 body-font">{selectedService.description}</p>
-          {bookingType === "recurring" && recurringConfig && (
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <h4 className="font-medium text-blue-900 mb-2 header-font">Recurring Schedule</h4>
-              <div className="space-y-1 text-sm text-blue-800 body-font">
-                <p>
-                  Frequency: Every {recurringConfig.frequency} {recurringConfig.unit.toLowerCase()}
-                  {recurringConfig.frequency > 1 ? "s" : ""}
-                </p>
-                <p>
-                  End Date:{" "}
-                  {new Date(recurringConfig.endDate).toLocaleDateString("en-US", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </p>
-                <p className="text-xs text-blue-600">
-                  This will create multiple recurring appointments at the same time each{" "}
-                  {recurringConfig.unit.toLowerCase()}
-                </p>
-              </div>
-            </div>
-          )}
-          <div className="mt-4">
-            <p className="text-sm text-gray-600 body-font">
-              Date: {new Date(selectedTimeSlot.startTime).toLocaleDateString()}
-            </p>
-            <p className="text-sm text-gray-600 body-font">
-              Time:{" "}
-              {new Date(selectedTimeSlot.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} -{" "}
-              {new Date(selectedTimeSlot.endTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-            </p>
-            <p className="text-sm text-gray-600 body-font">Professional: {professionalName}</p>
+            <Label htmlFor="zip">Zip Code</Label>
+            <Input
+              type="text"
+              id="zip"
+              placeholder="12345"
+              value={customerInfo.zip}
+              onChange={(e) => setCustomerInfo({ ...customerInfo, zip: e.target.value })}
+            />
           </div>
         </div>
-      </div>
+        <div>
+          <Label htmlFor="notes">Notes</Label>
+          <Textarea
+            id="notes"
+            placeholder="Any special requests?"
+            value={customerInfo.notes}
+            onChange={(e) => setCustomerInfo({ ...customerInfo, notes: e.target.value })}
+          />
+        </div>
+
+        <Button type="submit">Confirm Booking</Button>
+      </form>
     </div>
   )
 }

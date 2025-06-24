@@ -427,22 +427,18 @@ export default function SchedulePage() {
         session_id: sessionIdRef.current,
         timestamp: new Date().toISOString(),
         user_timezone: userTimezoneData,
-        booking_type: bookingType, // Add booking type
+        booking_type: bookingType, // Add this line
         ...(bookingType === "recurring" &&
           recurringConfig && {
-            recurring_config: {
+            // Add this block
+            recurring_details: {
               frequency: recurringConfig.frequency,
               unit: recurringConfig.unit,
               end_date: recurringConfig.endDate,
-              total_occurrences:
-                Math.ceil(
-                  (new Date(recurringConfig.endDate).getTime() - new Date(selectedTimeSlot!.date).getTime()) /
-                    (1000 *
-                      60 *
-                      60 *
-                      24 *
-                      (recurringConfig.unit === "Days" ? recurringConfig.frequency : recurringConfig.frequency * 7)),
-                ) + 1,
+              total_appointments: recurringConfig.totalAppointments,
+              total_cost: (
+                Number.parseFloat(selectedService!.customer_cost) * recurringConfig.totalAppointments
+              ).toFixed(2),
             },
           }),
         booking_details: {
@@ -633,31 +629,6 @@ export default function SchedulePage() {
                       {customerInfo.firstName} {customerInfo.lastName}
                     </span>
                   </div>
-                  {bookingType === "recurring" && recurringConfig && (
-                    <>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 body-font">Booking Type:</span>
-                        <span className="font-medium body-font">Recurring</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 body-font">Frequency:</span>
-                        <span className="font-medium body-font">
-                          Every {recurringConfig.frequency} {recurringConfig.unit.toLowerCase()}
-                          {recurringConfig.frequency > 1 ? "s" : ""}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 body-font">Until:</span>
-                        <span className="font-medium body-font">
-                          {new Date(recurringConfig.endDate).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                        </span>
-                      </div>
-                    </>
-                  )}
                 </div>
               </div>
 
@@ -727,6 +698,8 @@ export default function SchedulePage() {
             selectedPet={selectedPet!}
             professionalName={webhookData.professional_info.professional_name}
             onNewBooking={handleNewBooking}
+            bookingType={bookingType}
+            recurringConfig={recurringConfig}
           />
         ) : showPetSelection ? (
           <PetSelection
