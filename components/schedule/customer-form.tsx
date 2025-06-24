@@ -2,32 +2,14 @@
 
 import type React from "react"
 import { useState } from "react"
-import { User, Calendar, Clock, DollarSign, ArrowLeft, Repeat } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { useToast } from "@/components/ui/use-toast"
-import { createCustomer } from "@/lib/actions/customer.actions"
-import { createPet } from "@/lib/actions/pet.actions"
-import type { Service, SelectedTimeSlot } from "@/lib/types"
-import { useRouter } from "next/navigation"
+import { Loader2, User, Calendar, Clock, DollarSign, ArrowLeft, Repeat } from "lucide-react"
+import type { Service, SelectedTimeSlot, CustomerInfo, PetResponse } from "@/types/schedule"
 
-type CustomerInfo = {
-  firstName: string
-  lastName: string
-  email: string
-  phone: string
-  address: string
-  city: string
-  state: string
-  zip: string
-  notes: string
-}
-
-type PetResponse = {
-  petId: string
-}
+type BookingType = "one-time" | "recurring"
 
 type RecurringConfig = {
   frequency: number
@@ -44,11 +26,11 @@ type CustomerFormProps = {
   sessionId: string
   onPetsReceived: (customerInfo: CustomerInfo, petResponse: PetResponse) => void
   onBack: () => void
-  bookingType?: "one-time" | "recurring"
+  bookingType?: BookingType
   recurringConfig?: RecurringConfig | null
 }
 
-const CustomerForm: React.FC<CustomerFormProps> = ({
+export function CustomerForm({
   selectedService,
   selectedTimeSlot,
   professionalId,
@@ -56,268 +38,315 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
   sessionId,
   onPetsReceived,
   onBack,
-  bookingType,
-  recurringConfig,
-}) => {
-  const { toast } = useToast()
-  const router = useRouter()
-
+  bookingType = "one-time",
+  recurringConfig = null,
+}: CustomerFormProps) {
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     firstName: "",
     lastName: "",
     email: "",
-    phone: "",
-    address: "",
-    city: "",
-    state: "",
-    zip: "",
-    notes: "",
   })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Detect user's timezone
+  const detectUserTimezone = () => {
+    try {
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+      const now = new Date()
+      const offsetMinutes = now.getTimezoneOffset()
+      const offsetHours = Math.abs(offsetMinutes / 60)
+      const offsetSign = offsetMinutes <= 0 ? "+" : "-"
+      const offsetString = `UTC${offsetSign}${offsetHours.toString().padStart(2, "0")}:${Math.abs(offsetMinutes % 60)
+        .toString()
+        .padStart(2, "0")}`
+
+      return {
+        timezone: timezone,
+        offset: offsetString,
+        offsetMinutes: offsetMinutes,
+        timestamp: now.toISOString(),
+        localTime: now.toLocaleString(),
+      }
+    } catch (error) {
+      console.error("Error detecting timezone:", error)
+      return {
+        timezone: "UTC",
+        offset: "UTC+00:00",
+        offsetMinutes: 0,
+        timestamp: new Date().toISOString(),
+        localTime: new Date().toLocaleString(),
+      }
+    }
+  }
+
+  const handleInputChange = (field: keyof CustomerInfo, value: string) => {
+    setCustomerInfo((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const isFormValid = () => {
+    return (
+      customerInfo.firstName.trim() !== "" &&
+      customerInfo.lastName.trim() !== "" &&
+      customerInfo.email.trim() !== "" &&
+      customerInfo.email.includes("@")
+    )
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!customerInfo.firstName || !customerInfo.lastName || !customerInfo.email || !customerInfo.phone) {
-      toast({
-        title: "Error",
-        description: "Please fill out all required fields.",
-        variant: "destructive",
-      })
+    if (!isFormValid()) {
+      setError("Please fill in all fields with valid information.")
       return
     }
 
+    setIsSubmitting(true)
+    setError(null)
+
     try {
-      const customerResponse = await createCustomer({
-        firstName: customerInfo.firstName,
-        lastName: customerInfo.lastName,
-        email: customerInfo.email,
-        phone: customerInfo.phone,
-        address: customerInfo.address,
-        city: customerInfo.city,
-        state: customerInfo.state,
-        zip: customerInfo.zip,
-        notes: customerInfo.notes,
-      })
+      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/5671c1dd-48f6-47a9-85ac-4e20cf261520"
 
-      if (customerResponse && customerResponse.id) {
-        const petResponse = await createPet({
-          name: `${customerInfo.firstName}'s Pet`,
-          customerId: customerResponse.id,
-          animal: "Unknown",
-          breed: "Unknown",
-        })
-
-        if (petResponse && petResponse.id) {
-          onPetsReceived(customerInfo, { petId: petResponse.id })
-          toast({
-            title: "Success",
-            description: "Customer and pet created successfully!",
-          })
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to create pet.",
-            variant: "destructive",
-          })
-        }
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to create customer.",
-          variant: "destructive",
-        })
+      const customerData = {
+        professional_id: professionalId,
+        action: "get_customer_pets",
+        session_id: sessionId,
+        timestamp: new Date().toISOString(),
+        user_timezone: detectUserTimezone(),
+        customer_info: {
+          first_name: customerInfo.firstName.trim(),
+          last_name: customerInfo.lastName.trim(),
+          email: customerInfo.email.trim().toLowerCase(),
+        },
       }
-    } catch (error: any) {
-      console.error("Error creating customer and pet:", error)
-      toast({
-        title: "Error",
-        description: error.message || "Something went wrong.",
-        variant: "destructive",
+
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(customerData),
       })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      console.log("Pet data received:", result)
+
+      // Pass the customer info and pet response to parent
+      onPetsReceived(customerInfo, result[0] || result)
+    } catch (err) {
+      console.error("Error fetching pets:", err)
+      setError("Failed to retrieve pet information. Please try again.")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
+  const formatPrice = (price: string) => {
+    return `$${Number.parseFloat(price).toFixed(0)}`
+  }
+
+  const formatDuration = (duration: number, unit: string) => {
+    if (unit === "Minutes") {
+      if (duration >= 60) {
+        const hours = Math.floor(duration / 60)
+        const minutes = duration % 60
+        return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`
+      }
+      return `${duration}m`
+    }
+    if (unit === "Hours") {
+      return duration === 1 ? `${duration} hour` : `${duration} hours`
+    }
+    if (unit === "Days") {
+      return duration === 1 ? `${duration} day` : `${duration} days`
+    }
+    return `${duration} ${unit.toLowerCase()}`
+  }
+
   return (
-    <div className="flex flex-col max-w-2xl mx-auto">
-      <Button variant="ghost" onClick={onBack} className="self-start mb-4">
-        <ArrowLeft className="mr-2 w-4 h-4" />
-        Back
+    <div className="max-w-2xl mx-auto space-y-6">
+      {/* Back Button */}
+      <Button variant="ghost" onClick={onBack} className="text-gray-600 hover:text-gray-900 body-font">
+        <ArrowLeft className="w-4 h-4 mr-2" />
+        Back to Schedule
       </Button>
 
-      <h2 className="text-2xl font-semibold mb-6 header-font">Booking Summary</h2>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl header-font text-[#E75837]">Customer Information</CardTitle>
+          <p className="text-gray-600 body-font">Enter your information to find your pets and continue booking.</p>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Booking Summary */}
+          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+            <h3 className="font-semibold text-gray-900 header-font">Booking Summary</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4 text-gray-500" />
+                <div>
+                  <span className="text-gray-500 body-font">Professional:</span>
+                  <p className="font-medium body-font">{professionalName}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <div>
+                  <span className="text-gray-500 body-font">Date:</span>
+                  <p className="font-medium body-font">
+                    {selectedTimeSlot.dayOfWeek},{" "}
+                    {new Date(selectedTimeSlot.date).toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-gray-500" />
+                <div>
+                  <span className="text-gray-500 body-font">Time:</span>
+                  <p className="font-medium body-font">
+                    {selectedTimeSlot.startTime} - {selectedTimeSlot.endTime}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-gray-500" />
+                <div>
+                  <span className="text-gray-500 body-font">Cost:</span>
+                  <p className="font-medium body-font">{formatPrice(selectedService.customer_cost)}</p>
+                </div>
+              </div>
+            </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div className="flex items-center gap-2">
-          <User className="w-4 h-4 text-gray-500" />
-          <span className="text-sm body-font">{professionalName}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-gray-500" />
-          <span className="text-sm body-font">
-            {new Date(selectedTimeSlot.startTime).toLocaleDateString("en-US", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4 text-gray-500" />
-          <span className="text-sm body-font">
-            {new Date(selectedTimeSlot.startTime).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })} -{" "}
-            {new Date(selectedTimeSlot.endTime).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <DollarSign className="w-4 h-4 text-gray-500" />
-          <span className="text-sm body-font">Service Cost: ${selectedService.customer_cost}</span>
-        </div>
-      </div>
+            {/* Recurring booking details */}
+            {bookingType === "recurring" && recurringConfig && (
+              <div className="pt-4 border-t space-y-2 text-sm text-blue-900">
+                <div className="flex items-center gap-2 font-medium">
+                  <Repeat className="w-4 h-4" />
+                  Recurring Booking
+                </div>
+                <div className="flex justify-between">
+                  <span>Cadence:</span>
+                  <span>
+                    Every {recurringConfig.frequency} {recurringConfig.unit}
+                    {recurringConfig.frequency > 1 ? "s" : ""}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>End Date:</span>
+                  <span>
+                    {new Date(recurringConfig.endDate).toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Total Appointments:</span>
+                  <span>{recurringConfig.totalAppointments}</span>
+                </div>
+                <div className="flex justify-between font-semibold">
+                  <span>Total Cost:</span>
+                  <span>
+                    {formatPrice(
+                      (Number.parseFloat(selectedService.customer_cost) * recurringConfig.totalAppointments).toString(),
+                    )}
+                  </span>
+                </div>
+              </div>
+            )}
 
-      {/* Add this after the service details grid and before the form */}
-      {bookingType === "recurring" && recurringConfig && (
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h3 className="font-semibold text-blue-900 mb-3 header-font flex items-center gap-2">
-            <Repeat className="w-4 h-4" />
-            Recurring Booking Details
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div className="flex justify-between">
-              <span className="text-blue-700 body-font">Frequency:</span>
-              <span className="font-medium text-blue-900 body-font">
-                Every {recurringConfig.frequency} {recurringConfig.unit.toLowerCase()}
-                {recurringConfig.frequency > 1 ? "s" : ""}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-blue-700 body-font">End Date:</span>
-              <span className="font-medium text-blue-900 body-font">
-                {new Date(recurringConfig.endDate).toLocaleDateString("en-US", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </span>
-            </div>
-            <div className="flex justify-between md:col-span-2">
-              <span className="text-blue-700 body-font">Total Appointments:</span>
-              <span className="font-medium text-blue-900 body-font">
-                {recurringConfig.totalAppointments} appointments
-              </span>
-            </div>
-            <div className="flex justify-between md:col-span-2">
-              <span className="text-blue-700 body-font">Total Cost:</span>
-              <span className="font-medium text-blue-900 body-font text-lg">
-                ${(Number.parseFloat(selectedService.customer_cost) * recurringConfig.totalAppointments).toFixed(0)}
-              </span>
+            <div className="pt-2 border-t">
+              <p className="font-medium text-gray-900 header-font">{selectedService.name}</p>
+              <p className="text-sm text-gray-600 body-font">
+                {formatDuration(selectedService.duration_number, selectedService.duration_unit)}
+              </p>
+              {selectedService.description && (
+                <p className="text-sm text-gray-600 body-font mt-1">{selectedService.description}</p>
+              )}
             </div>
           </div>
-        </div>
-      )}
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <div>
-          <Label htmlFor="firstName">First Name</Label>
-          <Input
-            type="text"
-            id="firstName"
-            placeholder="John"
-            required
-            value={customerInfo.firstName}
-            onChange={(e) => setCustomerInfo({ ...customerInfo, firstName: e.target.value })}
-          />
-        </div>
-        <div>
-          <Label htmlFor="lastName">Last Name</Label>
-          <Input
-            type="text"
-            id="lastName"
-            placeholder="Doe"
-            required
-            value={customerInfo.lastName}
-            onChange={(e) => setCustomerInfo({ ...customerInfo, lastName: e.target.value })}
-          />
-        </div>
-        <div>
-          <Label htmlFor="email">Email</Label>
-          <Input
-            type="email"
-            id="email"
-            placeholder="john.doe@example.com"
-            required
-            value={customerInfo.email}
-            onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
-          />
-        </div>
-        <div>
-          <Label htmlFor="phone">Phone</Label>
-          <Input
-            type="tel"
-            id="phone"
-            placeholder="123-456-7890"
-            required
-            value={customerInfo.phone}
-            onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
-          />
-        </div>
-        <div>
-          <Label htmlFor="address">Address</Label>
-          <Input
-            type="text"
-            id="address"
-            placeholder="123 Main St"
-            value={customerInfo.address}
-            onChange={(e) => setCustomerInfo({ ...customerInfo, address: e.target.value })}
-          />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <Label htmlFor="city">City</Label>
-            <Input
-              type="text"
-              id="city"
-              placeholder="Anytown"
-              value={customerInfo.city}
-              onChange={(e) => setCustomerInfo({ ...customerInfo, city: e.target.value })}
-            />
-          </div>
-          <div>
-            <Label htmlFor="state">State</Label>
-            <Input
-              type="text"
-              id="state"
-              placeholder="CA"
-              value={customerInfo.state}
-              onChange={(e) => setCustomerInfo({ ...customerInfo, state: e.target.value })}
-            />
-          </div>
-          <div>
-            <Label htmlFor="zip">Zip Code</Label>
-            <Input
-              type="text"
-              id="zip"
-              placeholder="12345"
-              value={customerInfo.zip}
-              onChange={(e) => setCustomerInfo({ ...customerInfo, zip: e.target.value })}
-            />
-          </div>
-        </div>
-        <div>
-          <Label htmlFor="notes">Notes</Label>
-          <Textarea
-            id="notes"
-            placeholder="Any special requests?"
-            value={customerInfo.notes}
-            onChange={(e) => setCustomerInfo({ ...customerInfo, notes: e.target.value })}
-          />
-        </div>
+          {/* Customer Information Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName" className="body-font">
+                  First Name *
+                </Label>
+                <Input
+                  id="firstName"
+                  type="text"
+                  value={customerInfo.firstName}
+                  onChange={(e) => handleInputChange("firstName", e.target.value)}
+                  placeholder="Enter your first name"
+                  required
+                  className="body-font"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName" className="body-font">
+                  Last Name *
+                </Label>
+                <Input
+                  id="lastName"
+                  type="text"
+                  value={customerInfo.lastName}
+                  onChange={(e) => handleInputChange("lastName", e.target.value)}
+                  placeholder="Enter your last name"
+                  required
+                  className="body-font"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email" className="body-font">
+                Email Address *
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={customerInfo.email}
+                onChange={(e) => handleInputChange("email", e.target.value)}
+                placeholder="Enter your email address"
+                required
+                className="body-font"
+              />
+              <p className="text-xs text-gray-500 body-font">
+                We'll use this to find your pets and send booking confirmations.
+              </p>
+            </div>
 
-        <Button type="submit">Confirm Booking</Button>
-      </form>
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-red-600 text-sm body-font">{error}</p>
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              disabled={!isFormValid() || isSubmitting}
+              className="w-full bg-[#E75837] hover:bg-[#d14a2a] text-white body-font"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Finding Your Pets...
+                </>
+              ) : (
+                "Continue to Pet Selection"
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }
-
-export default CustomerForm
