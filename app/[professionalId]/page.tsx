@@ -196,7 +196,7 @@ export default function ProfessionalLandingPage() {
                 </div>
 
                 {/* Contact Info */}
-                <div className="flex flex-wrap gap-4">
+                <div className="flex flex-wrap gap-4 mb-6">
                   <a
                     href={`tel:${professionalData.contact.phone}`}
                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors body-font"
@@ -222,6 +222,21 @@ export default function ProfessionalLandingPage() {
                       {professionalData.contact.website}
                     </a>
                   )}
+                </div>
+
+                {/* Specialties - Moved up from services section */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 header-font">Specialties</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {professionalData.specialties.map((specialty, index) => (
+                      <span
+                        key={index}
+                        className="px-3 py-1 bg-[#E75837]/10 text-[#E75837] rounded-full text-sm font-medium body-font"
+                      >
+                        {specialty}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -279,18 +294,6 @@ export default function ProfessionalLandingPage() {
                     <Heart className="w-5 h-5 text-[#E75837] flex-shrink-0" />
                     <span className="body-font">{service}</span>
                   </div>
-                ))}
-              </div>
-
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 header-font">Specialties</h3>
-              <div className="flex flex-wrap gap-2">
-                {professionalData.specialties.map((specialty, index) => (
-                  <span
-                    key={index}
-                    className="px-3 py-1 bg-[#E75837]/10 text-[#E75837] rounded-full text-sm font-medium body-font"
-                  >
-                    {specialty}
-                  </span>
                 ))}
               </div>
             </div>
