@@ -217,3 +217,51 @@ export type RecurringConfig = {
   endDate: string
   totalAppointments: number
 }
+
+export type SelectedServices = Service[]
+
+export type TotalBookingInfo = {
+  totalDuration: number
+  totalCost: number
+}
+
+export type ServiceSelection = {
+  [key: string]: boolean
+}
+
+export type BookingSummary = {
+  totalDuration: number
+  totalCost: number
+  serviceNames: string[]
+}
+
+export type MultiServiceBooking = {
+  booking_id?: string | null
+  start?: string | null
+  end?: string | null
+  start_local?: string | null
+  start_formatted?: string
+  end_local?: string | null
+  end_formatted?: string | null
+  timezone_used?: string
+  timezone_offset_hours?: string | null
+  timezone_offset_minutes?: string | null
+  is_recurring?: boolean | null
+  occurrence_type?: string | null
+  professional_id?: string
+  customer_id?: string | null
+  assignee_id?: string | null
+  customer_first_name?: string | null
+  customer_last_name?: string | null
+  customer_email?: string | null
+  professional_name?: string
+  booking_date?: string
+  booking_date_local?: string
+  booking_date_formatted?: string
+  day_of_week?: string
+  month_year?: string
+  week_number?: string
+  month_number?: string
+  quarter?: string
+  services?: Service[]
+}

@@ -12,7 +12,7 @@ import type { BookingType, RecurringConfig } from "./booking-type-selection"
 type WeeklyCalendarProps = {
   workingDays: WorkingDay[]
   bookingData: BookingData[]
-  selectedService: Service | null
+  selectedServices: Service[] | null
   onTimeSlotSelect: (slot: SelectedTimeSlot) => void
   selectedTimeSlot: SelectedTimeSlot | null
   professionalId: string
@@ -24,7 +24,7 @@ type WeeklyCalendarProps = {
 export function WeeklyCalendar({
   workingDays,
   bookingData,
-  selectedService,
+  selectedServices,
   onTimeSlotSelect,
   selectedTimeSlot,
   professionalId,
@@ -191,7 +191,7 @@ export function WeeklyCalendar({
   const isSlotValidForRecurring = (date: Date, startTime: string, endTime: string, dayName: string) => {
     if (bookingType !== "recurring" || !recurringConfig) return true
 
-    const serviceDuration = getServiceDurationInMinutes(selectedService!)
+    const serviceDuration = getTotalServiceDurationInMinutes(selectedServices!)
     const startDate = new Date(date)
     const endDate = new Date(recurringConfig.endDate)
 
@@ -273,14 +273,17 @@ export function WeeklyCalendar({
     return true
   }
 
-  const getServiceDurationInMinutes = (service: Service) => {
-    if (service.duration_unit === "Minutes") return service.duration_number
-    if (service.duration_unit === "Hours") return service.duration_number * 60
-    if (service.duration_unit === "Days") return service.duration_number * 24 * 60
-    return 60 // default
+  const getTotalServiceDurationInMinutes = (services: Service[]) => {
+    return services.reduce((total, service) => {
+      let duration = 60 // default
+      if (service.duration_unit === "Minutes") duration = service.duration_number
+      if (service.duration_unit === "Hours") duration = service.duration_number * 60
+      if (service.duration_unit === "Days") duration = service.duration_number * 24 * 60
+      return total + duration
+    }, 0)
   }
 
-  if (!selectedService) {
+  if (!selectedServices || selectedServices.length === 0) {
     return (
       <div className="text-center py-16">
         <Clock className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -290,7 +293,7 @@ export function WeeklyCalendar({
     )
   }
 
-  const serviceDuration = getServiceDurationInMinutes(selectedService)
+  const serviceDuration = getTotalServiceDurationInMinutes(selectedServices)
 
   return (
     <div className="space-y-6">
@@ -299,7 +302,7 @@ export function WeeklyCalendar({
         <div>
           <h2 className="text-2xl font-bold text-gray-900 header-font">Available Times</h2>
           <p className="text-gray-600 body-font">
-            Select a time slot for <span className="font-medium">{selectedService.name}</span>
+            Select a time slot for <span className="font-medium">{selectedServices.map((s) => s.name).join(", ")}</span>
             {bookingType === "recurring" && recurringConfig && (
               <span className="text-sm text-[#E75837] ml-2 font-medium">
                 (Recurring every {recurringConfig.frequency} {recurringConfig.unit} until{" "}

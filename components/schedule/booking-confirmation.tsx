@@ -7,7 +7,7 @@ import { CheckCircle, Calendar, Clock, DollarSign, User, PawPrint, Mail, Repeat 
 import type { Service, SelectedTimeSlot, CustomerInfo, Pet, RecurringConfig } from "@/types/schedule"
 
 type BookingConfirmationProps = {
-  selectedService: Service
+  selectedServices: Service[]
   selectedTimeSlot: SelectedTimeSlot
   customerInfo: CustomerInfo
   selectedPet: Pet
@@ -18,7 +18,7 @@ type BookingConfirmationProps = {
 }
 
 export function BookingConfirmation({
-  selectedService,
+  selectedServices,
   selectedTimeSlot,
   customerInfo,
   selectedPet,
@@ -47,6 +47,33 @@ export function BookingConfirmation({
       return duration === 1 ? `${duration} day` : `${duration} days`
     }
     return `${duration} ${unit.toLowerCase()}`
+  }
+
+  const totalDurationMinutes = selectedServices.reduce((acc, service) => {
+    let duration = service.duration_number
+    if (service.duration_unit === "Hours") {
+      duration *= 60
+    } else if (service.duration_unit === "Days") {
+      duration *= 60 * 24
+    }
+    return acc + duration
+  }, 0)
+
+  const formatTotalDuration = () => {
+    if (totalDurationMinutes >= 60) {
+      const hours = Math.floor(totalDurationMinutes / 60)
+      const minutes = totalDurationMinutes % 60
+      return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`
+    }
+    return `${totalDurationMinutes}m`
+  }
+
+  const totalPrice = selectedServices.reduce((acc, service) => {
+    return acc + Number.parseFloat(service.customer_cost)
+  }, 0)
+
+  const formatTotalPrice = () => {
+    return `$${totalPrice.toFixed(0)}`
   }
 
   return (
@@ -79,22 +106,38 @@ export function BookingConfirmation({
             {/* Service Information */}
             <div className="space-y-4">
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2 header-font">Service</h3>
+                <h3 className="font-semibold text-gray-900 mb-2 header-font">Services</h3>
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="font-medium text-gray-900 body-font">{selectedService.name}</p>
-                  {selectedService.description && (
-                    <p className="text-sm text-gray-600 body-font mt-1">{selectedService.description}</p>
-                  )}
-                  <div className="flex items-center gap-4 mt-3">
-                    <div className="flex items-center gap-1 text-sm text-gray-600">
-                      <Clock className="w-4 h-4" />
-                      <span className="body-font">
-                        {formatDuration(selectedService.duration_number, selectedService.duration_unit)}
-                      </span>
+                  <ul className="space-y-2">
+                    {selectedServices.map((service) => (
+                      <li key={service.id} className="mb-2">
+                        <p className="font-medium text-gray-900 body-font">{service.name}</p>
+                        {service.description && (
+                          <p className="text-sm text-gray-600 body-font mt-1">{service.description}</p>
+                        )}
+                        <div className="flex items-center gap-4 mt-1">
+                          <div className="flex items-center gap-1 text-sm text-gray-600">
+                            <Clock className="w-4 h-4" />
+                            <span className="body-font">
+                              {formatDuration(service.duration_number, service.duration_unit)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 text-sm text-gray-600">
+                            <DollarSign className="w-4 h-4" />
+                            <span className="body-font font-medium">{formatPrice(service.customer_cost)}</span>
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-4 pt-4 border-t border-gray-300">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-gray-900 header-font">Total Duration:</span>
+                      <span className="font-medium text-gray-900 body-font">{formatTotalDuration()}</span>
                     </div>
-                    <div className="flex items-center gap-1 text-sm text-gray-600">
-                      <DollarSign className="w-4 h-4" />
-                      <span className="body-font font-medium">{formatPrice(selectedService.customer_cost)}</span>
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="font-semibold text-gray-900 header-font">Total Cost:</span>
+                      <span className="font-medium text-gray-900 body-font">{formatTotalPrice()}</span>
                     </div>
                   </div>
                 </div>
@@ -245,7 +288,9 @@ export function BookingConfirmation({
               <div>
                 <p className="font-medium text-gray-900">Prepare for Your Appointment</p>
                 <p className="text-gray-600">
-                  Make sure {selectedPet.pet_name} is ready for their {selectedService.name.toLowerCase()} appointment.
+                  Make sure {selectedPet.pet_name} is ready for their{" "}
+                  {selectedServices.map((s) => s.name.toLowerCase()).join(", ")} appointment
+                  {selectedServices.length > 1 ? "s" : ""}.
                 </p>
               </div>
             </div>

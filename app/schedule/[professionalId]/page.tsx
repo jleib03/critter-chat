@@ -46,7 +46,7 @@ export default function SchedulePage() {
   const [webhookData, setWebhookData] = useState<WebhookResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedService, setSelectedService] = useState<Service | null>(null)
+  const [selectedServices, setSelectedServices] = useState<Service[]>([])
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<SelectedTimeSlot | null>(null)
   const sessionIdRef = useRef<string | null>(null)
   const userTimezoneRef = useRef<string | null>(null)
@@ -359,8 +359,16 @@ export default function SchedulePage() {
   }, [professionalId])
 
   const handleServiceSelect = (service: Service) => {
-    setSelectedService(service)
     setSelectedTimeSlot(null)
+
+    setSelectedServices((prevServices) => {
+      if (prevServices.find((s) => s.name === service.name)) {
+        return prevServices.filter((s) => s.name !== service.name)
+      } else {
+        return [...prevServices, service]
+      }
+    })
+
     setShowBookingTypeSelection(true)
   }
 
@@ -376,13 +384,17 @@ export default function SchedulePage() {
   }
 
   const handleBackToServices = () => {
-    setSelectedService(null)
+    setSelectedServices([])
     setShowBookingTypeSelection(false)
     setBookingType(null)
     setRecurringConfig(null)
   }
 
   const handleTimeSlotSelect = (slot: SelectedTimeSlot) => {
+    if (selectedServices.length === 0) {
+      alert("Please select at least one service before selecting a time slot.")
+      return
+    }
     setSelectedTimeSlot(slot)
     setShowCustomerForm(true)
   }
@@ -408,11 +420,24 @@ export default function SchedulePage() {
         userTimezoneData.timezone,
       )
 
-      const endDateTimeUTC = calculateEndDateTimeUTC(
-        startDateTimeUTC,
-        selectedService!.duration_number,
-        selectedService!.duration_unit,
-      )
+      // Calculate total duration and cost for all selected services
+      let totalDurationMinutes = 0
+      let totalCost = 0
+
+      selectedServices.forEach((service) => {
+        let durationInMinutes = service.duration_number
+
+        if (service.duration_unit === "Hours") {
+          durationInMinutes = service.duration_number * 60
+        } else if (service.duration_unit === "Days") {
+          durationInMinutes = service.duration_number * 24 * 60
+        }
+
+        totalDurationMinutes += durationInMinutes
+        totalCost += service.customer_cost
+      })
+
+      const endDateTimeUTC = calculateEndDateTimeUTC(startDateTimeUTC, totalDurationMinutes, "Minutes")
 
       const endTimeLocal = new Date(endDateTimeUTC).toLocaleTimeString("en-US", {
         hour: "numeric",
@@ -438,12 +463,15 @@ export default function SchedulePage() {
             },
           }),
         booking_details: {
-          service_name: selectedService!.name,
-          service_description: selectedService!.description,
-          service_duration: selectedService!.duration_number,
-          service_duration_unit: selectedService!.duration_unit,
-          service_cost: selectedService!.customer_cost,
-          service_currency: selectedService!.customer_cost_currency,
+          service_names: selectedServices.map((service) => service.name),
+          service_descriptions: selectedServices.map((service) => service.description),
+          service_durations: selectedServices.map((service) => service.duration_number),
+          service_duration_units: selectedServices.map((service) => service.duration_unit),
+          service_costs: selectedServices.map((service) => service.customer_cost),
+          service_currencies: selectedServices.map((service) => service.customer_cost_currency),
+
+          total_duration_minutes: totalDurationMinutes,
+          total_cost: totalCost,
 
           start_utc: startDateTimeUTC,
           end_utc: endDateTimeUTC,
@@ -514,7 +542,7 @@ export default function SchedulePage() {
   }
 
   const handleNewBooking = async () => {
-    setSelectedService(null)
+    setSelectedServices([])
     setSelectedTimeSlot(null)
     setShowCustomerForm(false)
     setShowPetSelection(false)
@@ -595,8 +623,8 @@ export default function SchedulePage() {
               <div className="bg-gray-50 rounded-lg p-6 max-w-md mx-auto">
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-600 body-font">Service:</span>
-                    <span className="font-medium body-font">{selectedService?.name}</span>
+                    <span className="text-gray-600 body-font">Services:</span>
+                    <span className="font-medium body-font">{selectedServices.map((s) => s.name).join(", ")}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600 body-font">Date:</span>
@@ -688,7 +716,7 @@ export default function SchedulePage() {
 
         {showConfirmation ? (
           <BookingConfirmation
-            selectedService={selectedService!}
+            selectedService={selectedServices[0]!}
             selectedTimeSlot={selectedTimeSlot!}
             customerInfo={customerInfo}
             selectedPet={selectedPet!}
@@ -696,20 +724,21 @@ export default function SchedulePage() {
             onNewBooking={handleNewBooking}
             bookingType={bookingType}
             recurringConfig={recurringConfig}
+            selectedServices={selectedServices}
           />
         ) : showPetSelection ? (
           <PetSelection
             pets={pets}
             customerInfo={customerInfo}
-            selectedService={selectedService!}
+            selectedService={selectedServices[0]!}
             selectedTimeSlot={selectedTimeSlot!}
             professionalName={webhookData.professional_info.professional_name}
             onPetSelect={handlePetSelect}
             onBack={handleBackToCustomerForm}
           />
-        ) : showCustomerForm && selectedService && selectedTimeSlot ? (
+        ) : showCustomerForm && selectedServices.length > 0 && selectedTimeSlot ? (
           <CustomerForm
-            selectedService={selectedService}
+            selectedService={selectedServices[0]}
             selectedTimeSlot={selectedTimeSlot}
             professionalId={professionalId}
             professionalName={webhookData.professional_info.professional_name}
@@ -719,18 +748,18 @@ export default function SchedulePage() {
             bookingType={bookingType}
             recurringConfig={recurringConfig}
           />
-        ) : showBookingTypeSelection && selectedService ? (
+        ) : showBookingTypeSelection && selectedServices.length > 0 ? (
           <BookingTypeSelection
-            selectedService={selectedService}
+            selectedService={selectedServices[0]}
             onBookingTypeSelect={handleBookingTypeSelect}
             onBack={handleBackToServices}
           />
-        ) : selectedService && bookingType ? (
+        ) : selectedServices.length > 0 && bookingType ? (
           <div className="bg-white rounded-lg shadow-sm border p-6">
             <div className="mb-8">
               <ServiceSelectorBar
                 servicesByCategory={webhookData.services.services_by_category}
-                selectedService={selectedService}
+                selectedServices={selectedServices}
                 onServiceSelect={handleServiceSelect}
               />
             </div>
@@ -738,7 +767,7 @@ export default function SchedulePage() {
             <WeeklyCalendar
               workingDays={webhookData.schedule.working_days}
               bookingData={webhookData.bookings.all_booking_data}
-              selectedService={selectedService}
+              selectedServices={selectedServices}
               onTimeSlotSelect={handleTimeSlotSelect}
               selectedTimeSlot={selectedTimeSlot}
               professionalId={professionalId}
@@ -752,7 +781,7 @@ export default function SchedulePage() {
             <div className="mb-8">
               <ServiceSelectorBar
                 servicesByCategory={webhookData.services.services_by_category}
-                selectedService={selectedService}
+                selectedServices={[]}
                 onServiceSelect={handleServiceSelect}
               />
             </div>
@@ -760,7 +789,7 @@ export default function SchedulePage() {
             <WeeklyCalendar
               workingDays={webhookData.schedule.working_days}
               bookingData={webhookData.bookings.all_booking_data}
-              selectedService={selectedService}
+              selectedServices={[]}
               onTimeSlotSelect={handleTimeSlotSelect}
               selectedTimeSlot={selectedTimeSlot}
               professionalId={professionalId}

@@ -18,7 +18,7 @@ type RecurringConfig = {
 }
 
 type CustomerFormProps = {
-  selectedService: Service
+  selectedServices: Service[]
   selectedTimeSlot: SelectedTimeSlot
   professionalId: string
   professionalName: string
@@ -30,7 +30,7 @@ type CustomerFormProps = {
 }
 
 const CustomerForm: React.FC<CustomerFormProps> = ({
-  selectedService,
+  selectedServices,
   selectedTimeSlot,
   professionalId,
   professionalName,
@@ -139,6 +139,9 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
     }
   }
 
+  const totalDuration = selectedServices.reduce((sum, service) => sum + service.duration, 0)
+  const totalCost = selectedServices.reduce((sum, service) => sum + service.customer_cost, 0)
+
   return (
     <div className="flex flex-col max-w-2xl mx-auto">
       <Button variant="ghost" onClick={onBack} className="self-start mb-4">
@@ -170,9 +173,24 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
             {selectedTimeSlot.startTime} - {selectedTimeSlot.endTime}
           </span>
         </div>
+
+        {selectedServices.map((service) => (
+          <div key={service.id} className="flex items-center gap-2">
+            <DollarSign className="w-4 h-4 text-gray-500" />
+            <span className="text-sm body-font">
+              {service.name}: ${service.customer_cost} ({service.duration} mins)
+            </span>
+          </div>
+        ))}
+
         <div className="flex items-center gap-2">
           <DollarSign className="w-4 h-4 text-gray-500" />
-          <span className="text-sm body-font">Service Cost: ${selectedService.customer_cost}</span>
+          <span className="text-sm body-font">Total Cost: ${totalCost}</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Clock className="w-4 h-4 text-gray-500" />
+          <span className="text-sm body-font">Total Duration: {totalDuration} minutes</span>
         </div>
       </div>
 
