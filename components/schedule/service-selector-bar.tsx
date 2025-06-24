@@ -164,8 +164,9 @@ export function ServiceSelectorBar({
                   key={`${category}-${index}`}
                   onClick={() => {
                     onServiceSelect(service)
+                    // Don't close dropdown immediately to allow multiple selections
                   }}
-                  className={`w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-all duration-200 ${
+                  className={`w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-all duration-200 cursor-pointer ${
                     isServiceSelected(service) ? "bg-orange-50 border-l-4 border-l-[#E75837] shadow-sm" : ""
                   }`}
                 >
