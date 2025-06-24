@@ -188,6 +188,11 @@ export const calculateAvailableSlots = (
     const slotStartUTC = new Date(`${date}T${startTime}:00`).getTime()
     const slotEndUTC = new Date(`${date}T${endTime}:00`).getTime()
 
+    console.log("Booking Start (UTC):", bookingStart.toISOString())
+    console.log("Booking End (UTC):", bookingEnd.toISOString())
+    console.log("Slot Start (UTC):", new Date(slotStartUTC).toISOString())
+    console.log("Slot End (UTC):", new Date(slotEndUTC).toISOString())
+
     const bookingStartMinutes = bookingStart.getHours() * 60 + bookingStart.getMinutes()
     const bookingEndMinutes = bookingEnd.getHours() * 60 + bookingEnd.getMinutes()
 
