@@ -442,7 +442,8 @@ export default function SchedulePage() {
         }
 
         totalDurationMinutes += durationInMinutes
-        totalCost += service.customer_cost
+        // Convert string to number before adding
+        totalCost += Number.parseFloat(service.customer_cost.toString())
       })
 
       const endDateTimeUTC = calculateEndDateTimeUTC(startDateTimeUTC, totalDurationMinutes, "Minutes")
