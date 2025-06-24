@@ -16,6 +16,9 @@ type LiveChatWidgetProps = {
   isConfigLoading?: boolean
 }
 
+// Use the same webhook URL as the custom agent setup
+const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/803d260b-1b17-4abf-8079-2d40225c29b0"
+
 export default function LiveChatWidget({
   professionalId,
   professionalName,
@@ -64,43 +67,82 @@ export default function LiveChatWidget({
     setIsLoading(true)
 
     try {
-      // Send message with professional-specific configuration
-      const response = await fetch(`${process.env.NEXT_PUBLIC_WEBHOOK_URL}/chat-agent`, {
+      console.log("💬 Sending chat message:", message)
+      console.log("🔗 Using webhook URL:", WEBHOOK_URL)
+
+      // Use the same webhook URL and payload format as the custom agent setup
+      const payload = {
+        action: "support_conversation",
+        professionalId: professionalId,
+        message: message,
+        userInfo: {
+          source: "live_chat_widget",
+          sessionId: "chat_" + Date.now(),
+          timestamp: new Date().toISOString(),
+        },
+        // Include agent configuration for context
+        agentConfig: {
+          instructions: agentInstructions,
+          response_tone: chatConfig?.agent_behavior?.response_tone || "friendly",
+          max_response_length: chatConfig?.agent_behavior?.max_response_length || 200,
+          include_booking_links: chatConfig?.agent_behavior?.include_booking_links || true,
+          professional_name: professionalName,
+          business_context: chatConfig?.business_context || {},
+        },
+      }
+
+      console.log("📤 Chat payload:", JSON.stringify(payload, null, 2))
+
+      const response = await fetch(WEBHOOK_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          message: message,
-          professional_id: professionalId,
-          conversation_history: messages.slice(-5), // Send last 5 messages for context
-          agent_config: {
-            instructions: agentInstructions,
-            response_tone: chatConfig?.agent_behavior?.response_tone || "friendly",
-            max_response_length: chatConfig?.agent_behavior?.max_response_length || 200,
-            include_booking_links: chatConfig?.agent_behavior?.include_booking_links || true,
-            professional_name: professionalName,
-          },
-        }),
+        body: JSON.stringify(payload),
       })
 
+      console.log("📡 Chat response status:", response.status)
+
       if (!response.ok) {
-        throw new Error("Failed to get response")
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
 
       const data = await response.json()
+      console.log("📥 Chat response data:", JSON.stringify(data, null, 2))
+
+      // Parse the response using the same logic as the testing step
+      let responseMessage = "I'm sorry, I couldn't process that request."
+
+      if (Array.isArray(data) && data.length > 0) {
+        const firstItem = data[0]
+        if (firstItem.output) {
+          responseMessage = firstItem.output
+        } else if (firstItem.response) {
+          responseMessage = firstItem.response
+        } else if (typeof firstItem === "string") {
+          responseMessage = firstItem
+        }
+      } else if (data && typeof data === "object") {
+        if (data.output) {
+          responseMessage = data.output
+        } else if (data.response) {
+          responseMessage = data.response
+        }
+      } else if (typeof data === "string") {
+        responseMessage = data
+      }
+
+      console.log("✅ Final response message:", responseMessage)
 
       // Add bot response
       const botMessage: ChatMessage = {
-        text:
-          data.response ||
-          "I'm sorry, I'm having trouble responding right now. Please try again or contact us directly.",
+        text: responseMessage,
         isUser: false,
       }
 
       setMessages((prev) => [...prev, botMessage])
     } catch (error) {
-      console.error("Chat error:", error)
+      console.error("💥 Chat error:", error)
 
       // Add error message
       const errorMessage: ChatMessage = {
