@@ -182,12 +182,16 @@ export const calculateAvailableSlots = (
     if (booking.booking_date_formatted !== date) return false
     if (!booking.start || !booking.end || !booking.booking_id) return false
 
+    // Convert local times to UTC for comparison
     const bookingStart = new Date(booking.start)
     const bookingEnd = new Date(booking.end)
+    const slotStartUTC = new Date(`${date}T${startTime}:00`).getTime()
+    const slotEndUTC = new Date(`${date}T${endTime}:00`).getTime()
+
     const bookingStartMinutes = bookingStart.getHours() * 60 + bookingStart.getMinutes()
     const bookingEndMinutes = bookingEnd.getHours() * 60 + bookingEnd.getMinutes()
 
-    return slotStart < bookingEndMinutes && slotEnd > bookingStartMinutes
+    return slotStartUTC < bookingEnd.getTime() && slotEndUTC > bookingStart.getTime()
   })
 
   const existingBookingsCount = overlappingBookings.length
