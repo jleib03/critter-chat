@@ -1,6 +1,6 @@
 "use client"
 import { useState } from "react"
-import { Loader2, Copy, Check, Settings, Users, MessageSquare, Construction, ArrowRight } from "lucide-react"
+import { Loader2, Copy, Check, Settings, Users, MessageSquare, Calendar, ArrowRight } from "lucide-react"
 import Header from "../../../components/header"
 import PasswordProtection from "../../../components/password-protection"
 import { useRouter } from "next/navigation"
@@ -14,6 +14,10 @@ export default function ProfessionalSetupPage() {
   const [professionalId, setProfessionalId] = useState("")
   const [showResults, setShowResults] = useState(false)
   const [copiedStates, setCopiedStates] = useState<{ [key: string]: boolean }>({})
+  const [showScheduleModal, setShowScheduleModal] = useState(false)
+  const [scheduleBusinessName, setScheduleBusinessName] = useState("")
+  const [scheduleError, setScheduleError] = useState("")
+  const [isScheduleSubmitting, setIsScheduleSubmitting] = useState(false)
 
   const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
   const router = useRouter()
@@ -121,6 +125,78 @@ export default function ProfessionalSetupPage() {
   const buttonCode = `<!-- Critter Customer Intake Button -->
 ${buttonHtml}`
 
+  const handleScheduleSetupClick = () => {
+    setShowScheduleModal(true)
+    setScheduleError("")
+    setScheduleBusinessName("")
+  }
+
+  const handleCloseScheduleModal = () => {
+    setShowScheduleModal(false)
+    setScheduleError("")
+    setScheduleBusinessName("")
+    setIsScheduleSubmitting(false)
+  }
+
+  const handleScheduleSubmit = async () => {
+    if (!scheduleBusinessName.trim()) {
+      setScheduleError("Please enter your business name")
+      return
+    }
+
+    setIsScheduleSubmitting(true)
+    setScheduleError("")
+
+    try {
+      const payload = {
+        action: "get-url",
+        businessName: scheduleBusinessName.trim(),
+        timestamp: new Date().toISOString(),
+        source: "schedule_setup_page",
+      }
+
+      console.log("Getting professional ID for schedule setup:", payload)
+
+      const response = await fetch(WEBHOOK_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log("Received response:", data)
+
+      // Handle the response format: [{"id":"151"}]
+      let professionalId = null
+
+      if (Array.isArray(data) && data.length > 0 && data[0].id) {
+        professionalId = data[0].id
+      } else if (data.professionalId) {
+        professionalId = data.professionalId
+      } else if (data.id) {
+        professionalId = data.id
+      }
+
+      if (professionalId) {
+        // Navigate to schedule setup page
+        router.push(`/schedule/set-up/${professionalId}`)
+      } else {
+        setScheduleError("Business not found. Please check the spelling and try again.")
+      }
+    } catch (error) {
+      console.error("Error getting professional ID:", error)
+      setScheduleError("There was an error processing your request. Please try again.")
+    } finally {
+      setIsScheduleSubmitting(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#FBF8F3] flex flex-col">
       <Header />
@@ -176,21 +252,21 @@ ${buttonHtml}`
                   </span>
                 </div>
 
-                {/* Under Construction Tile */}
-                <div className="bg-white rounded-xl shadow-md p-6 text-center relative overflow-hidden">
-                  <div className="absolute top-3 right-3">
-                    <span className="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                      In Development
-                    </span>
-                  </div>
+                {/* Schedule Setup Tile - Replaces Under Construction */}
+                <div
+                  onClick={() => setShowScheduleModal(true)}
+                  className="bg-white rounded-xl shadow-md p-6 text-center transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer border border-transparent hover:border-[#745E25]/20"
+                >
                   <div className="w-12 h-12 bg-[#f9f7f2] rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Construction className="h-6 w-6 text-[#745E25]" />
+                    <Calendar className="h-6 w-6 text-[#745E25]" />
                   </div>
-                  <h3 className="text-lg font-bold mb-2 header-font">New Feature</h3>
+                  <h3 className="text-lg font-bold mb-2 header-font">Schedule Setup</h3>
                   <p className="text-gray-600 body-font mb-4">
-                    We're working on something exciting to help you manage your business more effectively.
+                    Configure your team, working hours, capacity rules, and blocked time for appointment scheduling.
                   </p>
-                  <span className="inline-flex items-center text-gray-400 text-sm font-medium">Stay tuned</span>
+                  <span className="inline-flex items-center text-[#745E25] text-sm font-medium">
+                    Set up now <ArrowRight className="ml-1 h-4 w-4" />
+                  </span>
                 </div>
               </div>
             </>
@@ -407,6 +483,55 @@ ${buttonHtml}`
                   </>
                 ) : (
                   "Get My Link"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Schedule Setup Modal */}
+      {showScheduleModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold mb-4 header-font">Schedule Setup</h3>
+            <p className="text-gray-600 mb-4 body-font">
+              Enter your business name to access your schedule configuration. This will set up your team, working hours,
+              and booking capacity.
+            </p>
+
+            <div className="mb-4">
+              <input
+                type="text"
+                value={scheduleBusinessName}
+                onChange={(e) => setScheduleBusinessName(e.target.value)}
+                placeholder="Your business name"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#745E25] body-font"
+                disabled={isScheduleSubmitting}
+              />
+              {scheduleError && <p className="mt-2 text-sm text-red-600 body-font">{scheduleError}</p>}
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={handleCloseScheduleModal}
+                disabled={isScheduleSubmitting}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors body-font"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleScheduleSubmit}
+                disabled={isScheduleSubmitting || !scheduleBusinessName.trim()}
+                className="px-6 py-2 bg-[#745E25] text-white rounded-lg hover:bg-[#5d4a1e] transition-colors body-font flex items-center"
+              >
+                {isScheduleSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Getting Setup...
+                  </>
+                ) : (
+                  "Access Schedule Setup"
                 )}
               </button>
             </div>
