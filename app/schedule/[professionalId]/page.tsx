@@ -442,8 +442,7 @@ export default function SchedulePage() {
         }
 
         totalDurationMinutes += durationInMinutes
-        // Convert string to number before adding
-        totalCost += Number.parseFloat(service.customer_cost.toString())
+        totalCost += service.customer_cost
       })
 
       const endDateTimeUTC = calculateEndDateTimeUTC(startDateTimeUTC, totalDurationMinutes, "Minutes")
@@ -525,7 +524,7 @@ export default function SchedulePage() {
       const result = await response.json()
       console.log("Booking created:", result)
 
-      if (result && result[0] && result[0].Output === "Booking Successfully Created") {
+      if (result && result[0] && result[0].output === "Booking Successfully Created") {
         setShowPetSelection(false)
         setCreatingBooking(false)
         setShowConfirmation(true)
