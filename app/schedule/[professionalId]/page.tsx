@@ -145,10 +145,10 @@ export default function SchedulePage() {
         hour24 = 0
       }
 
-      // Parse the date string as YYYY-MM-DD and create a local date
+      // Fix: Parse date string properly to avoid timezone shifts
       const [year, month, day] = dateStr.split("-").map(Number)
 
-      // Create the date in the user's local timezone
+      // Create date in user's local timezone
       const localDate = new Date(year, month - 1, day, hour24, minutes, 0, 0)
 
       console.log(
@@ -158,7 +158,8 @@ export default function SchedulePage() {
       return localDate.toISOString()
     } catch (error) {
       console.error("Error converting time to UTC:", error)
-      // Fallback with same logic
+
+      // Fallback logic
       const [time, period] = timeStr.split(" ")
       const [hours, minutes] = time.split(":").map(Number)
       let hour24 = hours
@@ -228,6 +229,9 @@ export default function SchedulePage() {
       const parsedData = parseWebhookData(rawData)
       setWebhookData(parsedData)
 
+      // Log the parsed config and the config that will be used for professional config
+      console.log("Parsed config:", parsedData.config)
+
       // Set booking preferences from parsed data
       if (parsedData.booking_preferences) {
         setBookingPreferences(parsedData.booking_preferences)
@@ -273,8 +277,11 @@ export default function SchedulePage() {
           blockedTimes: parsedData.config.blocked_times,
           lastUpdated: new Date().toISOString(),
         }
+        console.log("Config for professional config:", configForProfessionalConfig)
         setProfessionalConfig(configForProfessionalConfig)
         console.log("Professional configuration loaded from webhook:", configForProfessionalConfig)
+      } else {
+        setProfessionalConfig(null) // Ensure it's set to null if not in webhook
       }
 
       console.log("Schedule data loaded:", parsedData)
