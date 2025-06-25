@@ -39,6 +39,13 @@ interface ParsedWebhookData {
     services_by_category: { [category: string]: Service[] }
   }
   config: any
+  booking_preferences: {
+    business_name?: string
+    booking_type?: string
+    allow_direct_booking?: boolean
+    require_approval?: boolean
+    online_booking_enabled?: boolean
+  } | null
 }
 
 export default function SchedulePage() {
@@ -215,6 +222,22 @@ export default function SchedulePage() {
       const parsedData = parseWebhookData(rawData)
       setWebhookData(parsedData)
 
+      // Set booking preferences from parsed data
+      if (parsedData.booking_preferences) {
+        setBookingPreferences(parsedData.booking_preferences)
+
+        // Check if online booking is disabled
+        if (parsedData.booking_preferences.online_booking_enabled === false) {
+          console.log("Online booking is disabled - setting showBookingDisabled to true")
+          setShowBookingDisabled(true)
+        } else {
+          setShowBookingDisabled(false)
+        }
+      } else {
+        console.log("No booking preferences found")
+        setShowBookingDisabled(false)
+      }
+
       // If professional config is available in webhook, use it
       if (parsedData.config) {
         const configForProfessionalConfig = {
@@ -246,13 +269,6 @@ export default function SchedulePage() {
         }
         setProfessionalConfig(configForProfessionalConfig)
         console.log("Professional configuration loaded from webhook:", configForProfessionalConfig)
-      }
-
-      // NEW: Check if online booking is disabled
-      if (bookingPreferences && bookingPreferences.online_booking_enabled === false) {
-        setShowBookingDisabled(true)
-      } else {
-        setShowBookingDisabled(false)
       }
 
       console.log("Schedule data loaded:", parsedData)
@@ -358,19 +374,6 @@ export default function SchedulePage() {
       bookingPrefs = configEntry.webhook_response.config_data
     }
 
-    if (bookingPrefs) {
-      console.log("Found booking preferences:", bookingPrefs)
-      setBookingPreferences({
-        business_name: bookingPrefs.business_name,
-        booking_type: bookingPrefs.booking_type,
-        allow_direct_booking: bookingPrefs.allow_direct_booking,
-        require_approval: bookingPrefs.require_approval,
-        online_booking_enabled: bookingPrefs.online_booking_enabled,
-      })
-    } else {
-      console.log("No booking preferences found in webhook data")
-    }
-
     return {
       professional_info: {
         professional_id: scheduleEntry?.professional_id || professionalId,
@@ -386,6 +389,15 @@ export default function SchedulePage() {
         services_by_category: servicesByCategory,
       },
       config: configEntry?.webhook_response?.config_data,
+      booking_preferences: bookingPrefs
+        ? {
+            business_name: bookingPrefs.business_name,
+            booking_type: bookingPrefs.booking_type,
+            allow_direct_booking: bookingPrefs.allow_direct_booking,
+            require_approval: bookingPrefs.require_approval,
+            online_booking_enabled: bookingPrefs.online_booking_enabled,
+          }
+        : null,
     }
   }
 
