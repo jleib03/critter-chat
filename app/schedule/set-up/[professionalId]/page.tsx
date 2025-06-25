@@ -591,24 +591,6 @@ export default function ProfessionalSetupPage() {
                       </div>
                     </div>
                   </RadioGroup>
-
-                  {/* Custom Instructions */}
-                  <div className="space-y-2">
-                    <Label htmlFor="customInstructions" className="body-font">
-                      Custom Instructions for Customers (Optional)
-                    </Label>
-                    <Textarea
-                      id="customInstructions"
-                      value={bookingPreferences.custom_instructions || ""}
-                      onChange={(e) => updateBookingPreferences({ custom_instructions: e.target.value })}
-                      placeholder="Add any special instructions or requirements for customers when booking..."
-                      className="body-font"
-                      rows={3}
-                    />
-                    <p className="text-sm text-gray-500 body-font">
-                      These instructions will be displayed to customers during the booking process.
-                    </p>
-                  </div>
                 </CardContent>
               </Card>
             </div>
