@@ -64,6 +64,15 @@ export default function SchedulePage() {
   const [bookingType, setBookingType] = useState<BookingType | null>(null)
   const [recurringConfig, setRecurringConfig] = useState<RecurringConfig | null>(null)
 
+  const [bookingPreferences, setBookingPreferences] = useState<{
+    business_name?: string
+    booking_type?: string
+    allow_direct_booking?: boolean
+    require_approval?: boolean
+    online_booking_enabled?: boolean
+  } | null>(null)
+  const [showBookingDisabledModal, setShowBookingDisabledModal] = useState(false)
+
   // Generate a unique session ID
   const generateSessionId = () => {
     return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
@@ -326,6 +335,18 @@ export default function SchedulePage() {
       })
     })
 
+    // Add this after parsing other data
+    const bookingPrefs = rawData.find((entry) => entry.booking_type || entry.online_booking_enabled !== undefined)
+    if (bookingPrefs) {
+      setBookingPreferences({
+        business_name: bookingPrefs.business_name,
+        booking_type: bookingPrefs.booking_type,
+        allow_direct_booking: bookingPrefs.allow_direct_booking,
+        require_approval: bookingPrefs.require_approval,
+        online_booking_enabled: bookingPrefs.online_booking_enabled,
+      })
+    }
+
     return {
       professional_info: {
         professional_id: scheduleEntry?.professional_id || professionalId,
@@ -403,6 +424,13 @@ export default function SchedulePage() {
       alert("Please select at least one service before selecting a time slot.")
       return
     }
+
+    // Check if online booking is disabled
+    if (bookingPreferences && bookingPreferences.online_booking_enabled === false) {
+      setShowBookingDisabledModal(true)
+      return
+    }
+
     setSelectedTimeSlot(slot)
     setShowCustomerForm(true)
   }
@@ -454,13 +482,25 @@ export default function SchedulePage() {
         timeZone: userTimezoneData.timezone,
       })
 
+      const determineBookingType = () => {
+        if (bookingPreferences?.allow_direct_booking === true) {
+          return "direct"
+        } else if (
+          bookingPreferences?.allow_direct_booking === false &&
+          bookingPreferences?.require_approval === true
+        ) {
+          return "request"
+        }
+        return "direct" // default fallback
+      }
+
       const bookingData = {
         professional_id: professionalId,
         action: "create_booking",
         session_id: sessionIdRef.current,
         timestamp: new Date().toISOString(),
         user_timezone: userTimezoneData,
-        booking_type: bookingType,
+        booking_type: determineBookingType(),
         ...(bookingType === "recurring" &&
           recurringConfig && {
             recurring_details: {
@@ -794,6 +834,48 @@ export default function SchedulePage() {
               onServiceSelect={handleServiceSelect}
               onContinue={() => setShowBookingTypeSelection(true)}
             />
+          </div>
+        )}
+        {/* Booking Disabled Modal */}
+        {showBookingDisabledModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <div className="text-center">
+                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-orange-100 mb-4">
+                  <svg className="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2 header-font">Online Booking Not Available</h3>
+                <p className="text-sm text-gray-500 mb-6 body-font">
+                  {webhookData?.professional_info.professional_name} has not enrolled in online booking. Please contact
+                  them directly through the Critter app to schedule your appointment.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowBookingDisabledModal(false)}
+                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors body-font"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={() => {
+                      // Open Critter app or redirect to contact page
+                      window.open("https://critter.app", "_blank")
+                      setShowBookingDisabledModal(false)
+                    }}
+                    className="flex-1 bg-[#E75837] hover:bg-[#d14a2e] text-white font-medium py-2 px-4 rounded-lg transition-colors body-font"
+                  >
+                    Open Critter App
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

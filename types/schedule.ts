@@ -166,6 +166,13 @@ export type WebhookResponse = {
       professional_id: string
     }
   }
+  // Add these fields to the WebhookResponse type
+  business_name?: string
+  booking_type?: "direct_booking" | "request_to_book" | "no_online_booking"
+  allow_direct_booking?: boolean
+  require_approval?: boolean
+  online_booking_enabled?: boolean
+  updated_at?: string
 }
 
 export type ParsedWebhookData = {
