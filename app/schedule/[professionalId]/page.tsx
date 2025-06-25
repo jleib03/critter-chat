@@ -41,7 +41,7 @@ interface ParsedWebhookData {
   config: any
   booking_preferences: {
     business_name?: string
-    booking_type?: string
+    booking_system?: string
     allow_direct_booking?: boolean
     require_approval?: boolean
     online_booking_enabled?: boolean
@@ -75,7 +75,7 @@ export default function SchedulePage() {
 
   const [bookingPreferences, setBookingPreferences] = useState<{
     business_name?: string
-    booking_type?: string
+    booking_system?: string
     allow_direct_booking?: boolean
     require_approval?: boolean
     online_booking_enabled?: boolean
@@ -364,7 +364,7 @@ export default function SchedulePage() {
     // Add this after parsing other data - REPLACE the existing booking preferences parsing
     let bookingPrefs = rawData.find(
       (entry) =>
-        entry.booking_type !== undefined ||
+        entry.booking_system !== undefined ||
         entry.online_booking_enabled !== undefined ||
         entry.allow_direct_booking !== undefined,
     )
@@ -392,7 +392,7 @@ export default function SchedulePage() {
       booking_preferences: bookingPrefs
         ? {
             business_name: bookingPrefs.business_name,
-            booking_type: bookingPrefs.booking_type,
+            booking_system: bookingPrefs.booking_system,
             allow_direct_booking: bookingPrefs.allow_direct_booking,
             require_approval: bookingPrefs.require_approval,
             online_booking_enabled: bookingPrefs.online_booking_enabled,

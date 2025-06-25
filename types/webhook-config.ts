@@ -33,7 +33,7 @@ export interface WebhookBlockedTime {
 }
 
 export interface WebhookBookingPreferences {
-  booking_type: "direct_booking" | "request_to_book" | "no_online_booking"
+  booking_system: "direct_booking" | "request_to_book" | "no_online_booking" // Changed from booking_type
   allow_direct_booking: boolean
   require_approval: boolean
   online_booking_enabled: boolean

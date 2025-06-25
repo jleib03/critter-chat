@@ -20,7 +20,7 @@ const professionalConfigData = {
 if (configData.booking_preferences) {
   const bookingPrefs = configData.booking_preferences
 
-  professionalConfigData.booking_type = bookingPrefs.booking_type || "direct_booking"
+  professionalConfigData.booking_system = bookingPrefs.booking_system || "direct_booking" // Changed from booking_type
   professionalConfigData.allow_direct_booking =
     bookingPrefs.allow_direct_booking !== undefined ? bookingPrefs.allow_direct_booking : true
   professionalConfigData.require_approval =
@@ -30,7 +30,7 @@ if (configData.booking_preferences) {
 
   // Store full booking preferences as JSON for additional data
   professionalConfigData.booking_preferences = JSON.stringify({
-    booking_type: bookingPrefs.booking_type,
+    booking_system: bookingPrefs.booking_system, // Changed from booking_type
     allow_direct_booking: bookingPrefs.allow_direct_booking,
     require_approval: bookingPrefs.require_approval,
     online_booking_enabled: bookingPrefs.online_booking_enabled,
@@ -38,12 +38,12 @@ if (configData.booking_preferences) {
   })
 } else {
   // Set defaults if no booking preferences provided
-  professionalConfigData.booking_type = "direct_booking"
+  professionalConfigData.booking_system = "direct_booking" // Changed from booking_type
   professionalConfigData.allow_direct_booking = true
   professionalConfigData.require_approval = false
   professionalConfigData.online_booking_enabled = true
   professionalConfigData.booking_preferences = JSON.stringify({
-    booking_type: "direct_booking",
+    booking_system: "direct_booking", // Changed from booking_type
     allow_direct_booking: true,
     require_approval: false,
     online_booking_enabled: true,
@@ -179,7 +179,7 @@ outputs.push({
       professional_id: professionalId,
       session_id: sessionId,
       business_name: configData.business_name,
-      booking_type: professionalConfigData.booking_type,
+      booking_system: professionalConfigData.booking_system, // Changed from booking_type
       online_booking_enabled: professionalConfigData.online_booking_enabled,
       total_records_processed: outputs.length,
       employees_count: configData.employees?.length || 0,

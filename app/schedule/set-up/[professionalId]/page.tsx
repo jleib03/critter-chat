@@ -32,7 +32,6 @@ import type {
   WebhookEmployee,
   WebhookBlockedTime,
   WebhookCapacityRules,
-  WebhookBookingPreferences,
 } from "@/types/webhook-config"
 
 const DEFAULT_WORKING_DAYS = [
@@ -53,8 +52,8 @@ const DEFAULT_CAPACITY_RULES: WebhookCapacityRules = {
   require_all_employees_for_service: false,
 }
 
-const DEFAULT_BOOKING_PREFERENCES: WebhookBookingPreferences = {
-  booking_type: "direct_booking",
+const DEFAULT_BOOKING_PREFERENCES = {
+  booking_system: "direct_booking", // Changed from booking_type
   allow_direct_booking: true,
   require_approval: false,
   online_booking_enabled: true,
@@ -73,7 +72,7 @@ export default function ProfessionalSetupPage() {
 
   // Configuration state
   const [businessName, setBusinessName] = useState("")
-  const [bookingPreferences, setBookingPreferences] = useState<WebhookBookingPreferences>(DEFAULT_BOOKING_PREFERENCES)
+  const [bookingPreferences, setBookingPreferences] = useState(DEFAULT_BOOKING_PREFERENCES)
   const [employees, setEmployees] = useState<WebhookEmployee[]>([])
   const [capacityRules, setCapacityRules] = useState<WebhookCapacityRules>(DEFAULT_CAPACITY_RULES)
   const [blockedTimes, setBlockedTimes] = useState<WebhookBlockedTime[]>([])
@@ -390,7 +389,7 @@ export default function ProfessionalSetupPage() {
   }
 
   // Booking preference handlers
-  const updateBookingPreferences = (updates: Partial<WebhookBookingPreferences>) => {
+  const updateBookingPreferences = (updates: Partial<typeof DEFAULT_BOOKING_PREFERENCES>) => {
     setBookingPreferences((prev) => ({ ...prev, ...updates }))
   }
 
@@ -516,14 +515,14 @@ export default function ProfessionalSetupPage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <RadioGroup
-                    value={bookingPreferences.booking_type}
+                    value={bookingPreferences.booking_system} // Changed from booking_type
                     onValueChange={(value) => {
-                      const bookingType = value as "direct_booking" | "request_to_book" | "no_online_booking"
+                      const bookingSystem = value as "direct_booking" | "request_to_book" | "no_online_booking" // Changed variable name
                       updateBookingPreferences({
-                        booking_type: bookingType,
-                        allow_direct_booking: bookingType === "direct_booking",
-                        require_approval: bookingType === "request_to_book",
-                        online_booking_enabled: bookingType !== "no_online_booking",
+                        booking_system: bookingSystem, // Changed from booking_type
+                        allow_direct_booking: bookingSystem === "direct_booking",
+                        require_approval: bookingSystem === "request_to_book",
+                        online_booking_enabled: bookingSystem !== "no_online_booking",
                       })
                     }}
                     className="space-y-4"

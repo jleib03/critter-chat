@@ -2,7 +2,7 @@
 SELECT 
     pc.professional_id,
     pc.business_name,
-    pc.booking_type,
+    pc.booking_system,  -- Changed from booking_type
     pc.allow_direct_booking,
     pc.require_approval,
     pc.online_booking_enabled,
@@ -89,7 +89,7 @@ WHERE pc.professional_id = $1
 GROUP BY 
     pc.professional_id, 
     pc.business_name, 
-    pc.booking_type,
+    pc.booking_system,
     pc.allow_direct_booking,
     pc.require_approval,
     pc.online_booking_enabled,
