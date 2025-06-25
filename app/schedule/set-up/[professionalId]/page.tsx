@@ -53,7 +53,7 @@ const DEFAULT_CAPACITY_RULES: WebhookCapacityRules = {
 }
 
 const DEFAULT_BOOKING_PREFERENCES = {
-  booking_system: "direct_booking", // Changed from booking_type
+  booking_system: "direct_booking", // Internal frontend field
   allow_direct_booking: true,
   require_approval: false,
   online_booking_enabled: true,
@@ -99,6 +99,34 @@ export default function ProfessionalSetupPage() {
   // Generate session ID
   const generateSessionId = () => {
     return `setup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  }
+
+  // Helper function to map booking_system to booking_type for webhook
+  const mapBookingSystemToBookingType = (bookingSystem: string) => {
+    switch (bookingSystem) {
+      case "direct_booking":
+        return "direct_booking"
+      case "request_to_book":
+        return "request_to_book"
+      case "no_online_booking":
+        return "no_online_booking"
+      default:
+        return "direct_booking"
+    }
+  }
+
+  // Helper function to map booking_type from webhook to booking_system for frontend
+  const mapBookingTypeToBookingSystem = (bookingType: string) => {
+    switch (bookingType) {
+      case "direct_booking":
+        return "direct_booking"
+      case "request_to_book":
+        return "request_to_book"
+      case "no_online_booking":
+        return "no_online_booking"
+      default:
+        return "direct_booking"
+    }
   }
 
   // Load existing configuration
@@ -155,7 +183,9 @@ export default function ProfessionalSetupPage() {
           if (configData.booking_preferences) {
             const prefs = configData.booking_preferences
             setBookingPreferences({
-              booking_system: prefs.booking_system || prefs.booking_type || "direct_booking", // Handle both formats
+              booking_system: mapBookingTypeToBookingSystem(
+                prefs.booking_type || prefs.booking_system || "direct_booking",
+              ),
               allow_direct_booking: prefs.allow_direct_booking ?? true,
               require_approval: prefs.require_approval ?? false,
               online_booking_enabled: prefs.online_booking_enabled ?? true,
@@ -261,6 +291,15 @@ export default function ProfessionalSetupPage() {
 
       const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/5671c1dd-48f6-47a9-85ac-4e20cf261520"
 
+      // Prepare booking preferences with proper booking_type mapping
+      const bookingPreferencesForWebhook = {
+        booking_type: mapBookingSystemToBookingType(bookingPreferences.booking_system), // Map to booking_type for webhook
+        allow_direct_booking: bookingPreferences.allow_direct_booking,
+        require_approval: bookingPreferences.require_approval,
+        online_booking_enabled: bookingPreferences.online_booking_enabled,
+        custom_instructions: bookingPreferences.custom_instructions,
+      }
+
       const payload: SaveConfigWebhookPayload = {
         action: "save_professional_config",
         professional_id: professionalId,
@@ -268,7 +307,7 @@ export default function ProfessionalSetupPage() {
         timestamp: new Date().toISOString(),
         config_data: {
           business_name: businessName,
-          booking_preferences: bookingPreferences,
+          booking_preferences: bookingPreferencesForWebhook, // Send with booking_type
           employees: employees,
           capacity_rules: capacityRules,
           blocked_times: blockedTimes,
@@ -276,6 +315,7 @@ export default function ProfessionalSetupPage() {
       }
 
       console.log("Saving professional configuration:", payload)
+      console.log("Booking preferences being sent:", bookingPreferencesForWebhook)
 
       const response = await fetch(webhookUrl, {
         method: "POST",
@@ -522,11 +562,11 @@ export default function ProfessionalSetupPage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <RadioGroup
-                    value={bookingPreferences.booking_system} // Changed from booking_type
+                    value={bookingPreferences.booking_system}
                     onValueChange={(value) => {
-                      const bookingSystem = value as "direct_booking" | "request_to_book" | "no_online_booking" // Changed variable name
+                      const bookingSystem = value as "direct_booking" | "request_to_book" | "no_online_booking"
                       updateBookingPreferences({
-                        booking_system: bookingSystem, // Changed from booking_type
+                        booking_system: bookingSystem,
                         allow_direct_booking: bookingSystem === "direct_booking",
                         require_approval: bookingSystem === "request_to_book",
                         online_booking_enabled: bookingSystem !== "no_online_booking",
