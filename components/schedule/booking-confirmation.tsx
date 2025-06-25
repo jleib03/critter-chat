@@ -35,4 +35,5 @@ const BookingConfirmation: React.FC<BookingConfirmationProps> = ({ selectedTimeS
   )
 }
 
+export { BookingConfirmation }
 export default BookingConfirmation
