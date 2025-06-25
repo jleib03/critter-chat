@@ -11,13 +11,28 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Trash2, Plus, Users, Clock, Shield, Calendar, ExternalLink, AlertCircle } from "lucide-react"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import {
+  Loader2,
+  Trash2,
+  Plus,
+  Users,
+  Clock,
+  Shield,
+  Calendar,
+  ExternalLink,
+  AlertCircle,
+  CheckCircle,
+  Settings,
+  Smartphone,
+} from "lucide-react"
 import type {
   GetConfigWebhookPayload,
   SaveConfigWebhookPayload,
   WebhookEmployee,
   WebhookBlockedTime,
   WebhookCapacityRules,
+  WebhookBookingPreferences,
 } from "@/types/webhook-config"
 
 const DEFAULT_WORKING_DAYS = [
@@ -38,6 +53,14 @@ const DEFAULT_CAPACITY_RULES: WebhookCapacityRules = {
   require_all_employees_for_service: false,
 }
 
+const DEFAULT_BOOKING_PREFERENCES: WebhookBookingPreferences = {
+  booking_type: "direct_booking",
+  allow_direct_booking: true,
+  require_approval: false,
+  online_booking_enabled: true,
+  custom_instructions: "",
+}
+
 export default function ProfessionalSetupPage() {
   const params = useParams()
   const professionalId = params.professionalId as string
@@ -46,10 +69,11 @@ export default function ProfessionalSetupPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState("business")
+  const [activeTab, setActiveTab] = useState("booking")
 
   // Configuration state
   const [businessName, setBusinessName] = useState("")
+  const [bookingPreferences, setBookingPreferences] = useState<WebhookBookingPreferences>(DEFAULT_BOOKING_PREFERENCES)
   const [employees, setEmployees] = useState<WebhookEmployee[]>([])
   const [capacityRules, setCapacityRules] = useState<WebhookCapacityRules>(DEFAULT_CAPACITY_RULES)
   const [blockedTimes, setBlockedTimes] = useState<WebhookBlockedTime[]>([])
@@ -128,6 +152,11 @@ export default function ProfessionalSetupPage() {
           setBusinessName(configData.business_name || "")
           setLastUpdated(configData.last_updated || new Date().toISOString())
 
+          // Process booking preferences
+          if (configData.booking_preferences) {
+            setBookingPreferences(configData.booking_preferences)
+          }
+
           // Process employees from structured data
           if (configData.employees && Array.isArray(configData.employees)) {
             console.log("Loading employees from structured config:", configData.employees.length)
@@ -190,110 +219,12 @@ export default function ProfessionalSetupPage() {
             setBlockedTimes(configData.blocked_times)
           }
         } else {
-          // Fallback to raw data processing (original logic)
-          console.log("No structured responses found, processing raw data")
-
-          // Separate the different data types from the array
-          const employees: any[] = []
-          let scheduleData: any = null
-          let professionalInfo: any = null
-
-          data.forEach((item, index) => {
-            console.log(`Processing item ${index}:`, item)
-
-            // Skip empty objects and webhook_response objects
-            if (!item || Object.keys(item).length === 0 || item.webhook_response) {
-              return
-            }
-
-            // Check if this is employee data
-            if (item.first_name && item.last_name && item.email) {
-              console.log("Found raw employee:", item.first_name, item.last_name)
-              employees.push(item)
-            }
-            // Check if this is schedule data
-            else if (item.professional_id && item.monday_start) {
-              console.log("Found schedule data for professional:", item.professional_id)
-              scheduleData = item
-              professionalInfo = item
-            }
-          })
-
-          console.log("Processed raw data:")
-          console.log("- Employees found:", employees.length)
-          console.log("- Schedule data:", scheduleData ? "found" : "not found")
-
-          // Convert raw employee data to proper format (original logic)
-          const processedEmployees: WebhookEmployee[] = employees.map((emp, index) => {
-            // Convert schedule data to working days format
-            const workingDays = scheduleData
-              ? [
-                  {
-                    day: "Monday",
-                    start_time: scheduleData.monday_start?.substring(0, 5) || "09:00",
-                    end_time: scheduleData.monday_end?.substring(0, 5) || "17:00",
-                    is_working: !!scheduleData.monday_working,
-                  },
-                  {
-                    day: "Tuesday",
-                    start_time: scheduleData.tuesday_start?.substring(0, 5) || "09:00",
-                    end_time: scheduleData.tuesday_end?.substring(0, 5) || "17:00",
-                    is_working: !!scheduleData.tuesday_working,
-                  },
-                  {
-                    day: "Wednesday",
-                    start_time: scheduleData.wednesday_start?.substring(0, 5) || "09:00",
-                    end_time: scheduleData.wednesday_end?.substring(0, 5) || "17:00",
-                    is_working: !!scheduleData.wednesday_working,
-                  },
-                  {
-                    day: "Thursday",
-                    start_time: scheduleData.thursday_start?.substring(0, 5) || "09:00",
-                    end_time: scheduleData.thursday_end?.substring(0, 5) || "17:00",
-                    is_working: !!scheduleData.thursday_working,
-                  },
-                  {
-                    day: "Friday",
-                    start_time: scheduleData.friday_start?.substring(0, 5) || "09:00",
-                    end_time: scheduleData.friday_end?.substring(0, 5) || "17:00",
-                    is_working: !!scheduleData.friday_working,
-                  },
-                  {
-                    day: "Saturday",
-                    start_time: scheduleData.saturday_start?.substring(0, 5) || "09:00",
-                    end_time: scheduleData.saturday_end?.substring(0, 5) || "17:00",
-                    is_working: !!scheduleData.saturday_working,
-                  },
-                  {
-                    day: "Sunday",
-                    start_time: scheduleData.sunday_start?.substring(0, 5) || "09:00",
-                    end_time: scheduleData.sunday_end?.substring(0, 5) || "17:00",
-                    is_working: !!scheduleData.sunday_working,
-                  },
-                ]
-              : [...DEFAULT_WORKING_DAYS]
-
-            return {
-              employee_id: `emp_${professionalId}_${Date.now()}_${index + 1}`,
-              name: `${emp.first_name} ${emp.last_name}`.trim(),
-              role: "Staff Member", // Default role
-              email: emp.email || "",
-              is_active: true,
-              working_days: workingDays,
-              services: [],
-            }
-          })
-
-          console.log("Processed raw employees:", processedEmployees)
-
-          // Set the state with processed data
-          setBusinessName(employees[0]?.first_name || "")
-          setEmployees(processedEmployees)
-          setCapacityRules({
-            ...DEFAULT_CAPACITY_RULES,
-            max_concurrent_bookings: Math.max(1, Math.floor(processedEmployees.length / 2)),
-            max_bookings_per_day: processedEmployees.length * 8,
-          })
+          // Fallback to defaults for new configurations
+          console.log("No existing configuration found, using defaults")
+          setBusinessName("")
+          setBookingPreferences(DEFAULT_BOOKING_PREFERENCES)
+          setEmployees([])
+          setCapacityRules(DEFAULT_CAPACITY_RULES)
           setBlockedTimes([])
           setLastUpdated(new Date().toISOString())
         }
@@ -303,6 +234,7 @@ export default function ProfessionalSetupPage() {
         console.log("Unexpected response format:", data)
         // Fallback to defaults
         setBusinessName("")
+        setBookingPreferences(DEFAULT_BOOKING_PREFERENCES)
         setEmployees([])
         setCapacityRules(DEFAULT_CAPACITY_RULES)
         setBlockedTimes([])
@@ -330,6 +262,7 @@ export default function ProfessionalSetupPage() {
         timestamp: new Date().toISOString(),
         config_data: {
           business_name: businessName,
+          booking_preferences: bookingPreferences,
           employees: employees,
           capacity_rules: capacityRules,
           blocked_times: blockedTimes,
@@ -456,6 +389,11 @@ export default function ProfessionalSetupPage() {
     setBlockedTimes((prev) => prev.filter((bt) => bt.blocked_time_id !== blockedTimeId))
   }
 
+  // Booking preference handlers
+  const updateBookingPreferences = (updates: Partial<WebhookBookingPreferences>) => {
+    setBookingPreferences((prev) => ({ ...prev, ...updates }))
+  }
+
   // Loading state
   if (loading) {
     return (
@@ -493,8 +431,8 @@ export default function ProfessionalSetupPage() {
         <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-3xl font-bold text-[#E75837] mb-2 header-font">Team & Capacity Setup</h1>
-              <p className="text-gray-600 body-font">Configure your team, working hours, and booking capacity rules.</p>
+              <h1 className="text-3xl font-bold text-[#E75837] mb-2 header-font">Booking Experience Setup</h1>
+              <p className="text-gray-600 body-font">Configure how customers will book appointments with you.</p>
               {lastUpdated && (
                 <p className="text-sm text-gray-500 body-font mt-2">
                   Last updated: {new Date(lastUpdated).toLocaleString()}
@@ -528,9 +466,9 @@ export default function ProfessionalSetupPage() {
         {/* Configuration Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="business" className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Business Info
+            <TabsTrigger value="booking" className="flex items-center gap-2">
+              <Settings className="w-4 h-4" />
+              Booking Experience
             </TabsTrigger>
             <TabsTrigger value="team" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
@@ -546,36 +484,134 @@ export default function ProfessionalSetupPage() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Business Info Tab */}
-          <TabsContent value="business">
-            <Card>
-              <CardHeader>
-                <CardTitle className="header-font">Business Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="businessName" className="body-font">
-                    Business Name
-                  </Label>
-                  <Input
-                    id="businessName"
-                    value={businessName}
-                    onChange={(e) => setBusinessName(e.target.value)}
-                    placeholder="Enter your business name"
-                    className="body-font"
-                  />
-                </div>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-blue-800 mb-2 header-font">Professional ID</h4>
-                  <p className="text-blue-700 body-font text-sm">
-                    Your unique professional ID: <code className="bg-blue-100 px-2 py-1 rounded">{professionalId}</code>
+          {/* Booking Experience Tab */}
+          <TabsContent value="booking">
+            <div className="space-y-6">
+              {/* Professional ID Info */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="header-font">Professional Information</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-blue-800 mb-2 header-font">Professional ID</h4>
+                    <p className="text-blue-700 body-font text-sm">
+                      Your unique professional ID:{" "}
+                      <code className="bg-blue-100 px-2 py-1 rounded">{professionalId}</code>
+                    </p>
+                    <p className="text-blue-600 body-font text-xs mt-2">
+                      This ID is used in your booking URLs and webhook configurations.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Booking Experience Options */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="header-font">Choose Your Booking Experience</CardTitle>
+                  <p className="text-gray-600 body-font">
+                    Select how customers will interact with your booking system.
                   </p>
-                  <p className="text-blue-600 body-font text-xs mt-2">
-                    This ID is used in your booking URLs and webhook configurations.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <RadioGroup
+                    value={bookingPreferences.booking_type}
+                    onValueChange={(value) => {
+                      const bookingType = value as "direct_booking" | "request_to_book" | "no_online_booking"
+                      updateBookingPreferences({
+                        booking_type: bookingType,
+                        allow_direct_booking: bookingType === "direct_booking",
+                        require_approval: bookingType === "request_to_book",
+                        online_booking_enabled: bookingType !== "no_online_booking",
+                      })
+                    }}
+                    className="space-y-4"
+                  >
+                    {/* Direct Booking Option */}
+                    <div className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                      <RadioGroupItem value="direct_booking" id="direct_booking" className="mt-1" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <CheckCircle className="w-5 h-5 text-green-500" />
+                          <Label htmlFor="direct_booking" className="text-lg font-semibold header-font">
+                            Direct Booking
+                          </Label>
+                          <Badge variant="secondary" className="text-xs">
+                            Recommended
+                          </Badge>
+                        </div>
+                        <p className="text-gray-600 body-font text-sm">
+                          Allow existing customers to create bookings without the need for you to review and approve.
+                          Bookings are automatically confirmed and added to your schedule.
+                        </p>
+                        <div className="mt-2 text-xs text-gray-500 body-font">
+                          ✓ Instant confirmation • ✓ Automated scheduling • ✓ Best customer experience
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Request to Book Option */}
+                    <div className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                      <RadioGroupItem value="request_to_book" id="request_to_book" className="mt-1" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Clock className="w-5 h-5 text-orange-500" />
+                          <Label htmlFor="request_to_book" className="text-lg font-semibold header-font">
+                            Request to Book
+                          </Label>
+                        </div>
+                        <p className="text-gray-600 body-font text-sm">
+                          Allow customers to create booking requests that will land in your Critter profile for review.
+                          You can approve or decline each request before it becomes a confirmed booking.
+                        </p>
+                        <div className="mt-2 text-xs text-gray-500 body-font">
+                          ✓ Manual approval • ✓ Full control • ✓ Review before confirmation
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* No Online Booking Option */}
+                    <div className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                      <RadioGroupItem value="no_online_booking" id="no_online_booking" className="mt-1" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Smartphone className="w-5 h-5 text-blue-500" />
+                          <Label htmlFor="no_online_booking" className="text-lg font-semibold header-font">
+                            No Online Booking
+                          </Label>
+                        </div>
+                        <p className="text-gray-600 body-font text-sm">
+                          Require customers to login to the Critter app and request bookings directly within the
+                          application. No public booking page will be available.
+                        </p>
+                        <div className="mt-2 text-xs text-gray-500 body-font">
+                          ✓ App-only booking • ✓ Maximum privacy • ✓ Existing customer relationships
+                        </div>
+                      </div>
+                    </div>
+                  </RadioGroup>
+
+                  {/* Custom Instructions */}
+                  <div className="space-y-2">
+                    <Label htmlFor="customInstructions" className="body-font">
+                      Custom Instructions for Customers (Optional)
+                    </Label>
+                    <Textarea
+                      id="customInstructions"
+                      value={bookingPreferences.custom_instructions || ""}
+                      onChange={(e) => updateBookingPreferences({ custom_instructions: e.target.value })}
+                      placeholder="Add any special instructions or requirements for customers when booking..."
+                      className="body-font"
+                      rows={3}
+                    />
+                    <p className="text-sm text-gray-500 body-font">
+                      These instructions will be displayed to customers during the booking process.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Team Management Tab */}

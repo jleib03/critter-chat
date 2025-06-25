@@ -1,52 +1,66 @@
-// Update the ConfigWebhookResponse to handle your actual response format
-export interface ConfigWebhookResponse {
-  success: boolean
-  message?: string
-  config_data?: {
-    professional_id: string
-    business_name?: string
-    last_updated?: string
-    created_at?: string
-    webhook_status?: string
-    employees?: WebhookEmployee[]
-    capacity_rules?: WebhookCapacityRules
-    blocked_times?: WebhookBlockedTime[]
-  }
-  // Handle direct employee data from your webhook
-  employees?: WebhookEmployee[]
-  // Handle other possible response formats
-  [key: string]: any
+export interface WebhookEmployee {
+  employee_id: string
+  name: string
+  role: string
+  email?: string
+  is_active: boolean
+  working_days: {
+    day: string
+    start_time: string
+    end_time: string
+    is_working: boolean
+  }[]
+  services: string[]
 }
 
-// Add a type for the raw employee data you're receiving
-export interface RawEmployeeData {
-  first_name: string
-  last_name: string
-  email: string
+export interface WebhookCapacityRules {
+  max_concurrent_bookings: number
+  buffer_time_between_bookings: number
+  max_bookings_per_day: number
+  allow_overlapping: boolean
+  require_all_employees_for_service: boolean
 }
 
-// Add a type for the raw schedule data
-export interface RawScheduleData {
+export interface WebhookBlockedTime {
+  blocked_time_id: string
+  employee_id?: string
+  date: string
+  start_time: string
+  end_time: string
+  reason: string
+  is_recurring: boolean
+  recurrence_pattern?: "weekly" | "monthly"
+}
+
+export interface WebhookBookingPreferences {
+  booking_type: "direct_booking" | "request_to_book" | "no_online_booking"
+  allow_direct_booking: boolean
+  require_approval: boolean
+  online_booking_enabled: boolean
+  custom_instructions?: string
+}
+
+export interface WebhookConfigData {
+  business_name: string
+  booking_preferences: WebhookBookingPreferences
+  employees: WebhookEmployee[]
+  capacity_rules: WebhookCapacityRules
+  blocked_times: WebhookBlockedTime[]
+}
+
+export interface GetConfigWebhookPayload {
+  action: "get_professional_config"
   professional_id: string
-  monday_start: string
-  monday_end: string
-  tuesday_start: string
-  tuesday_end: string
-  wednesday_start: string
-  wednesday_end: string
-  thursday_start: string
-  thursday_end: string
-  friday_start: string
-  friday_end: string
-  saturday_start: string
-  saturday_end: string
-  sunday_start: string
-  sunday_end: string
-  monday_working: string
-  tuesday_working: string
-  wednesday_working: string
-  thursday_working: string
-  friday_working: string
-  saturday_working: string
-  sunday_working: string
+  session_id: string
+  timestamp: string
 }
+
+export interface SaveConfigWebhookPayload {
+  action: "save_professional_config"
+  professional_id: string
+  session_id: string
+  timestamp: string
+  config_data: WebhookConfigData
+}
+
+export type WebhookPayload = GetConfigWebhookPayload | SaveConfigWebhookPayload
