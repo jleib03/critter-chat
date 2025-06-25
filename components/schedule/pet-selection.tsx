@@ -42,4 +42,8 @@ const PetSelection: React.FC<PetSelectionProps> = ({ selectedTimeSlot, selectedP
   )
 }
 
+// keep default export for flexibility
 export default PetSelection
+
+// add the missing *named* export expected elsewhere
+export { PetSelection }
