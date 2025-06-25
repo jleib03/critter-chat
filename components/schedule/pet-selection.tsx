@@ -102,12 +102,15 @@ export function PetSelection({
               <div>
                 <span className="text-gray-500 body-font">Date:</span>
                 <p className="font-medium body-font">
-                  {selectedTimeSlot.dayOfWeek},{" "}
-                  {new Date(selectedTimeSlot.date).toLocaleDateString("en-US", {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
+                  {selectedTimeSlot.dayOfWeek}, {(() => {
+                    const [year, month, day] = selectedTimeSlot.date.split("-").map(Number)
+                    const date = new Date(year, month - 1, day)
+                    return date.toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })
+                  })()}
                 </p>
               </div>
             </div>
