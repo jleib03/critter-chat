@@ -171,15 +171,17 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-gray-500" />
           <span className="text-sm body-font">
-            {selectedTimeSlot.dayOfWeek}, {(() => {
-              // Fix: Parse the date string properly to avoid timezone issues
+            {(() => {
+              // Parse date properly to avoid timezone shifts
               const [year, month, day] = selectedTimeSlot.date.split("-").map(Number)
               const date = new Date(year, month - 1, day)
-              return date.toLocaleDateString("en-US", {
+              const dayName = date.toLocaleDateString("en-US", { weekday: "long" })
+              const formattedDate = date.toLocaleDateString("en-US", {
                 month: "long",
                 day: "numeric",
                 year: "numeric",
               })
+              return `${dayName}, ${formattedDate}`
             })()}
           </span>
         </div>
