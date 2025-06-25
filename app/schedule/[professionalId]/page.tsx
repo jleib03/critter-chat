@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import type { WebhookResponse, Service, SelectedTimeSlot, CustomerInfo, Pet } from "@/types/schedule"
 import { ServiceSelectorBar } from "@/components/schedule/service-selector-bar"
@@ -16,6 +16,8 @@ import {
   type BookingType,
   type RecurringConfig,
 } from "@/components/schedule/booking-type-selection"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
 
 interface ParsedWebhookData {
   professional_info: {
@@ -41,6 +43,7 @@ interface ParsedWebhookData {
 
 export default function SchedulePage() {
   const params = useParams()
+  const router = useRouter()
   const professionalId = params.professionalId as string
 
   const [webhookData, setWebhookData] = useState<WebhookResponse | null>(null)
@@ -431,7 +434,19 @@ export default function SchedulePage() {
       {showPetSelection && <PetSelection pets={pets} selectedPet={selectedPet} setSelectedPet={setSelectedPet} />}
       {showConfirmation && <BookingConfirmation />}
       {showBookingTypeSelection && <BookingTypeSelection />}
-      {showBookingDisabledModal && null}
+      {showBookingDisabledModal && (
+        <Dialog open={showBookingDisabledModal} onOpenChange={setShowBookingDisabledModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Booking Disabled</DialogTitle>
+              <DialogDescription>
+                Booking is currently disabled for this professional. Please try again later.
+              </DialogDescription>
+            </DialogHeader>
+            <Button onClick={() => setShowBookingDisabledModal(false)}>Close</Button>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }
