@@ -8,7 +8,7 @@ interface PetSelectionProps {
   selectedPet: {
     name: string
     breed: string
-  }
+  } | null // Allow selectedPet to be null
 }
 
 const PetSelection: React.FC<PetSelectionProps> = ({ selectedTimeSlot, selectedPet }) => {
@@ -33,10 +33,10 @@ const PetSelection: React.FC<PetSelectionProps> = ({ selectedTimeSlot, selectedP
         <b>Time:</b> {selectedTimeSlot.time}
       </p>
       <p>
-        <b>Pet Name:</b> {selectedPet.name}
+        <b>Pet Name:</b> {selectedPet?.name || "No pet selected"}
       </p>
       <p>
-        <b>Pet Breed:</b> {selectedPet.breed}
+        <b>Pet Breed:</b> {selectedPet?.breed || "No pet selected"}
       </p>
     </div>
   )
