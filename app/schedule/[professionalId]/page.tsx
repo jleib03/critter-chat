@@ -145,17 +145,20 @@ export default function SchedulePage() {
         hour24 = 0
       }
 
-      // Fix: Parse date string properly to avoid timezone shifts
+      // Parse the date string as YYYY-MM-DD and create a local date
       const [year, month, day] = dateStr.split("-").map(Number)
 
-      // Create date in user's local timezone
+      // Create the date in the user's local timezone
       const localDate = new Date(year, month - 1, day, hour24, minutes, 0, 0)
+
+      console.log(
+        `Converting: ${dateStr} ${timeStr} -> Local: ${localDate.toString()} -> UTC: ${localDate.toISOString()}`,
+      )
 
       return localDate.toISOString()
     } catch (error) {
       console.error("Error converting time to UTC:", error)
-
-      // Fallback logic
+      // Fallback with same logic
       const [time, period] = timeStr.split(" ")
       const [hours, minutes] = time.split(":").map(Number)
       let hour24 = hours
@@ -165,7 +168,6 @@ export default function SchedulePage() {
         hour24 = 0
       }
 
-      // Fix: Use proper date parsing
       const [year, month, day] = dateStr.split("-").map(Number)
       const date = new Date(year, month - 1, day, hour24, minutes, 0, 0)
       return date.toISOString()

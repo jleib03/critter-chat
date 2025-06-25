@@ -108,12 +108,7 @@ export function WeeklyCalendar({
     const dayName = getDayName(date)
 
     // Fix: Use proper date formatting to avoid timezone issues
-    const dateStr =
-      date.getFullYear() +
-      "-" +
-      String(date.getMonth() + 1).padStart(2, "0") +
-      "-" +
-      String(date.getDate()).padStart(2, "0")
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
 
     for (let time = startTime; time + serviceDuration <= endTime; time += 30) {
       const slotStart = time
@@ -155,7 +150,7 @@ export function WeeklyCalendar({
           }
 
           slots.push({
-            date: dateStr,
+            date: dateStr, // This should be YYYY-MM-DD format in local date
             startTime: startTimeFormatted,
             endTime: endTimeFormatted,
             dayOfWeek: dayName,
