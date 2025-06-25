@@ -236,7 +236,7 @@ export default function SchedulePage() {
             bufferTimeBetweenBookings: parsedData.config.capacity_rules.buffer_time_between_bookings,
             maxBookingsPerDay: parsedData.config.capacity_rules.max_bookings_per_day,
             allowOverlapping: parsedData.config.capacity_rules.allow_overlapping,
-            requireAllEmployeesForService: parsedData.config.capacity_rules.require_all_employees_for_service,
+            requireAllEmployeesForService: parsedData.config.capacity_rules.require_all_employeesForService,
           },
           blockedTimes: parsedData.config.blocked_times,
           lastUpdated: new Date().toISOString(),
@@ -336,12 +336,17 @@ export default function SchedulePage() {
     })
 
     // Add this after parsing other data - REPLACE the existing booking preferences parsing
-    const bookingPrefs = rawData.find(
+    let bookingPrefs = rawData.find(
       (entry) =>
         entry.booking_type !== undefined ||
         entry.online_booking_enabled !== undefined ||
         entry.allow_direct_booking !== undefined,
     )
+
+    // If bookingPrefs is undefined, try to find it in the webhook_response
+    if (!bookingPrefs && configEntry?.webhook_response?.config_data) {
+      bookingPrefs = configEntry.webhook_response.config_data
+    }
 
     if (bookingPrefs) {
       console.log("Found booking preferences:", bookingPrefs)
