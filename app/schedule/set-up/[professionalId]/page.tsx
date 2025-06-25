@@ -151,9 +151,16 @@ export default function ProfessionalSetupPage() {
           setBusinessName(configData.business_name || "")
           setLastUpdated(configData.last_updated || new Date().toISOString())
 
-          // Process booking preferences
+          // Process booking preferences - handle both old and new formats
           if (configData.booking_preferences) {
-            setBookingPreferences(configData.booking_preferences)
+            const prefs = configData.booking_preferences
+            setBookingPreferences({
+              booking_system: prefs.booking_system || prefs.booking_type || "direct_booking", // Handle both formats
+              allow_direct_booking: prefs.allow_direct_booking ?? true,
+              require_approval: prefs.require_approval ?? false,
+              online_booking_enabled: prefs.online_booking_enabled ?? true,
+              custom_instructions: prefs.custom_instructions || "",
+            })
           }
 
           // Process employees from structured data
@@ -528,7 +535,13 @@ export default function ProfessionalSetupPage() {
                     className="space-y-4"
                   >
                     {/* Direct Booking Option */}
-                    <div className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                    <div
+                      className={`flex items-start space-x-3 p-4 border rounded-lg transition-colors ${
+                        bookingPreferences.booking_system === "direct_booking"
+                          ? "border-green-500 bg-green-50 ring-2 ring-green-200"
+                          : "border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
                       <RadioGroupItem value="direct_booking" id="direct_booking" className="mt-1" />
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
@@ -539,6 +552,9 @@ export default function ProfessionalSetupPage() {
                           <Badge variant="secondary" className="text-xs">
                             Recommended
                           </Badge>
+                          {bookingPreferences.booking_system === "direct_booking" && (
+                            <Badge className="text-xs bg-green-500 text-white">Currently Selected</Badge>
+                          )}
                         </div>
                         <p className="text-gray-600 body-font text-sm">
                           Allow existing customers to create bookings without the need for you to review and approve.
@@ -551,7 +567,13 @@ export default function ProfessionalSetupPage() {
                     </div>
 
                     {/* Request to Book Option */}
-                    <div className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                    <div
+                      className={`flex items-start space-x-3 p-4 border rounded-lg transition-colors ${
+                        bookingPreferences.booking_system === "request_to_book"
+                          ? "border-orange-500 bg-orange-50 ring-2 ring-orange-200"
+                          : "border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
                       <RadioGroupItem value="request_to_book" id="request_to_book" className="mt-1" />
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
@@ -559,6 +581,9 @@ export default function ProfessionalSetupPage() {
                           <Label htmlFor="request_to_book" className="text-lg font-semibold header-font">
                             Request to Book
                           </Label>
+                          {bookingPreferences.booking_system === "request_to_book" && (
+                            <Badge className="text-xs bg-orange-500 text-white">Currently Selected</Badge>
+                          )}
                         </div>
                         <p className="text-gray-600 body-font text-sm">
                           Allow customers to create booking requests that will land in your Critter profile for review.
@@ -571,7 +596,13 @@ export default function ProfessionalSetupPage() {
                     </div>
 
                     {/* No Online Booking Option */}
-                    <div className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                    <div
+                      className={`flex items-start space-x-3 p-4 border rounded-lg transition-colors ${
+                        bookingPreferences.booking_system === "no_online_booking"
+                          ? "border-blue-500 bg-blue-50 ring-2 ring-blue-200"
+                          : "border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
                       <RadioGroupItem value="no_online_booking" id="no_online_booking" className="mt-1" />
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
@@ -579,6 +610,9 @@ export default function ProfessionalSetupPage() {
                           <Label htmlFor="no_online_booking" className="text-lg font-semibold header-font">
                             No Online Booking
                           </Label>
+                          {bookingPreferences.booking_system === "no_online_booking" && (
+                            <Badge className="text-xs bg-blue-500 text-white">Currently Selected</Badge>
+                          )}
                         </div>
                         <p className="text-gray-600 body-font text-sm">
                           Require customers to login to the Critter app and request bookings directly within the
