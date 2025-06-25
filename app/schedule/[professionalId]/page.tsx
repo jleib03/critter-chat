@@ -16,7 +16,6 @@ import {
   type BookingType,
   type RecurringConfig,
 } from "@/components/schedule/booking-type-selection"
-import { Action } from "@/components/schedule/action"
 
 interface ParsedWebhookData {
   professional_info: {
@@ -432,15 +431,7 @@ export default function SchedulePage() {
       {showPetSelection && <PetSelection pets={pets} selectedPet={selectedPet} setSelectedPet={setSelectedPet} />}
       {showConfirmation && <BookingConfirmation />}
       {showBookingTypeSelection && <BookingTypeSelection />}
-      {showBookingDisabledModal && (
-        <Action
-          name="Test online booking disabled"
-          description="Set a professional to 'no online booking' and verify the popup appears"
-        />
-      )}
-      <Action name="Check console logs" description="Open browser console to see the booking preferences logging" />
-      <Action name="Verify modal display" description="Confirm the popup appears when online booking is disabled" />
-      <Action name="Test other booking types" description="Verify direct and request booking still work properly" />
+      {showBookingDisabledModal && null}
     </div>
   )
 }
