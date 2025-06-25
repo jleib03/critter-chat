@@ -797,17 +797,6 @@ export default function SchedulePage() {
                 )}
               </div>
             </div>
-
-            <div className="flex gap-2">
-              <a
-                href={`/schedule/set-up/${professionalId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors body-font"
-              >
-                ⚙️ Setup Team & Capacity
-              </a>
-            </div>
           </div>
         </div>
 
