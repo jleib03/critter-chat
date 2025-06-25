@@ -335,9 +335,16 @@ export default function SchedulePage() {
       })
     })
 
-    // Add this after parsing other data
-    const bookingPrefs = rawData.find((entry) => entry.booking_type || entry.online_booking_enabled !== undefined)
+    // Add this after parsing other data - REPLACE the existing booking preferences parsing
+    const bookingPrefs = rawData.find(
+      (entry) =>
+        entry.booking_type !== undefined ||
+        entry.online_booking_enabled !== undefined ||
+        entry.allow_direct_booking !== undefined,
+    )
+
     if (bookingPrefs) {
+      console.log("Found booking preferences:", bookingPrefs)
       setBookingPreferences({
         business_name: bookingPrefs.business_name,
         booking_type: bookingPrefs.booking_type,
@@ -345,6 +352,8 @@ export default function SchedulePage() {
         require_approval: bookingPrefs.require_approval,
         online_booking_enabled: bookingPrefs.online_booking_enabled,
       })
+    } else {
+      console.log("No booking preferences found in webhook data")
     }
 
     return {
@@ -425,12 +434,17 @@ export default function SchedulePage() {
       return
     }
 
+    console.log("Current booking preferences:", bookingPreferences)
+    console.log("Online booking enabled:", bookingPreferences?.online_booking_enabled)
+
     // Check if online booking is disabled
     if (bookingPreferences && bookingPreferences.online_booking_enabled === false) {
+      console.log("Online booking is disabled - showing modal")
       setShowBookingDisabledModal(true)
       return
     }
 
+    console.log("Proceeding with booking flow")
     setSelectedTimeSlot(slot)
     setShowCustomerForm(true)
   }
