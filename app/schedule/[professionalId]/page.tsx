@@ -18,6 +18,7 @@ import {
 } from "@/components/schedule/booking-type-selection"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { convertLocalToUTC, getUserTimezone } from "@/utils/date-utils"
 
 interface ParsedWebhookData {
   professional_info: {
@@ -81,44 +82,11 @@ export default function SchedulePage() {
     online_booking_enabled?: boolean
   } | null>(null)
   const [showBookingDisabledModal, setShowBookingDisabledModal] = useState(false)
-  const [showBookingDisabled, setShowBookingDisabled] = useState(false) // New state variable
+  const [showBookingDisabled, setShowBookingDisabled] = useState(false)
 
   // Generate a unique session ID
   const generateSessionId = () => {
     return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-  }
-
-  // Detect user's timezone - simplified to avoid parsing issues
-  const detectUserTimezone = () => {
-    try {
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-      const now = new Date()
-      const offsetMinutes = now.getTimezoneOffset()
-      const offsetHours = Math.floor(Math.abs(offsetMinutes) / 60)
-      const offsetMins = Math.abs(offsetMinutes) % 60
-      const offsetSign = offsetMinutes <= 0 ? "+" : "-"
-
-      const hoursStr = offsetHours.toString().padStart(2, "0")
-      const minsStr = offsetMins.toString().padStart(2, "0")
-      const offsetString = `UTC${offsetSign}${hoursStr}:${minsStr}`
-
-      return {
-        timezone: timezone,
-        offset: offsetString,
-        offsetMinutes: offsetMinutes,
-        timestamp: now.toISOString(),
-        localTime: now.toLocaleString(),
-      }
-    } catch (error) {
-      console.error("Error detecting timezone:", error)
-      return {
-        timezone: "UTC",
-        offset: "UTC+00:00",
-        offsetMinutes: 0,
-        timestamp: new Date().toISOString(),
-        localTime: new Date().toLocaleString(),
-      }
-    }
   }
 
   // Load professional configuration
@@ -129,49 +97,6 @@ export default function SchedulePage() {
       console.log("Professional configuration loaded:", config)
     } catch (error) {
       console.error("Error loading professional configuration:", error)
-    }
-  }
-
-  // Helper function to convert local time to UTC
-  const convertLocalTimeToUTC = (dateStr: string, timeStr: string, userTimezone: string) => {
-    try {
-      const [time, period] = timeStr.split(" ")
-      const [hours, minutes] = time.split(":").map(Number)
-
-      let hour24 = hours
-      if (period === "PM" && hours !== 12) {
-        hour24 = hours + 12
-      } else if (period === "AM" && hours === 12) {
-        hour24 = 0
-      }
-
-      // Fix: Parse date string properly to avoid timezone shifts
-      const [year, month, day] = dateStr.split("-").map(Number)
-
-      // Create date in user's local timezone
-      const localDate = new Date(year, month - 1, day, hour24, minutes, 0, 0)
-
-      console.log(
-        `Converting: ${dateStr} ${timeStr} -> Local: ${localDate.toString()} -> UTC: ${localDate.toISOString()}`,
-      )
-
-      return localDate.toISOString()
-    } catch (error) {
-      console.error("Error converting time to UTC:", error)
-
-      // Fallback logic
-      const [time, period] = timeStr.split(" ")
-      const [hours, minutes] = time.split(":").map(Number)
-      let hour24 = hours
-      if (period === "PM" && hours !== 12) {
-        hour24 = hours + 12
-      } else if (period === "AM" && hours === 12) {
-        hour24 = 0
-      }
-
-      const [year, month, day] = dateStr.split("-").map(Number)
-      const date = new Date(year, month - 1, day, hour24, minutes, 0, 0)
-      return date.toISOString()
     }
   }
 
@@ -197,7 +122,7 @@ export default function SchedulePage() {
       setError(null)
 
       sessionIdRef.current = generateSessionId()
-      userTimezoneRef.current = JSON.stringify(detectUserTimezone())
+      userTimezoneRef.current = JSON.stringify(getUserTimezone())
       loadProfessionalConfiguration()
 
       const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/5671c1dd-48f6-47a9-85ac-4e20cf261520"
@@ -228,9 +153,6 @@ export default function SchedulePage() {
       // Parse the new webhook format
       const parsedData = parseWebhookData(rawData)
       setWebhookData(parsedData)
-
-      // Log the parsed config and the config that will be used for professional config
-      console.log("Parsed config:", parsedData.config)
 
       // Set booking preferences from parsed data
       if (parsedData.booking_preferences) {
@@ -277,11 +199,8 @@ export default function SchedulePage() {
           blockedTimes: parsedData.config.blocked_times,
           lastUpdated: new Date().toISOString(),
         }
-        console.log("Config for professional config:", configForProfessionalConfig)
         setProfessionalConfig(configForProfessionalConfig)
         console.log("Professional configuration loaded from webhook:", configForProfessionalConfig)
-      } else {
-        setProfessionalConfig(null) // Ensure it's set to null if not in webhook
       }
 
       console.log("Schedule data loaded:", parsedData)
@@ -504,11 +423,8 @@ export default function SchedulePage() {
       const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/5671c1dd-48f6-47a9-85ac-4e20cf261520"
       const userTimezoneData = JSON.parse(userTimezoneRef.current!)
 
-      const startDateTimeUTC = convertLocalTimeToUTC(
-        selectedTimeSlot!.date,
-        selectedTimeSlot!.startTime,
-        userTimezoneData.timezone,
-      )
+      // Use the new date utility for UTC conversion
+      const startDateTimeUTC = convertLocalToUTC(selectedTimeSlot!.date, selectedTimeSlot!.startTime)
 
       // Calculate total duration and cost for all selected services
       let totalDurationMinutes = 0

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 import type { Service, SelectedTimeSlot, CustomerInfo, PetResponse } from "@/types/schedule"
 import { useRouter } from "next/navigation"
+import { formatDateStringForDisplay, getUserTimezone } from "@/utils/date-utils"
 
 type RecurringConfig = {
   frequency: number
@@ -58,36 +59,6 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const detectUserTimezone = () => {
-    try {
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-      const now = new Date()
-      const offsetMinutes = now.getTimezoneOffset()
-      const offsetHours = Math.abs(offsetMinutes / 60)
-      const offsetSign = offsetMinutes <= 0 ? "+" : "-"
-      const offsetString = `UTC${offsetSign}${offsetHours.toString().padStart(2, "0")}:${Math.abs(offsetMinutes % 60)
-        .toString()
-        .padStart(2, "0")}`
-
-      return {
-        timezone: timezone,
-        offset: offsetString,
-        offsetMinutes: offsetMinutes,
-        timestamp: now.toISOString(),
-        localTime: now.toLocaleString(),
-      }
-    } catch (error) {
-      console.error("Error detecting timezone:", error)
-      return {
-        timezone: "UTC",
-        offset: "UTC+00:00",
-        offsetMinutes: 0,
-        timestamp: new Date().toISOString(),
-        localTime: new Date().toLocaleString(),
-      }
-    }
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -107,7 +78,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
         action: "get_customer_pets",
         session_id: sessionId,
         timestamp: new Date().toISOString(),
-        user_timezone: detectUserTimezone(),
+        user_timezone: getUserTimezone(),
         customer_info: {
           first_name: customerInfo.firstName.trim(),
           last_name: customerInfo.lastName.trim(),
@@ -170,18 +141,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
         </div>
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-gray-500" />
-          <span className="text-sm body-font">
-            {selectedTimeSlot.dayOfWeek}, {(() => {
-              // Fix: Parse the date string properly to avoid timezone issues
-              const [year, month, day] = selectedTimeSlot.date.split("-").map(Number)
-              const date = new Date(year, month - 1, day)
-              return date.toLocaleDateString("en-US", {
-                month: "long",
-                day: "numeric",
-                year: "numeric",
-              })
-            })()}
-          </span>
+          <span className="text-sm body-font">{formatDateStringForDisplay(selectedTimeSlot.date)}</span>
         </div>
         <div className="flex items-center gap-2">
           <Clock className="w-4 h-4 text-gray-500" />

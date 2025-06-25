@@ -4,6 +4,7 @@ import type React from "react"
 
 import { Calendar, Clock, MapPin, X, Repeat, CalendarRange } from "lucide-react"
 import type { BookingInfo } from "./booking-calendar"
+import { formatDateForInput, createDateFromInput } from "@/utils/date-utils"
 
 interface DateTimePanelProps {
   isVisible: boolean
@@ -85,13 +86,13 @@ export default function DateTimePanel({ isVisible, isFormValid, onSubmit, onClos
 
   if (!isVisible) return null
 
-  // Handle date input change to ensure we get the correct date
+  // Handle date input change using date utilities
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!isFormValid) return
-    const inputDate = e.target.value // Format: YYYY-MM-DD
-    const [year, month, day] = inputDate.split("-").map(Number)
-    const newDate = new Date(year, month - 1, day)
-    setDate(newDate)
+    if (e.target.value) {
+      const newDate = createDateFromInput(e.target.value)
+      setDate(newDate)
+    }
   }
 
   // Handle recurring end date change
@@ -101,10 +102,7 @@ export default function DateTimePanel({ isVisible, isFormValid, onSubmit, onClos
       setRecurringEndDate(null)
       return
     }
-
-    const inputDate = e.target.value
-    const [year, month, day] = inputDate.split("-").map(Number)
-    const newDate = new Date(year, month - 1, day)
+    const newDate = createDateFromInput(e.target.value)
     setRecurringEndDate(newDate)
   }
 
@@ -115,10 +113,7 @@ export default function DateTimePanel({ isVisible, isFormValid, onSubmit, onClos
       setEndDate(null)
       return
     }
-
-    const inputDate = e.target.value
-    const [year, month, day] = inputDate.split("-").map(Number)
-    const newDate = new Date(year, month - 1, day)
+    const newDate = createDateFromInput(e.target.value)
     setEndDate(newDate)
   }
 
@@ -141,17 +136,6 @@ export default function DateTimePanel({ isVisible, isFormValid, onSubmit, onClos
   const handleSkip = () => {
     if (!isFormValid) return
     onSkip()
-  }
-
-  // Format date to YYYY-MM-DD for input value
-  const formatDateForInput = (date: Date | null): string => {
-    if (!date) return ""
-
-    const year = date.getFullYear()
-    const month = (date.getMonth() + 1).toString().padStart(2, "0")
-    const day = date.getDate().toString().padStart(2, "0")
-
-    return `${year}-${month}-${day}`
   }
 
   // Check if form is valid

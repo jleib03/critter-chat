@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, Clock, ChevronDown, ChevronUp, Users } from 
 import { calculateAvailableSlots } from "@/utils/professional-config"
 import type { ProfessionalConfig } from "@/types/professional-config"
 import type { BookingType, RecurringConfig } from "./booking-type-selection"
+import { formatDateForInput, getDayName, isToday, isPastDate, getWeekStart, getWeekDates } from "@/utils/date-utils"
 
 type WeeklyCalendarProps = {
   workingDays: WorkingDay[]
@@ -33,26 +34,11 @@ export function WeeklyCalendar({
   recurringConfig,
 }: WeeklyCalendarProps) {
   const [currentWeekStart, setCurrentWeekStart] = useState(() => {
-    const today = new Date()
-    const dayOfWeek = today.getDay()
-    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
-    const monday = new Date(today)
-    monday.setDate(today.getDate() + mondayOffset)
-    return monday
+    return getWeekStart(new Date())
   })
 
   // Track which days are expanded to show all time slots
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set())
-
-  const getWeekDates = (startDate: Date) => {
-    const dates = []
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(startDate)
-      date.setDate(startDate.getDate() + i)
-      dates.push(date)
-    }
-    return dates
-  }
 
   const weekDates = getWeekDates(currentWeekStart)
 
@@ -74,25 +60,13 @@ export function WeeklyCalendar({
     setExpandedDays(newExpanded)
   }
 
-  const formatDate = (date: Date) => {
-    // Fix: Use local date components to avoid timezone conversion
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, "0")
-    const day = String(date.getDate()).padStart(2, "0")
-    return `${year}-${month}-${day}`
-  }
-
-  const getDayName = (date: Date) => {
-    return date.toLocaleDateString("en-US", { weekday: "long" })
-  }
-
   const getWorkingHours = (dayName: string) => {
     const workingDay = workingDays.find((wd) => wd.day === dayName)
     return workingDay && workingDay.isWorking ? { start: workingDay.start, end: workingDay.end } : null
   }
 
   const getBookingsForDate = (date: Date) => {
-    const dateStr = formatDate(date)
+    const dateStr = formatDateForInput(date)
     return bookingData.filter((booking) => booking.booking_date_formatted === dateStr)
   }
 
@@ -106,9 +80,7 @@ export function WeeklyCalendar({
 
     const bookings = getBookingsForDate(date)
     const dayName = getDayName(date)
-
-    // Fix: Use proper date formatting to avoid timezone issues
-    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+    const dateStr = formatDateForInput(date)
 
     for (let time = startTime; time + serviceDuration <= endTime; time += 30) {
       const slotStart = time
@@ -150,7 +122,7 @@ export function WeeklyCalendar({
           }
 
           slots.push({
-            date: dateStr, // This should be YYYY-MM-DD format in local date
+            date: dateStr,
             startTime: startTimeFormatted,
             endTime: endTimeFormatted,
             dayOfWeek: dayName,
@@ -245,7 +217,7 @@ export function WeeklyCalendar({
       }
 
       // Check for conflicts with existing bookings on this date
-      const recurringDateStr = formatDate(recurringDate)
+      const recurringDateStr = formatDateForInput(recurringDate)
       const bookingsOnDate = bookingData.filter((booking) => booking.booking_date_formatted === recurringDateStr)
 
       if (professionalConfig) {
@@ -344,20 +316,22 @@ export function WeeklyCalendar({
         {weekDates.map((date, index) => {
           const dayName = getDayName(date)
           const workingHours = getWorkingHours(dayName)
-          const isToday = formatDate(date) === formatDate(new Date())
-          const isPast = date < new Date(new Date().setHours(0, 0, 0, 0))
+          const isTodayDate = isToday(date)
+          const isPast = isPastDate(date)
           const timeSlots = workingHours ? generateTimeSlots(date, workingHours, serviceDuration) : []
-          const dateStr = formatDate(date)
+          const dateStr = formatDateForInput(date)
           const isExpanded = expandedDays.has(dateStr)
           const initialSlotCount = 8
           const hasMoreSlots = timeSlots.length > initialSlotCount
           const displayedSlots = isExpanded ? timeSlots : timeSlots.slice(0, initialSlotCount)
 
           return (
-            <Card key={index} className={`${isToday ? "ring-2 ring-[#E75837]" : ""} h-fit`}>
+            <Card key={index} className={`${isTodayDate ? "ring-2 ring-[#E75837]" : ""} h-fit`}>
               <CardHeader className="pb-3 text-center">
                 <CardTitle className="space-y-1">
-                  <div className={`text-sm font-semibold header-font ${isToday ? "text-[#E75837]" : "text-gray-900"}`}>
+                  <div
+                    className={`text-sm font-semibold header-font ${isTodayDate ? "text-[#E75837]" : "text-gray-900"}`}
+                  >
                     {dayName}
                   </div>
                   <div className="text-2xl font-bold text-gray-900">{date.getDate()}</div>
