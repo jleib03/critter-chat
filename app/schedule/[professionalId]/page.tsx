@@ -541,7 +541,16 @@ export default function SchedulePage() {
         session_id: sessionIdRef.current,
         timestamp: new Date().toISOString(),
         user_timezone: userTimezoneData,
+
+        // Add booking_system from professional's preferences
+        booking_system: bookingPreferences?.booking_system || "direct_booking",
+
+        // Keep booking_type for the system's booking behavior (direct vs request)
         booking_type: determineBookingType(),
+
+        // Add user's booking choice (one-time vs recurring)
+        user_booking_type: bookingType, // "one-time" or "recurring"
+
         ...(bookingType === "recurring" &&
           recurringConfig && {
             recurring_details: {
