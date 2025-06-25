@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 import type { Service, SelectedTimeSlot, CustomerInfo, PetResponse } from "@/types/schedule"
 import { useRouter } from "next/navigation"
-import { DateUtils } from "@/utils/date-utils"
 
 type RecurringConfig = {
   frequency: number
@@ -171,7 +170,18 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
         </div>
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-gray-500" />
-          <span className="text-sm body-font">{DateUtils.formatDisplayDate(selectedTimeSlot.date)}</span>
+          <span className="text-sm body-font">
+            {selectedTimeSlot.dayOfWeek}, {(() => {
+              // Fix: Parse the date string properly to avoid timezone issues
+              const [year, month, day] = selectedTimeSlot.date.split("-").map(Number)
+              const date = new Date(year, month - 1, day)
+              return date.toLocaleDateString("en-US", {
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              })
+            })()}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <Clock className="w-4 h-4 text-gray-500" />

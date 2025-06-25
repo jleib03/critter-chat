@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle, Calendar, Clock, DollarSign, User, PawPrint, Mail, Repeat } from "lucide-react"
 import type { Service, SelectedTimeSlot, CustomerInfo, Pet, RecurringConfig } from "@/types/schedule"
-import { DateUtils } from "@/utils/date-utils"
 
 type BookingConfirmationProps = {
   selectedServices: Service[]
@@ -150,7 +149,17 @@ export function BookingConfirmation({
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Calendar className="w-4 h-4 text-gray-500" />
-                    <span className="font-medium body-font">{DateUtils.formatDisplayDate(selectedTimeSlot.date)}</span>
+                    <span className="font-medium body-font">
+                      {selectedTimeSlot.dayOfWeek}, {(() => {
+                        const [year, month, day] = selectedTimeSlot.date.split("-").map(Number)
+                        const date = new Date(year, month - 1, day)
+                        return date.toLocaleDateString("en-US", {
+                          month: "long",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      })()}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-gray-500" />
