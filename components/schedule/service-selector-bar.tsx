@@ -121,15 +121,7 @@ export function ServiceSelectorBar({
                 </p>
               </div>
             </div>
-            {/* Only show continue button if not summary only and onContinue is provided */}
-            {!summaryOnly && onContinue && (
-              <Button
-                onClick={onContinue}
-                className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-6 py-2 font-semibold body-font shadow-lg hover:shadow-xl transition-all"
-              >
-                Continue <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            )}
+            {/* Removed the Continue button from this section */}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
