@@ -80,31 +80,32 @@ export function ServiceSelectorBar({
   const totalDurationMinutes = calculateTotalDuration()
   const totalCost = calculateTotalCost()
 
+  // If summary only and no services selected, don't render anything
+  if (summaryOnly && selectedServices.length === 0) {
+    return null
+  }
+
   return (
     <div className="space-y-6">
-      {/* Header with summary - only show if not summary only or if we have selected services */}
-      {(!summaryOnly || selectedServices.length > 0) && (
+      {/* Header - only show for full selector, not summary */}
+      {!summaryOnly && (
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900 header-font">
-            {summaryOnly ? "Selected Services" : "Select Services"}
-          </h2>
-          {selectedServices.length > 0 && (
+          <h2 className="text-lg font-semibold text-gray-900 header-font">Select Services</h2>
+          {selectedServices.length > 0 && onContinue && (
             <div className="flex items-center gap-4">
               <div className="text-sm text-gray-600 body-font">
                 {selectedServices.length} service{selectedServices.length !== 1 ? "s" : ""} •{" "}
                 {Math.floor(totalDurationMinutes / 60)}h {totalDurationMinutes % 60}m • ${totalCost.toFixed(0)}
               </div>
-              {onContinue && !summaryOnly && (
-                <Button onClick={onContinue} className="bg-[#E75837] hover:bg-[#d14a2a] text-white body-font" size="sm">
-                  Continue <ArrowRight className="w-4 h-4 ml-1" />
-                </Button>
-              )}
+              <Button onClick={onContinue} className="bg-[#E75837] hover:bg-[#d14a2a] text-white body-font" size="sm">
+                Continue <ArrowRight className="w-4 h-4 ml-1" />
+              </Button>
             </div>
           )}
         </div>
       )}
 
-      {/* Selected Services Summary - always show if we have selected services */}
+      {/* Selected Services Summary - show if we have selected services */}
       {selectedServices.length > 0 && (
         <div className="p-6 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border border-orange-200">
           <div className="flex items-center justify-between mb-4">
@@ -120,7 +121,8 @@ export function ServiceSelectorBar({
                 </p>
               </div>
             </div>
-            {onContinue && !summaryOnly && (
+            {/* Only show continue button if not summary only and onContinue is provided */}
+            {!summaryOnly && onContinue && (
               <Button
                 onClick={onContinue}
                 className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-6 py-2 font-semibold body-font shadow-lg hover:shadow-xl transition-all"

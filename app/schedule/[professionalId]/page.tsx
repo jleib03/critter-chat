@@ -842,20 +842,22 @@ export default function SchedulePage() {
             onBack={handleBackToServices}
           />
         ) : (
-          // Main booking interface - always show service selector, conditionally show calendar
+          // Main booking interface
           <div className="space-y-6">
-            {/* Service Selection */}
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <ServiceSelectorBar
-                servicesByCategory={webhookData.services.services_by_category}
-                selectedServices={selectedServices}
-                onServiceSelect={handleServiceSelect}
-                onContinue={selectedServices.length > 0 ? () => setShowBookingTypeSelection(true) : undefined}
-                summaryOnly={false}
-              />
-            </div>
+            {/* Service Selection - full interface when no booking type selected */}
+            {!bookingType && (
+              <div className="bg-white rounded-lg shadow-sm border p-6">
+                <ServiceSelectorBar
+                  servicesByCategory={webhookData.services.services_by_category}
+                  selectedServices={selectedServices}
+                  onServiceSelect={handleServiceSelect}
+                  onContinue={selectedServices.length > 0 ? () => setShowBookingTypeSelection(true) : undefined}
+                  summaryOnly={false}
+                />
+              </div>
+            )}
 
-            {/* Calendar - only show after booking type is selected, with summary-only service bar */}
+            {/* Calendar view - only selected services summary + calendar */}
             {selectedServices.length > 0 && bookingType && (
               <div className="space-y-6">
                 {/* Selected Services Summary Only */}
