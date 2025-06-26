@@ -768,39 +768,23 @@ export default function SchedulePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto p-6">
-        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-3xl font-bold text-[#E75837] mb-2 header-font">
-                Book with {webhookData.professional_info.professional_name}
-              </h1>
-              <p className="text-gray-600 body-font">
-                Select a service and available time slot to book your appointment.
-              </p>
+        <div className="bg-white rounded-lg shadow-sm border p-8 mb-6">
+          <div className="max-w-4xl">
+            <h1 className="text-4xl font-bold text-[#E75837] mb-3 header-font">
+              Book with {webhookData.professional_info.professional_name}
+            </h1>
+            <p className="text-lg text-gray-600 body-font mb-4">
+              Select a service and available time slot to book your appointment.
+            </p>
 
-              <div className="mt-3 flex items-center gap-4 text-sm">
-                {professionalConfig ? (
-                  <div className="flex items-center gap-2 text-green-600">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="body-font">
-                      Team configured ({professionalConfig.employees.filter((e) => e.isActive).length} active staff)
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 text-amber-600">
-                    <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
-                    <span className="body-font">Using default availability</span>
-                  </div>
-                )}
-
-                {userTimezoneRef.current && (
-                  <div className="text-xs text-gray-500 body-font">
-                    Timezone: {JSON.parse(userTimezoneRef.current).timezone} (
-                    {JSON.parse(userTimezoneRef.current).offset}) | Session: {sessionIdRef.current?.slice(-8)}
-                  </div>
-                )}
+            {userTimezoneRef.current && (
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full text-sm text-gray-500 body-font">
+                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+                <span>
+                  {JSON.parse(userTimezoneRef.current).timezone} • Session: {sessionIdRef.current?.slice(-6)}
+                </span>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
