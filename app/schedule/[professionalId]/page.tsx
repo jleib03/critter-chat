@@ -19,6 +19,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 
+type NotificationPreference = "1_hour" | "1_day" | "1_week"
+
 interface ParsedWebhookData {
   professional_info: {
     professional_id: string
@@ -67,6 +69,7 @@ export default function SchedulePage() {
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({ firstName: "", lastName: "", email: "" })
   const [pets, setPets] = useState<Pet[]>([])
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null)
+  const [selectedNotifications, setSelectedNotifications] = useState<NotificationPreference[]>([])
   const [professionalConfig, setProfessionalConfig] = useState<ProfessionalConfig | null>(null)
 
   const [showBookingTypeSelection, setShowBookingTypeSelection] = useState(false)
@@ -487,8 +490,9 @@ export default function SchedulePage() {
     setShowPetSelection(true)
   }
 
-  const handlePetSelect = async (pet: Pet) => {
+  const handlePetSelect = async (pet: Pet, notifications: NotificationPreference[]) => {
     setSelectedPet(pet)
+    setSelectedNotifications(notifications)
     setCreatingBooking(true)
 
     try {
@@ -599,9 +603,26 @@ export default function SchedulePage() {
           weight: pet.weight,
           special_notes: pet.special_notes,
         },
+        notification_preferences: {
+          selected_notifications: notifications,
+          notification_details: notifications
+            .map((n) => {
+              switch (n) {
+                case "1_hour":
+                  return { type: "1_hour", label: "1 hour before", enabled: true }
+                case "1_day":
+                  return { type: "1_day", label: "1 day before", enabled: true }
+                case "1_week":
+                  return { type: "1_week", label: "1 week before", enabled: true }
+                default:
+                  return null
+              }
+            })
+            .filter(Boolean),
+        },
       }
 
-      console.log("Sending booking data with UTC times:", bookingData)
+      console.log("Sending booking data with UTC times and notifications:", bookingData)
 
       const response = await fetch(webhookUrl, {
         method: "POST",
@@ -652,6 +673,7 @@ export default function SchedulePage() {
     setCustomerInfo({ firstName: "", lastName: "", email: "" })
     setPets([])
     setSelectedPet(null)
+    setSelectedNotifications([])
     setShowBookingTypeSelection(false)
     setBookingType(null)
     setRecurringConfig(null)
@@ -754,6 +776,12 @@ export default function SchedulePage() {
                       {customerInfo.firstName} {customerInfo.lastName}
                     </span>
                   </div>
+                  {selectedNotifications.length > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 body-font">Notifications:</span>
+                      <span className="font-medium body-font">{selectedNotifications.length} selected</span>
+                    </div>
+                  )}
                 </div>
               </div>
 

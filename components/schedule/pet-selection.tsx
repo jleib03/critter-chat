@@ -5,7 +5,10 @@ import type { Pet, Service, SelectedTimeSlot, CustomerInfo } from "@/types/sched
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, PawPrint, User, Calendar, Clock, DollarSign } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { ArrowLeft, PawPrint, User, Calendar, Clock, DollarSign, Bell } from "lucide-react"
+
+type NotificationPreference = "1_hour" | "1_day" | "1_week"
 
 type PetSelectionProps = {
   pets: Pet[]
@@ -13,7 +16,7 @@ type PetSelectionProps = {
   selectedServices: Service[]
   selectedTimeSlot: SelectedTimeSlot
   professionalName: string
-  onPetSelect: (pet: Pet) => void
+  onPetSelect: (pet: Pet, notifications: NotificationPreference[]) => void
   onBack: () => void
 }
 
@@ -27,14 +30,25 @@ export function PetSelection({
   onBack,
 }: PetSelectionProps) {
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null)
+  const [selectedNotifications, setSelectedNotifications] = useState<NotificationPreference[]>([])
 
   const handlePetSelect = (pet: Pet) => {
     setSelectedPet(pet)
   }
 
+  const handleNotificationChange = (notification: NotificationPreference, checked: boolean) => {
+    setSelectedNotifications((prev) => {
+      if (checked) {
+        return [...prev, notification]
+      } else {
+        return prev.filter((n) => n !== notification)
+      }
+    })
+  }
+
   const handleContinue = () => {
     if (selectedPet) {
-      onPetSelect(selectedPet)
+      onPetSelect(selectedPet, selectedNotifications)
     }
   }
 
@@ -74,6 +88,24 @@ export function PetSelection({
   const totalCost = selectedServices.reduce((sum, service) => {
     return sum + Number.parseFloat(service.customer_cost.toString())
   }, 0)
+
+  const notificationOptions = [
+    {
+      id: "1_hour" as NotificationPreference,
+      label: "1 hour before",
+      description: "Get reminded 1 hour before your appointment",
+    },
+    {
+      id: "1_day" as NotificationPreference,
+      label: "1 day before",
+      description: "Get reminded 1 day before your appointment",
+    },
+    {
+      id: "1_week" as NotificationPreference,
+      label: "1 week before",
+      description: "Get reminded 1 week before your appointment",
+    },
+  ]
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -233,24 +265,71 @@ export function PetSelection({
               </p>
             </div>
           )}
+        </CardContent>
+      </Card>
 
-          {selectedPet && (
-            <div className="mt-6 pt-6 border-t">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 body-font">Selected pet:</p>
-                  <p className="font-medium text-gray-900 body-font">
-                    {selectedPet.pet_name} ({selectedPet.pet_type})
-                  </p>
+      {/* Notification Preferences */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl header-font text-[#E75837] flex items-center gap-2">
+            <Bell className="w-5 h-5" />
+            Notification Preferences
+          </CardTitle>
+          <p className="text-gray-600 body-font">
+            Choose when you'd like to receive reminders about your upcoming appointment. You can select multiple options
+            or none at all.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {notificationOptions.map((option) => (
+              <div key={option.id} className="flex items-start space-x-3">
+                <Checkbox
+                  id={option.id}
+                  checked={selectedNotifications.includes(option.id)}
+                  onCheckedChange={(checked) => handleNotificationChange(option.id, checked as boolean)}
+                  className="mt-1"
+                />
+                <div className="flex-1">
+                  <label htmlFor={option.id} className="text-sm font-medium text-gray-900 body-font cursor-pointer">
+                    {option.label}
+                  </label>
+                  <p className="text-sm text-gray-600 body-font">{option.description}</p>
                 </div>
-                <Button onClick={handleContinue} className="bg-[#E75837] hover:bg-[#d14a2a] text-white body-font">
-                  Continue to Booking
-                </Button>
               </div>
+            ))}
+          </div>
+
+          {selectedNotifications.length > 0 && (
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800 body-font">
+                <span className="font-medium">Selected notifications:</span>{" "}
+                {selectedNotifications.map((n) => notificationOptions.find((opt) => opt.id === n)?.label).join(", ")}
+              </p>
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Continue Button */}
+      {selectedPet && (
+        <div className="flex items-center justify-between p-6 bg-white border border-gray-200 rounded-lg">
+          <div>
+            <p className="text-sm text-gray-600 body-font">Selected pet:</p>
+            <p className="font-medium text-gray-900 body-font">
+              {selectedPet.pet_name} ({selectedPet.pet_type})
+            </p>
+            {selectedNotifications.length > 0 && (
+              <p className="text-sm text-gray-600 body-font mt-1">
+                Notifications: {selectedNotifications.length} selected
+              </p>
+            )}
+          </div>
+          <Button onClick={handleContinue} className="bg-[#E75837] hover:bg-[#d14a2a] text-white body-font">
+            Continue to Booking
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,18 +1,16 @@
 "use client"
 
-import type React from "react"
-
-import type { Service, ServicesByCategory } from "@/types/schedule"
+import { useState } from "react"
+import { ChevronDown, ChevronUp, X, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Clock, DollarSign, X, ArrowRight } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import type { Service } from "@/types/schedule"
 
 type ServiceSelectorBarProps = {
-  servicesByCategory: ServicesByCategory
+  servicesByCategory: { [category: string]: Service[] }
   selectedServices: Service[]
   onServiceSelect: (service: Service) => void
   onContinue?: () => void
-  summaryOnly?: boolean // New prop to control whether to show full menu or just summary
+  summaryOnly?: boolean
 }
 
 export function ServiceSelectorBar({
@@ -22,6 +20,15 @@ export function ServiceSelectorBar({
   onContinue,
   summaryOnly = false,
 }: ServiceSelectorBarProps) {
+  const [expandedCategories, setExpandedCategories] = useState<{ [key: string]: boolean }>({})
+
+  const toggleCategory = (category: string) => {
+    setExpandedCategories((prev) => ({
+      ...prev,
+      [category]: !prev[category],
+    }))
+  }
+
   const formatDuration = (duration: number, unit: string) => {
     if (unit === "Minutes") {
       if (duration >= 60) {
@@ -32,7 +39,7 @@ export function ServiceSelectorBar({
       return `${duration}m`
     }
     if (unit === "Hours") {
-      return duration === 1 ? `${duration} hour` : `${duration} hours`
+      return duration === 1 ? `${duration}h` : `${duration}h`
     }
     if (unit === "Days") {
       return duration === 1 ? `${duration} day` : `${duration} days`
@@ -44,113 +51,93 @@ export function ServiceSelectorBar({
     return `$${Number.parseFloat(price.toString()).toFixed(0)}`
   }
 
-  const calculateTotalDuration = () => {
-    return selectedServices.reduce((total, service) => {
-      let durationInMinutes = service.duration_number
-      if (service.duration_unit === "Hours") {
-        durationInMinutes = service.duration_number * 60
-      } else if (service.duration_unit === "Days") {
-        durationInMinutes = service.duration_number * 24 * 60
-      }
-      return total + durationInMinutes
-    }, 0)
-  }
+  // Calculate totals
+  const totalDuration = selectedServices.reduce((sum, service) => {
+    let durationInMinutes = service.duration_number
+    if (service.duration_unit === "Hours") {
+      durationInMinutes = service.duration_number * 60
+    } else if (service.duration_unit === "Days") {
+      durationInMinutes = service.duration_number * 24 * 60
+    }
+    return sum + durationInMinutes
+  }, 0)
 
-  const calculateTotalCost = () => {
-    return selectedServices.reduce((total, service) => {
-      return total + Number.parseFloat(service.customer_cost.toString())
-    }, 0)
-  }
+  const totalCost = selectedServices.reduce((sum, service) => {
+    return sum + Number.parseFloat(service.customer_cost.toString())
+  }, 0)
 
-  const isServiceSelected = (service: Service) => {
-    return selectedServices.some((s) => s.name === service.name)
-  }
-
-  const handleServiceClick = (service: Service, event: React.MouseEvent) => {
-    event.preventDefault()
-    event.stopPropagation()
-    console.log("Service clicked:", service.name)
-    onServiceSelect(service)
-  }
-
-  const removeService = (serviceToRemove: Service) => {
-    onServiceSelect(serviceToRemove)
-  }
-
-  const totalDurationMinutes = calculateTotalDuration()
-  const totalCost = calculateTotalCost()
-
-  // If summary only and no services selected, don't render anything
-  if (summaryOnly && selectedServices.length === 0) {
-    return null
+  const formatTotalDuration = (minutes: number) => {
+    if (minutes >= 60) {
+      const hours = Math.floor(minutes / 60)
+      const mins = minutes % 60
+      return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
+    }
+    return `${minutes}m`
   }
 
   return (
     <div className="space-y-6">
-      {/* Header - only show for full selector, not summary */}
-      {!summaryOnly && (
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900 header-font">Select Services</h2>
-          {selectedServices.length > 0 && onContinue && (
-            <div className="flex items-center gap-4">
-              <div className="text-sm text-gray-600 body-font">
-                {selectedServices.length} service{selectedServices.length !== 1 ? "s" : ""} •{" "}
-                {Math.floor(totalDurationMinutes / 60)}h {totalDurationMinutes % 60}m • ${totalCost.toFixed(0)}
-              </div>
-              <Button onClick={onContinue} className="bg-[#E75837] hover:bg-[#d14a2a] text-white body-font" size="sm">
-                Continue <ArrowRight className="w-4 h-4 ml-1" />
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold header-font text-gray-900">Select Services</h2>
+        {selectedServices.length > 0 && onContinue && (
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-600 body-font">
+              {selectedServices.length} service{selectedServices.length !== 1 ? "s" : ""} •{" "}
+              {formatTotalDuration(totalDuration)} • ${totalCost.toFixed(0)}
+            </span>
+            <Button onClick={onContinue} className="bg-[#E75837] hover:bg-[#d14a2a] text-white body-font">
+              Continue <ArrowRight className="ml-2 w-4 h-4" />
+            </Button>
+          </div>
+        )}
+      </div>
 
-      {/* Selected Services Summary - show if we have selected services */}
+      {/* Selected Services Summary */}
       {selectedServices.length > 0 && (
-        <div className="p-6 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border border-orange-200">
+        <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-[#E75837] rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">{selectedServices.length}</span>
+              <div className="w-8 h-8 bg-[#E75837] text-white rounded-full flex items-center justify-center text-sm font-semibold">
+                {selectedServices.length}
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 header-font">Selected Services</h3>
+                <h3 className="font-semibold text-gray-900 header-font">Selected Services</h3>
                 <p className="text-sm text-gray-600 body-font">
-                  {Math.floor(totalDurationMinutes / 60) > 0 && `${Math.floor(totalDurationMinutes / 60)}h `}
-                  {totalDurationMinutes % 60 > 0 && `${totalDurationMinutes % 60}m`} • ${totalCost.toFixed(0)} total
+                  {formatTotalDuration(totalDuration)} • ${totalCost.toFixed(0)} total
                 </p>
               </div>
             </div>
-            {/* Removed the Continue button from this section */}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {selectedServices.map((service, index) => (
               <div
-                key={`selected-${index}`}
-                className="flex items-center justify-between bg-white px-4 py-3 rounded-lg border border-orange-200 shadow-sm"
+                key={index}
+                className="bg-white border border-orange-200 rounded-lg p-4 flex items-center justify-between"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 bg-[#E75837] text-white rounded-full flex items-center justify-center text-xs font-bold">
-                    ✓
+                  <div className="w-6 h-6 bg-[#E75837] text-white rounded-full flex items-center justify-center">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
                   </div>
                   <div>
-                    <span className="font-medium text-gray-900 body-font">{service.name}</span>
-                    <div className="flex items-center gap-3 mt-1">
-                      <span className="text-xs text-gray-500 body-font">
-                        {formatDuration(service.duration_number, service.duration_unit)}
-                      </span>
-                      <span className="text-xs font-medium text-[#E75837] body-font">
-                        {formatPrice(service.customer_cost)}
-                      </span>
-                    </div>
+                    <p className="font-medium text-gray-900 body-font">{service.name}</p>
+                    <p className="text-sm text-[#E75837] body-font">
+                      {formatDuration(service.duration_number, service.duration_unit)} •{" "}
+                      {formatPrice(service.customer_cost)}
+                    </p>
                   </div>
                 </div>
                 {!summaryOnly && (
                   <button
-                    onClick={() => removeService(service)}
-                    className="text-gray-400 hover:text-red-500 transition-colors p-1 hover:bg-red-50 rounded-full"
-                    title="Remove service"
+                    onClick={() => onServiceSelect(service)}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -161,80 +148,86 @@ export function ServiceSelectorBar({
         </div>
       )}
 
-      {/* Services Menu - only show if not summary only */}
+      {/* Service Categories - Only show if not summary only */}
       {!summaryOnly && (
         <div className="space-y-4">
-          {Object.entries(servicesByCategory).length === 0 ? (
-            <div className="text-center py-8 text-gray-500">No services available</div>
-          ) : (
-            Object.entries(servicesByCategory).map(([category, services]) => (
-              <Card key={category} className="overflow-hidden">
-                <CardHeader className="bg-gray-50 py-3">
-                  <CardTitle className="text-lg capitalize header-font text-[#E75837]">{category}</CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="divide-y divide-gray-100">
-                    {services && services.length > 0 ? (
-                      services.map((service, index) => {
-                        const selected = isServiceSelected(service)
-                        return (
-                          <div
-                            key={`${category}-${index}`}
-                            onClick={(e) => handleServiceClick(service, e)}
-                            className={`p-4 transition-all duration-200 cursor-pointer ${
-                              selected ? "bg-orange-50 border-l-4 border-l-[#E75837] shadow-sm" : "hover:bg-gray-50"
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3 flex-1">
-                                <div
-                                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                                    selected
-                                      ? "bg-[#E75837] border-[#E75837] text-white"
-                                      : "border-gray-300 hover:border-[#E75837]"
-                                  }`}
-                                >
-                                  {selected && <span className="text-xs font-bold">✓</span>}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <h4
-                                    className={`font-semibold ${selected ? "text-[#E75837]" : "text-gray-900"} header-font text-base leading-tight`}
-                                  >
-                                    {service.name}
-                                  </h4>
-                                  {service.description && (
-                                    <p className="text-sm text-gray-600 mt-1 body-font line-clamp-2">
-                                      {service.description}
-                                    </p>
-                                  )}
-                                  <div className="flex items-center gap-4 mt-3">
-                                    <div className="flex items-center gap-1 text-sm text-gray-500">
-                                      <Clock className="w-4 h-4 flex-shrink-0" />
-                                      <span className="body-font">
-                                        {formatDuration(service.duration_number, service.duration_unit)}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center gap-1 text-sm text-gray-500">
-                                      <DollarSign className="w-4 h-4 flex-shrink-0" />
-                                      <span className="body-font font-medium">
-                                        {formatPrice(service.customer_cost)}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
+          {Object.entries(servicesByCategory).map(([category, services]) => (
+            <div key={category} className="border border-gray-200 rounded-lg overflow-hidden">
+              <button
+                onClick={() => toggleCategory(category)}
+                className="w-full px-6 py-4 bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-between"
+              >
+                <h3 className="text-lg font-medium text-[#E75837] header-font">{category}</h3>
+                {expandedCategories[category] ? (
+                  <ChevronUp className="w-5 h-5 text-gray-500" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-gray-500" />
+                )}
+              </button>
+
+              {(expandedCategories[category] ||
+                selectedServices.some((selected) => services.some((service) => service.name === selected.name))) && (
+                <div className="p-6 space-y-4">
+                  {services.map((service, index) => {
+                    const isSelected = selectedServices.some((selected) => selected.name === service.name)
+                    return (
+                      <div
+                        key={index}
+                        className={`border rounded-lg p-4 cursor-pointer transition-all hover:shadow-sm ${
+                          isSelected
+                            ? "border-[#E75837] bg-orange-50 shadow-sm"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                        onClick={() => onServiceSelect(service)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                                isSelected ? "border-[#E75837] bg-[#E75837] text-white" : "border-gray-300 bg-white"
+                              }`}
+                            >
+                              {isSelected && (
+                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                              )}
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-gray-900 body-font">{service.name}</h4>
+                              {service.description && (
+                                <p className="text-sm text-gray-600 body-font mt-1">{service.description}</p>
+                              )}
                             </div>
                           </div>
-                        )
-                      })
-                    ) : (
-                      <div className="p-4 text-gray-500 text-center">No services in this category</div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
+                          <div className="text-right">
+                            <div className="flex items-center gap-4 text-sm text-gray-600 body-font">
+                              <span className="flex items-center gap-1">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                  />
+                                </svg>
+                                {formatDuration(service.duration_number, service.duration_unit)}
+                              </span>
+                              <span className="font-medium text-gray-900">{formatPrice(service.customer_cost)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>
