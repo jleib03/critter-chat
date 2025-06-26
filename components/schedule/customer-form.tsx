@@ -196,7 +196,8 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
           <div key={index} className="flex items-center gap-2">
             <DollarSign className="w-4 h-4 text-gray-500" />
             <span className="text-sm body-font">
-              {service.name}: ${service.customer_cost} ({service.duration_number} {service.duration_unit.toLowerCase()})
+              {service.name}: ${service.customer_cost} ({service.duration_number}{" "}
+              {service.duration_unit?.toLowerCase() ?? ""})
             </span>
           </div>
         ))}
@@ -225,7 +226,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
             <div className="flex justify-between">
               <span className="text-blue-700 body-font">Frequency:</span>
               <span className="font-medium text-blue-900 body-font">
-                Every {recurringConfig.frequency} {recurringConfig.unit.toLowerCase()}
+                Every {recurringConfig.frequency} {recurringConfig.unit?.toLowerCase() ?? ""}
                 {recurringConfig.frequency > 1 ? "s" : ""}
               </span>
             </div>
