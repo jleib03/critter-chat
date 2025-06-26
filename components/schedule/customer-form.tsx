@@ -11,8 +11,7 @@ import type { Service, SelectedTimeSlot, CustomerInfo, PetResponse } from "@/typ
 import { useRouter } from "next/navigation"
 
 type RecurringConfig = {
-  frequency: number
-  unit: "day" | "week" | "month"
+  selectedDays: string[]
   endDate: string
   totalAppointments: number
 }
@@ -154,6 +153,30 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
     return sum + Number.parseFloat(service.customer_cost.toString())
   }, 0)
 
+  const formatRecurringDays = (days: string[]) => {
+    if (!days || days.length === 0) return ""
+
+    const dayNames = {
+      monday: "Monday",
+      tuesday: "Tuesday",
+      wednesday: "Wednesday",
+      thursday: "Thursday",
+      friday: "Friday",
+      saturday: "Saturday",
+      sunday: "Sunday",
+    }
+
+    const formattedDays = days.map((day) => dayNames[day.toLowerCase() as keyof typeof dayNames] || day)
+
+    if (formattedDays.length === 1) {
+      return formattedDays[0]
+    } else if (formattedDays.length === 2) {
+      return `${formattedDays[0]} and ${formattedDays[1]}`
+    } else {
+      return `${formattedDays.slice(0, -1).join(", ")}, and ${formattedDays[formattedDays.length - 1]}`
+    }
+  }
+
   return (
     <div className="flex flex-col max-w-2xl mx-auto">
       <Button variant="ghost" onClick={onBack} className="self-start mb-4">
@@ -226,19 +249,22 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
             <div className="flex justify-between">
               <span className="text-blue-700 body-font">Frequency:</span>
               <span className="font-medium text-blue-900 body-font">
-                Every {recurringConfig.frequency} {recurringConfig.unit?.toLowerCase() ?? ""}
-                {recurringConfig.frequency > 1 ? "s" : ""}
+                Weekly on {formatRecurringDays(recurringConfig.selectedDays)}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-blue-700 body-font">End Date:</span>
               <span className="font-medium text-blue-900 body-font">
-                {new Date(recurringConfig.endDate).toLocaleDateString("en-US", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
+                {(() => {
+                  const [year, month, day] = recurringConfig.endDate.split("-").map(Number)
+                  const date = new Date(year, month - 1, day)
+                  return date.toLocaleDateString("en-US", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })
+                })()}
               </span>
             </div>
           </div>

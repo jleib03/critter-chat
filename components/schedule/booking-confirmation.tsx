@@ -4,7 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle, Calendar, Clock, DollarSign, User, PawPrint, Mail, Repeat } from "lucide-react"
-import type { Service, SelectedTimeSlot, CustomerInfo, Pet, RecurringConfig } from "@/types/schedule"
+import type { Service, SelectedTimeSlot, CustomerInfo, Pet } from "@/types/schedule"
+
+type RecurringConfig = {
+  selectedDays: string[]
+  endDate: string
+  totalAppointments: number
+}
 
 type BookingConfirmationProps = {
   selectedServices: Service[]
@@ -74,6 +80,30 @@ export function BookingConfirmation({
 
   const formatTotalPrice = () => {
     return `$${totalPrice.toFixed(0)}`
+  }
+
+  const formatRecurringDays = (days: string[]) => {
+    if (!days || days.length === 0) return ""
+
+    const dayNames = {
+      monday: "Monday",
+      tuesday: "Tuesday",
+      wednesday: "Wednesday",
+      thursday: "Thursday",
+      friday: "Friday",
+      saturday: "Saturday",
+      sunday: "Sunday",
+    }
+
+    const formattedDays = days.map((day) => dayNames[day.toLowerCase() as keyof typeof dayNames] || day)
+
+    if (formattedDays.length === 1) {
+      return formattedDays[0]
+    } else if (formattedDays.length === 2) {
+      return `${formattedDays[0]} and ${formattedDays[1]}`
+    } else {
+      return `${formattedDays.slice(0, -1).join(", ")}, and ${formattedDays[formattedDays.length - 1]}`
+    }
   }
 
   return (
@@ -177,19 +207,21 @@ export function BookingConfirmation({
                     <div className="flex items-center gap-2 mb-2">
                       <Repeat className="w-4 h-4 text-blue-500" />
                       <span className="font-medium body-font text-blue-900">
-                        Every {recurringConfig.frequency} {recurringConfig.unit?.toLowerCase()}
-                        {recurringConfig.frequency > 1 ? "s" : ""}
+                        Weekly on {formatRecurringDays(recurringConfig.selectedDays)}
                       </span>
                     </div>
                     <div className="text-sm text-blue-700 body-font space-y-1">
                       <div>
-                        Until:{" "}
-                        {new Date(recurringConfig.endDate).toLocaleDateString("en-US", {
-                          weekday: "long",
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })}
+                        Until: {(() => {
+                          const [year, month, day] = recurringConfig.endDate.split("-").map(Number)
+                          const date = new Date(year, month - 1, day)
+                          return date.toLocaleDateString("en-US", {
+                            weekday: "long",
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })
+                        })()}
                       </div>
                     </div>
                   </div>
