@@ -202,24 +202,22 @@ export function WeeklyCalendar({
   const isSlotValidForRecurring = (date: Date, startTime: string, endTime: string, dayName: string) => {
     if (bookingType !== "recurring" || !recurringConfig) return true
 
+    // Check if this day is selected for recurring appointments
+    if (!recurringConfig.daysOfWeek.includes(dayName)) return false
+
     const serviceDuration = getTotalServiceDurationInMinutes(selectedServices!)
     const startDate = new Date(date)
     const endDate = new Date(recurringConfig.endDate)
 
-    // Generate all recurring dates
+    // Generate all recurring dates for this specific day of the week
     const recurringDates = []
     const currentDate = new Date(startDate)
 
     while (currentDate <= endDate) {
-      recurringDates.push(new Date(currentDate))
-
-      if (recurringConfig.unit === "days") {
-        currentDate.setDate(currentDate.getDate() + recurringConfig.frequency)
-      } else if (recurringConfig.unit === "weeks") {
-        currentDate.setDate(currentDate.getDate() + recurringConfig.frequency * 7)
-      } else if (recurringConfig.unit === "months") {
-        currentDate.setMonth(currentDate.getMonth() + recurringConfig.frequency)
+      if (recurringConfig.daysOfWeek.includes(getDayName(currentDate))) {
+        recurringDates.push(new Date(currentDate))
       }
+      currentDate.setDate(currentDate.getDate() + 1)
     }
 
     // Check if all recurring dates have availability
@@ -316,8 +314,13 @@ export function WeeklyCalendar({
             Select a time slot for <span className="font-medium">{selectedServices.map((s) => s.name).join(", ")}</span>
             {bookingType === "recurring" && recurringConfig && (
               <span className="text-sm text-[#E75837] ml-2 font-medium">
-                (Recurring every {recurringConfig.frequency} {recurringConfig.unit} until{" "}
-                {new Date(recurringConfig.endDate).toLocaleDateString()})
+                (Recurring weekly on{" "}
+                {recurringConfig.daysOfWeek.length === 1
+                  ? recurringConfig.daysOfWeek[0]
+                  : recurringConfig.daysOfWeek.length === 2
+                    ? `${recurringConfig.daysOfWeek[0]} and ${recurringConfig.daysOfWeek[1]}`
+                    : `${recurringConfig.daysOfWeek.slice(0, -1).join(", ")}, and ${recurringConfig.daysOfWeek.slice(-1)}`}{" "}
+                until {new Date(recurringConfig.endDate).toLocaleDateString()})
               </span>
             )}
             {professionalConfig && (
@@ -358,12 +361,21 @@ export function WeeklyCalendar({
           const hasMoreSlots = timeSlots.length > initialSlotCount
           const displayedSlots = isExpanded ? timeSlots : timeSlots.slice(0, initialSlotCount)
 
+          // For recurring bookings, highlight days that are selected
+          const isRecurringDay = bookingType === "recurring" && recurringConfig?.daysOfWeek.includes(dayName)
+
           return (
-            <Card key={index} className={`${isToday ? "ring-2 ring-[#E75837]" : ""} h-fit`}>
+            <Card
+              key={index}
+              className={`${isToday ? "ring-2 ring-[#E75837]" : isRecurringDay ? "ring-1 ring-blue-300 bg-blue-50" : ""} h-fit`}
+            >
               <CardHeader className="pb-3 text-center">
                 <CardTitle className="space-y-1">
-                  <div className={`text-sm font-semibold header-font ${isToday ? "text-[#E75837]" : "text-gray-900"}`}>
+                  <div
+                    className={`text-sm font-semibold header-font ${isToday ? "text-[#E75837]" : isRecurringDay ? "text-blue-600" : "text-gray-900"}`}
+                  >
                     {dayName}
+                    {isRecurringDay && <span className="text-xs block text-blue-500">Recurring</span>}
                   </div>
                   <div className="text-2xl font-bold text-gray-900">{date.getDate()}</div>
                   <div className="text-xs text-gray-500 font-normal">

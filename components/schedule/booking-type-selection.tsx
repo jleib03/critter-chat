@@ -9,8 +9,7 @@ import type { Service } from "@/types/schedule"
 export type BookingType = "one-time" | "recurring"
 
 export type RecurringConfig = {
-  frequency: number // e.g., 3 for "every 3 weeks"
-  unit: "days" | "weeks" | "months"
+  daysOfWeek: string[] // e.g., ["Monday", "Wednesday", "Friday"]
   endDate: string
 }
 
@@ -20,11 +19,12 @@ type BookingTypeSelectionProps = {
   onBack: () => void
 }
 
+const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
 export function BookingTypeSelection({ selectedService, onBookingTypeSelect, onBack }: BookingTypeSelectionProps) {
   const [selectedType, setSelectedType] = useState<BookingType | null>(null)
   const [recurringConfig, setRecurringConfig] = useState<RecurringConfig>({
-    frequency: 1,
-    unit: "weeks",
+    daysOfWeek: [],
     endDate: "",
   })
 
@@ -39,24 +39,25 @@ export function BookingTypeSelection({ selectedService, onBookingTypeSelect, onB
   const isFormValid = () => {
     if (selectedType === "one-time") return true
     if (selectedType === "recurring") {
-      return recurringConfig.frequency > 0 && recurringConfig.endDate !== ""
+      return recurringConfig.daysOfWeek.length > 0 && recurringConfig.endDate !== ""
     }
     return false
   }
 
-  // Generate minimum end date (at least 1 occurrence after start)
+  const handleDayToggle = (day: string) => {
+    setRecurringConfig((prev) => ({
+      ...prev,
+      daysOfWeek: prev.daysOfWeek.includes(day)
+        ? prev.daysOfWeek.filter((d) => d !== day)
+        : [...prev.daysOfWeek, day].sort((a, b) => DAYS_OF_WEEK.indexOf(a) - DAYS_OF_WEEK.indexOf(b)),
+    }))
+  }
+
+  // Generate minimum end date (at least 1 week from today)
   const getMinEndDate = () => {
     const today = new Date()
     const minDate = new Date(today)
-
-    if (recurringConfig.unit === "days") {
-      minDate.setDate(today.getDate() + recurringConfig.frequency)
-    } else if (recurringConfig.unit === "weeks") {
-      minDate.setDate(today.getDate() + recurringConfig.frequency * 7)
-    } else if (recurringConfig.unit === "months") {
-      minDate.setMonth(today.getMonth() + recurringConfig.frequency)
-    }
-
+    minDate.setDate(today.getDate() + 7) // At least 1 week from now
     return minDate.toISOString().split("T")[0]
   }
 
@@ -122,7 +123,7 @@ export function BookingTypeSelection({ selectedService, onBookingTypeSelect, onB
               <div className="flex-1">
                 <h3 className="text-lg font-semibold mb-2 header-font">Recurring Service</h3>
                 <p className="text-gray-600 body-font">
-                  Schedule regular appointments for {selectedService.name} over a period of time.
+                  Schedule regular weekly appointments for {selectedService.name}.
                 </p>
                 <div className="mt-3 flex items-center text-sm text-gray-500">
                   <CalendarDays className="w-4 h-4 mr-1" />
@@ -146,42 +147,30 @@ export function BookingTypeSelection({ selectedService, onBookingTypeSelect, onB
             <CardTitle className="text-lg text-[#E75837] header-font">Recurring Schedule Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6">
               <div>
-                <label htmlFor="frequency" className="block text-sm font-medium text-gray-700 mb-2 header-font">
-                  Repeat every*
+                <label className="block text-sm font-medium text-gray-700 mb-3 header-font">
+                  Select days of the week*
                 </label>
-                <div className="flex space-x-2">
-                  <input
-                    type="number"
-                    id="frequency"
-                    min="1"
-                    max="52"
-                    value={recurringConfig.frequency}
-                    onChange={(e) =>
-                      setRecurringConfig((prev) => ({
-                        ...prev,
-                        frequency: Number.parseInt(e.target.value) || 1,
-                      }))
-                    }
-                    className="w-20 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
-                  />
-                  <select
-                    value={recurringConfig.unit}
-                    onChange={(e) =>
-                      setRecurringConfig((prev) => ({
-                        ...prev,
-                        unit: e.target.value as "days" | "weeks" | "months",
-                      }))
-                    }
-                    className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
-                  >
-                    <option value="days">Days</option>
-                    <option value="weeks">Weeks</option>
-                    <option value="months">Months</option>
-                  </select>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {DAYS_OF_WEEK.map((day) => (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => handleDayToggle(day)}
+                      className={`p-3 text-sm rounded-lg border transition-all body-font ${
+                        recurringConfig.daysOfWeek.includes(day)
+                          ? "bg-[#E75837] text-white border-[#E75837]"
+                          : "bg-white text-gray-700 border-gray-300 hover:border-[#E75837] hover:bg-[#fff8f6]"
+                      }`}
+                    >
+                      {day.slice(0, 3)}
+                    </button>
+                  ))}
                 </div>
-                <p className="text-xs text-gray-500 mt-1 body-font">Example: "2 weeks" means every other week</p>
+                <p className="text-xs text-gray-500 mt-2 body-font">
+                  Select one or more days for your weekly recurring appointments
+                </p>
               </div>
 
               <div>
@@ -206,13 +195,17 @@ export function BookingTypeSelection({ selectedService, onBookingTypeSelect, onB
             </div>
 
             {/* Preview of recurring schedule */}
-            {recurringConfig.frequency > 0 && recurringConfig.endDate && (
+            {recurringConfig.daysOfWeek.length > 0 && recurringConfig.endDate && (
               <div className="bg-gray-50 rounded-lg p-4">
                 <h4 className="text-sm font-medium text-gray-700 mb-2 header-font">Schedule Preview</h4>
                 <p className="text-sm text-gray-600 body-font">
                   Appointments will repeat every{" "}
                   <span className="font-medium">
-                    {recurringConfig.frequency} {recurringConfig.unit}
+                    {recurringConfig.daysOfWeek.length === 1
+                      ? recurringConfig.daysOfWeek[0]
+                      : recurringConfig.daysOfWeek.length === 2
+                        ? `${recurringConfig.daysOfWeek[0]} and ${recurringConfig.daysOfWeek[1]}`
+                        : `${recurringConfig.daysOfWeek.slice(0, -1).join(", ")}, and ${recurringConfig.daysOfWeek.slice(-1)}`}
                   </span>{" "}
                   until{" "}
                   <span className="font-medium">
