@@ -4,8 +4,8 @@ import type React from "react"
 
 import type { Service, ServicesByCategory } from "@/types/schedule"
 import { Button } from "@/components/ui/button"
-import { Clock, DollarSign, ChevronDown, X, ArrowRight } from "lucide-react"
-import { useState } from "react"
+import { Clock, DollarSign, X, ArrowRight } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 type ServiceSelectorBarProps = {
   servicesByCategory: ServicesByCategory
@@ -20,8 +20,6 @@ export function ServiceSelectorBar({
   onServiceSelect,
   onContinue,
 }: ServiceSelectorBarProps) {
-  const [isOpen, setIsOpen] = useState(false)
-
   const formatDuration = (duration: number, unit: string) => {
     if (unit === "Minutes") {
       if (duration >= 60) {
@@ -80,16 +78,10 @@ export function ServiceSelectorBar({
   const totalDurationMinutes = calculateTotalDuration()
   const totalCost = calculateTotalCost()
 
-  // Debug logging
-  console.log("ServiceSelectorBar render:", {
-    servicesByCategory,
-    selectedServices,
-    isOpen,
-  })
-
   return (
-    <div className="relative">
-      <div className="flex items-center justify-between mb-4">
+    <div className="space-y-6">
+      {/* Header with summary */}
+      <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900 header-font">Select Services</h2>
         {selectedServices.length > 0 && (
           <div className="flex items-center gap-4">
@@ -106,9 +98,9 @@ export function ServiceSelectorBar({
         )}
       </div>
 
-      {/* Selected Services Summary - Improved Design */}
+      {/* Selected Services Summary */}
       {selectedServices.length > 0 && (
-        <div className="mb-6 p-6 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border border-orange-200">
+        <div className="p-6 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border border-orange-200">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-[#E75837] rounded-full flex items-center justify-center">
@@ -167,43 +159,31 @@ export function ServiceSelectorBar({
         </div>
       )}
 
-      <Button
-        variant="outline"
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full justify-between h-12 text-left body-font"
-      >
-        <span className="text-gray-900">
-          {selectedServices.length > 0
-            ? `${selectedServices.length} service${selectedServices.length !== 1 ? "s" : ""} selected`
-            : "Choose services..."}
-        </span>
-        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />
-      </Button>
-
-      {isOpen && (
-        <div className="absolute top-full left-0 right-0 z-50 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto">
-          {Object.entries(servicesByCategory).length === 0 ? (
-            <div className="px-4 py-3 text-gray-500 text-center">No services available</div>
-          ) : (
-            Object.entries(servicesByCategory).map(([category, services]) => (
-              <div key={category}>
-                <div className="px-4 py-2 bg-gray-50 border-b">
-                  <h3 className="text-sm font-medium text-[#E75837] capitalize header-font">{category}</h3>
-                </div>
-                {services && services.length > 0 ? (
-                  services.map((service, index) => {
-                    const selected = isServiceSelected(service)
-                    return (
-                      <div
-                        key={`${category}-${index}`}
-                        onClick={(e) => handleServiceClick(service, e)}
-                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-all duration-200 cursor-pointer ${
-                          selected ? "bg-orange-50 border-l-4 border-l-[#E75837] shadow-sm" : ""
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3">
+      {/* Services Menu */}
+      <div className="space-y-4">
+        {Object.entries(servicesByCategory).length === 0 ? (
+          <div className="text-center py-8 text-gray-500">No services available</div>
+        ) : (
+          Object.entries(servicesByCategory).map(([category, services]) => (
+            <Card key={category} className="overflow-hidden">
+              <CardHeader className="bg-gray-50 py-3">
+                <CardTitle className="text-lg capitalize header-font text-[#E75837]">{category}</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="divide-y divide-gray-100">
+                  {services && services.length > 0 ? (
+                    services.map((service, index) => {
+                      const selected = isServiceSelected(service)
+                      return (
+                        <div
+                          key={`${category}-${index}`}
+                          onClick={(e) => handleServiceClick(service, e)}
+                          className={`p-4 transition-all duration-200 cursor-pointer ${
+                            selected ? "bg-orange-50 border-l-4 border-l-[#E75837] shadow-sm" : "hover:bg-gray-50"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3 flex-1">
                               <div
                                 className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
                                   selected
@@ -213,42 +193,44 @@ export function ServiceSelectorBar({
                               >
                                 {selected && <span className="text-xs font-bold">✓</span>}
                               </div>
-                              <h4
-                                className={`font-medium ${selected ? "text-[#E75837]" : "text-gray-900"} header-font`}
-                              >
-                                {service.name}
-                              </h4>
-                            </div>
-                            {service.description && (
-                              <p className="text-sm text-gray-600 mt-1 ml-8 body-font line-clamp-1">
-                                {service.description}
-                              </p>
-                            )}
-                            <div className="flex items-center gap-4 mt-2 ml-8">
-                              <div className="flex items-center gap-1 text-xs text-gray-500">
-                                <Clock className="w-3 h-3" />
-                                <span className="body-font">
-                                  {formatDuration(service.duration_number, service.duration_unit)}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1 text-xs text-gray-500">
-                                <DollarSign className="w-3 h-3" />
-                                <span className="body-font font-medium">{formatPrice(service.customer_cost)}</span>
+                              <div className="flex-1 min-w-0">
+                                <h4
+                                  className={`font-semibold ${selected ? "text-[#E75837]" : "text-gray-900"} header-font text-base leading-tight`}
+                                >
+                                  {service.name}
+                                </h4>
+                                {service.description && (
+                                  <p className="text-sm text-gray-600 mt-1 body-font line-clamp-2">
+                                    {service.description}
+                                  </p>
+                                )}
+                                <div className="flex items-center gap-4 mt-3">
+                                  <div className="flex items-center gap-1 text-sm text-gray-500">
+                                    <Clock className="w-4 h-4 flex-shrink-0" />
+                                    <span className="body-font">
+                                      {formatDuration(service.duration_number, service.duration_unit)}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1 text-sm text-gray-500">
+                                    <DollarSign className="w-4 h-4 flex-shrink-0" />
+                                    <span className="body-font font-medium">{formatPrice(service.customer_cost)}</span>
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    )
-                  })
-                ) : (
-                  <div className="px-4 py-3 text-gray-500 text-center">No services in this category</div>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      )}
+                      )
+                    })
+                  ) : (
+                    <div className="p-4 text-gray-500 text-center">No services in this category</div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
     </div>
   )
 }
