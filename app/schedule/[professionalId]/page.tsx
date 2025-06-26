@@ -81,7 +81,7 @@ export default function SchedulePage() {
     online_booking_enabled?: boolean
   } | null>(null)
   const [showBookingDisabledModal, setShowBookingDisabledModal] = useState(false)
-  const [showBookingDisabled, setShowBookingDisabled] = useState(false) // New state variable
+  const [showBookingDisabled, setShowBookingDisabled] = useState(false)
 
   // Generate a unique session ID
   const generateSessionId = () => {
@@ -851,23 +851,37 @@ export default function SchedulePage() {
                 selectedServices={selectedServices}
                 onServiceSelect={handleServiceSelect}
                 onContinue={selectedServices.length > 0 ? () => setShowBookingTypeSelection(true) : undefined}
+                summaryOnly={false}
               />
             </div>
 
-            {/* Calendar - only show after booking type is selected */}
+            {/* Calendar - only show after booking type is selected, with summary-only service bar */}
             {selectedServices.length > 0 && bookingType && (
-              <div className="bg-white rounded-lg shadow-sm border p-6">
-                <WeeklyCalendar
-                  workingDays={webhookData.schedule.working_days}
-                  bookingData={webhookData.bookings.all_booking_data}
-                  selectedServices={selectedServices}
-                  onTimeSlotSelect={handleTimeSlotSelect}
-                  selectedTimeSlot={selectedTimeSlot}
-                  professionalId={professionalId}
-                  professionalConfig={professionalConfig}
-                  bookingType={bookingType}
-                  recurringConfig={recurringConfig}
-                />
+              <div className="space-y-6">
+                {/* Selected Services Summary Only */}
+                <div className="bg-white rounded-lg shadow-sm border p-6">
+                  <ServiceSelectorBar
+                    servicesByCategory={webhookData.services.services_by_category}
+                    selectedServices={selectedServices}
+                    onServiceSelect={handleServiceSelect}
+                    summaryOnly={true}
+                  />
+                </div>
+
+                {/* Calendar */}
+                <div className="bg-white rounded-lg shadow-sm border p-6">
+                  <WeeklyCalendar
+                    workingDays={webhookData.schedule.working_days}
+                    bookingData={webhookData.bookings.all_booking_data}
+                    selectedServices={selectedServices}
+                    onTimeSlotSelect={handleTimeSlotSelect}
+                    selectedTimeSlot={selectedTimeSlot}
+                    professionalId={professionalId}
+                    professionalConfig={professionalConfig}
+                    bookingType={bookingType}
+                    recurringConfig={recurringConfig}
+                  />
+                </div>
               </div>
             )}
           </div>
