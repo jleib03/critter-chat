@@ -86,6 +86,18 @@ export default function SchedulePage() {
   const [showBookingDisabledModal, setShowBookingDisabledModal] = useState(false)
   const [showBookingDisabled, setShowBookingDisabled] = useState(false)
 
+  // Helper function to determine if this is a direct booking
+  const determineBookingType = () => {
+    if (bookingPreferences?.allow_direct_booking === true) {
+      return "direct"
+    } else if (bookingPreferences?.allow_direct_booking === false && bookingPreferences?.require_approval === true) {
+      return "request"
+    }
+    return "direct" // default fallback
+  }
+
+  const isDirectBooking = determineBookingType() === "direct"
+
   // Generate a unique session ID
   const generateSessionId = () => {
     return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
@@ -531,18 +543,6 @@ export default function SchedulePage() {
         timeZone: userTimezoneData.timezone,
       })
 
-      const determineBookingType = () => {
-        if (bookingPreferences?.allow_direct_booking === true) {
-          return "direct"
-        } else if (
-          bookingPreferences?.allow_direct_booking === false &&
-          bookingPreferences?.require_approval === true
-        ) {
-          return "request"
-        }
-        return "direct" // default fallback
-      }
-
       const bookingData = {
         professional_id: professionalId,
         action: "create_booking",
@@ -603,23 +603,26 @@ export default function SchedulePage() {
           weight: pet.weight,
           special_notes: pet.special_notes,
         },
-        notification_preferences: {
-          selected_notifications: notifications,
-          notification_details: notifications
-            .map((n) => {
-              switch (n) {
-                case "1_hour":
-                  return { type: "1_hour", label: "1 hour before", enabled: true }
-                case "1_day":
-                  return { type: "1_day", label: "1 day before", enabled: true }
-                case "1_week":
-                  return { type: "1_week", label: "1 week before", enabled: true }
-                default:
-                  return null
-              }
-            })
-            .filter(Boolean),
-        },
+        // Only include notification preferences for direct bookings
+        ...(isDirectBooking && {
+          notification_preferences: {
+            selected_notifications: notifications,
+            notification_details: notifications
+              .map((n) => {
+                switch (n) {
+                  case "1_hour":
+                    return { type: "1_hour", label: "1 hour before", enabled: true }
+                  case "1_day":
+                    return { type: "1_day", label: "1 day before", enabled: true }
+                  case "1_week":
+                    return { type: "1_week", label: "1 week before", enabled: true }
+                  default:
+                    return null
+                }
+              })
+              .filter(Boolean),
+          },
+        }),
       }
 
       console.log("Sending booking data with UTC times and notifications:", bookingData)
@@ -732,15 +735,20 @@ export default function SchedulePage() {
             <h1 className="text-3xl font-bold text-[#E75837] mb-2 header-font">
               Book with {webhookData.professional_info.professional_name}
             </h1>
-            <p className="text-gray-600 body-font">Creating your booking...</p>
+            <p className="text-gray-600 body-font">
+              {isDirectBooking ? "Creating your booking..." : "Submitting your booking request..."}
+            </p>
           </div>
 
           <div className="bg-white rounded-lg shadow-sm border p-8">
             <div className="text-center">
               <Loader2 className="w-12 h-12 animate-spin mx-auto mb-6 text-[#E75837]" />
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4 header-font">Creating Your Booking</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4 header-font">
+                {isDirectBooking ? "Creating Your Booking" : "Submitting Your Request"}
+              </h2>
               <p className="text-gray-600 body-font mb-6">
-                Please wait while we confirm your appointment with {webhookData.professional_info.professional_name}.
+                Please wait while we {isDirectBooking ? "confirm your appointment" : "submit your booking request"} with{" "}
+                {webhookData.professional_info.professional_name}.
               </p>
 
               <div className="bg-gray-50 rounded-lg p-6 max-w-md mx-auto">
@@ -776,10 +784,16 @@ export default function SchedulePage() {
                       {customerInfo.firstName} {customerInfo.lastName}
                     </span>
                   </div>
-                  {selectedNotifications.length > 0 && (
+                  {isDirectBooking && selectedNotifications.length > 0 && (
                     <div className="flex justify-between">
                       <span className="text-gray-600 body-font">Notifications:</span>
                       <span className="font-medium body-font">{selectedNotifications.length} selected</span>
+                    </div>
+                  )}
+                  {!isDirectBooking && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 body-font">Type:</span>
+                      <span className="font-medium body-font text-blue-600">Booking Request</span>
                     </div>
                   )}
                 </div>
@@ -802,7 +816,8 @@ export default function SchedulePage() {
               Book with {webhookData.professional_info.professional_name}
             </h1>
             <p className="text-lg text-gray-600 body-font mb-4">
-              Select a service and available time slot to book your appointment.
+              Select a service and available time slot to{" "}
+              {isDirectBooking ? "book your appointment" : "request an appointment"}.
             </p>
 
             {userTimezoneRef.current && (
@@ -848,6 +863,7 @@ export default function SchedulePage() {
             selectedServices={selectedServices}
             selectedTimeSlot={selectedTimeSlot!}
             professionalName={webhookData.professional_info.professional_name}
+            isDirectBooking={isDirectBooking}
             onPetSelect={handlePetSelect}
             onBack={handleBackToCustomerForm}
           />

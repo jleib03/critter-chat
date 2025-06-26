@@ -16,6 +16,7 @@ type PetSelectionProps = {
   selectedServices: Service[]
   selectedTimeSlot: SelectedTimeSlot
   professionalName: string
+  isDirectBooking: boolean
   onPetSelect: (pet: Pet, notifications: NotificationPreference[]) => void
   onBack: () => void
 }
@@ -26,6 +27,7 @@ export function PetSelection({
   selectedServices,
   selectedTimeSlot,
   professionalName,
+  isDirectBooking,
   onPetSelect,
   onBack,
 }: PetSelectionProps) {
@@ -48,7 +50,9 @@ export function PetSelection({
 
   const handleContinue = () => {
     if (selectedPet) {
-      onPetSelect(selectedPet, selectedNotifications)
+      // For request bookings, pass empty notifications array
+      const notifications = isDirectBooking ? selectedNotifications : []
+      onPetSelect(selectedPet, notifications)
     }
   }
 
@@ -118,9 +122,20 @@ export function PetSelection({
       {/* Booking Summary */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl header-font text-[#E75837]">Booking Summary</CardTitle>
+          <CardTitle className="text-xl header-font text-[#E75837]">
+            {isDirectBooking ? "Booking Summary" : "Booking Request Summary"}
+          </CardTitle>
         </CardHeader>
         <CardContent>
+          {!isDirectBooking && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800 body-font">
+                <span className="font-medium">Note:</span> This will be submitted as a booking request that requires
+                approval from {professionalName}.
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
             <div className="flex items-center gap-2">
               <User className="w-4 h-4 text-gray-500" />
@@ -205,7 +220,7 @@ export function PetSelection({
           </CardTitle>
           <p className="text-gray-600 body-font">
             We found {pets.length} pet{pets.length !== 1 ? "s" : ""} associated with your account. Please select which
-            pet this appointment is for.
+            pet this {isDirectBooking ? "appointment" : "booking request"} is for.
           </p>
         </CardHeader>
         <CardContent>
@@ -268,48 +283,50 @@ export function PetSelection({
         </CardContent>
       </Card>
 
-      {/* Notification Preferences */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl header-font text-[#E75837] flex items-center gap-2">
-            <Bell className="w-5 h-5" />
-            Notification Preferences
-          </CardTitle>
-          <p className="text-gray-600 body-font">
-            Choose when you'd like to receive reminders about your upcoming appointment. You can select multiple options
-            or none at all.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {notificationOptions.map((option) => (
-              <div key={option.id} className="flex items-start space-x-3">
-                <Checkbox
-                  id={option.id}
-                  checked={selectedNotifications.includes(option.id)}
-                  onCheckedChange={(checked) => handleNotificationChange(option.id, checked as boolean)}
-                  className="mt-1"
-                />
-                <div className="flex-1">
-                  <label htmlFor={option.id} className="text-sm font-medium text-gray-900 body-font cursor-pointer">
-                    {option.label}
-                  </label>
-                  <p className="text-sm text-gray-600 body-font">{option.description}</p>
+      {/* Notification Preferences - Only show for direct bookings */}
+      {isDirectBooking && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl header-font text-[#E75837] flex items-center gap-2">
+              <Bell className="w-5 h-5" />
+              Notification Preferences
+            </CardTitle>
+            <p className="text-gray-600 body-font">
+              Choose when you'd like to receive reminders about your upcoming appointment. You can select multiple
+              options or none at all.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {notificationOptions.map((option) => (
+                <div key={option.id} className="flex items-start space-x-3">
+                  <Checkbox
+                    id={option.id}
+                    checked={selectedNotifications.includes(option.id)}
+                    onCheckedChange={(checked) => handleNotificationChange(option.id, checked as boolean)}
+                    className="mt-1"
+                  />
+                  <div className="flex-1">
+                    <label htmlFor={option.id} className="text-sm font-medium text-gray-900 body-font cursor-pointer">
+                      {option.label}
+                    </label>
+                    <p className="text-sm text-gray-600 body-font">{option.description}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-
-          {selectedNotifications.length > 0 && (
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800 body-font">
-                <span className="font-medium">Selected notifications:</span>{" "}
-                {selectedNotifications.map((n) => notificationOptions.find((opt) => opt.id === n)?.label).join(", ")}
-              </p>
+              ))}
             </div>
-          )}
-        </CardContent>
-      </Card>
+
+            {selectedNotifications.length > 0 && (
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800 body-font">
+                  <span className="font-medium">Selected notifications:</span>{" "}
+                  {selectedNotifications.map((n) => notificationOptions.find((opt) => opt.id === n)?.label).join(", ")}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Continue Button */}
       {selectedPet && (
@@ -319,14 +336,19 @@ export function PetSelection({
             <p className="font-medium text-gray-900 body-font">
               {selectedPet.pet_name} ({selectedPet.pet_type})
             </p>
-            {selectedNotifications.length > 0 && (
+            {isDirectBooking && selectedNotifications.length > 0 && (
               <p className="text-sm text-gray-600 body-font mt-1">
                 Notifications: {selectedNotifications.length} selected
               </p>
             )}
+            {!isDirectBooking && (
+              <p className="text-sm text-gray-600 body-font mt-1 text-blue-600">
+                Booking request - no notifications available
+              </p>
+            )}
           </div>
           <Button onClick={handleContinue} className="bg-[#E75837] hover:bg-[#d14a2a] text-white body-font">
-            Continue to Booking
+            {isDirectBooking ? "Continue to Booking" : "Submit Booking Request"}
           </Button>
         </div>
       )}
