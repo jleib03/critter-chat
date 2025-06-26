@@ -789,7 +789,6 @@ export default function SchedulePage() {
         </div>
 
         {showBookingDisabled ? (
-          // Render this if online booking is disabled
           <Card className="w-full max-w-md">
             <CardHeader>
               <CardTitle>Online Booking Not Available</CardTitle>
@@ -836,30 +835,6 @@ export default function SchedulePage() {
             bookingType={bookingType}
             recurringConfig={recurringConfig}
           />
-        ) : selectedServices.length > 0 && bookingType && !showBookingTypeSelection ? (
-          // Only show calendar after booking type is selected
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <div className="mb-8">
-              <ServiceSelectorBar
-                servicesByCategory={webhookData.services.services_by_category}
-                selectedServices={selectedServices}
-                onServiceSelect={handleServiceSelect}
-                onContinue={() => setShowBookingTypeSelection(true)}
-              />
-            </div>
-
-            <WeeklyCalendar
-              workingDays={webhookData.schedule.working_days}
-              bookingData={webhookData.bookings.all_booking_data}
-              selectedServices={selectedServices}
-              onTimeSlotSelect={handleTimeSlotSelect}
-              selectedTimeSlot={selectedTimeSlot}
-              professionalId={professionalId}
-              professionalConfig={professionalConfig}
-              bookingType={bookingType}
-              recurringConfig={recurringConfig}
-            />
-          </div>
         ) : showBookingTypeSelection && selectedServices.length > 0 ? (
           <BookingTypeSelection
             selectedService={selectedServices[0]}
@@ -867,16 +842,37 @@ export default function SchedulePage() {
             onBack={handleBackToServices}
           />
         ) : (
-          // Initial service selection - no calendar
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <ServiceSelectorBar
-              servicesByCategory={webhookData.services.services_by_category}
-              selectedServices={selectedServices}
-              onServiceSelect={handleServiceSelect}
-              onContinue={() => setShowBookingTypeSelection(true)}
-            />
+          // Main booking interface - always show service selector, conditionally show calendar
+          <div className="space-y-6">
+            {/* Service Selection */}
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <ServiceSelectorBar
+                servicesByCategory={webhookData.services.services_by_category}
+                selectedServices={selectedServices}
+                onServiceSelect={handleServiceSelect}
+                onContinue={selectedServices.length > 0 ? () => setShowBookingTypeSelection(true) : undefined}
+              />
+            </div>
+
+            {/* Calendar - only show after booking type is selected */}
+            {selectedServices.length > 0 && bookingType && (
+              <div className="bg-white rounded-lg shadow-sm border p-6">
+                <WeeklyCalendar
+                  workingDays={webhookData.schedule.working_days}
+                  bookingData={webhookData.bookings.all_booking_data}
+                  selectedServices={selectedServices}
+                  onTimeSlotSelect={handleTimeSlotSelect}
+                  selectedTimeSlot={selectedTimeSlot}
+                  professionalId={professionalId}
+                  professionalConfig={professionalConfig}
+                  bookingType={bookingType}
+                  recurringConfig={recurringConfig}
+                />
+              </div>
+            )}
           </div>
         )}
+
         {/* Booking Disabled Modal */}
         {showBookingDisabledModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -906,7 +902,6 @@ export default function SchedulePage() {
                   </button>
                   <button
                     onClick={() => {
-                      // Open Critter app or redirect to contact page
                       window.open("https://critter.app", "_blank")
                       setShowBookingDisabledModal(false)
                     }}
