@@ -31,7 +31,9 @@ export function BookingConfirmation({
     return `$${Number.parseFloat(price).toFixed(0)}`
   }
 
-  const formatDuration = (duration: number, unit: string) => {
+  const formatDuration = (duration: number, unit?: string) => {
+    if (!unit) return `${duration}` //––early exit if unit is missing
+
     if (unit === "Minutes") {
       if (duration >= 60) {
         const hours = Math.floor(duration / 60)
@@ -40,12 +42,10 @@ export function BookingConfirmation({
       }
       return `${duration}m`
     }
-    if (unit === "Hours") {
-      return duration === 1 ? `${duration} hour` : `${duration} hours`
-    }
-    if (unit === "Days") {
-      return duration === 1 ? `${duration} day` : `${duration} days`
-    }
+    if (unit === "Hours") return duration === 1 ? `${duration} hour` : `${duration} hours`
+    if (unit === "Days") return duration === 1 ? `${duration} day` : `${duration} days`
+
+    // Fallback – lowercase only when unit exists
     return `${duration} ${unit.toLowerCase()}`
   }
 
@@ -177,7 +177,7 @@ export function BookingConfirmation({
                     <div className="flex items-center gap-2 mb-2">
                       <Repeat className="w-4 h-4 text-blue-500" />
                       <span className="font-medium body-font text-blue-900">
-                        Every {recurringConfig.frequency} {recurringConfig.unit.toLowerCase()}
+                        Every {recurringConfig.frequency} {recurringConfig.unit?.toLowerCase()}
                         {recurringConfig.frequency > 1 ? "s" : ""}
                       </span>
                     </div>
