@@ -40,6 +40,23 @@ export async function loadChatConfig(professionalId: string): Promise<ChatAgentC
       const configData = data[0]
       console.log("🔍 Parsing config data:", configData)
 
+      // Check if the config data is empty or invalid
+      if (!configData || Object.keys(configData).length === 0) {
+        console.log("⚠️ Empty config data received - chat will be disabled")
+        return null
+      }
+
+      // Check if all values are empty/null/undefined
+      const hasValidValues = Object.keys(configData).some((key) => {
+        const value = configData[key]
+        return value !== null && value !== undefined && value !== ""
+      })
+
+      if (!hasValidValues) {
+        console.log("⚠️ Config data has no valid values - chat will be disabled")
+        return null
+      }
+
       if (configData) {
         const chatConfig: ChatAgentConfig = {
           chat_name: configData.chat_name || configData.name + " Support" || "Critter Support",
@@ -76,7 +93,7 @@ export async function loadChatConfig(professionalId: string): Promise<ChatAgentC
       }
     }
 
-    console.log("⚠️ No valid chat config found in response")
+    console.log("⚠️ No valid chat config found in response - chat will be disabled")
     return null
   } catch (error) {
     console.error("💥 Error loading chat config:", error)

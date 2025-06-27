@@ -19,7 +19,7 @@ import {
 } from "lucide-react"
 import Header from "../../components/header"
 import LiveChatWidget from "../../components/live-chat-widget"
-import { loadChatConfig, getDefaultChatConfig } from "../../utils/chat-config"
+import { loadChatConfig } from "../../utils/chat-config"
 import { loadProfessionalLandingData, getDefaultProfessionalData } from "../../utils/professional-landing-config"
 import { getServiceIcon, getServiceColor } from "../../utils/service-icons"
 import type { ChatAgentConfig } from "../../types/chat-config"
@@ -32,6 +32,7 @@ export default function ProfessionalLandingPage() {
   const [chatConfig, setChatConfig] = useState<ChatAgentConfig | null>(null)
   const [isChatConfigLoading, setIsChatConfigLoading] = useState(true)
   const [isProfessionalDataLoading, setIsProfessionalDataLoading] = useState(true)
+  const [isChatEnabled, setIsChatEnabled] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // Function to load professional data
@@ -60,6 +61,23 @@ export default function ProfessionalLandingPage() {
     }
   }
 
+  // Function to check if chat config is valid (not empty)
+  const isValidChatConfig = (config: any): boolean => {
+    if (!config) return false
+
+    // Check if it's an empty object or has no meaningful properties
+    const keys = Object.keys(config)
+    if (keys.length === 0) return false
+
+    // Check if all values are empty/null/undefined
+    const hasValidValues = keys.some((key) => {
+      const value = config[key]
+      return value !== null && value !== undefined && value !== ""
+    })
+
+    return hasValidValues
+  }
+
   // Load professional data and chat configuration
   useEffect(() => {
     const loadData = async () => {
@@ -74,18 +92,20 @@ export default function ProfessionalLandingPage() {
         console.log("💬 Loading chat configuration...")
         const config = await loadChatConfig(professionalId)
 
-        if (config) {
-          console.log("✅ Chat config loaded successfully")
+        if (config && isValidChatConfig(config)) {
+          console.log("✅ Valid chat config loaded successfully")
           setChatConfig(config)
+          setIsChatEnabled(true)
         } else {
-          console.log("⚠️ Using default chat config")
-          const defaultName = professionalData?.name || "Professional Pet Services"
-          setChatConfig(getDefaultChatConfig(defaultName))
+          console.log("⚠️ No valid chat config found - disabling chat feature")
+          setChatConfig(null)
+          setIsChatEnabled(false)
         }
       } catch (error) {
         console.error("💥 Failed to load chat config:", error)
-        const defaultName = professionalData?.name || "Professional Pet Services"
-        setChatConfig(getDefaultChatConfig(defaultName))
+        console.log("❌ Chat feature disabled due to error")
+        setChatConfig(null)
+        setIsChatEnabled(false)
       } finally {
         setIsChatConfigLoading(false)
       }
@@ -268,15 +288,18 @@ export default function ProfessionalLandingPage() {
                   </Link>
                 </div>
 
-                <div className="bg-gradient-to-br from-[#94ABD6] to-[#7a90ba] rounded-xl p-6 text-white">
-                  <h3 className="text-xl font-bold mb-2 header-font">Have Questions?</h3>
-                  <p className="text-white/90 mb-4 body-font">Chat with our booking assistant</p>
-                  <div className="inline-flex items-center gap-2 bg-white text-[#94ABD6] px-4 py-2 rounded-lg font-medium body-font">
-                    <MessageCircle className="w-4 h-4" />
-                    {isChatConfigLoading ? "Loading chat..." : "Click the chat button below"}
-                    <ArrowRight className="w-4 h-4" />
+                {/* Conditionally render chat card only if chat is enabled */}
+                {isChatEnabled && (
+                  <div className="bg-gradient-to-br from-[#94ABD6] to-[#7a90ba] rounded-xl p-6 text-white">
+                    <h3 className="text-xl font-bold mb-2 header-font">Have Questions?</h3>
+                    <p className="text-white/90 mb-4 body-font">Chat with our booking assistant</p>
+                    <div className="inline-flex items-center gap-2 bg-white text-[#94ABD6] px-4 py-2 rounded-lg font-medium body-font">
+                      <MessageCircle className="w-4 h-4" />
+                      {isChatConfigLoading ? "Loading chat..." : "Click the chat button below"}
+                      <ArrowRight className="w-4 h-4" />
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -397,13 +420,15 @@ export default function ProfessionalLandingPage() {
           </div>
         </div>
 
-        {/* Live Chat Widget - Now with dynamic configuration */}
-        <LiveChatWidget
-          professionalId={professionalId}
-          professionalName={professionalData.name}
-          chatConfig={chatConfig}
-          isConfigLoading={isChatConfigLoading}
-        />
+        {/* Live Chat Widget - Only render if chat is enabled */}
+        {isChatEnabled && chatConfig && (
+          <LiveChatWidget
+            professionalId={professionalId}
+            professionalName={professionalData.name}
+            chatConfig={chatConfig}
+            isConfigLoading={isChatConfigLoading}
+          />
+        )}
       </main>
     </div>
   )
