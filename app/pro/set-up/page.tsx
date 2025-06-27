@@ -169,7 +169,7 @@ ${buttonHtml}`
       return
     }
 
-    // Navigate directly to professional landing page
+    // Navigate directly to the professional landing page
     router.push(`/${previewProfessionalId.trim()}`)
   }
 
@@ -250,9 +250,9 @@ ${buttonHtml}`
               <div className="text-center mb-12">
                 <button
                   onClick={handlePreviewClick}
-                  className="inline-flex items-center px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors border border-gray-300 hover:border-gray-400"
+                  className="inline-flex items-center px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors border border-gray-300 hover:border-gray-400 body-font"
                 >
-                  <Eye className="h-5 w-5 mr-2" />
+                  <Eye className="h-4 w-4 mr-2" />
                   Preview Landing Page
                 </button>
                 <p className="text-sm text-gray-500 mt-2 body-font">
@@ -548,7 +548,7 @@ ${buttonHtml}`
               />
               {previewError && <p className="mt-2 text-sm text-red-600 body-font">{previewError}</p>}
               <p className="text-xs text-gray-500 mt-2 body-font">
-                This will open your professional landing page in the same tab.
+                This will open your professional landing page where customers can book appointments and chat with you.
               </p>
             </div>
 
