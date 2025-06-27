@@ -2,9 +2,8 @@
 
 import { useState } from "react"
 import type { BookingData, WorkingDay, Service, SelectedTimeSlot } from "@/types/schedule"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, Clock, ChevronDown, ChevronUp, Users } from "lucide-react"
+import { ChevronLeft, ChevronRight, Clock, ChevronDown, ChevronUp, Users, Calendar } from "lucide-react"
 import { calculateAvailableSlots } from "@/utils/professional-config"
 import type { ProfessionalConfig } from "@/types/professional-config"
 import type { BookingType, RecurringConfig } from "./booking-type-selection"
@@ -294,10 +293,12 @@ export function WeeklyCalendar({
 
   if (!selectedServices || selectedServices.length === 0) {
     return (
-      <div className="text-center py-16">
-        <Clock className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-        <h3 className="text-xl font-semibold text-gray-500 mb-2 header-font">Select a Service</h3>
-        <p className="text-gray-400 body-font">Choose a service above to see available appointment times.</p>
+      <div className="text-center py-20">
+        <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <Calendar className="w-10 h-10 text-gray-400" />
+        </div>
+        <h3 className="text-2xl font-bold text-gray-500 mb-3 header-font">Select Services First</h3>
+        <p className="text-gray-400 body-font text-lg">Choose your services above to see available appointment times</p>
       </div>
     )
   }
@@ -305,49 +306,53 @@ export function WeeklyCalendar({
   const serviceDuration = getTotalServiceDurationInMinutes(selectedServices)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header with navigation */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 header-font">Available Times</h2>
-          <p className="text-gray-600 body-font">
-            Select a time slot for <span className="font-medium">{selectedServices.map((s) => s.name).join(", ")}</span>
+          <div className="flex items-center gap-2 mt-2">
+            <p className="text-gray-600 body-font">
+              Showing times for{" "}
+              <span className="font-semibold text-[#E75837]">{selectedServices.map((s) => s.name).join(", ")}</span>
+            </p>
             {bookingType === "recurring" && recurringConfig && (
-              <span className="text-sm text-[#E75837] ml-2 font-medium">
-                (Recurring weekly on{" "}
-                {recurringConfig.daysOfWeek.length === 1
-                  ? recurringConfig.daysOfWeek[0]
-                  : recurringConfig.daysOfWeek.length === 2
-                    ? `${recurringConfig.daysOfWeek[0]} and ${recurringConfig.daysOfWeek[1]}`
-                    : `${recurringConfig.daysOfWeek.slice(0, -1).join(", ")}, and ${recurringConfig.daysOfWeek.slice(-1)}`}{" "}
-                until {new Date(recurringConfig.endDate).toLocaleDateString()})
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                Recurring weekly
               </span>
             )}
-            {professionalConfig && (
-              <span className="text-sm text-gray-500 ml-2">
-                (Staff schedules → Capacity rules → Existing bookings → Available slots)
-              </span>
-            )}
-          </p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => navigateWeek("prev")}>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigateWeek("prev")}
+            className="rounded-xl hover:bg-gray-50 transition-colors duration-200"
+          >
             <ChevronLeft className="w-4 h-4" />
           </Button>
-          <span className="text-sm font-medium body-font px-4 min-w-[120px] text-center">
-            {currentWeekStart.toLocaleDateString("en-US", {
-              month: "long",
-              day: "numeric",
-              year: "numeric",
-            })}
-          </span>
-          <Button variant="outline" size="sm" onClick={() => navigateWeek("next")}>
+          <div className="px-4 py-2 bg-gray-50 rounded-xl">
+            <span className="text-sm font-semibold body-font text-gray-700">
+              {currentWeekStart.toLocaleDateString("en-US", {
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigateWeek("next")}
+            className="rounded-xl hover:bg-gray-50 transition-colors duration-200"
+          >
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
       </div>
 
-      {/* Full-width Calendar Grid */}
+      {/* Calendar Grid */}
       <div className="grid grid-cols-7 gap-4">
         {weekDates.map((date, index) => {
           const dayName = getDayName(date)
@@ -357,7 +362,7 @@ export function WeeklyCalendar({
           const timeSlots = workingHours ? generateTimeSlots(date, workingHours, serviceDuration) : []
           const dateStr = formatDate(date)
           const isExpanded = expandedDays.has(dateStr)
-          const initialSlotCount = 8
+          const initialSlotCount = 6
           const hasMoreSlots = timeSlots.length > initialSlotCount
           const displayedSlots = isExpanded ? timeSlots : timeSlots.slice(0, initialSlotCount)
 
@@ -365,39 +370,65 @@ export function WeeklyCalendar({
           const isRecurringDay = bookingType === "recurring" && recurringConfig?.daysOfWeek.includes(dayName)
 
           return (
-            <Card
+            <div
               key={index}
-              className={`${isToday ? "ring-2 ring-[#E75837]" : isRecurringDay ? "ring-1 ring-blue-300 bg-blue-50" : ""} h-fit`}
+              className={`relative rounded-2xl overflow-hidden transition-all duration-200 ${
+                isToday
+                  ? "ring-2 ring-[#E75837] shadow-lg bg-gradient-to-b from-orange-50 to-white"
+                  : isRecurringDay
+                    ? "ring-2 ring-blue-300 bg-gradient-to-b from-blue-50 to-white shadow-md"
+                    : "bg-white border border-gray-200 hover:shadow-md"
+              }`}
             >
-              <CardHeader className="pb-3 text-center">
-                <CardTitle className="space-y-1">
-                  <div
-                    className={`text-sm font-semibold header-font ${isToday ? "text-[#E75837]" : isRecurringDay ? "text-blue-600" : "text-gray-900"}`}
-                  >
-                    {dayName}
-                    {isRecurringDay && <span className="text-xs block text-blue-500">Recurring</span>}
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">{date.getDate()}</div>
-                  <div className="text-xs text-gray-500 font-normal">
-                    {date.toLocaleDateString("en-US", { month: "short" })}
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
+              {/* Day Header */}
+              <div
+                className={`p-4 text-center border-b ${
+                  isToday
+                    ? "bg-gradient-to-r from-[#E75837] to-[#d14a2a] text-white"
+                    : isRecurringDay
+                      ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white"
+                      : "bg-gray-50"
+                }`}
+              >
+                <div
+                  className={`text-sm font-semibold header-font ${
+                    isToday || isRecurringDay ? "text-white" : "text-gray-600"
+                  }`}
+                >
+                  {dayName.slice(0, 3)}
+                  {isRecurringDay && <div className="text-xs opacity-90">Recurring</div>}
+                </div>
+                <div className={`text-2xl font-bold ${isToday || isRecurringDay ? "text-white" : "text-gray-900"}`}>
+                  {date.getDate()}
+                </div>
+                <div className={`text-xs ${isToday || isRecurringDay ? "text-white/80" : "text-gray-500"}`}>
+                  {date.toLocaleDateString("en-US", { month: "short" })}
+                </div>
+              </div>
+
+              {/* Time Slots */}
+              <div className="p-3">
                 {isPast ? (
                   <div className="text-center py-8">
+                    <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                      <Clock className="w-6 h-6 text-gray-400" />
+                    </div>
                     <p className="text-sm text-gray-400 body-font">Past date</p>
                   </div>
                 ) : !workingHours ? (
                   <div className="text-center py-8">
+                    <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                      <Clock className="w-6 h-6 text-gray-400" />
+                    </div>
                     <p className="text-sm text-gray-400 body-font">Closed</p>
                   </div>
                 ) : timeSlots.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-sm text-gray-400 body-font">No available times</p>
-                    {professionalConfig && (
-                      <p className="text-xs text-gray-400 body-font mt-1">All slots booked or no staff scheduled</p>
-                    )}
+                    <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                      <Clock className="w-6 h-6 text-gray-400" />
+                    </div>
+                    <p className="text-sm text-gray-400 body-font">No times</p>
+                    {professionalConfig && <p className="text-xs text-gray-400 body-font mt-1">Fully booked</p>}
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -406,18 +437,14 @@ export function WeeklyCalendar({
                         selectedTimeSlot?.date === slot.date && selectedTimeSlot?.startTime === slot.startTime
 
                       // Color coding based on availability
-                      let availabilityColor = "text-green-600"
-                      if (slot.availableSlots <= 2) availabilityColor = "text-yellow-600"
-                      if (slot.availableSlots <= 1) availabilityColor = "text-orange-600"
+                      let availabilityColor = "text-green-600 bg-green-50"
+                      if (slot.availableSlots <= 2) availabilityColor = "text-yellow-600 bg-yellow-50"
+                      if (slot.availableSlots <= 1) availabilityColor = "text-orange-600 bg-orange-50"
 
                       // Create detailed tooltip showing the layered calculation
                       const tooltipText =
                         professionalConfig && slot.capacityBreakdown
-                          ? `Layer 1 - Staff working: ${slot.capacityBreakdown.employeesWorking} (${slot.employeeNames})
-Layer 2 - Capacity limit: ${slot.capacityBreakdown.capacityLimit > 0 ? slot.capacityBreakdown.capacityLimit : "No limit"}
-Layer 3 - Final capacity: ${slot.capacityBreakdown.finalCapacity}
-Layer 4 - Existing bookings: ${slot.capacityBreakdown.existingBookings}
-Result - Available slots: ${slot.capacityBreakdown.availableSlots}`
+                          ? `Staff: ${slot.capacityBreakdown.employeesWorking} • Capacity: ${slot.capacityBreakdown.finalCapacity} • Available: ${slot.capacityBreakdown.availableSlots}`
                           : undefined
 
                       return (
@@ -425,32 +452,38 @@ Result - Available slots: ${slot.capacityBreakdown.availableSlots}`
                           key={slotIndex}
                           variant="outline"
                           size="sm"
-                          className={`w-full text-xs py-3 h-auto min-h-[3.5rem] body-font transition-all ${
+                          className={`w-full text-xs py-3 h-auto min-h-[3rem] body-font transition-all duration-200 rounded-xl ${
                             isSelected
-                              ? "bg-[#E75837] text-white border-[#E75837] hover:bg-[#d14a2a] shadow-md"
-                              : "hover:bg-gray-50 hover:border-gray-300"
+                              ? "bg-gradient-to-r from-[#E75837] to-[#d14a2a] text-white border-[#E75837] hover:from-[#d14a2a] hover:to-[#c13e26] shadow-lg transform scale-105"
+                              : "hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm border-gray-200"
                           }`}
                           onClick={() => onTimeSlotSelect(slot)}
                           title={tooltipText}
                         >
                           <div className="flex flex-col items-center w-full">
-                            <span className="font-medium">{slot.startTime}</span>
+                            <span className="font-semibold text-sm">{slot.startTime}</span>
 
                             {professionalConfig && slot.capacityBreakdown && (
                               <div className="flex items-center justify-center mt-1">
-                                <div className="flex items-center gap-1">
+                                <div
+                                  className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                                    isSelected ? "bg-white/20 text-white" : availabilityColor
+                                  }`}
+                                >
                                   <Users className="w-2.5 h-2.5" />
-                                  <span
-                                    className={`text-[10px] font-medium ${isSelected ? "text-white" : availabilityColor}`}
-                                  >
-                                    {slot.availableSlots}
-                                  </span>
+                                  <span>{slot.availableSlots}</span>
                                 </div>
                               </div>
                             )}
 
                             {!professionalConfig && slot.availableEmployees > 0 && (
-                              <span className="text-[10px] opacity-75 mt-0.5">Available</span>
+                              <span
+                                className={`text-[10px] mt-0.5 px-2 py-0.5 rounded-full ${
+                                  isSelected ? "bg-white/20 text-white" : "bg-green-100 text-green-600"
+                                }`}
+                              >
+                                Available
+                              </span>
                             )}
                           </div>
                         </Button>
@@ -461,7 +494,7 @@ Result - Available slots: ${slot.capacityBreakdown.availableSlots}`
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="w-full text-xs py-2 h-8 text-gray-500 hover:text-gray-700 hover:bg-gray-50 body-font"
+                        className="w-full text-xs py-2 h-8 text-gray-500 hover:text-gray-700 hover:bg-gray-50 body-font rounded-xl transition-colors duration-200"
                         onClick={() => toggleDayExpansion(dateStr)}
                       >
                         {isExpanded ? (
@@ -471,15 +504,15 @@ Result - Available slots: ${slot.capacityBreakdown.availableSlots}`
                           </>
                         ) : (
                           <>
-                            <ChevronDown className="w-3 h-3 mr-1" />+{timeSlots.length - initialSlotCount} more times
+                            <ChevronDown className="w-3 h-3 mr-1" />+{timeSlots.length - initialSlotCount} more
                           </>
                         )}
                       </Button>
                     )}
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )
         })}
       </div>
