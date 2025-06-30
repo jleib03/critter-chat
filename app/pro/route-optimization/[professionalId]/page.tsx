@@ -23,11 +23,14 @@ import {
 import { format } from "date-fns"
 import Link from "next/link"
 import Header from "@/components/header"
-import { RouteMap } from "@/components/route-optimization/route-map"
 import type { GeoBooking, GeoEmployee, ScheduleOptimizationResult } from "@/types/geo-scheduling"
 import { RouteOptimizationService } from "@/utils/route-optimization-service"
 import { TravelTimeService } from "@/utils/travel-time-service"
 import { GeocodingService } from "@/utils/geocoding-service"
+import dynamic from "next/dynamic"
+const RouteMap = dynamic(() => import("@/components/route-optimization/route-map").then((m) => m.RouteMap), {
+  ssr: false,
+})
 
 export default function RouteOptimizationPage() {
   const params = useParams()
