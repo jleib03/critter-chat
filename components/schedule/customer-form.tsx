@@ -74,10 +74,11 @@ export function CustomerForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!customerData.firstName || !customerData.lastName || !customerData.email || !customerData.phone) {
+    // Only require first name, last name, and email - phone is now optional
+    if (!customerData.firstName || !customerData.lastName || !customerData.email) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all required fields.",
+        description: "Please fill in all required fields (First Name, Last Name, and Email).",
         variant: "destructive",
       })
       return
@@ -103,10 +104,10 @@ export function CustomerForm({
 
       console.log("Sending webhook to get customer pets:", webhookPayload)
 
-      // Send to webhook
-      const webhookUrl =
-        process.env.NEXT_PUBLIC_WEBHOOK_URL ||
-        "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
+      // Send to the correct webhook URL
+      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
+
+      console.log("Sending to webhook URL:", webhookUrl)
 
       const response = await fetch(webhookUrl, {
         method: "POST",
@@ -115,6 +116,8 @@ export function CustomerForm({
         },
         body: JSON.stringify(webhookPayload),
       })
+
+      console.log("Webhook response status:", response.status)
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
@@ -255,7 +258,7 @@ export function CustomerForm({
                   </div>
                   <div>
                     <Label htmlFor="phone" className="body-font">
-                      Phone Number *
+                      Phone Number
                     </Label>
                     <Input
                       id="phone"
@@ -263,7 +266,6 @@ export function CustomerForm({
                       value={customerData.phone}
                       onChange={(e) => handleInputChange("phone", e.target.value)}
                       placeholder="(555) 123-4567"
-                      required
                       className="body-font"
                     />
                   </div>
