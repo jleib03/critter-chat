@@ -73,7 +73,6 @@ export default function ProfessionalSetupPage() {
   const [activeTab, setActiveTab] = useState("booking")
 
   // Configuration state
-  const [businessName, setBusinessName] = useState("")
   const [bookingPreferences, setBookingPreferences] = useState(DEFAULT_BOOKING_PREFERENCES)
   const [employees, setEmployees] = useState<WebhookEmployee[]>([])
   const [capacityRules, setCapacityRules] = useState<WebhookCapacityRules>(DEFAULT_CAPACITY_RULES)
@@ -81,22 +80,12 @@ export default function ProfessionalSetupPage() {
   const [lastUpdated, setLastUpdated] = useState<string>("")
 
   // Original configuration snapshots for precise change detection
-  const [originalBusinessName, setOriginalBusinessName] = useState("")
   const [originalBookingPreferences, setOriginalBookingPreferences] = useState(DEFAULT_BOOKING_PREFERENCES)
   const [originalEmployees, setOriginalEmployees] = useState<WebhookEmployee[]>([])
   const [originalCapacityRules, setOriginalCapacityRules] = useState<WebhookCapacityRules>(DEFAULT_CAPACITY_RULES)
   const [originalBlockedTimes, setOriginalBlockedTimes] = useState<WebhookBlockedTime[]>([])
 
   // Form state for adding new items
-  const [newEmployee, setNewEmployee] = useState<Partial<WebhookEmployee>>({
-    name: "",
-    role: "",
-    email: "",
-    is_active: true,
-    working_days: [...DEFAULT_WORKING_DAYS],
-    services: [],
-  })
-
   const [newBlockedTime, setNewBlockedTime] = useState<Partial<WebhookBlockedTime>>({
     start_date: "",
     end_date: "",
@@ -185,7 +174,6 @@ export default function ProfessionalSetupPage() {
       console.log("Raw webhook response:", data)
 
       // Default holders for configuration
-      let businessNameLocal = ""
       let bookingPrefsLocal = { ...DEFAULT_BOOKING_PREFERENCES }
       let employeesLocal: WebhookEmployee[] = []
       let capacityRulesLocal: WebhookCapacityRules = { ...DEFAULT_CAPACITY_RULES }
@@ -196,10 +184,6 @@ export default function ProfessionalSetupPage() {
 
         if (structured) {
           const config = structured.webhook_response.config_data
-
-          // Business Name
-          businessNameLocal = config.business_name || ""
-          setBusinessName(businessNameLocal)
 
           // Booking Preferences
           const rawPrefs = config.booking_preferences ?? {}
@@ -264,7 +248,6 @@ export default function ProfessionalSetupPage() {
       }
 
       // Store original snapshots for precise change detection
-      setOriginalBusinessName(businessNameLocal)
       setOriginalBookingPreferences({ ...bookingPrefsLocal })
       setOriginalEmployees(JSON.parse(JSON.stringify(employeesLocal)))
       setOriginalCapacityRules({ ...capacityRulesLocal })
@@ -285,14 +268,12 @@ export default function ProfessionalSetupPage() {
     const changedTabs: string[] = []
 
     // 1. Check Professional Config changes (business name + booking preferences)
-    const businessNameChanged = businessName !== originalBusinessName
     const bookingPrefsChanged = JSON.stringify(bookingPreferences) !== JSON.stringify(originalBookingPreferences)
 
-    if (businessNameChanged || bookingPrefsChanged) {
+    if (bookingPrefsChanged) {
       changedTabs.push("Professional Config")
 
       // Always include business_name and all booking_preferences fields for professional_configs table
-      changes.business_name = businessName
       changes.booking_preferences = {
         booking_type: mapBookingSystemToBookingType(bookingPreferences.booking_system),
         allow_direct_booking: bookingPreferences.allow_direct_booking,
@@ -415,7 +396,6 @@ export default function ProfessionalSetupPage() {
         setLastUpdated(new Date().toISOString())
 
         // Update original snapshots to current state
-        setOriginalBusinessName(businessName)
         setOriginalBookingPreferences({ ...bookingPreferences })
         setOriginalEmployees(JSON.parse(JSON.stringify(employees)))
         setOriginalCapacityRules({ ...capacityRules })
@@ -454,31 +434,6 @@ export default function ProfessionalSetupPage() {
       loadConfiguration()
     }
   }, [professionalId])
-
-  // Employee management functions
-  const addEmployee = () => {
-    if (!newEmployee.name || !newEmployee.role) return
-
-    const employee: WebhookEmployee = {
-      employee_id: `emp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      name: newEmployee.name,
-      role: newEmployee.role,
-      email: newEmployee.email || "",
-      is_active: newEmployee.is_active ?? true,
-      working_days: newEmployee.working_days || [...DEFAULT_WORKING_DAYS],
-      services: newEmployee.services || [],
-    }
-
-    setEmployees((prev) => [...prev, employee])
-    setNewEmployee({
-      name: "",
-      role: "",
-      email: "",
-      is_active: true,
-      working_days: [...DEFAULT_WORKING_DAYS],
-      services: [],
-    })
-  }
 
   const removeEmployee = (employeeId: string) => {
     setEmployees((prev) => prev.filter((emp) => emp.employee_id !== employeeId))
@@ -629,42 +584,6 @@ export default function ProfessionalSetupPage() {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="header-font">Professional Information</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <h4 className="font-semibold text-blue-800 mb-2 header-font">Professional ID</h4>
-                      <p className="text-blue-700 body-font text-sm">
-                        Your unique professional ID:{" "}
-                        <code className="bg-blue-100 px-2 py-1 rounded">{professionalId}</code>
-                      </p>
-                      <p className="text-blue-600 body-font text-xs mt-2">
-                        This ID is used in your booking URLs and webhook configurations.
-                      </p>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="businessName" className="body-font">
-                        Business Name
-                      </Label>
-                      <Input
-                        id="businessName"
-                        value={businessName}
-                        onChange={(e) => setBusinessName(e.target.value)}
-                        placeholder="Enter your business name"
-                        className="body-font"
-                      />
-                      <p className="text-xs text-gray-500 mt-1 body-font">
-                        This will be displayed to customers on your booking page.
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
                   <CardTitle className="header-font">Choose Your Booking Experience</CardTitle>
                   <p className="text-gray-600 body-font">
                     Select how customers will interact with your booking system.
@@ -795,57 +714,6 @@ export default function ProfessionalSetupPage() {
           {/* Team Management Tab */}
           <TabsContent value="team">
             <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="header-font">Add Team Member</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div>
-                      <Label htmlFor="empName" className="body-font">
-                        Name *
-                      </Label>
-                      <Input
-                        id="empName"
-                        value={newEmployee.name}
-                        onChange={(e) => setNewEmployee((prev) => ({ ...prev, name: e.target.value }))}
-                        placeholder="Employee name"
-                        className="body-font"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="empRole" className="body-font">
-                        Role *
-                      </Label>
-                      <Input
-                        id="empRole"
-                        value={newEmployee.role}
-                        onChange={(e) => setNewEmployee((prev) => ({ ...prev, role: e.target.value }))}
-                        placeholder="e.g., Veterinarian, Groomer"
-                        className="body-font"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="empEmail" className="body-font">
-                        Email
-                      </Label>
-                      <Input
-                        id="empEmail"
-                        type="email"
-                        value={newEmployee.email}
-                        onChange={(e) => setNewEmployee((prev) => ({ ...prev, email: e.target.value }))}
-                        placeholder="employee@example.com"
-                        className="body-font"
-                      />
-                    </div>
-                  </div>
-                  <Button onClick={addEmployee} disabled={!newEmployee.name || !newEmployee.role}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Team Member
-                  </Button>
-                </CardContent>
-              </Card>
-
               <div className="space-y-4">
                 {employees.map((employee) => (
                   <Card key={employee.employee_id}>
@@ -928,7 +796,9 @@ export default function ProfessionalSetupPage() {
                     <CardContent className="text-center py-8">
                       <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                       <h3 className="text-lg font-semibold text-gray-500 mb-2 header-font">No Team Members Yet</h3>
-                      <p className="text-gray-400 body-font">Add your first team member to get started.</p>
+                      <p className="text-gray-400 body-font">
+                        Add your first team member *in Critter* to manage employee schedules.
+                      </p>
                     </CardContent>
                   </Card>
                 )}
