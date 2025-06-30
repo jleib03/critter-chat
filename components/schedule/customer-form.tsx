@@ -31,7 +31,6 @@ interface CustomerData {
   lastName: string
   email: string
   phone: string
-  address: string
   city: string
   state: string
   zipCode: string
@@ -56,7 +55,6 @@ export function CustomerForm({
     lastName: "",
     email: "",
     phone: "",
-    address: "",
     city: "",
     state: "",
     zipCode: "",
@@ -104,7 +102,6 @@ export function CustomerForm({
           last_name: customerData.lastName.trim(),
           email: customerData.email.trim().toLowerCase(),
           phone: customerData.phone.trim(),
-          address: customerData.address.trim(),
           city: customerData.city.trim(),
           state: customerData.state.trim(),
           zip_code: customerData.zipCode.trim(),
@@ -175,6 +172,15 @@ export function CustomerForm({
       minute: "2-digit",
       hour12: true,
     })
+  }
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount)
   }
 
   return (
@@ -267,20 +273,7 @@ export function CustomerForm({
                   </div>
                 </div>
 
-                {/* Address Fields */}
-                <div>
-                  <Label htmlFor="address" className="body-font">
-                    Street Address
-                  </Label>
-                  <Input
-                    id="address"
-                    value={customerData.address}
-                    onChange={(e) => handleInputChange("address", e.target.value)}
-                    placeholder="123 Main Street"
-                    className="body-font"
-                  />
-                </div>
-
+                {/* Location Fields - Removed Street Address */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="city" className="body-font">
@@ -399,7 +392,7 @@ export function CustomerForm({
                           {service.duration_number} {service.duration_unit.toLowerCase()}
                         </div>
                       </div>
-                      <div className="text-sm font-medium body-font">${service.customer_cost}</div>
+                      <div className="text-sm font-medium body-font">{formatCurrency(service.customer_cost)}</div>
                     </div>
                   ))}
                 </div>
@@ -429,7 +422,7 @@ export function CustomerForm({
               {/* Total */}
               <div className="flex justify-between items-center pt-2">
                 <span className="font-semibold body-font">Total</span>
-                <span className="font-semibold text-lg body-font">${totalCost}</span>
+                <span className="font-semibold text-lg body-font">{formatCurrency(totalCost)}</span>
               </div>
 
               {/* Duration */}
