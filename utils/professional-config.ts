@@ -40,15 +40,9 @@ export const isTimeBlocked = (
 ): boolean => {
   const dateObj = new Date(date)
 
-  console.log(`Checking blocked times for ${date} ${startTime}-${endTime}`)
-  console.log(`Available blocked times:`, config.blockedTimes)
-
   return config.blockedTimes.some((blockedTime) => {
-    console.log(`Checking blocked time:`, blockedTime)
-
     // Check if this blocked time applies to the specific employee or all employees
     if (blockedTime.employeeId && employeeId && blockedTime.employeeId !== employeeId) {
-      console.log(`Blocked time is for different employee: ${blockedTime.employeeId} vs ${employeeId}`)
       return false
     }
 
@@ -59,20 +53,14 @@ export const isTimeBlocked = (
       const blockedDate = new Date(blockedTime.date)
       if (blockedTime.recurrencePattern === "weekly") {
         dateMatches = dateObj.getDay() === blockedDate.getDay()
-        console.log(`Weekly recurrence check: ${dateObj.getDay()} === ${blockedDate.getDay()} = ${dateMatches}`)
       } else if (blockedTime.recurrencePattern === "monthly") {
         dateMatches = dateObj.getDate() === blockedDate.getDate()
-        console.log(`Monthly recurrence check: ${dateObj.getDate()} === ${blockedDate.getDate()} = ${dateMatches}`)
       }
     } else {
       dateMatches = blockedTime.date === date
-      console.log(`Direct date match: ${blockedTime.date} === ${date} = ${dateMatches}`)
     }
 
-    if (!dateMatches) {
-      console.log(`Date doesn't match, skipping`)
-      return false
-    }
+    if (!dateMatches) return false
 
     // Check time overlap - handle both HH:MM:SS and H:MM AM/PM formats
     const blockedStart = timeToMinutes(blockedTime.startTime)
@@ -81,10 +69,6 @@ export const isTimeBlocked = (
     const slotEnd = timeToMinutes(endTime)
 
     const hasOverlap = slotStart < blockedEnd && slotEnd > blockedStart
-    console.log(
-      `Time overlap check: slot(${slotStart}-${slotEnd}) vs blocked(${blockedStart}-${blockedEnd}) = ${hasOverlap}`,
-    )
-
     return hasOverlap
   })
 }
@@ -113,7 +97,6 @@ export const getEmployeesWorkingAtTime = (
 
     // Check if time is blocked for this employee
     if (isTimeBlocked(config, date, startTime, endTime, employee.id)) {
-      console.log(`Employee ${employee.name} is blocked at this time`)
       return false
     }
 
@@ -142,12 +125,9 @@ export const calculateAvailableSlots = (
   }
   reason?: string
 } => {
-  console.log(`\n=== CALCULATING AVAILABILITY FOR ${date} ${startTime}-${endTime} ===`)
-
   // LAYER 0: Check if time is globally blocked (affects all employees)
   const isGloballyBlocked = isTimeBlocked(config, date, startTime, endTime)
   if (isGloballyBlocked) {
-    console.log(`Time slot is globally blocked`)
     return {
       availableSlots: 0,
       totalCapacity: 0,
@@ -172,7 +152,6 @@ export const calculateAvailableSlots = (
   if (employeesWorkingCount === 0 && config.employees.length === 0) {
     // Check if the professional (no specific employee) is blocked at this time
     if (isTimeBlocked(config, date, startTime, endTime)) {
-      console.log(`Professional is blocked at this time`)
       return {
         availableSlots: 0,
         totalCapacity: 0,
@@ -325,10 +304,6 @@ export const calculateAvailableSlots = (
 
   // FINAL CALCULATION: Available slots = Final capacity - Existing bookings
   const availableSlots = Math.max(0, finalCapacity - existingBookingsCount)
-
-  console.log(
-    `Final result: ${availableSlots} slots available (capacity: ${finalCapacity}, existing: ${existingBookingsCount})`,
-  )
 
   return {
     availableSlots,

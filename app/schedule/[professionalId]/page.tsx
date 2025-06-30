@@ -310,8 +310,10 @@ export default function SchedulePage() {
           lastUpdated: new Date().toISOString(),
         }
         setProfessionalConfig(configForProfessionalConfig)
-        console.log("Professional configuration loaded from webhook with blocked times:", configForProfessionalConfig)
-        console.log("Blocked times count:", configForProfessionalConfig.blockedTimes.length)
+        // Only log once when config is loaded
+        if (configForProfessionalConfig.blockedTimes.length > 0) {
+          console.log("Blocked times loaded:", configForProfessionalConfig.blockedTimes.length)
+        }
       }
 
       console.log("Schedule data loaded:", parsedData)
@@ -853,18 +855,10 @@ export default function SchedulePage() {
               </div>
             )}
 
-            {/* Debug info for blocked times */}
+            {/* Simplified debug info for blocked times */}
             {professionalConfig && professionalConfig.blockedTimes.length > 0 && (
-              <div className="mt-2 text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                <strong>Blocked Times Active:</strong> {professionalConfig.blockedTimes.length} time blocks configured
-                {professionalConfig.blockedTimes.slice(0, 3).map((bt, idx) => (
-                  <div key={idx} className="ml-2">
-                    • {bt.date} {bt.startTime}-{bt.endTime} ({bt.reason || "Blocked"})
-                  </div>
-                ))}
-                {professionalConfig.blockedTimes.length > 3 && (
-                  <div className="ml-2">... and {professionalConfig.blockedTimes.length - 3} more</div>
-                )}
+              <div className="mt-2 text-xs text-blue-600 bg-blue-50 p-2 rounded">
+                <strong>Blocked Times:</strong> {professionalConfig.blockedTimes.length} configured
               </div>
             )}
           </div>
