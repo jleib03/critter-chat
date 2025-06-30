@@ -68,6 +68,7 @@ export default function ProfessionalSetupPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("booking")
 
   // Configuration state
@@ -294,6 +295,7 @@ export default function ProfessionalSetupPage() {
   const saveConfiguration = async () => {
     try {
       setSaving(true)
+      setSuccessMessage(null)
       setError(null)
 
       const webhookUrl = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
@@ -357,6 +359,8 @@ export default function ProfessionalSetupPage() {
 
         if (successCount > 0) {
           setLastUpdated(new Date().toISOString())
+          setSuccessMessage("Configuration saved successfully!")
+          setTimeout(() => setSuccessMessage(null), 5000)
           console.log(`Configuration saved successfully: ${successCount} operations completed`)
         } else {
           throw new Error("Save operation did not complete successfully")
@@ -366,6 +370,8 @@ export default function ProfessionalSetupPage() {
 
         if (saveResponse.success || saveResponse.output === "load successful") {
           setLastUpdated(new Date().toISOString())
+          setSuccessMessage("Configuration saved successfully!")
+          setTimeout(() => setSuccessMessage(null), 5000)
           console.log("Configuration saved successfully:", saveResponse.message || saveResponse.output)
         } else {
           throw new Error(saveResponse.message || "Failed to save configuration")
@@ -493,6 +499,14 @@ export default function ProfessionalSetupPage() {
       </div>
     )
   }
+  successMessage && (
+    <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+      <div className="flex items-center">
+        <CheckCircle className="w-5 h-5 text-green-500 mr-3" />
+        <p className="text-green-800 font-medium body-font">{successMessage}</p>
+      </div>
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-gray-50">
