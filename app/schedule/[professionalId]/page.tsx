@@ -257,37 +257,61 @@ export default function SchedulePage() {
         setShowBookingDisabled(false)
       }
 
-      // If professional config is available in webhook, use it
+      // Enhanced professional config creation with blocked times
       if (parsedData.config) {
         const configForProfessionalConfig = {
           professionalId: professionalId,
-          businessName: parsedData.config.business_name,
-          employees: parsedData.config.employees.map((emp) => ({
-            id: emp.employee_id,
-            name: emp.name,
-            role: emp.role,
-            email: emp.email,
-            isActive: emp.is_active,
-            workingDays: emp.working_days.map((wd) => ({
-              day: wd.day,
-              start: wd.start_time,
-              end: wd.end_time,
-              isWorking: wd.is_working,
-            })),
-            services: emp.services,
-          })),
-          capacityRules: {
-            maxConcurrentBookings: parsedData.config.capacity_rules.max_concurrent_bookings,
-            bufferTimeBetweenBookings: parsedData.config.capacity_rules.buffer_time_between_bookings,
-            maxBookingsPerDay: parsedData.config.capacity_rules.max_bookingsPerDay,
-            allowOverlapping: parsedData.config.capacity_rules.allowOverlapping,
-            requireAllEmployeesForService: parsedData.config.capacity_rules.requireAllEmployeesForService,
-          },
-          blockedTimes: parsedData.config.blocked_times,
+          businessName: parsedData.config.business_name || "Professional",
+          employees: parsedData.config.employees
+            ? parsedData.config.employees.map((emp) => ({
+                id: emp.employee_id,
+                name: emp.name,
+                role: emp.role,
+                email: emp.email,
+                isActive: emp.is_active,
+                workingDays: emp.working_days.map((wd) => ({
+                  day: wd.day,
+                  start: wd.start_time,
+                  end: wd.end_time,
+                  isWorking: wd.is_working,
+                })),
+                services: emp.services || [],
+              }))
+            : [],
+          capacityRules: parsedData.config.capacity_rules
+            ? {
+                maxConcurrentBookings: parsedData.config.capacity_rules.max_concurrent_bookings || 1,
+                bufferTimeBetweenBookings: parsedData.config.capacity_rules.buffer_time_between_bookings || 0,
+                maxBookingsPerDay: parsedData.config.capacity_rules.max_bookings_per_day || 10,
+                allowOverlapping: parsedData.config.capacity_rules.allow_overlapping || false,
+                requireAllEmployeesForService:
+                  parsedData.config.capacity_rules.require_all_employees_for_service || false,
+              }
+            : {
+                maxConcurrentBookings: 1,
+                bufferTimeBetweenBookings: 0,
+                maxBookingsPerDay: 10,
+                allowOverlapping: false,
+                requireAllEmployeesForService: false,
+              },
+          // Enhanced blocked times parsing with proper format conversion
+          blockedTimes: parsedData.config.blocked_times
+            ? parsedData.config.blocked_times.map((bt) => ({
+                id: bt.blocked_time_id,
+                date: bt.blocked_date, // Already in YYYY-MM-DD format from webhook
+                startTime: bt.start_time, // Already in HH:MM:SS format from webhook
+                endTime: bt.end_time, // Already in HH:MM:SS format from webhook
+                reason: bt.reason || "Blocked",
+                employeeId: bt.employee_id || undefined,
+                isRecurring: bt.is_recurring || false,
+                recurrencePattern: bt.recurrence_pattern || undefined,
+              }))
+            : [],
           lastUpdated: new Date().toISOString(),
         }
         setProfessionalConfig(configForProfessionalConfig)
-        console.log("Professional configuration loaded from webhook:", configForProfessionalConfig)
+        console.log("Professional configuration loaded from webhook with blocked times:", configForProfessionalConfig)
+        console.log("Blocked times count:", configForProfessionalConfig.blockedTimes.length)
       }
 
       console.log("Schedule data loaded:", parsedData)
@@ -826,6 +850,21 @@ export default function SchedulePage() {
                 <span>
                   {JSON.parse(userTimezoneRef.current).timezone} • Session: {sessionIdRef.current?.slice(-6)}
                 </span>
+              </div>
+            )}
+
+            {/* Debug info for blocked times */}
+            {professionalConfig && professionalConfig.blockedTimes.length > 0 && (
+              <div className="mt-2 text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                <strong>Blocked Times Active:</strong> {professionalConfig.blockedTimes.length} time blocks configured
+                {professionalConfig.blockedTimes.slice(0, 3).map((bt, idx) => (
+                  <div key={idx} className="ml-2">
+                    • {bt.date} {bt.startTime}-{bt.endTime} ({bt.reason || "Blocked"})
+                  </div>
+                ))}
+                {professionalConfig.blockedTimes.length > 3 && (
+                  <div className="ml-2">... and {professionalConfig.blockedTimes.length - 3} more</div>
+                )}
               </div>
             )}
           </div>
