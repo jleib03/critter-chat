@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,12 +11,19 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
 import { Calendar, Clock, User, CreditCard, Loader2, CheckCircle, ArrowLeft } from "lucide-react"
-import type { BookingData } from "@/types/booking"
+import type { Service, SelectedTimeSlot, CustomerInfo, PetResponse } from "@/types/schedule"
+import type { BookingType, RecurringConfig } from "@/components/schedule/booking-type-selection"
 
 interface CustomerFormProps {
-  bookingData: BookingData
+  selectedServices: Service[]
+  selectedTimeSlot: SelectedTimeSlot
+  professionalId: string
+  professionalName: string
+  sessionId: string
+  onPetsReceived: (customerInfo: CustomerInfo, petResponse: PetResponse) => void
   onBack: () => void
-  onComplete: (customerData: CustomerData) => void
+  bookingType: BookingType | null
+  recurringConfig: RecurringConfig | null
 }
 
 interface CustomerData {
@@ -32,7 +38,17 @@ interface CustomerData {
   notes: string
 }
 
-export function CustomerForm({ bookingData, onBack, onComplete }: CustomerFormProps) {
+export function CustomerForm({
+  selectedServices,
+  selectedTimeSlot,
+  professionalId,
+  professionalName,
+  sessionId,
+  onPetsReceived,
+  onBack,
+  bookingType,
+  recurringConfig,
+}: CustomerFormProps) {
   const { toast } = useToast()
   const [submitting, setSubmitting] = useState(false)
   const [customerData, setCustomerData] = useState<CustomerData>({
@@ -51,6 +67,18 @@ export function CustomerForm({ bookingData, onBack, onComplete }: CustomerFormPr
     setCustomerData((prev) => ({ ...prev, [field]: value }))
   }
 
+  // Calculate total cost and duration
+  const totalCost = selectedServices.reduce((sum, service) => sum + service.customer_cost, 0)
+  const totalDuration = selectedServices.reduce((sum, service) => {
+    let durationInMinutes = service.duration_number
+    if (service.duration_unit === "Hours") {
+      durationInMinutes = service.duration_number * 60
+    } else if (service.duration_unit === "Days") {
+      durationInMinutes = service.duration_number * 24 * 60
+    }
+    return sum + durationInMinutes
+  }, 0)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -66,38 +94,26 @@ export function CustomerForm({ bookingData, onBack, onComplete }: CustomerFormPr
     setSubmitting(true)
 
     try {
-      // Prepare webhook payload
+      // Prepare webhook payload to get customer's pets
       const webhookPayload = {
-        action: "create_booking",
-        booking_data: {
-          professional_id: bookingData.professionalId,
-          service_ids: bookingData.selectedServices.map((s) => s.id),
-          service_names: bookingData.selectedServices.map((s) => s.name),
-          booking_type: bookingData.bookingType,
-          date: bookingData.selectedDate,
-          time: bookingData.selectedTime,
-          duration: bookingData.totalDuration,
-          total_cost: bookingData.totalCost,
-          frequency: bookingData.frequency,
-          end_date: bookingData.endDate,
-          customer: {
-            first_name: customerData.firstName,
-            last_name: customerData.lastName,
-            email: customerData.email,
-            phone: customerData.phone,
-            address: customerData.address,
-            city: customerData.city,
-            state: customerData.state,
-            zip_code: customerData.zipCode,
-            notes: customerData.notes,
-          },
-          pets: bookingData.selectedPets || [],
-          session_id: `booking_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          timestamp: new Date().toISOString(),
+        action: "get_customer_pets",
+        professional_id: professionalId,
+        session_id: sessionId,
+        customer_info: {
+          first_name: customerData.firstName.trim(),
+          last_name: customerData.lastName.trim(),
+          email: customerData.email.trim().toLowerCase(),
+          phone: customerData.phone.trim(),
+          address: customerData.address.trim(),
+          city: customerData.city.trim(),
+          state: customerData.state.trim(),
+          zip_code: customerData.zipCode.trim(),
+          notes: customerData.notes.trim(),
         },
+        timestamp: new Date().toISOString(),
       }
 
-      console.log("Sending booking webhook:", webhookPayload)
+      console.log("Getting customer pets:", webhookPayload)
 
       // Send to webhook
       const webhookUrl =
@@ -117,19 +133,22 @@ export function CustomerForm({ bookingData, onBack, onComplete }: CustomerFormPr
       }
 
       const result = await response.json()
-      console.log("Webhook response:", result)
+      console.log("Pets webhook response:", result)
 
-      toast({
-        title: "Booking Confirmed!",
-        description: "Your appointment has been successfully scheduled.",
-      })
+      // Extract customer info for next step
+      const customerInfo: CustomerInfo = {
+        firstName: customerData.firstName.trim(),
+        lastName: customerData.lastName.trim(),
+        email: customerData.email.trim().toLowerCase(),
+      }
 
-      onComplete(customerData)
+      // Pass pets data to parent component
+      onPetsReceived(customerInfo, result)
     } catch (error) {
-      console.error("Error submitting booking:", error)
+      console.error("Error getting customer pets:", error)
       toast({
-        title: "Booking Failed",
-        description: "There was an error processing your booking. Please try again.",
+        title: "Error",
+        description: "There was an error retrieving your pet information. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -169,7 +188,7 @@ export function CustomerForm({ bookingData, onBack, onComplete }: CustomerFormPr
         <div>
           <h1 className="text-2xl font-bold text-gray-900 header-font">Complete Your Booking</h1>
           <p className="text-gray-600 body-font">
-            Please provide your contact information to confirm your appointment.
+            Please provide your contact information to continue to pet selection.
           </p>
         </div>
       </div>
@@ -326,12 +345,12 @@ export function CustomerForm({ bookingData, onBack, onComplete }: CustomerFormPr
                     {submitting ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Confirming Booking...
+                        Getting Pet Information...
                       </>
                     ) : (
                       <>
                         <CheckCircle className="w-4 h-4 mr-2" />
-                        Confirm Booking
+                        Continue to Pet Selection
                       </>
                     )}
                   </Button>
@@ -355,10 +374,10 @@ export function CustomerForm({ bookingData, onBack, onComplete }: CustomerFormPr
                   <span className="font-medium body-font">Date & Time</span>
                 </div>
                 <div className="text-sm text-gray-600 body-font ml-6">
-                  <div>{formatDate(bookingData.selectedDate)}</div>
+                  <div>{formatDate(selectedTimeSlot.date)}</div>
                   <div className="flex items-center gap-1 mt-1">
                     <Clock className="w-3 h-3" />
-                    {formatTime(bookingData.selectedTime)}
+                    {formatTime(selectedTimeSlot.startTime)}
                   </div>
                 </div>
               </div>
@@ -372,40 +391,22 @@ export function CustomerForm({ bookingData, onBack, onComplete }: CustomerFormPr
                   <span className="font-medium body-font">Services</span>
                 </div>
                 <div className="space-y-2 ml-6">
-                  {bookingData.selectedServices.map((service) => (
-                    <div key={service.id} className="flex justify-between items-center">
+                  {selectedServices.map((service, index) => (
+                    <div key={index} className="flex justify-between items-center">
                       <div>
                         <div className="text-sm font-medium body-font">{service.name}</div>
-                        <div className="text-xs text-gray-500 body-font">{service.duration} min</div>
+                        <div className="text-xs text-gray-500 body-font">
+                          {service.duration_number} {service.duration_unit.toLowerCase()}
+                        </div>
                       </div>
-                      <div className="text-sm font-medium body-font">${service.price}</div>
+                      <div className="text-sm font-medium body-font">${service.customer_cost}</div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Pets */}
-              {bookingData.selectedPets && bookingData.selectedPets.length > 0 && (
-                <>
-                  <Separator />
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-gray-500" />
-                      <span className="font-medium body-font">Pets</span>
-                    </div>
-                    <div className="space-y-1 ml-6">
-                      {bookingData.selectedPets.map((pet, index) => (
-                        <div key={index} className="text-sm text-gray-600 body-font">
-                          {pet.name} ({pet.type})
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-
               {/* Booking Type */}
-              {bookingData.bookingType === "recurring" && (
+              {bookingType === "recurring" && recurringConfig && (
                 <>
                   <Separator />
                   <div className="space-y-2">
@@ -414,8 +415,10 @@ export function CustomerForm({ bookingData, onBack, onComplete }: CustomerFormPr
                       <span className="font-medium body-font">Recurring</span>
                     </div>
                     <div className="text-sm text-gray-600 body-font ml-6">
-                      <div>Every {bookingData.frequency}</div>
-                      {bookingData.endDate && <div>Until {formatDate(bookingData.endDate)}</div>}
+                      <div>
+                        Every {recurringConfig.frequency} {recurringConfig.unit}(s)
+                      </div>
+                      {recurringConfig.endDate && <div>Until {formatDate(recurringConfig.endDate)}</div>}
                     </div>
                   </div>
                 </>
@@ -426,14 +429,32 @@ export function CustomerForm({ bookingData, onBack, onComplete }: CustomerFormPr
               {/* Total */}
               <div className="flex justify-between items-center pt-2">
                 <span className="font-semibold body-font">Total</span>
-                <span className="font-semibold text-lg body-font">${bookingData.totalCost}</span>
+                <span className="font-semibold text-lg body-font">${totalCost}</span>
+              </div>
+
+              {/* Duration */}
+              <div className="flex justify-between items-center text-sm text-gray-600">
+                <span className="body-font">Duration</span>
+                <span className="body-font">
+                  {totalDuration >= 60
+                    ? `${Math.floor(totalDuration / 60)}h ${totalDuration % 60}m`
+                    : `${totalDuration}m`}
+                </span>
               </div>
 
               {/* Booking Type Badge */}
               <div className="pt-2">
-                <Badge variant={bookingData.bookingType === "one-time" ? "default" : "secondary"}>
-                  {bookingData.bookingType === "one-time" ? "One-time Booking" : "Recurring Booking"}
+                <Badge variant={bookingType === "one-time" ? "default" : "secondary"}>
+                  {bookingType === "one-time" ? "One-time Booking" : "Recurring Booking"}
                 </Badge>
+              </div>
+
+              {/* Professional */}
+              <div className="pt-2 text-sm text-gray-600 body-font">
+                <div className="flex items-center gap-2">
+                  <User className="w-3 h-3" />
+                  <span>with {professionalName}</span>
+                </div>
               </div>
             </CardContent>
           </Card>
