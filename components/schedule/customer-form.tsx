@@ -16,7 +16,7 @@ const CustomerForm = () => {
     }
 
     // Webhook URL
-    const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/5671c1dd-48f6-47a9-85ac-4e20cf261520"
+    const webhookUrl = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
 
     try {
       const response = await fetch(webhookUrl, {
