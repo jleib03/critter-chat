@@ -1,64 +1,54 @@
-export interface Location {
-  address: string
+export interface Coordinates {
   lat: number
   lng: number
 }
 
-export interface GeoCustomer {
-  customer_id: string
-  first_name: string
-  last_name: string
-  email: string
-  location: Location
+export interface Location {
+  address: string
+  coordinates: Coordinates
 }
 
 export interface GeoBooking {
-  booking_id: string
-  customer: GeoCustomer
-  services: string[]
-  date: string
-  start_time: string
-  end_time: string
-  duration_minutes: number
+  id: string
+  customerId: string
+  customerName: string
+  serviceType: string
+  startTime: string
+  endTime?: string
+  duration: number // in minutes
   location: Location
+  requiredSkills: string[]
+  priority: "low" | "medium" | "high"
+  notes?: string
 }
 
 export interface GeoEmployee {
-  employee_id: string
+  id: string
   name: string
-  services: string[]
-  working_hours: {
-    start: string
-    end: string
+  skills: string[]
+  workingHours: {
+    start: string // "09:00"
+    end: string // "17:00"
   }
-  service_area_radius: number // in miles
-  max_bookings_per_day: number
-  home_base: Location
-  current_location?: Location
+  maxBookingsPerDay: number
+  homeLocation: Location
+  serviceRadius: number // in miles
+  vehicleType?: "car" | "van" | "truck"
 }
 
 export interface OptimizedRoute {
-  employee_id: string
-  employee_name: string
+  employeeId: string
+  employeeName: string
   bookings: GeoBooking[]
-  total_travel_time: number // in minutes
-  total_service_time: number // in minutes
-  efficiency_score: number // percentage
-  route_coordinates: Location[]
+  totalTravelTime: number // in minutes
+  totalServiceTime: number // in minutes
+  efficiency: number // percentage (service time / total time)
+  estimatedFuelCost?: number
 }
 
-export interface ScheduleOptimizationResult {
-  date: string
+export interface RouteOptimizationResult {
   routes: OptimizedRoute[]
-  unassigned_bookings: GeoBooking[]
-  total_efficiency_score: number
-  total_time_saved?: number
+  unassignedBookings: GeoBooking[]
+  totalEfficiency: number
   recommendations: string[]
-}
-
-export interface TravelTimeMatrix {
-  origins: Location[]
-  destinations: Location[]
-  durations: number[][] // in minutes
-  distances: number[][] // in miles
 }

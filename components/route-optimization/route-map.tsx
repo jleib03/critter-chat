@@ -1,196 +1,109 @@
-"use client"
-
-import { useState } from "react"
 import type { OptimizedRoute } from "@/types/geo-scheduling"
 
 interface RouteMapProps {
   routes: OptimizedRoute[]
 }
 
-export function RouteMap({ routes }: RouteMapProps) {
-  const [selectedRoute, setSelectedRoute] = useState<string | null>(null)
+export default function RouteMap({ routes }: RouteMapProps) {
+  const colors = ["#E75837", "#16A085", "#745E25", "#94ABD6", "#8E44AD", "#E67E22"]
 
   // Calculate map bounds
-  const allLocations = routes.flatMap((route) => route.route_coordinates)
+  const allCoordinates = routes.flatMap((route) => [...route.bookings.map((booking) => booking.location.coordinates)])
 
-  if (allLocations.length === 0) {
+  if (allCoordinates.length === 0) {
     return (
       <div className="w-full h-96 bg-gray-100 rounded-lg flex items-center justify-center">
-        <p className="text-gray-500">No route data available</p>
+        <p className="text-gray-500">No routes to display</p>
       </div>
     )
   }
 
-  const minLat = Math.min(...allLocations.map((loc) => loc.lat))
-  const maxLat = Math.max(...allLocations.map((loc) => loc.lat))
-  const minLng = Math.min(...allLocations.map((loc) => loc.lng))
-  const maxLng = Math.max(...allLocations.map((loc) => loc.lng))
+  const minLat = Math.min(...allCoordinates.map((c) => c.lat))
+  const maxLat = Math.max(...allCoordinates.map((c) => c.lat))
+  const minLng = Math.min(...allCoordinates.map((c) => c.lng))
+  const maxLng = Math.max(...allCoordinates.map((c) => c.lng))
 
   const mapWidth = 800
-  const mapHeight = 500
+  const mapHeight = 600
   const padding = 50
 
-  // Convert lat/lng to SVG coordinates
-  const latToY = (lat: number) => {
-    return padding + ((maxLat - lat) / (maxLat - minLat)) * (mapHeight - 2 * padding)
-  }
+  const scaleX = (mapWidth - 2 * padding) / (maxLng - minLng)
+  const scaleY = (mapHeight - 2 * padding) / (maxLat - minLat)
 
-  const lngToX = (lng: number) => {
-    return padding + ((lng - minLng) / (maxLng - minLng)) * (mapWidth - 2 * padding)
-  }
-
-  const routeColors = ["#E75837", "#16A085", "#745E25", "#94ABD6", "#F39C12", "#8E44AD"]
+  const projectCoordinate = (lat: number, lng: number) => ({
+    x: padding + (lng - minLng) * scaleX,
+    y: mapHeight - padding - (lat - minLat) * scaleY,
+  })
 
   return (
     <div className="w-full">
-      {/* Route Legend */}
-      <div className="mb-4 flex flex-wrap gap-4">
+      <svg width={mapWidth} height={mapHeight} className="border rounded-lg bg-gray-50">
+        {/* Routes */}
+        {routes.map((route, routeIndex) => {
+          const color = colors[routeIndex % colors.length]
+          const points = route.bookings.map((booking) =>
+            projectCoordinate(booking.location.coordinates.lat, booking.location.coordinates.lng),
+          )
+
+          return (
+            <g key={route.employeeId}>
+              {/* Route lines */}
+              {points.map((point, index) => {
+                if (index === 0) return null
+                const prevPoint = points[index - 1]
+                return (
+                  <line
+                    key={index}
+                    x1={prevPoint.x}
+                    y1={prevPoint.y}
+                    x2={point.x}
+                    y2={point.y}
+                    stroke={color}
+                    strokeWidth="2"
+                    strokeDasharray="5,5"
+                  />
+                )
+              })}
+
+              {/* Booking markers */}
+              {route.bookings.map((booking, index) => {
+                const point = projectCoordinate(booking.location.coordinates.lat, booking.location.coordinates.lng)
+                return (
+                  <g key={booking.id}>
+                    <circle cx={point.x} cy={point.y} r="8" fill={color} stroke="white" strokeWidth="2" />
+                    <text x={point.x} y={point.y + 4} textAnchor="middle" className="text-xs font-bold fill-white">
+                      {index + 1}
+                    </text>
+
+                    {/* Tooltip */}
+                    <title>
+                      {booking.customerName} - {booking.serviceType}
+                      {"\n"}
+                      {booking.location.address}
+                      {"\n"}
+                      {booking.startTime}
+                    </title>
+                  </g>
+                )
+              })}
+            </g>
+          )
+        })}
+      </svg>
+
+      {/* Legend */}
+      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {routes.map((route, index) => (
-          <button
-            key={route.employee_id}
-            onClick={() => setSelectedRoute(selectedRoute === route.employee_id ? null : route.employee_id)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all ${
-              selectedRoute === route.employee_id ? "bg-gray-100 border-gray-300" : "hover:bg-gray-50"
-            }`}
-          >
-            <div
-              className="w-4 h-4 rounded-full"
-              style={{ backgroundColor: routeColors[index % routeColors.length] }}
-            />
-            <span className="text-sm font-medium">{route.employee_name}</span>
-            <span className="text-xs text-gray-500">({route.bookings.length} stops)</span>
-          </button>
+          <div key={route.employeeId} className="flex items-center gap-3 p-3 bg-white rounded-lg border">
+            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: colors[index % colors.length] }} />
+            <div>
+              <p className="font-medium">{route.employeeName}</p>
+              <p className="text-sm text-gray-600">
+                {route.bookings.length} stops • {route.efficiency}% efficient
+              </p>
+            </div>
+          </div>
         ))}
-      </div>
-
-      {/* SVG Map */}
-      <div className="border rounded-lg overflow-hidden bg-gray-50">
-        <svg width={mapWidth} height={mapHeight} className="w-full h-auto">
-          {/* Background grid */}
-          <defs>
-            <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e5e7eb" strokeWidth="1" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#grid)" />
-
-          {/* Routes */}
-          {routes.map((route, routeIndex) => {
-            const color = routeColors[routeIndex % routeColors.length]
-            const isSelected = selectedRoute === null || selectedRoute === route.employee_id
-            const opacity = isSelected ? 1 : 0.3
-
-            return (
-              <g key={route.employee_id} opacity={opacity}>
-                {/* Route lines */}
-                {route.route_coordinates.map((location, index) => {
-                  if (index === route.route_coordinates.length - 1) return null
-
-                  const nextLocation = route.route_coordinates[index + 1]
-                  return (
-                    <line
-                      key={`${route.employee_id}-line-${index}`}
-                      x1={lngToX(location.lng)}
-                      y1={latToY(location.lat)}
-                      x2={lngToX(nextLocation.lng)}
-                      y2={latToY(nextLocation.lat)}
-                      stroke={color}
-                      strokeWidth="2"
-                      strokeDasharray={index === 0 ? "5,5" : "none"}
-                    />
-                  )
-                })}
-
-                {/* Home base (first point) */}
-                <circle
-                  cx={lngToX(route.route_coordinates[0].lng)}
-                  cy={latToY(route.route_coordinates[0].lat)}
-                  r="8"
-                  fill={color}
-                  stroke="white"
-                  strokeWidth="2"
-                />
-                <text
-                  x={lngToX(route.route_coordinates[0].lng)}
-                  y={latToY(route.route_coordinates[0].lat)}
-                  textAnchor="middle"
-                  dy="0.3em"
-                  className="text-xs font-bold fill-white"
-                >
-                  H
-                </text>
-
-                {/* Customer locations */}
-                {route.bookings.map((booking, bookingIndex) => {
-                  const location = booking.location
-                  return (
-                    <g key={`${route.employee_id}-booking-${bookingIndex}`}>
-                      <circle
-                        cx={lngToX(location.lng)}
-                        cy={latToY(location.lat)}
-                        r="6"
-                        fill="white"
-                        stroke={color}
-                        strokeWidth="2"
-                      />
-                      <text
-                        x={lngToX(location.lng)}
-                        y={latToY(location.lat)}
-                        textAnchor="middle"
-                        dy="0.3em"
-                        className="text-xs font-bold"
-                        fill={color}
-                      >
-                        {bookingIndex + 1}
-                      </text>
-
-                      {/* Tooltip on hover */}
-                      <title>
-                        {booking.customer.first_name} {booking.customer.last_name}
-                        {"\n"}
-                        {booking.start_time} - {booking.end_time}
-                        {"\n"}
-                        {booking.services.join(", ")}
-                        {"\n"}
-                        {location.address}
-                      </title>
-                    </g>
-                  )
-                })}
-              </g>
-            )
-          })}
-        </svg>
-      </div>
-
-      {/* Map Legend */}
-      <div className="mt-4 flex items-center gap-6 text-sm text-gray-600">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-full bg-gray-400 flex items-center justify-center">
-            <span className="text-xs font-bold text-white">H</span>
-          </div>
-          <span>Home Base</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-full border-2 border-gray-400 bg-white flex items-center justify-center">
-            <span className="text-xs font-bold text-gray-400">1</span>
-          </div>
-          <span>Customer Location</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-0.5 bg-gray-400"></div>
-          <span>Route</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div
-            className="w-6 h-0.5 bg-gray-400"
-            style={{
-              backgroundImage:
-                "repeating-linear-gradient(to right, transparent, transparent 3px, #9ca3af 3px, #9ca3af 6px)",
-            }}
-          ></div>
-          <span>To First Stop</span>
-        </div>
       </div>
     </div>
   )

@@ -5,12 +5,12 @@ import type {
   ScheduleOptimizationResult,
   Location,
 } from "@/types/geo-scheduling"
-import type { TravelTimeService } from "./travel-time-service"
+import { calculateTravelTime } from "./travel-time-service"
 
 export class RouteOptimizationService {
-  private travelTimeService: TravelTimeService
+  private travelTimeService: any
 
-  constructor(travelTimeService: TravelTimeService) {
+  constructor(travelTimeService: any) {
     this.travelTimeService = travelTimeService
   }
 
@@ -268,4 +268,45 @@ export class RouteOptimizationService {
 
     return recommendations
   }
+}
+
+function canEmployeeHandleBooking(employee: GeoEmployee, booking: GeoBooking): boolean {
+  // Check if employee has required skills
+  const hasRequiredSkills = booking.requiredSkills.some((skill) => employee.skills.includes(skill))
+
+  if (!hasRequiredSkills) return false
+
+  // Check if booking is within service radius (simplified check)
+  // In production, you'd calculate actual distance
+  return true
+}
+
+async function calculateRouteMetrics(
+  employee: GeoEmployee,
+  bookings: GeoBooking[],
+): Promise<{ totalTravelTime: number; totalServiceTime: number }> {
+  let totalTravelTime = 0
+  let totalServiceTime = 0
+
+  let currentLocation = employee.homeLocation.coordinates
+
+  for (const booking of bookings) {
+    // Add travel time to this booking
+    const travelTime = await calculateTravelTime(currentLocation, booking.location.coordinates)
+    totalTravelTime += travelTime.duration
+
+    // Add service time
+    totalServiceTime += booking.duration
+
+    // Update current location
+    currentLocation = booking.location.coordinates
+  }
+
+  // Add travel time back to home base
+  if (bookings.length > 0) {
+    const returnTravelTime = await calculateTravelTime(currentLocation, employee.homeLocation.coordinates)
+    totalTravelTime += returnTravelTime.duration
+  }
+
+  return { totalTravelTime, totalServiceTime }
 }
