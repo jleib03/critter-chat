@@ -1,16 +1,10 @@
-import type {
-  GeoBooking,
-  GeoEmployee,
-  OptimizedRoute,
-  ScheduleOptimizationResult,
-  Location,
-} from "@/types/geo-scheduling"
-import { calculateTravelTime } from "./travel-time-service"
+import type { GeoBooking, GeoEmployee, RouteOptimization, ScheduleOptimizationResult } from "@/types/geo-scheduling"
+import type { TravelTimeService } from "./travel-time-service"
 
 export class RouteOptimizationService {
-  private travelTimeService: any
+  private travelTimeService: TravelTimeService
 
-  constructor(travelTimeService: any) {
+  constructor(travelTimeService: TravelTimeService) {
     this.travelTimeService = travelTimeService
   }
 
@@ -19,42 +13,43 @@ export class RouteOptimizationService {
     bookings: GeoBooking[],
     employees: GeoEmployee[],
   ): Promise<ScheduleOptimizationResult> {
-    console.log(`Optimizing routes for ${date} with ${bookings.length} bookings and ${employees.length} employees`)
-
-    // Filter bookings for the specific date
     const dayBookings = bookings.filter((booking) => booking.date === date)
+    const availableEmployees = employees.filter((emp) => this.isEmployeeWorkingOnDate(emp, date))
 
-    // Initialize result
-    const routes: OptimizedRoute[] = []
+    console.log(`Optimizing ${dayBookings.length} bookings for ${availableEmployees.length} employees on ${date}`)
+
+    // Step 1: Group bookings by service compatibility
+    const serviceGroups = this.groupBookingsByServices(dayBookings, availableEmployees)
+
+    // Step 2: Optimize routes for each employee
+    const routes: RouteOptimization[] = []
     const unassignedBookings: GeoBooking[] = []
 
-    // Create employee availability map
-    const employeeBookings: Map<string, GeoBooking[]> = new Map()
-    employees.forEach((emp) => employeeBookings.set(emp.employee_id, []))
+    for (const employee of availableEmployees) {
+      const compatibleBookings = dayBookings.filter((booking) => this.canEmployeeHandleBooking(employee, booking))
 
-    // Assign bookings to employees
-    for (const booking of dayBookings) {
-      const bestEmployee = await this.findBestEmployeeForBooking(booking, employees, employeeBookings)
+      if (compatibleBookings.length === 0) continue
 
-      if (bestEmployee) {
-        employeeBookings.get(bestEmployee.employee_id)!.push(booking)
-      } else {
-        unassignedBookings.push(booking)
-      }
-    }
+      const optimizedRoute = await this.optimizeRouteForEmployee(employee, compatibleBookings)
 
-    // Optimize routes for each employee
-    for (const employee of employees) {
-      const employeeBookingList = employeeBookings.get(employee.employee_id) || []
-
-      if (employeeBookingList.length > 0) {
-        const optimizedRoute = await this.optimizeEmployeeRoute(employee, employeeBookingList)
+      if (optimizedRoute.bookings.length > 0) {
         routes.push(optimizedRoute)
+
+        // Remove assigned bookings from the pool
+        optimizedRoute.bookings.forEach((assignedBooking) => {
+          const index = dayBookings.findIndex((b) => b.booking_id === assignedBooking.booking_id)
+          if (index > -1) {
+            dayBookings.splice(index, 1)
+          }
+        })
       }
     }
+
+    // Any remaining bookings are unassigned
+    unassignedBookings.push(...dayBookings)
 
     // Calculate overall efficiency
-    const totalEfficiency = this.calculateOverallEfficiency(routes)
+    const totalEfficiencyScore = this.calculateOverallEfficiency(routes)
 
     // Generate recommendations
     const recommendations = this.generateRecommendations(routes, unassignedBookings)
@@ -63,250 +58,240 @@ export class RouteOptimizationService {
       date,
       routes,
       unassigned_bookings: unassignedBookings,
-      total_efficiency_score: totalEfficiency,
-      total_time_saved: this.calculateTimeSaved(routes),
+      total_efficiency_score: totalEfficiencyScore,
       recommendations,
     }
   }
 
-  private async findBestEmployeeForBooking(
-    booking: GeoBooking,
-    employees: GeoEmployee[],
-    currentAssignments: Map<string, GeoBooking[]>,
-  ): Promise<GeoEmployee | null> {
-    let bestEmployee: GeoEmployee | null = null
-    let bestScore = -1
+  private async optimizeRouteForEmployee(employee: GeoEmployee, bookings: GeoBooking[]): Promise<RouteOptimization> {
+    // Filter bookings that fit within employee's working hours and capacity
+    const feasibleBookings = this.filterFeasibleBookings(employee, bookings)
 
-    for (const employee of employees) {
-      // Check if employee can perform the service
-      const canPerformService = booking.services.some((service) => employee.services.includes(service))
-
-      if (!canPerformService) continue
-
-      // Check capacity constraints
-      const currentBookings = currentAssignments.get(employee.employee_id) || []
-      if (currentBookings.length >= employee.max_bookings_per_day) continue
-
-      // Check if booking is within service area
-      const distanceToCustomer = await this.calculateDistance(employee.home_base, booking.location)
-
-      if (distanceToCustomer > employee.service_area_radius) continue
-
-      // Calculate score based on proximity and current workload
-      const proximityScore = Math.max(0, 100 - distanceToCustomer * 5)
-      const workloadScore = Math.max(0, 100 - currentBookings.length * 10)
-      const totalScore = (proximityScore + workloadScore) / 2
-
-      if (totalScore > bestScore) {
-        bestScore = totalScore
-        bestEmployee = employee
+    if (feasibleBookings.length === 0) {
+      return {
+        employee_id: employee.employee_id,
+        employee_name: employee.name,
+        bookings: [],
+        total_travel_time: 0,
+        total_service_time: 0,
+        total_day_duration: 0,
+        efficiency_score: 0,
+        route_coordinates: [],
       }
     }
 
-    return bestEmployee
-  }
-
-  private async optimizeEmployeeRoute(employee: GeoEmployee, bookings: GeoBooking[]): Promise<OptimizedRoute> {
-    // Sort bookings by time first
-    const sortedBookings = [...bookings].sort((a, b) => a.start_time.localeCompare(b.start_time))
-
-    // For small numbers of bookings, use simple optimization
-    // For larger numbers, you might want to implement more sophisticated algorithms
-    let optimizedBookings = sortedBookings
-
-    if (bookings.length > 2) {
-      optimizedBookings = await this.solveTSP(employee.home_base, sortedBookings)
-    }
+    // Use a simplified version of the Traveling Salesman Problem (TSP)
+    const optimizedBookings = await this.solveTSP(employee, feasibleBookings)
 
     // Calculate route metrics
-    const totalServiceTime = optimizedBookings.reduce((sum, booking) => sum + booking.duration_minutes, 0)
-
-    const totalTravelTime = await this.calculateRouteTravelTime(employee.home_base, optimizedBookings)
-
-    const efficiencyScore = this.calculateEfficiencyScore(totalServiceTime, totalTravelTime)
-
-    // Generate route coordinates
-    const routeCoordinates = [employee.home_base, ...optimizedBookings.map((booking) => booking.location)]
+    const routeMetrics = await this.calculateRouteMetrics(employee, optimizedBookings)
 
     return {
       employee_id: employee.employee_id,
       employee_name: employee.name,
       bookings: optimizedBookings,
-      total_travel_time: totalTravelTime,
-      total_service_time: totalServiceTime,
-      efficiency_score: efficiencyScore,
-      route_coordinates: routeCoordinates,
+      ...routeMetrics,
+      route_coordinates: optimizedBookings.map((b) => b.location),
     }
   }
 
-  private async solveTSP(homeBase: Location, bookings: GeoBooking[]): Promise<GeoBooking[]> {
-    // Simple nearest neighbor algorithm for TSP
-    // In production, you might want to use more sophisticated algorithms
-
+  private async solveTSP(employee: GeoEmployee, bookings: GeoBooking[]): Promise<GeoBooking[]> {
     if (bookings.length <= 1) return bookings
 
+    // For small numbers of bookings, we can try different permutations
+    if (bookings.length <= 6) {
+      return await this.bruteForceOptimization(employee, bookings)
+    }
+
+    // For larger numbers, use nearest neighbor heuristic
+    return await this.nearestNeighborOptimization(employee, bookings)
+  }
+
+  private async bruteForceOptimization(employee: GeoEmployee, bookings: GeoBooking[]): Promise<GeoBooking[]> {
+    const permutations = this.generatePermutations(bookings)
+    let bestRoute = bookings
+    let bestTotalTime = Number.POSITIVE_INFINITY
+
+    for (const permutation of permutations) {
+      const totalTime = await this.calculateTotalRouteTime(employee, permutation)
+      if (totalTime < bestTotalTime) {
+        bestTotalTime = totalTime
+        bestRoute = permutation
+      }
+    }
+
+    return bestRoute
+  }
+
+  private async nearestNeighborOptimization(employee: GeoEmployee, bookings: GeoBooking[]): Promise<GeoBooking[]> {
     const unvisited = [...bookings]
     const route: GeoBooking[] = []
-    let currentLocation = homeBase
+
+    // Start with the booking closest to employee's home base (if available)
+    let currentLocation = employee.home_base || bookings[0].location
 
     while (unvisited.length > 0) {
-      let nearestIndex = 0
-      let nearestDistance = await this.calculateDistance(currentLocation, unvisited[0].location)
+      let nearestBooking = unvisited[0]
+      let shortestTime = Number.POSITIVE_INFINITY
 
-      for (let i = 1; i < unvisited.length; i++) {
-        const distance = await this.calculateDistance(currentLocation, unvisited[i].location)
-        if (distance < nearestDistance) {
-          nearestDistance = distance
-          nearestIndex = i
+      for (const booking of unvisited) {
+        const travelTime = await this.travelTimeService.calculateTravelTime(currentLocation, booking.location)
+        if (travelTime && travelTime.duration_minutes < shortestTime) {
+          shortestTime = travelTime.duration_minutes
+          nearestBooking = booking
         }
       }
 
-      const nearestBooking = unvisited.splice(nearestIndex, 1)[0]
       route.push(nearestBooking)
       currentLocation = nearestBooking.location
+      unvisited.splice(unvisited.indexOf(nearestBooking), 1)
     }
 
     return route
   }
 
-  private async calculateRouteTravelTime(homeBase: Location, bookings: GeoBooking[]): Promise<number> {
+  private async calculateTotalRouteTime(employee: GeoEmployee, bookings: GeoBooking[]): Promise<number> {
     if (bookings.length === 0) return 0
 
     let totalTime = 0
-    let currentLocation = homeBase
+    let currentLocation = employee.home_base || bookings[0].location
 
     for (const booking of bookings) {
       const travelTime = await this.travelTimeService.calculateTravelTime(currentLocation, booking.location)
-      totalTime += travelTime
+      totalTime += (travelTime?.duration_minutes || 0) + booking.duration_minutes
       currentLocation = booking.location
     }
 
     return totalTime
   }
 
-  private async calculateDistance(point1: Location, point2: Location): Promise<number> {
-    // Haversine formula
-    const R = 3959 // Earth's radius in miles
-    const dLat = this.toRadians(point2.lat - point1.lat)
-    const dLon = this.toRadians(point2.lng - point1.lng)
+  private async calculateRouteMetrics(employee: GeoEmployee, bookings: GeoBooking[]) {
+    let totalTravelTime = 0
+    let totalServiceTime = 0
+    let currentLocation = employee.home_base || (bookings.length > 0 ? bookings[0].location : null)
 
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.toRadians(point1.lat)) *
-        Math.cos(this.toRadians(point2.lat)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2)
+    if (!currentLocation || bookings.length === 0) {
+      return {
+        total_travel_time: 0,
+        total_service_time: 0,
+        total_day_duration: 0,
+        efficiency_score: 0,
+      }
+    }
 
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-    return R * c
+    for (const booking of bookings) {
+      const travelTime = await this.travelTimeService.calculateTravelTime(currentLocation, booking.location)
+      totalTravelTime += travelTime?.duration_minutes || 0
+      totalServiceTime += booking.duration_minutes
+      currentLocation = booking.location
+    }
+
+    const totalDayDuration = totalTravelTime + totalServiceTime
+    const efficiencyScore = (totalServiceTime / (totalDayDuration || 1)) * 100 // Percentage of time spent on actual service
+
+    return {
+      total_travel_time: totalTravelTime,
+      total_service_time: totalServiceTime,
+      total_day_duration: totalDayDuration,
+      efficiency_score: Math.round(efficiencyScore * 100) / 100,
+    }
   }
 
-  private toRadians(degrees: number): number {
-    return degrees * (Math.PI / 180)
+  private filterFeasibleBookings(employee: GeoEmployee, bookings: GeoBooking[]): GeoBooking[] {
+    return bookings
+      .filter((booking) => this.canEmployeeHandleBooking(employee, booking))
+      .slice(0, employee.max_bookings_per_day) // Respect daily booking limit
   }
 
-  private calculateEfficiencyScore(serviceTime: number, travelTime: number): number {
-    if (serviceTime + travelTime === 0) return 0
-    const efficiency = (serviceTime / (serviceTime + travelTime)) * 100
-    return Math.round(efficiency)
+  private canEmployeeHandleBooking(employee: GeoEmployee, booking: GeoBooking): boolean {
+    // Check if employee can perform the required services
+    const canPerformServices = booking.services.every((service) => employee.services.includes(service))
+
+    // Check if booking time fits within working hours
+    const bookingStart = this.timeToMinutes(booking.start_time)
+    const bookingEnd = this.timeToMinutes(booking.end_time)
+    const workStart = this.timeToMinutes(employee.working_hours.start)
+    const workEnd = this.timeToMinutes(employee.working_hours.end)
+
+    const fitsWorkingHours = bookingStart >= workStart && bookingEnd <= workEnd
+
+    return canPerformServices && fitsWorkingHours
   }
 
-  private calculateOverallEfficiency(routes: OptimizedRoute[]): number {
+  private timeToMinutes(timeStr: string): number {
+    const [hours, minutes] = timeStr.split(":").map(Number)
+    return hours * 60 + minutes
+  }
+
+  private isEmployeeWorkingOnDate(employee: GeoEmployee, date: string): boolean {
+    // For now, assume all employees work every day
+    // In a real implementation, you'd check employee schedules
+    return true
+  }
+
+  private groupBookingsByServices(bookings: GeoBooking[], employees: GeoEmployee[]) {
+    // Group bookings by required services for better assignment
+    const groups: { [serviceKey: string]: GeoBooking[] } = {}
+
+    bookings.forEach((booking) => {
+      const serviceKey = booking.services.sort().join(",")
+      if (!groups[serviceKey]) {
+        groups[serviceKey] = []
+      }
+      groups[serviceKey].push(booking)
+    })
+
+    return groups
+  }
+
+  private calculateOverallEfficiency(routes: RouteOptimization[]): number {
     if (routes.length === 0) return 0
 
     const totalEfficiency = routes.reduce((sum, route) => sum + route.efficiency_score, 0)
-    return Math.round(totalEfficiency / routes.length)
+    return Math.round((totalEfficiency / routes.length) * 100) / 100
   }
 
-  private calculateTimeSaved(routes: OptimizedRoute[]): number {
-    // Estimate time saved compared to unoptimized routes
-    // This is a simplified calculation
-    const totalTravelTime = routes.reduce((sum, route) => sum + route.total_travel_time, 0)
-    const estimatedUnoptimizedTime = totalTravelTime * 1.3 // Assume 30% more time without optimization
-    return Math.round(estimatedUnoptimizedTime - totalTravelTime)
-  }
-
-  private generateRecommendations(routes: OptimizedRoute[], unassignedBookings: GeoBooking[]): string[] {
+  private generateRecommendations(routes: RouteOptimization[], unassignedBookings: GeoBooking[]): string[] {
     const recommendations: string[] = []
 
-    // Check for unassigned bookings
     if (unassignedBookings.length > 0) {
       recommendations.push(
-        `${unassignedBookings.length} booking(s) could not be assigned. Consider hiring additional staff or expanding service areas.`,
+        `${unassignedBookings.length} bookings could not be assigned. Consider hiring additional staff or extending working hours.`,
       )
     }
 
-    // Check for low efficiency routes
     const lowEfficiencyRoutes = routes.filter((route) => route.efficiency_score < 60)
     if (lowEfficiencyRoutes.length > 0) {
       recommendations.push(
-        `${lowEfficiencyRoutes.length} route(s) have low efficiency. Consider redistributing bookings or adjusting service areas.`,
+        `${lowEfficiencyRoutes.length} routes have low efficiency (<60%). Consider clustering bookings by geographic area.`,
       )
     }
 
-    // Check for overloaded employees
-    const overloadedRoutes = routes.filter((route) => route.bookings.length > 6)
-    if (overloadedRoutes.length > 0) {
+    const highTravelTimeRoutes = routes.filter((route) => route.total_travel_time > route.total_service_time)
+    if (highTravelTimeRoutes.length > 0) {
       recommendations.push(
-        `${overloadedRoutes.length} employee(s) have heavy schedules. Consider balancing workload across team members.`,
-      )
-    }
-
-    // Check for underutilized employees
-    const underutilizedRoutes = routes.filter((route) => route.bookings.length < 3)
-    if (underutilizedRoutes.length > 0) {
-      recommendations.push(
-        `${underutilizedRoutes.length} employee(s) have light schedules. Consider assigning additional bookings or adjusting availability.`,
+        `${highTravelTimeRoutes.length} routes spend more time traveling than servicing. Consider geographic service areas.`,
       )
     }
 
     if (recommendations.length === 0) {
-      recommendations.push(
-        "Routes are well optimized! All employees have balanced schedules with good efficiency scores.",
-      )
+      recommendations.push("Schedule is well optimized! All routes have good efficiency scores.")
     }
 
     return recommendations
   }
-}
 
-function canEmployeeHandleBooking(employee: GeoEmployee, booking: GeoBooking): boolean {
-  // Check if employee has required skills
-  const hasRequiredSkills = booking.requiredSkills.some((skill) => employee.skills.includes(skill))
+  private generatePermutations<T>(array: T[]): T[][] {
+    if (array.length <= 1) return [array]
 
-  if (!hasRequiredSkills) return false
-
-  // Check if booking is within service radius (simplified check)
-  // In production, you'd calculate actual distance
-  return true
-}
-
-async function calculateRouteMetrics(
-  employee: GeoEmployee,
-  bookings: GeoBooking[],
-): Promise<{ totalTravelTime: number; totalServiceTime: number }> {
-  let totalTravelTime = 0
-  let totalServiceTime = 0
-
-  let currentLocation = employee.homeLocation.coordinates
-
-  for (const booking of bookings) {
-    // Add travel time to this booking
-    const travelTime = await calculateTravelTime(currentLocation, booking.location.coordinates)
-    totalTravelTime += travelTime.duration
-
-    // Add service time
-    totalServiceTime += booking.duration
-
-    // Update current location
-    currentLocation = booking.location.coordinates
+    const permutations: T[][] = []
+    for (let i = 0; i < array.length; i++) {
+      const rest = array.slice(0, i).concat(array.slice(i + 1))
+      const restPermutations = this.generatePermutations(rest)
+      for (const perm of restPermutations) {
+        permutations.push([array[i], ...perm])
+      }
+    }
+    return permutations
   }
-
-  // Add travel time back to home base
-  if (bookings.length > 0) {
-    const returnTravelTime = await calculateTravelTime(currentLocation, employee.homeLocation.coordinates)
-    totalTravelTime += returnTravelTime.duration
-  }
-
-  return { totalTravelTime, totalServiceTime }
 }

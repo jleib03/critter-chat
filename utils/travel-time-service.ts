@@ -1,9 +1,9 @@
-import type { Location, TravelTimeMatrix } from "@/types/geo-scheduling"
-import type { Coordinates } from "@/types/geo-scheduling"
+import type { GeoLocation } from "@/types/geo-scheduling"
 
-export interface TravelTimeResult {
-  duration: number // in minutes
-  distance: number // in miles
+export type TravelTimeResult = {
+  duration_minutes: number
+  distance_miles: number
+  duration_in_traffic_minutes?: number
 }
 
 export class TravelTimeService {
@@ -15,7 +15,7 @@ export class TravelTimeService {
     this.apiKey = apiKey
   }
 
-  public static getInstance(apiKey: string): TravelTimeService {
+  static getInstance(apiKey: string): TravelTimeService {
     if (!TravelTimeService.instance) {
       TravelTimeService.instance = new TravelTimeService(apiKey)
     }
@@ -23,8 +23,8 @@ export class TravelTimeService {
   }
 
   async calculateTravelTime(
-    origin: Coordinates,
-    destination: Coordinates,
+    origin: GeoLocation,
+    destination: GeoLocation,
     departureTime?: Date,
   ): Promise<TravelTimeResult | null> {
     // Create cache key
@@ -54,8 +54,9 @@ export class TravelTimeService {
       //   const element = data.rows[0].elements[0]
       //   if (element.status === 'OK') {
       //     const result: TravelTimeResult = {
-      //       duration: Math.ceil(element.duration.value / 60),
-      //       distance: Math.round(element.distance.value * 0.000621371 * 100) / 100,
+      //       duration_minutes: Math.ceil(element.duration.value / 60),
+      //       distance_miles: Math.round(element.distance.value * 0.000621371 * 100) / 100,
+      //       duration_in_traffic_minutes: element.duration_in_traffic ? Math.ceil(element.duration_in_traffic.value / 60) : undefined
       //     }
       //     this.cache.set(cacheKey, result)
       //     return result
@@ -67,28 +68,7 @@ export class TravelTimeService {
     }
   }
 
-  async calculateTravelTimeMatrix(origins: Location[], destinations: Location[]): Promise<TravelTimeMatrix> {
-    const matrix: TravelTimeResult[][] = []
-
-    for (const origin of origins) {
-      const row: TravelTimeResult[] = []
-      for (const destination of destinations) {
-        const result = await this.calculateTravelTime(origin, destination)
-        if (result) {
-          row.push(result)
-        }
-      }
-      matrix.push(row)
-    }
-
-    return {
-      origins,
-      destinations,
-      matrix,
-    }
-  }
-
-  private calculateHaversineDistance(point1: Coordinates, point2: Coordinates): number {
+  private calculateHaversineDistance(point1: GeoLocation, point2: GeoLocation): number {
     const R = 3959 // Earth's radius in miles
     const dLat = this.toRadians(point2.lat - point1.lat)
     const dLng = this.toRadians(point2.lng - point1.lng)
@@ -104,26 +84,13 @@ export class TravelTimeService {
     return R * c
   }
 
-  private estimateTravelTime(distanceInMiles: number): number {
-    // Estimate travel time based on distance
-    // Assumes average speed of 25 mph in urban areas
-    const averageSpeed = 25 // mph
-    const timeInHours = distanceInMiles / averageSpeed
-    const timeInMinutes = Math.round(timeInHours * 60)
-
-    // Add buffer time for stops, traffic, etc.
-    const bufferTime = Math.max(5, Math.round(timeInMinutes * 0.2))
-
-    return Math.max(5, timeInMinutes + bufferTime) // Minimum 5 minutes
-  }
-
   private toRadians(degrees: number): number {
     return degrees * (Math.PI / 180)
   }
 
   private getMockTravelTime(distanceMiles: number): TravelTimeResult {
     // Estimate travel time based on distance
-    // Assume average speed of 25 mph in city (accounting for traffic, stops, etc.)
+    // Assume average speed of 25 mph in urban areas (accounting for traffic, stops, etc.)
     const baseMinutes = Math.ceil((distanceMiles / 25) * 60)
 
     // Add some randomness for realism (±20%)
@@ -135,9 +102,25 @@ export class TravelTimeService {
     const trafficDelay = distanceMiles > 5 ? Math.ceil(distanceMiles * 0.5) : 0
 
     return {
-      duration: adjustedMinutes,
-      distance: Math.round(distanceMiles * 100) / 100,
+      duration_minutes: adjustedMinutes,
+      distance_miles: Math.round(distanceMiles * 100) / 100,
+      duration_in_traffic_minutes: adjustedMinutes + trafficDelay,
     }
+  }
+
+  async calculateDistanceMatrix(origins: GeoLocation[], destinations: GeoLocation[]): Promise<TravelTimeResult[][]> {
+    const matrix: TravelTimeResult[][] = []
+
+    for (const origin of origins) {
+      const row: TravelTimeResult[] = []
+      for (const destination of destinations) {
+        const result = await this.calculateTravelTime(origin, destination)
+        row.push(result || { duration_minutes: 999, distance_miles: 999 })
+      }
+      matrix.push(row)
+    }
+
+    return matrix
   }
 
   clearCache(): void {

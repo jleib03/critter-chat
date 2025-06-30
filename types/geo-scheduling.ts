@@ -1,54 +1,70 @@
-export interface Coordinates {
+export type GeoLocation = {
+  address: string
   lat: number
   lng: number
+  formatted_address?: string
 }
 
-export interface Location {
-  address: string
-  coordinates: Coordinates
+export type GeoCustomer = {
+  customer_id: string
+  first_name: string
+  last_name: string
+  email: string
+  location: GeoLocation
 }
 
-export interface GeoBooking {
-  id: string
-  customerId: string
-  customerName: string
-  serviceType: string
-  startTime: string
-  endTime?: string
-  duration: number // in minutes
-  location: Location
-  requiredSkills: string[]
-  priority: "low" | "medium" | "high"
-  notes?: string
+export type GeoBooking = {
+  booking_id: string
+  customer: GeoCustomer
+  services: string[]
+  date: string
+  start_time: string
+  end_time: string
+  duration_minutes: number
+  assigned_employee_id?: string
+  estimated_travel_time?: number
+  route_order?: number
+  location: GeoLocation
 }
 
-export interface GeoEmployee {
-  id: string
+export type GeoEmployee = {
+  employee_id: string
   name: string
-  skills: string[]
-  workingHours: {
-    start: string // "09:00"
-    end: string // "17:00"
+  services: string[]
+  working_hours: {
+    start: string
+    end: string
   }
-  maxBookingsPerDay: number
-  homeLocation: Location
-  serviceRadius: number // in miles
-  vehicleType?: "car" | "van" | "truck"
+  service_area_radius: number // miles
+  home_base?: GeoLocation
+  max_bookings_per_day: number
 }
 
-export interface OptimizedRoute {
-  employeeId: string
-  employeeName: string
+export type RouteOptimization = {
+  employee_id: string
+  employee_name: string
   bookings: GeoBooking[]
-  totalTravelTime: number // in minutes
-  totalServiceTime: number // in minutes
-  efficiency: number // percentage (service time / total time)
-  estimatedFuelCost?: number
+  total_travel_time: number
+  total_service_time: number
+  total_day_duration: number
+  efficiency_score: number
+  route_coordinates: GeoLocation[]
 }
 
-export interface RouteOptimizationResult {
-  routes: OptimizedRoute[]
-  unassignedBookings: GeoBooking[]
-  totalEfficiency: number
+export type ScheduleOptimizationResult = {
+  date: string
+  routes: RouteOptimization[]
+  unassigned_bookings: GeoBooking[]
+  total_efficiency_score: number
   recommendations: string[]
+}
+
+export type TravelTimeMatrix = {
+  [fromLocationKey: string]: {
+    [toLocationKey: string]: {
+      duration_minutes: number
+      distance_miles: number
+      cached_at: string
+    }
+  }
 }

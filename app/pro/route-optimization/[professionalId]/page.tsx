@@ -1,494 +1,536 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Calendar, MapPin, Users, Route, TrendingUp, AlertCircle, Loader2 } from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import RouteMap from "@/components/route-optimization/route-map"
-import type { GeoBooking, GeoEmployee, OptimizedRoute } from "@/types/geo-scheduling"
-import { geocodeAddress } from "@/utils/geocoding-service"
-import { optimizeRoutes } from "@/utils/route-optimization-service"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import {
+  MapPin,
+  Route,
+  Users,
+  TrendingUp,
+  AlertTriangle,
+  CheckCircle,
+  Navigation,
+  CalendarIcon,
+  Loader2,
+  ArrowLeft,
+} from "lucide-react"
+import { format } from "date-fns"
+import Link from "next/link"
+import Header from "@/components/header"
+import { RouteMap } from "@/components/route-optimization/route-map"
+import type { GeoBooking, GeoEmployee, ScheduleOptimizationResult } from "@/types/geo-scheduling"
+import { RouteOptimizationService } from "@/utils/route-optimization-service"
+import { TravelTimeService } from "@/utils/travel-time-service"
+import { GeocodingService } from "@/utils/geocoding-service"
+import { loadProfessionalConfig } from "@/utils/professional-config"
 
 export default function RouteOptimizationPage() {
   const params = useParams()
   const professionalId = params.professionalId as string
 
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0])
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [bookings, setBookings] = useState<GeoBooking[]>([])
   const [employees, setEmployees] = useState<GeoEmployee[]>([])
-  const [optimizedRoutes, setOptimizedRoutes] = useState<OptimizedRoute[]>([])
-  const [hasOptimized, setHasOptimized] = useState(false)
+  const [optimizationResult, setOptimizationResult] = useState<ScheduleOptimizationResult | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isOptimizing, setIsOptimizing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/5671c1dd-48f6-47a9-85ac-4e20cf261520"
 
-  const loadBookingsAndEmployees = async () => {
+  useEffect(() => {
+    loadData()
+  }, [professionalId, selectedDate])
+
+  const loadData = async () => {
     setIsLoading(true)
     setError(null)
 
     try {
-      console.log("🚀 Loading bookings and employees for route optimization...")
-
-      const sessionId = `route_opt_${professionalId}_${Date.now()}`
+      // Load professional configuration
+      const config = loadProfessionalConfig(professionalId)
 
       // Load bookings for the selected date
-      const bookingsPayload = {
-        action: "get_bookings_for_route_optimization",
-        professional_id: professionalId,
-        date: selectedDate,
-        timestamp: new Date().toISOString(),
-        request_type: "route_optimization",
-        session_id: sessionId,
-      }
+      const bookingsData = await loadBookingsForDate(format(selectedDate, "yyyy-MM-dd"))
 
-      console.log("📤 Sending bookings request:", bookingsPayload)
+      // Convert to geo format
+      const geoBookings = await convertBookingsToGeoFormat(bookingsData)
+      const geoEmployees = config ? convertEmployeesToGeoFormat(config.employees) : []
 
-      const bookingsResponse = await fetch(WEBHOOK_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Request-Source": "critter-route-optimization",
-        },
-        body: JSON.stringify(bookingsPayload),
-      })
-
-      if (!bookingsResponse.ok) {
-        throw new Error(`Failed to load bookings: ${bookingsResponse.status}`)
-      }
-
-      const bookingsData = await bookingsResponse.json()
-      console.log("📥 Received bookings data:", bookingsData)
-
-      // Load employee configuration
-      const employeesPayload = {
-        action: "get_employees_for_route_optimization",
-        professional_id: professionalId,
-        timestamp: new Date().toISOString(),
-        request_type: "route_optimization",
-        session_id: sessionId,
-      }
-
-      console.log("📤 Sending employees request:", employeesPayload)
-
-      const employeesResponse = await fetch(WEBHOOK_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Request-Source": "critter-route-optimization",
-        },
-        body: JSON.stringify(employeesPayload),
-      })
-
-      if (!employeesResponse.ok) {
-        throw new Error(`Failed to load employees: ${employeesResponse.status}`)
-      }
-
-      const employeesData = await employeesResponse.json()
-      console.log("📥 Received employees data:", employeesData)
-
-      // Process and geocode the data
-      await processBookingsAndEmployees(bookingsData, employeesData)
-    } catch (error) {
-      console.error("❌ Error loading data:", error)
-      setError(error instanceof Error ? error.message : "Failed to load data")
+      setBookings(geoBookings)
+      setEmployees(geoEmployees)
+    } catch (err) {
+      console.error("Error loading data:", err)
+      setError("Failed to load booking and employee data. Please try again.")
     } finally {
       setIsLoading(false)
     }
   }
 
-  const processBookingsAndEmployees = async (bookingsData: any, employeesData: any) => {
+  const loadBookingsForDate = async (date: string) => {
     try {
-      // Process bookings - convert to GeoBooking format
-      const processedBookings: GeoBooking[] = []
-
-      if (Array.isArray(bookingsData)) {
-        for (const booking of bookingsData) {
-          try {
-            const coordinates = await geocodeAddress(booking.customer_address || booking.address)
-            processedBookings.push({
-              id: booking.id || booking.booking_id,
-              customerId: booking.customer_id,
-              customerName: booking.customer_name || booking.name,
-              serviceType: booking.service_type || booking.service,
-              startTime: booking.start_time || booking.time,
-              endTime: booking.end_time,
-              duration: booking.duration || 60,
-              location: {
-                address: booking.customer_address || booking.address,
-                coordinates: coordinates,
-              },
-              requiredSkills: booking.required_skills || [booking.service_type || booking.service],
-              priority: booking.priority || "medium",
-              notes: booking.notes,
-            })
-          } catch (geocodeError) {
-            console.warn(`Failed to geocode address for booking ${booking.id}:`, geocodeError)
-            // Still add booking with default coordinates
-            processedBookings.push({
-              id: booking.id || booking.booking_id,
-              customerId: booking.customer_id,
-              customerName: booking.customer_name || booking.name,
-              serviceType: booking.service_type || booking.service,
-              startTime: booking.start_time || booking.time,
-              endTime: booking.end_time,
-              duration: booking.duration || 60,
-              location: {
-                address: booking.customer_address || booking.address,
-                coordinates: { lat: 40.7128, lng: -74.006 }, // Default NYC coordinates
-              },
-              requiredSkills: booking.required_skills || [booking.service_type || booking.service],
-              priority: booking.priority || "medium",
-              notes: booking.notes,
-            })
-          }
-        }
+      const payload = {
+        action: "get_bookings_for_route_optimization",
+        professional_id: professionalId,
+        date: date,
+        timestamp: new Date().toISOString(),
+        request_type: "route_optimization",
+        session_id: `route_opt_${professionalId}_${Date.now()}`,
       }
 
-      // Process employees - convert to GeoEmployee format
-      const processedEmployees: GeoEmployee[] = []
+      console.log("Sending route optimization request:", payload)
 
-      if (Array.isArray(employeesData)) {
-        for (const employee of employeesData) {
-          try {
-            const homeCoordinates = await geocodeAddress(employee.home_address || employee.address || "New York, NY")
-            processedEmployees.push({
-              id: employee.id || employee.employee_id,
-              name: employee.name,
-              skills: employee.skills || employee.services || [],
-              workingHours: {
-                start: employee.start_time || "09:00",
-                end: employee.end_time || "17:00",
-              },
-              maxBookingsPerDay: employee.max_bookings || employee.capacity || 8,
-              homeLocation: {
-                address: employee.home_address || employee.address || "New York, NY",
-                coordinates: homeCoordinates,
-              },
-              serviceRadius: employee.service_radius || 25,
-              vehicleType: employee.vehicle_type || "car",
-            })
-          } catch (geocodeError) {
-            console.warn(`Failed to geocode address for employee ${employee.id}:`, geocodeError)
-            // Still add employee with default coordinates
-            processedEmployees.push({
-              id: employee.id || employee.employee_id,
-              name: employee.name,
-              skills: employee.skills || employee.services || [],
-              workingHours: {
-                start: employee.start_time || "09:00",
-                end: employee.end_time || "17:00",
-              },
-              maxBookingsPerDay: employee.max_bookings || employee.capacity || 8,
-              homeLocation: {
-                address: employee.home_address || employee.address || "New York, NY",
-                coordinates: { lat: 40.7128, lng: -74.006 },
-              },
-              serviceRadius: employee.service_radius || 25,
-              vehicleType: employee.vehicle_type || "car",
-            })
-          }
-        }
+      const response = await fetch(WEBHOOK_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Request-Source": "critter-route-optimization",
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      console.log("✅ Processed bookings:", processedBookings)
-      console.log("✅ Processed employees:", processedEmployees)
-
-      setBookings(processedBookings)
-      setEmployees(processedEmployees)
+      const data = await response.json()
+      console.log("Route optimization response:", data)
+      return Array.isArray(data) ? data : []
     } catch (error) {
-      console.error("❌ Error processing data:", error)
-      throw error
+      console.error("Error loading bookings for route optimization:", error)
+      return []
     }
   }
 
-  const handleOptimizeRoutes = async () => {
+  const convertBookingsToGeoFormat = async (bookingsData: any[]): Promise<GeoBooking[]> => {
+    const geocodingService = GeocodingService.getInstance("demo-key")
+    const geoBookings: GeoBooking[] = []
+
+    for (const booking of bookingsData) {
+      if (!booking.customer_address) continue
+
+      // Geocode the customer address
+      const location = await geocodingService.geocodeAddress(booking.customer_address)
+
+      if (location) {
+        const geoBooking: GeoBooking = {
+          booking_id: booking.booking_id || `booking_${Date.now()}_${Math.random()}`,
+          customer: {
+            customer_id: booking.customer_id || "unknown",
+            first_name: booking.customer_first_name || "Unknown",
+            last_name: booking.customer_last_name || "Customer",
+            email: booking.customer_email || "",
+            location: location,
+          },
+          services: booking.services ? booking.services.split(",").map((s: string) => s.trim()) : ["General Service"],
+          date: format(selectedDate, "yyyy-MM-dd"),
+          start_time: booking.start_time || "09:00",
+          end_time: booking.end_time || "10:00",
+          duration_minutes: booking.duration_minutes || 60,
+          location: location,
+        }
+
+        geoBookings.push(geoBooking)
+      }
+    }
+
+    return geoBookings
+  }
+
+  const convertEmployeesToGeoFormat = (employeesData: any[]): GeoEmployee[] => {
+    return employeesData.map((employee, index) => ({
+      employee_id: employee.id || `emp_${index}`,
+      name: employee.name || `Employee ${index + 1}`,
+      services: employee.services || ["General Service"],
+      working_hours: {
+        start:
+          employee.workingDays?.find((wd: any) => wd.day === format(selectedDate, "EEEE").toLowerCase())?.start ||
+          "09:00",
+        end:
+          employee.workingDays?.find((wd: any) => wd.day === format(selectedDate, "EEEE").toLowerCase())?.end ||
+          "17:00",
+      },
+      service_area_radius: 15, // Default 15 mile radius
+      max_bookings_per_day: 8, // Default max bookings
+      home_base: {
+        address: `${employee.name} Home Base`,
+        lat: 30.2672 + (Math.random() * 0.1 - 0.05), // Random location near Austin
+        lng: -97.7431 + (Math.random() * 0.1 - 0.05),
+      },
+    }))
+  }
+
+  const optimizeRoutes = async () => {
     if (bookings.length === 0 || employees.length === 0) {
-      setError("No bookings or employees found for optimization")
+      setError("No bookings or employees available for optimization")
       return
     }
 
-    setIsLoading(true)
+    setIsOptimizing(true)
     setError(null)
 
     try {
-      console.log("🔄 Optimizing routes...")
-      const routes = await optimizeRoutes(bookings, employees)
-      console.log("✅ Optimization complete:", routes)
+      const travelTimeService = TravelTimeService.getInstance("demo-key")
+      const routeOptimizer = new RouteOptimizationService(travelTimeService)
 
-      setOptimizedRoutes(routes)
-      setHasOptimized(true)
-    } catch (error) {
-      console.error("❌ Optimization error:", error)
-      setError(error instanceof Error ? error.message : "Failed to optimize routes")
+      const result = await routeOptimizer.optimizeScheduleForDate(
+        format(selectedDate, "yyyy-MM-dd"),
+        bookings,
+        employees,
+      )
+
+      setOptimizationResult(result)
+    } catch (err) {
+      console.error("Route optimization failed:", err)
+      setError("Route optimization failed. Please try again.")
     } finally {
-      setIsLoading(false)
+      setIsOptimizing(false)
     }
   }
 
-  const totalBookings = bookings.length
-  const totalEmployees = employees.length
-  const averageEfficiency =
-    optimizedRoutes.length > 0
-      ? Math.round(optimizedRoutes.reduce((sum, route) => sum + route.efficiency, 0) / optimizedRoutes.length)
-      : 0
+  const formatTime = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
+  }
+
+  const getEfficiencyColor = (score: number): string => {
+    if (score >= 80) return "text-green-600"
+    if (score >= 60) return "text-yellow-600"
+    return "text-red-600"
+  }
+
+  const getEfficiencyBadgeVariant = (score: number): "default" | "secondary" | "destructive" => {
+    if (score >= 80) return "default"
+    if (score >= 60) return "secondary"
+    return "destructive"
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-                  <Route className="w-6 h-6 text-white" />
-                </div>
-                Route Optimization
-              </h1>
-              <p className="text-gray-600 mt-2">Intelligent route planning for maximum efficiency</p>
-            </div>
-            <Badge variant="secondary" className="bg-blue-100 text-blue-800 px-3 py-1">
-              Professional ID: <code className="ml-1 font-mono">{professionalId}</code>
-            </Badge>
-          </div>
+    <div className="min-h-screen bg-[#FBF8F3]">
+      <Header />
 
-          <div className="bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-center gap-2 text-blue-800">
-              <TrendingUp className="w-5 h-5" />
-              <span className="font-medium">Route Optimization Active</span>
+      <main className="pt-8">
+        <div className="max-w-7xl mx-auto px-4">
+          {/* Header */}
+          <div className="mb-6">
+            <div className="flex items-center gap-4 mb-4">
+              <Link
+                href="/pro/set-up"
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to Setup
+              </Link>
             </div>
-          </div>
-        </div>
 
-        {/* Controls */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5" />
-              Optimization Controls
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col sm:flex-row gap-4 items-end">
-              <div className="flex-1">
-                <Label htmlFor="date">Select Date</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="mt-1"
-                />
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">Route Optimization</h1>
+                <p className="text-gray-600">
+                  Professional ID: {professionalId} • Optimize employee routes for maximum efficiency
+                </p>
               </div>
-              <div className="flex gap-2">
-                <Button onClick={loadBookingsAndEmployees} disabled={isLoading} variant="outline">
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Loading...
-                    </>
-                  ) : (
-                    <>
-                      <Users className="w-4 h-4 mr-2" />
-                      Load Data
-                    </>
-                  )}
-                </Button>
+
+              <div className="flex items-center gap-4">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-[240px] justify-start text-left font-normal bg-transparent">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {format(selectedDate, "PPP")}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={(date) => date && setSelectedDate(date)}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+
                 <Button
-                  onClick={handleOptimizeRoutes}
-                  disabled={isLoading || bookings.length === 0 || employees.length === 0}
+                  onClick={optimizeRoutes}
+                  disabled={isOptimizing || isLoading || bookings.length === 0}
                   className="bg-[#16A085] hover:bg-[#138f7a]"
                 >
-                  {isLoading ? (
+                  {isOptimizing ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       Optimizing...
                     </>
                   ) : (
                     <>
-                      <Route className="w-4 h-4 mr-2" />
+                      <Navigation className="w-4 h-4 mr-2" />
                       Optimize Routes
                     </>
                   )}
                 </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Error Display */}
-        {error && (
-          <Card className="mb-6 border-red-200 bg-red-50">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-2 text-red-800">
-                <AlertCircle className="w-5 h-5" />
-                <span className="font-medium">Error: {error}</span>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+          {/* Loading State */}
+          {isLoading && (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-[#16A085]" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Loading Data</h3>
+                <p className="text-gray-600">Fetching bookings and employee information...</p>
+              </CardContent>
+            </Card>
+          )}
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Bookings</p>
-                  <p className="text-2xl font-bold text-gray-900">{totalBookings}</p>
+          {/* Error State */}
+          {error && (
+            <Card className="border-red-200 bg-red-50">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3">
+                  <AlertTriangle className="w-5 h-5 text-red-600" />
+                  <div>
+                    <h3 className="font-medium text-red-800">Error</h3>
+                    <p className="text-red-700">{error}</p>
+                  </div>
                 </div>
-                <Calendar className="w-8 h-8 text-blue-500" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Available Employees</p>
-                  <p className="text-2xl font-bold text-gray-900">{totalEmployees}</p>
-                </div>
-                <Users className="w-8 h-8 text-green-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Optimized Routes</p>
-                  <p className="text-2xl font-bold text-gray-900">{optimizedRoutes.length}</p>
-                </div>
-                <Route className="w-8 h-8 text-purple-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Avg Efficiency</p>
-                  <p className="text-2xl font-bold text-gray-900">{averageEfficiency}%</p>
-                </div>
-                <TrendingUp className="w-8 h-8 text-orange-500" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Content */}
-        {hasOptimized && optimizedRoutes.length > 0 ? (
-          <Tabs defaultValue="map" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="map">Route Map</TabsTrigger>
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="details">Route Details</TabsTrigger>
-              <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="map">
+          {/* Data Summary */}
+          {!isLoading && !error && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5" />
-                    Optimized Route Map
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <RouteMap routes={optimizedRoutes} />
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                      <CalendarIcon className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Bookings for {format(selectedDate, "MMM d")}</p>
+                      <p className="text-2xl font-bold">{bookings.length}</p>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            </TabsContent>
 
-            <TabsContent value="overview">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                      <Users className="w-6 h-6 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Available Employees</p>
+                      <p className="text-2xl font-bold">{employees.length}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                      <Route className="w-6 h-6 text-orange-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Optimization Status</p>
+                      <p className="text-lg font-medium">{optimizationResult ? "Complete" : "Ready to Optimize"}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Results */}
+          {optimizationResult && (
+            <Tabs defaultValue="map" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="map">Route Map</TabsTrigger>
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="details">Route Details</TabsTrigger>
+                <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="map" className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Route Summary</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                      <MapPin className="w-5 h-5" />
+                      Route Visualization
+                    </CardTitle>
+                    <p className="text-sm text-gray-600">
+                      Interactive map showing optimized employee routes and customer locations
+                    </p>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      {optimizedRoutes.map((route) => (
-                        <div
-                          key={route.employeeId}
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                        >
-                          <div>
-                            <p className="font-medium">{route.employeeName}</p>
-                            <p className="text-sm text-gray-600">{route.bookings.length} bookings</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-medium">{route.efficiency}% efficient</p>
-                            <p className="text-sm text-gray-600">{Math.round(route.totalTravelTime)} min travel</p>
-                          </div>
+                    <RouteMap routes={optimizationResult.routes} />
+                  </CardContent>
+                </Card>
+
+                {/* Route Assignment Table */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Route Assignments</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left p-3 font-medium">Employee</th>
+                            <th className="text-left p-3 font-medium">Bookings</th>
+                            <th className="text-left p-3 font-medium">Service Time</th>
+                            <th className="text-left p-3 font-medium">Travel Time</th>
+                            <th className="text-left p-3 font-medium">Efficiency</th>
+                            <th className="text-left p-3 font-medium">Route</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {optimizationResult.routes.map((route, index) => (
+                            <tr key={route.employee_id} className="border-b hover:bg-gray-50">
+                              <td className="p-3">
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className="w-4 h-4 rounded-full"
+                                    style={{ backgroundColor: ["#E75837", "#16A085", "#745E25", "#94ABD6"][index % 4] }}
+                                  />
+                                  <span className="font-medium">{route.employee_name}</span>
+                                </div>
+                              </td>
+                              <td className="p-3">{route.bookings.length}</td>
+                              <td className="p-3">{formatTime(route.total_service_time)}</td>
+                              <td className="p-3">{formatTime(route.total_travel_time)}</td>
+                              <td className="p-3">
+                                <Badge variant={getEfficiencyBadgeVariant(route.efficiency_score)}>
+                                  {route.efficiency_score}%
+                                </Badge>
+                              </td>
+                              <td className="p-3">
+                                <div className="text-sm text-gray-600">
+                                  {route.bookings.map((booking, i) => (
+                                    <div key={booking.booking_id}>
+                                      {i + 1}. {booking.customer.first_name} {booking.customer.last_name} (
+                                      {booking.start_time})
+                                    </div>
+                                  ))}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="overview" className="space-y-6">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-blue-600" />
+                        <div>
+                          <p className="text-sm text-gray-600">Active Routes</p>
+                          <p className="text-2xl font-bold">{optimizationResult.routes.length}</p>
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                      </div>
+                    </CardContent>
+                  </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Efficiency Metrics</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex justify-between">
-                        <span>Total Service Time:</span>
-                        <span className="font-medium">
-                          {Math.round(optimizedRoutes.reduce((sum, route) => sum + route.totalServiceTime, 0))} min
-                        </span>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        <div>
+                          <p className="text-sm text-gray-600">Assigned Bookings</p>
+                          <p className="text-2xl font-bold">
+                            {optimizationResult.routes.reduce((sum, route) => sum + route.bookings.length, 0)}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Total Travel Time:</span>
-                        <span className="font-medium">
-                          {Math.round(optimizedRoutes.reduce((sum, route) => sum + route.totalTravelTime, 0))} min
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Average Efficiency:</span>
-                        <span className="font-medium">{averageEfficiency}%</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
+                    </CardContent>
+                  </Card>
 
-            <TabsContent value="details">
-              <div className="space-y-6">
-                {optimizedRoutes.map((route) => (
-                  <Card key={route.employeeId}>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-orange-600" />
+                        <div>
+                          <p className="text-sm text-gray-600">Unassigned</p>
+                          <p className="text-2xl font-bold">{optimizationResult.unassigned_bookings.length}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp
+                          className={`w-4 h-4 ${getEfficiencyColor(optimizationResult.total_efficiency_score)}`}
+                        />
+                        <div>
+                          <p className="text-sm text-gray-600">Efficiency Score</p>
+                          <p
+                            className={`text-2xl font-bold ${getEfficiencyColor(optimizationResult.total_efficiency_score)}`}
+                          >
+                            {optimizationResult.total_efficiency_score}%
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="details" className="space-y-4">
+                {optimizationResult.routes.map((route) => (
+                  <Card key={route.employee_id}>
                     <CardHeader>
-                      <CardTitle className="flex items-center justify-between">
-                        <span>{route.employeeName}</span>
-                        <Badge variant="outline">{route.efficiency}% Efficient</Badge>
-                      </CardTitle>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-[#E75837] text-white rounded-full flex items-center justify-center text-sm font-medium">
+                            {route.employee_name.charAt(0)}
+                          </div>
+                          {route.employee_name}
+                        </CardTitle>
+                        <Badge variant={getEfficiencyBadgeVariant(route.efficiency_score)}>
+                          {route.efficiency_score}% efficient
+                        </Badge>
+                      </div>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-3">
                         {route.bookings.map((booking, index) => (
-                          <div key={booking.id} className="flex items-center gap-4 p-3 border rounded-lg">
-                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-medium">
+                          <div key={booking.booking_id} className="flex items-center gap-3 p-3 border rounded-lg">
+                            <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-xs font-medium">
                               {index + 1}
                             </div>
+                            <MapPin className="w-4 h-4 text-gray-400" />
                             <div className="flex-1">
-                              <p className="font-medium">{booking.customerName}</p>
-                              <p className="text-sm text-gray-600">{booking.serviceType}</p>
-                              <p className="text-sm text-gray-500">{booking.location.address}</p>
+                              <p className="font-medium">
+                                {booking.customer.first_name} {booking.customer.last_name}
+                              </p>
+                              <p className="text-sm text-gray-600">{booking.location.address}</p>
+                              <p className="text-sm text-gray-500">
+                                {booking.services.join(", ")} • {formatTime(booking.duration_minutes)}
+                              </p>
                             </div>
-                            <div className="text-right">
-                              <p className="text-sm font-medium">{booking.startTime}</p>
-                              <p className="text-sm text-gray-600">{booking.duration} min</p>
+                            <div className="text-right text-sm">
+                              <p className="font-medium">
+                                {booking.start_time} - {booking.end_time}
+                              </p>
                             </div>
                           </div>
                         ))}
@@ -496,77 +538,29 @@ export default function RouteOptimizationPage() {
                     </CardContent>
                   </Card>
                 ))}
-              </div>
-            </TabsContent>
+              </TabsContent>
 
-            <TabsContent value="recommendations">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Optimization Recommendations</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                      <h4 className="font-medium text-green-800 mb-2">✅ Well Optimized</h4>
-                      <p className="text-sm text-green-700">
-                        Routes with efficiency above 75% are well optimized and should maintain good profitability.
-                      </p>
+              <TabsContent value="recommendations" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Optimization Recommendations</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {optimizationResult.recommendations.map((recommendation, index) => (
+                        <div key={index} className="flex items-start gap-3 p-3 border rounded-lg">
+                          <TrendingUp className="w-4 h-4 text-blue-600 mt-0.5" />
+                          <p className="text-sm">{recommendation}</p>
+                        </div>
+                      ))}
                     </div>
-
-                    {optimizedRoutes.some((route) => route.efficiency < 60) && (
-                      <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <h4 className="font-medium text-yellow-800 mb-2">⚠️ Consider Adjustments</h4>
-                        <p className="text-sm text-yellow-700">
-                          Some routes have low efficiency. Consider adjusting service areas or employee assignments.
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <h4 className="font-medium text-blue-800 mb-2">💡 Optimization Tips</h4>
-                      <ul className="text-sm text-blue-700 space-y-1">
-                        <li>• Group bookings by geographic area when possible</li>
-                        <li>• Consider employee skill specialization for better efficiency</li>
-                        <li>• Schedule high-priority bookings during optimal travel times</li>
-                        <li>• Review service areas to minimize travel distances</li>
-                      </ul>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        ) : (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center py-12">
-                <Route className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Ready to Optimize Routes</h3>
-                <p className="text-gray-600 mb-4">
-                  Select a date and load your bookings and employee data to get started with route optimization.
-                </p>
-                <Button
-                  onClick={loadBookingsAndEmployees}
-                  disabled={isLoading}
-                  className="bg-[#16A085] hover:bg-[#138f7a]"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Loading Data...
-                    </>
-                  ) : (
-                    <>
-                      <Users className="w-4 h-4 mr-2" />
-                      Load Data & Get Started
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          )}
+        </div>
+      </main>
     </div>
   )
 }

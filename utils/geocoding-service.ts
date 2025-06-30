@@ -1,22 +1,28 @@
-import type { Coordinates } from "@/types/geo-scheduling"
+export type GeocodingResult = {
+  address: string
+  formatted_address: string
+  lat: number
+  lng: number
+  place_id?: string
+}
 
 export class GeocodingService {
   private static instance: GeocodingService
   private apiKey: string
-  private cache: Map<string, Coordinates> = new Map()
+  private cache: Map<string, GeocodingResult> = new Map()
 
   private constructor(apiKey: string) {
     this.apiKey = apiKey
   }
 
-  public static getInstance(apiKey: string): GeocodingService {
+  static getInstance(apiKey: string): GeocodingService {
     if (!GeocodingService.instance) {
       GeocodingService.instance = new GeocodingService(apiKey)
     }
     return GeocodingService.instance
   }
 
-  async geocodeAddress(address: string): Promise<Coordinates | null> {
+  async geocodeAddress(address: string): Promise<GeocodingResult | null> {
     // Check cache first
     const cacheKey = address.toLowerCase().trim()
     if (this.cache.has(cacheKey)) {
@@ -24,52 +30,100 @@ export class GeocodingService {
     }
 
     try {
-      // For demo purposes, we'll use mock geocoding
-      // In production, you would use Google Maps Geocoding API
-      const mockCoordinates = await this.generateMockCoordinates(address)
+      // For demo purposes, we'll use mock data based on common addresses
+      const mockResult = this.getMockGeocodingResult(address)
+      if (mockResult) {
+        this.cache.set(cacheKey, mockResult)
+        return mockResult
+      }
 
-      // Cache the result
-      this.cache.set(cacheKey, mockCoordinates)
+      // In production, you would use Google Maps Geocoding API:
+      // const response = await fetch(
+      //   `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${this.apiKey}`
+      // )
+      // const data = await response.json()
+      // if (data.results && data.results.length > 0) {
+      //   const result = data.results[0]
+      //   const geocodingResult: GeocodingResult = {
+      //     address: address,
+      //     formatted_address: result.formatted_address,
+      //     lat: result.geometry.location.lat,
+      //     lng: result.geometry.location.lng,
+      //     place_id: result.place_id
+      //   }
+      //   this.cache.set(cacheKey, geocodingResult)
+      //   return geocodingResult
+      // }
 
-      return mockCoordinates
+      return null
     } catch (error) {
-      console.error("Geocoding failed for address:", address, error)
+      console.error("Geocoding error:", error)
       return null
     }
   }
 
-  private async generateMockCoordinates(address: string): Promise<Coordinates> {
-    // Mock geocoding service - replace with Google Maps Geocoding API in production
-    const mockCoordinates: { [key: string]: Coordinates } = {
-      "new york": { lat: 40.7128, lng: -74.006 },
-      brooklyn: { lat: 40.6782, lng: -73.9442 },
-      manhattan: { lat: 40.7831, lng: -73.9712 },
-      queens: { lat: 40.7282, lng: -73.7949 },
-      bronx: { lat: 40.8448, lng: -73.8648 },
-      "staten island": { lat: 40.5795, lng: -74.1502 },
-    }
-
-    // Simple address matching
+  private getMockGeocodingResult(address: string): GeocodingResult | null {
     const addressLower = address.toLowerCase()
-    for (const [key, coords] of Object.entries(mockCoordinates)) {
-      if (addressLower.includes(key)) {
-        // Add some random variation to make it more realistic
-        return {
-          lat: coords.lat + (Math.random() - 0.5) * 0.1,
-          lng: coords.lng + (Math.random() - 0.5) * 0.1,
-        }
+
+    // Mock data for common cities and patterns
+    if (addressLower.includes("austin") || addressLower.includes("tx")) {
+      const baseCoords = { lat: 30.2672, lng: -97.7431 }
+      const offset = Math.random() * 0.1 - 0.05 // Random offset within ~3 miles
+
+      return {
+        address: address,
+        formatted_address: `${address}, Austin, TX, USA`,
+        lat: baseCoords.lat + offset,
+        lng: baseCoords.lng + offset,
+        place_id: `mock_${Date.now()}_${Math.random()}`,
       }
     }
 
-    // Default to NYC with random variation
+    if (addressLower.includes("chicago") || addressLower.includes("il")) {
+      const baseCoords = { lat: 41.8781, lng: -87.6298 }
+      const offset = Math.random() * 0.1 - 0.05
+
+      return {
+        address: address,
+        formatted_address: `${address}, Chicago, IL, USA`,
+        lat: baseCoords.lat + offset,
+        lng: baseCoords.lng + offset,
+        place_id: `mock_${Date.now()}_${Math.random()}`,
+      }
+    }
+
+    if (addressLower.includes("new york") || addressLower.includes("ny")) {
+      const baseCoords = { lat: 40.7128, lng: -74.006 }
+      const offset = Math.random() * 0.1 - 0.05
+
+      return {
+        address: address,
+        formatted_address: `${address}, New York, NY, USA`,
+        lat: baseCoords.lat + offset,
+        lng: baseCoords.lng + offset,
+        place_id: `mock_${Date.now()}_${Math.random()}`,
+      }
+    }
+
+    // Default fallback for any address
+    const baseCoords = { lat: 39.8283, lng: -98.5795 } // Geographic center of US
+    const offset = Math.random() * 2 - 1 // Larger random offset
+
     return {
-      lat: 40.7128 + (Math.random() - 0.5) * 0.2,
-      lng: -74.006 + (Math.random() - 0.5) * 0.2,
+      address: address,
+      formatted_address: `${address}, USA`,
+      lat: baseCoords.lat + offset,
+      lng: baseCoords.lng + offset,
+      place_id: `mock_${Date.now()}_${Math.random()}`,
     }
   }
 
-  async batchGeocode(addresses: string[]): Promise<(Coordinates | null)[]> {
+  async batchGeocode(addresses: string[]): Promise<(GeocodingResult | null)[]> {
     const results = await Promise.all(addresses.map((address) => this.geocodeAddress(address)))
     return results
+  }
+
+  clearCache(): void {
+    this.cache.clear()
   }
 }
