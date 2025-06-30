@@ -7,8 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Route } from "lucide-react"
-import User from "lucide-react/dist/esm/icons/User" // Import User component
+import { Users, Route } from "lucide-react"
 
 const ProSetupPage = () => {
   const router = useRouter()
@@ -69,7 +68,7 @@ const ProSetupPage = () => {
           <CardContent className="p-6">
             <div className="flex flex-col items-center text-center space-y-4">
               <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                <User className="w-8 h-8 text-white" />
+                <Users className="w-8 h-8 text-white" />
               </div>
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">Custom Agent</h3>
