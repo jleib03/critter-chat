@@ -31,9 +31,6 @@ interface CustomerData {
   lastName: string
   email: string
   phone: string
-  city: string
-  state: string
-  zipCode: string
   notes: string
 }
 
@@ -55,9 +52,6 @@ export function CustomerForm({
     lastName: "",
     email: "",
     phone: "",
-    city: "",
-    state: "",
-    zipCode: "",
     notes: "",
   })
 
@@ -102,15 +96,12 @@ export function CustomerForm({
           last_name: customerData.lastName.trim(),
           email: customerData.email.trim().toLowerCase(),
           phone: customerData.phone.trim(),
-          city: customerData.city.trim(),
-          state: customerData.state.trim(),
-          zip_code: customerData.zipCode.trim(),
           notes: customerData.notes.trim(),
         },
         timestamp: new Date().toISOString(),
       }
 
-      console.log("Getting customer pets:", webhookPayload)
+      console.log("Sending webhook to get customer pets:", webhookPayload)
 
       // Send to webhook
       const webhookUrl =
@@ -130,7 +121,7 @@ export function CustomerForm({
       }
 
       const result = await response.json()
-      console.log("Pets webhook response:", result)
+      console.log("Pets webhook response received:", result)
 
       // Extract customer info for next step
       const customerInfo: CustomerInfo = {
@@ -141,6 +132,11 @@ export function CustomerForm({
 
       // Pass pets data to parent component
       onPetsReceived(customerInfo, result)
+
+      toast({
+        title: "Success",
+        description: "Customer information saved. Proceeding to pet selection.",
+      })
     } catch (error) {
       console.error("Error getting customer pets:", error)
       toast({
@@ -268,46 +264,6 @@ export function CustomerForm({
                       onChange={(e) => handleInputChange("phone", e.target.value)}
                       placeholder="(555) 123-4567"
                       required
-                      className="body-font"
-                    />
-                  </div>
-                </div>
-
-                {/* Location Fields - Removed Street Address */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="city" className="body-font">
-                      City
-                    </Label>
-                    <Input
-                      id="city"
-                      value={customerData.city}
-                      onChange={(e) => handleInputChange("city", e.target.value)}
-                      placeholder="City"
-                      className="body-font"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="state" className="body-font">
-                      State
-                    </Label>
-                    <Input
-                      id="state"
-                      value={customerData.state}
-                      onChange={(e) => handleInputChange("state", e.target.value)}
-                      placeholder="State"
-                      className="body-font"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="zipCode" className="body-font">
-                      ZIP Code
-                    </Label>
-                    <Input
-                      id="zipCode"
-                      value={customerData.zipCode}
-                      onChange={(e) => handleInputChange("zipCode", e.target.value)}
-                      placeholder="12345"
                       className="body-font"
                     />
                   </div>
