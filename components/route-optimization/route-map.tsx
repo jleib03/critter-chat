@@ -1,244 +1,195 @@
 "use client"
 
-import { useEffect, useRef } from "react"
-import type { RouteOptimization } from "@/types/geo-scheduling"
+import { useState } from "react"
+import type { OptimizedRoute } from "@/types/geo-scheduling"
 
-type RouteMapProps = {
-  routes: RouteOptimization[]
-  className?: string
+interface RouteMapProps {
+  routes: OptimizedRoute[]
 }
 
-// Color palette for different routes
-const ROUTE_COLORS = [
-  "#E75837", // Critter Orange
-  "#16A085", // Teal
-  "#745E25", // Brown
-  "#94ABD6", // Light Blue
-  "#8E44AD", // Purple
-  "#E67E22", // Orange
-  "#27AE60", // Green
-  "#E74C3C", // Red
-]
+export function RouteMap({ routes }: RouteMapProps) {
+  const [selectedRoute, setSelectedRoute] = useState<string | null>(null)
 
-export function RouteMap({ routes, className = "" }: RouteMapProps) {
-  const mapRef = useRef<HTMLDivElement>(null)
-  const mapInstanceRef = useRef<any>(null)
+  // Calculate map bounds
+  const allLocations = routes.flatMap((route) => route.route_coordinates)
 
-  useEffect(() => {
-    if (!mapRef.current || routes.length === 0) return
-
-    // For demo purposes, we'll create a simple SVG-based map
-    // In production, you would integrate with Google Maps, Mapbox, or similar
-    renderSVGMap()
-  }, [routes])
-
-  const renderSVGMap = () => {
-    if (!mapRef.current) return
-
-    // Calculate bounds from all route coordinates
-    const allCoords = routes.flatMap((route) => route.route_coordinates)
-    if (allCoords.length === 0) return
-
-    const bounds = {
-      minLat: Math.min(...allCoords.map((c) => c.lat)),
-      maxLat: Math.max(...allCoords.map((c) => c.lat)),
-      minLng: Math.min(...allCoords.map((c) => c.lng)),
-      maxLng: Math.max(...allCoords.map((c) => c.lng)),
-    }
-
-    // Add padding to bounds
-    const latPadding = (bounds.maxLat - bounds.minLat) * 0.1
-    const lngPadding = (bounds.maxLng - bounds.minLng) * 0.1
-
-    bounds.minLat -= latPadding
-    bounds.maxLat += latPadding
-    bounds.minLng -= lngPadding
-    bounds.maxLng += lngPadding
-
-    const mapWidth = 800
-    const mapHeight = 600
-
-    // Convert lat/lng to SVG coordinates
-    const coordToSVG = (lat: number, lng: number) => {
-      const x = ((lng - bounds.minLng) / (bounds.maxLng - bounds.minLng)) * mapWidth
-      const y = mapHeight - ((lat - bounds.minLat) / (bounds.maxLat - bounds.minLat)) * mapHeight
-      return { x, y }
-    }
-
-    // Create SVG
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
-    svg.setAttribute("width", "100%")
-    svg.setAttribute("height", "100%")
-    svg.setAttribute("viewBox", `0 0 ${mapWidth} ${mapHeight}`)
-    svg.style.background = "#f8f9fa"
-    svg.style.border = "1px solid #e9ecef"
-    svg.style.borderRadius = "8px"
-
-    // Add grid lines for reference
-    const gridGroup = document.createElementNS("http://www.w3.org/2000/svg", "g")
-    gridGroup.setAttribute("stroke", "#e9ecef")
-    gridGroup.setAttribute("stroke-width", "1")
-    gridGroup.setAttribute("opacity", "0.5")
-
-    // Vertical grid lines
-    for (let i = 0; i <= 10; i++) {
-      const line = document.createElementNS("http://www.w3.org/2000/svg", "line")
-      const x = (i / 10) * mapWidth
-      line.setAttribute("x1", x.toString())
-      line.setAttribute("y1", "0")
-      line.setAttribute("x2", x.toString())
-      line.setAttribute("y2", mapHeight.toString())
-      gridGroup.appendChild(line)
-    }
-
-    // Horizontal grid lines
-    for (let i = 0; i <= 10; i++) {
-      const line = document.createElementNS("http://www.w3.org/2000/svg", "line")
-      const y = (i / 10) * mapHeight
-      line.setAttribute("x1", "0")
-      line.setAttribute("y1", y.toString())
-      line.setAttribute("x2", mapWidth.toString())
-      line.setAttribute("y2", y.toString())
-      gridGroup.appendChild(line)
-    }
-
-    svg.appendChild(gridGroup)
-
-    // Draw routes
-    routes.forEach((route, routeIndex) => {
-      const color = ROUTE_COLORS[routeIndex % ROUTE_COLORS.length]
-
-      if (route.route_coordinates.length === 0) return
-
-      // Draw route line
-      if (route.route_coordinates.length > 1) {
-        const pathData = route.route_coordinates
-          .map((coord, index) => {
-            const { x, y } = coordToSVG(coord.lat, coord.lng)
-            return `${index === 0 ? "M" : "L"} ${x} ${y}`
-          })
-          .join(" ")
-
-        const path = document.createElementNS("http://www.w3.org/2000/svg", "path")
-        path.setAttribute("d", pathData)
-        path.setAttribute("stroke", color)
-        path.setAttribute("stroke-width", "3")
-        path.setAttribute("fill", "none")
-        path.setAttribute("stroke-dasharray", "5,5")
-        path.setAttribute("opacity", "0.8")
-        svg.appendChild(path)
-      }
-
-      // Draw booking markers
-      route.bookings.forEach((booking, bookingIndex) => {
-        const { x, y } = coordToSVG(booking.location.lat, booking.location.lng)
-
-        // Marker circle
-        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle")
-        circle.setAttribute("cx", x.toString())
-        circle.setAttribute("cy", y.toString())
-        circle.setAttribute("r", "8")
-        circle.setAttribute("fill", color)
-        circle.setAttribute("stroke", "white")
-        circle.setAttribute("stroke-width", "2")
-        svg.appendChild(circle)
-
-        // Booking number
-        const text = document.createElementNS("http://www.w3.org/2000/svg", "text")
-        text.setAttribute("x", x.toString())
-        text.setAttribute("y", (y + 4).toString())
-        text.setAttribute("text-anchor", "middle")
-        text.setAttribute("fill", "white")
-        text.setAttribute("font-size", "10")
-        text.setAttribute("font-weight", "bold")
-        text.textContent = (bookingIndex + 1).toString()
-        svg.appendChild(text)
-
-        // Tooltip on hover
-        const title = document.createElementNS("http://www.w3.org/2000/svg", "title")
-        title.textContent = `${booking.customer.first_name} ${booking.customer.last_name}\n${booking.location.address}\n${booking.services.join(", ")}\n${booking.start_time} - ${booking.end_time}`
-        circle.appendChild(title)
-      })
-
-      // Add employee home base if available
-      if (route.route_coordinates.length > 0) {
-        const homeCoord = route.route_coordinates[0] // Assuming first coordinate is home base
-        const { x, y } = coordToSVG(homeCoord.lat, homeCoord.lng)
-
-        // Home base marker (square)
-        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect")
-        rect.setAttribute("x", (x - 6).toString())
-        rect.setAttribute("y", (y - 6).toString())
-        rect.setAttribute("width", "12")
-        rect.setAttribute("height", "12")
-        rect.setAttribute("fill", color)
-        rect.setAttribute("stroke", "white")
-        rect.setAttribute("stroke-width", "2")
-        rect.setAttribute("opacity", "0.8")
-        svg.appendChild(rect)
-
-        const homeTitle = document.createElementNS("http://www.w3.org/2000/svg", "title")
-        homeTitle.textContent = `${route.employee_name} - Home Base`
-        rect.appendChild(homeTitle)
-      }
-    })
-
-    // Clear previous content and add new SVG
-    mapRef.current.innerHTML = ""
-    mapRef.current.appendChild(svg)
-  }
-
-  if (routes.length === 0) {
+  if (allLocations.length === 0) {
     return (
-      <div
-        className={`flex items-center justify-center h-96 bg-gray-50 border border-gray-200 rounded-lg ${className}`}
-      >
-        <div className="text-center">
-          <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-              />
-            </svg>
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Routes to Display</h3>
-          <p className="text-gray-600">Run route optimization to see employee routes on the map.</p>
-        </div>
+      <div className="w-full h-96 bg-gray-100 rounded-lg flex items-center justify-center">
+        <p className="text-gray-500">No route data available</p>
       </div>
     )
   }
 
-  return (
-    <div className={`relative ${className}`}>
-      <div ref={mapRef} className="w-full h-96" />
+  const minLat = Math.min(...allLocations.map((loc) => loc.lat))
+  const maxLat = Math.max(...allLocations.map((loc) => loc.lat))
+  const minLng = Math.min(...allLocations.map((loc) => loc.lng))
+  const maxLng = Math.max(...allLocations.map((loc) => loc.lng))
 
-      {/* Legend */}
-      <div className="absolute top-4 right-4 bg-white p-3 rounded-lg shadow-md border max-w-xs">
-        <h4 className="font-medium text-sm mb-2">Route Legend</h4>
-        <div className="space-y-1">
-          {routes.map((route, index) => (
-            <div key={route.employee_id} className="flex items-center gap-2 text-xs">
-              <div
-                className="w-3 h-3 rounded-full border border-white"
-                style={{ backgroundColor: ROUTE_COLORS[index % ROUTE_COLORS.length] }}
-              />
-              <span className="truncate">{route.employee_name}</span>
-              <span className="text-gray-500">({route.bookings.length})</span>
-            </div>
-          ))}
+  const mapWidth = 800
+  const mapHeight = 500
+  const padding = 50
+
+  // Convert lat/lng to SVG coordinates
+  const latToY = (lat: number) => {
+    return padding + ((maxLat - lat) / (maxLat - minLat)) * (mapHeight - 2 * padding)
+  }
+
+  const lngToX = (lng: number) => {
+    return padding + ((lng - minLng) / (maxLng - minLng)) * (mapWidth - 2 * padding)
+  }
+
+  const routeColors = ["#E75837", "#16A085", "#745E25", "#94ABD6", "#F39C12", "#8E44AD"]
+
+  return (
+    <div className="w-full">
+      {/* Route Legend */}
+      <div className="mb-4 flex flex-wrap gap-4">
+        {routes.map((route, index) => (
+          <button
+            key={route.employee_id}
+            onClick={() => setSelectedRoute(selectedRoute === route.employee_id ? null : route.employee_id)}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all ${
+              selectedRoute === route.employee_id ? "bg-gray-100 border-gray-300" : "hover:bg-gray-50"
+            }`}
+          >
+            <div
+              className="w-4 h-4 rounded-full"
+              style={{ backgroundColor: routeColors[index % routeColors.length] }}
+            />
+            <span className="text-sm font-medium">{route.employee_name}</span>
+            <span className="text-xs text-gray-500">({route.bookings.length} stops)</span>
+          </button>
+        ))}
+      </div>
+
+      {/* SVG Map */}
+      <div className="border rounded-lg overflow-hidden bg-gray-50">
+        <svg width={mapWidth} height={mapHeight} className="w-full h-auto">
+          {/* Background grid */}
+          <defs>
+            <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e5e7eb" strokeWidth="1" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#grid)" />
+
+          {/* Routes */}
+          {routes.map((route, routeIndex) => {
+            const color = routeColors[routeIndex % routeColors.length]
+            const isSelected = selectedRoute === null || selectedRoute === route.employee_id
+            const opacity = isSelected ? 1 : 0.3
+
+            return (
+              <g key={route.employee_id} opacity={opacity}>
+                {/* Route lines */}
+                {route.route_coordinates.map((location, index) => {
+                  if (index === route.route_coordinates.length - 1) return null
+
+                  const nextLocation = route.route_coordinates[index + 1]
+                  return (
+                    <line
+                      key={`${route.employee_id}-line-${index}`}
+                      x1={lngToX(location.lng)}
+                      y1={latToY(location.lat)}
+                      x2={lngToX(nextLocation.lng)}
+                      y2={latToY(nextLocation.lat)}
+                      stroke={color}
+                      strokeWidth="2"
+                      strokeDasharray={index === 0 ? "5,5" : "none"}
+                    />
+                  )
+                })}
+
+                {/* Home base (first point) */}
+                <circle
+                  cx={lngToX(route.route_coordinates[0].lng)}
+                  cy={latToY(route.route_coordinates[0].lat)}
+                  r="8"
+                  fill={color}
+                  stroke="white"
+                  strokeWidth="2"
+                />
+                <text
+                  x={lngToX(route.route_coordinates[0].lng)}
+                  y={latToY(route.route_coordinates[0].lat)}
+                  textAnchor="middle"
+                  dy="0.3em"
+                  className="text-xs font-bold fill-white"
+                >
+                  H
+                </text>
+
+                {/* Customer locations */}
+                {route.bookings.map((booking, bookingIndex) => {
+                  const location = booking.location
+                  return (
+                    <g key={`${route.employee_id}-booking-${bookingIndex}`}>
+                      <circle
+                        cx={lngToX(location.lng)}
+                        cy={latToY(location.lat)}
+                        r="6"
+                        fill="white"
+                        stroke={color}
+                        strokeWidth="2"
+                      />
+                      <text
+                        x={lngToX(location.lng)}
+                        y={latToY(location.lat)}
+                        textAnchor="middle"
+                        dy="0.3em"
+                        className="text-xs font-bold"
+                        fill={color}
+                      >
+                        {bookingIndex + 1}
+                      </text>
+
+                      {/* Tooltip on hover */}
+                      <title>
+                        {booking.customer.first_name} {booking.customer.last_name}
+                        {"\n"}
+                        {booking.start_time} - {booking.end_time}
+                        {"\n"}
+                        {booking.services.join(", ")}
+                        {"\n"}
+                        {location.address}
+                      </title>
+                    </g>
+                  )
+                })}
+              </g>
+            )
+          })}
+        </svg>
+      </div>
+
+      {/* Map Legend */}
+      <div className="mt-4 flex items-center gap-6 text-sm text-gray-600">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded-full bg-gray-400 flex items-center justify-center">
+            <span className="text-xs font-bold text-white">H</span>
+          </div>
+          <span>Home Base</span>
         </div>
-        <div className="mt-2 pt-2 border-t text-xs text-gray-500">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-3 h-3 rounded-full bg-gray-400" />
-            <span>Customer Location</span>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded-full border-2 border-gray-400 bg-white flex items-center justify-center">
+            <span className="text-xs font-bold text-gray-400">1</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-gray-400" />
-            <span>Employee Home Base</span>
-          </div>
+          <span>Customer Location</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-0.5 bg-gray-400"></div>
+          <span>Route</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div
+            className="w-6 h-0.5 bg-gray-400"
+            style={{
+              backgroundImage:
+                "repeating-linear-gradient(to right, transparent, transparent 3px, #9ca3af 3px, #9ca3af 6px)",
+            }}
+          ></div>
+          <span>To First Stop</span>
         </div>
       </div>
     </div>

@@ -1,3 +1,4 @@
+import type { Location, TravelTimeMatrix } from "@/types/geo-scheduling"
 import type { GeoLocation } from "@/types/geo-scheduling"
 
 export type TravelTimeResult = {
@@ -15,7 +16,7 @@ export class TravelTimeService {
     this.apiKey = apiKey
   }
 
-  static getInstance(apiKey: string): TravelTimeService {
+  public static getInstance(apiKey: string): TravelTimeService {
     if (!TravelTimeService.instance) {
       TravelTimeService.instance = new TravelTimeService(apiKey)
     }
@@ -68,6 +69,34 @@ export class TravelTimeService {
     }
   }
 
+  async calculateTravelTimeMatrix(origins: Location[], destinations: Location[]): Promise<TravelTimeMatrix> {
+    const durations: number[][] = []
+    const distances: number[][] = []
+
+    for (const origin of origins) {
+      const originDurations: number[] = []
+      const originDistances: number[] = []
+
+      for (const destination of destinations) {
+        const distance = this.calculateDistance(origin, destination)
+        const duration = this.estimateTravelTime(distance)
+
+        originDistances.push(distance)
+        originDurations.push(duration)
+      }
+
+      distances.push(originDistances)
+      durations.push(originDurations)
+    }
+
+    return {
+      origins,
+      destinations,
+      durations,
+      distances,
+    }
+  }
+
   private calculateHaversineDistance(point1: GeoLocation, point2: GeoLocation): number {
     const R = 3959 // Earth's radius in miles
     const dLat = this.toRadians(point2.lat - point1.lat)
@@ -82,6 +111,36 @@ export class TravelTimeService {
 
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
     return R * c
+  }
+
+  private calculateDistance(point1: Location, point2: Location): number {
+    // Haversine formula for calculating distance between two points
+    const R = 3959 // Earth's radius in miles
+    const dLat = this.toRadians(point2.lat - point1.lat)
+    const dLon = this.toRadians(point2.lng - point1.lng)
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.toRadians(point1.lat)) *
+        Math.cos(this.toRadians(point2.lat)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2)
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    return R * c
+  }
+
+  private estimateTravelTime(distanceInMiles: number): number {
+    // Estimate travel time based on distance
+    // Assumes average speed of 25 mph in urban areas
+    const averageSpeed = 25 // mph
+    const timeInHours = distanceInMiles / averageSpeed
+    const timeInMinutes = Math.round(timeInHours * 60)
+
+    // Add buffer time for stops, traffic, etc.
+    const bufferTime = Math.max(5, Math.round(timeInMinutes * 0.2))
+
+    return Math.max(5, timeInMinutes + bufferTime) // Minimum 5 minutes
   }
 
   private toRadians(degrees: number): number {
@@ -106,21 +165,6 @@ export class TravelTimeService {
       distance_miles: Math.round(distanceMiles * 100) / 100,
       duration_in_traffic_minutes: adjustedMinutes + trafficDelay,
     }
-  }
-
-  async calculateDistanceMatrix(origins: GeoLocation[], destinations: GeoLocation[]): Promise<TravelTimeResult[][]> {
-    const matrix: TravelTimeResult[][] = []
-
-    for (const origin of origins) {
-      const row: TravelTimeResult[] = []
-      for (const destination of destinations) {
-        const result = await this.calculateTravelTime(origin, destination)
-        row.push(result || { duration_minutes: 999, distance_miles: 999 })
-      }
-      matrix.push(row)
-    }
-
-    return matrix
   }
 
   clearCache(): void {

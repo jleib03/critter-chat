@@ -19,6 +19,8 @@ import {
   CalendarIcon,
   Loader2,
   ArrowLeft,
+  Clock,
+  Target,
 } from "lucide-react"
 import { format } from "date-fns"
 import Link from "next/link"
@@ -42,7 +44,8 @@ export default function RouteOptimizationPage() {
   const [isOptimizing, setIsOptimizing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/803d260b-1b17-4abf-8079-2d40225c29b0"
+  // Updated webhook URL for route optimization
+  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/5671c1dd-48f6-47a9-85ac-4e20cf261520"
 
   useEffect(() => {
     loadData()
@@ -56,7 +59,7 @@ export default function RouteOptimizationPage() {
       // Load professional configuration
       const config = loadProfessionalConfig(professionalId)
 
-      // Load bookings for the selected date
+      // Load bookings for the selected date with route optimization indicator
       const bookingsData = await loadBookingsForDate(format(selectedDate, "yyyy-MM-dd"))
 
       // Convert to geo format
@@ -76,16 +79,21 @@ export default function RouteOptimizationPage() {
   const loadBookingsForDate = async (date: string) => {
     try {
       const payload = {
-        action: "get_bookings_for_date",
-        professionalId: professionalId,
+        action: "get_bookings_for_route_optimization", // Clear indicator for route optimization
+        professional_id: professionalId,
         date: date,
         timestamp: new Date().toISOString(),
+        request_type: "route_optimization", // Additional indicator
+        session_id: `route_opt_${professionalId}_${Date.now()}`,
       }
+
+      console.log("Sending route optimization request:", payload)
 
       const response = await fetch(WEBHOOK_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "X-Request-Source": "critter-route-optimization", // Header indicator
         },
         body: JSON.stringify(payload),
       })
@@ -95,9 +103,10 @@ export default function RouteOptimizationPage() {
       }
 
       const data = await response.json()
+      console.log("Route optimization response:", data)
       return Array.isArray(data) ? data : []
     } catch (error) {
-      console.error("Error loading bookings:", error)
+      console.error("Error loading bookings for route optimization:", error)
       return []
     }
   }
@@ -170,6 +179,35 @@ export default function RouteOptimizationPage() {
     setError(null)
 
     try {
+      // Send optimization request to webhook
+      const optimizationPayload = {
+        action: "optimize_employee_routes", // Clear action for route optimization
+        professional_id: professionalId,
+        date: format(selectedDate, "yyyy-MM-dd"),
+        bookings: bookings,
+        employees: employees,
+        timestamp: new Date().toISOString(),
+        request_type: "route_optimization",
+        session_id: `route_opt_${professionalId}_${Date.now()}`,
+      }
+
+      console.log("Sending route optimization request:", optimizationPayload)
+
+      const response = await fetch(WEBHOOK_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Request-Source": "critter-route-optimization",
+        },
+        body: JSON.stringify(optimizationPayload),
+      })
+
+      if (response.ok) {
+        const webhookResult = await response.json()
+        console.log("Webhook optimization result:", webhookResult)
+      }
+
+      // Also run local optimization
       const travelTimeService = TravelTimeService.getInstance("demo-key")
       const routeOptimizer = new RouteOptimizationService(travelTimeService)
 
@@ -212,7 +250,7 @@ export default function RouteOptimizationPage() {
 
       <main className="pt-8">
         <div className="max-w-7xl mx-auto px-4">
-          {/* Header */}
+          {/* Header with Route Optimization Branding */}
           <div className="mb-6">
             <div className="flex items-center gap-4 mb-4">
               <Link
@@ -226,9 +264,21 @@ export default function RouteOptimizationPage() {
 
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Route Optimization</h1>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center">
+                    <Route className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-bold text-gray-900">Route Optimization</h1>
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Target className="w-4 h-4" />
+                      <span>Smart Scheduling & Route Planning</span>
+                    </div>
+                  </div>
+                </div>
                 <p className="text-gray-600">
-                  Professional ID: {professionalId} • Optimize employee routes for maximum efficiency
+                  Professional ID: <span className="font-mono bg-gray-100 px-2 py-1 rounded">{professionalId}</span> •
+                  Optimize employee routes for maximum efficiency
                 </p>
               </div>
 
@@ -253,12 +303,12 @@ export default function RouteOptimizationPage() {
                 <Button
                   onClick={optimizeRoutes}
                   disabled={isOptimizing || isLoading || bookings.length === 0}
-                  className="bg-[#16A085] hover:bg-[#138f7a]"
+                  className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg"
                 >
                   {isOptimizing ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Optimizing...
+                      Optimizing Routes...
                     </>
                   ) : (
                     <>
@@ -271,13 +321,40 @@ export default function RouteOptimizationPage() {
             </div>
           </div>
 
+          {/* Route Optimization Status Banner */}
+          <div className="mb-6">
+            <Card className="border-blue-200 bg-blue-50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Route className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-blue-800">Route Optimization Active</h3>
+                    <p className="text-blue-700 text-sm">
+                      Analyzing customer locations and employee schedules for {format(selectedDate, "MMMM d, yyyy")}
+                    </p>
+                  </div>
+                  {optimizationResult && (
+                    <div className="ml-auto">
+                      <Badge className="bg-green-100 text-green-800 border-green-200">
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Optimized
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Loading State */}
           {isLoading && (
             <Card>
               <CardContent className="p-8 text-center">
-                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-[#16A085]" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Loading Data</h3>
-                <p className="text-gray-600">Fetching bookings and employee information...</p>
+                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Loading Route Data</h3>
+                <p className="text-gray-600">Fetching bookings and employee information for route optimization...</p>
               </CardContent>
             </Card>
           )}
@@ -289,7 +366,7 @@ export default function RouteOptimizationPage() {
                 <div className="flex items-center gap-3">
                   <AlertTriangle className="w-5 h-5 text-red-600" />
                   <div>
-                    <h3 className="font-medium text-red-800">Error</h3>
+                    <h3 className="font-medium text-red-800">Route Optimization Error</h3>
                     <p className="text-red-700">{error}</p>
                   </div>
                 </div>
@@ -299,44 +376,60 @@ export default function RouteOptimizationPage() {
 
           {/* Data Summary */}
           {!isLoading && !error && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <Card>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+              <Card className="border-blue-200">
                 <CardContent className="p-6">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
                       <CalendarIcon className="w-6 h-6 text-blue-600" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Bookings for {format(selectedDate, "MMM d")}</p>
+                      <p className="text-sm text-gray-600">Bookings to Route</p>
                       <p className="text-2xl font-bold">{bookings.length}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="border-green-200">
                 <CardContent className="p-6">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
                       <Users className="w-6 h-6 text-green-600" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Available Employees</p>
+                      <p className="text-sm text-gray-600">Available Staff</p>
                       <p className="text-2xl font-bold">{employees.length}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="border-orange-200">
                 <CardContent className="p-6">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
                       <Route className="w-6 h-6 text-orange-600" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Optimization Status</p>
-                      <p className="text-lg font-medium">{optimizationResult ? "Complete" : "Ready to Optimize"}</p>
+                      <p className="text-sm text-gray-600">Route Status</p>
+                      <p className="text-lg font-medium">{optimizationResult ? "Optimized" : "Ready"}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-purple-200">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                      <Clock className="w-6 h-6 text-purple-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Est. Time Saved</p>
+                      <p className="text-lg font-medium">
+                        {optimizationResult ? formatTime(optimizationResult.total_time_saved || 0) : "--"}
+                      </p>
                     </div>
                   </div>
                 </CardContent>
@@ -359,10 +452,11 @@ export default function RouteOptimizationPage() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <MapPin className="w-5 h-5" />
-                      Route Visualization
+                      Optimized Route Visualization
                     </CardTitle>
                     <p className="text-sm text-gray-600">
-                      Interactive map showing optimized employee routes and customer locations
+                      Interactive map showing optimized employee routes and customer locations for{" "}
+                      {format(selectedDate, "MMMM d, yyyy")}
                     </p>
                   </CardHeader>
                   <CardContent>
@@ -374,6 +468,7 @@ export default function RouteOptimizationPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Route Assignments</CardTitle>
+                    <p className="text-sm text-gray-600">Optimized employee schedules and route efficiency</p>
                   </CardHeader>
                   <CardContent>
                     <div className="overflow-x-auto">
@@ -385,7 +480,7 @@ export default function RouteOptimizationPage() {
                             <th className="text-left p-3 font-medium">Service Time</th>
                             <th className="text-left p-3 font-medium">Travel Time</th>
                             <th className="text-left p-3 font-medium">Efficiency</th>
-                            <th className="text-left p-3 font-medium">Route</th>
+                            <th className="text-left p-3 font-medium">Route Order</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -537,7 +632,8 @@ export default function RouteOptimizationPage() {
               <TabsContent value="recommendations" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Optimization Recommendations</CardTitle>
+                    <CardTitle>Route Optimization Recommendations</CardTitle>
+                    <p className="text-sm text-gray-600">AI-powered suggestions to improve route efficiency</p>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
