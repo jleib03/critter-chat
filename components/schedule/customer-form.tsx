@@ -419,7 +419,13 @@ export function CustomerForm({
             {/* Booking Type */}
             {bookingType && (
               <div className="pt-4 border-t">
-                <Badge variant="secondary" className="body-font">
+                <Badge
+                  className={`body-font ${
+                    bookingType === "one-time"
+                      ? "bg-[#E75837] hover:bg-[#d14a2a] text-white"
+                      : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                  }`}
+                >
                   {bookingType === "one-time" ? "One-time Booking" : "Recurring Booking"}
                 </Badge>
                 {recurringConfig && bookingType === "recurring" && (

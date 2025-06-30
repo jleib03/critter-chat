@@ -837,24 +837,13 @@ export default function SchedulePage() {
               {isDirectBooking ? "book your appointment" : "request an appointment"}.
             </p>
 
+            {/* Only show timezone info, no session or debug info */}
             {userTimezoneRef.current && (
               <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full text-sm text-gray-500 body-font">
                 <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
-                <span>
-                  {JSON.parse(userTimezoneRef.current).timezone} • Session: {sessionIdRef.current?.slice(-6)}
-                </span>
+                <span>{JSON.parse(userTimezoneRef.current).timezone}</span>
               </div>
             )}
-
-            {/* Debug info for blocked times */}
-            {memoizedProfessionalConfig &&
-              memoizedProfessionalConfig.blockedTimes &&
-              memoizedProfessionalConfig.blockedTimes.length > 0 && (
-                <div className="mt-2 text-xs text-blue-600 bg-blue-50 p-2 rounded">
-                  <strong>Blocked Times Active:</strong> {memoizedProfessionalConfig.blockedTimes.length} time blocks
-                  configured
-                </div>
-              )}
           </div>
         </div>
 
