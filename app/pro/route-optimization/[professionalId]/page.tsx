@@ -28,7 +28,6 @@ import type { GeoBooking, GeoEmployee, ScheduleOptimizationResult } from "@/type
 import { RouteOptimizationService } from "@/utils/route-optimization-service"
 import { TravelTimeService } from "@/utils/travel-time-service"
 import { GeocodingService } from "@/utils/geocoding-service"
-import { loadProfessionalConfig } from "@/utils/professional-config"
 
 export default function RouteOptimizationPage() {
   const params = useParams()
@@ -62,15 +61,11 @@ export default function RouteOptimizationPage() {
     setError(null)
 
     try {
-      // Load professional configuration
-      const config = loadProfessionalConfig(professionalId)
+      // Load bookings and employee data from webhook
+      const webhookData = await loadWebhookData(format(selectedDate, "yyyy-MM-dd"))
 
-      // Load bookings for the selected date
-      const bookingsData = await loadBookingsForDate(format(selectedDate, "yyyy-MM-dd"))
-
-      // Convert to geo format
-      const geoBookings = await convertBookingsToGeoFormat(bookingsData)
-      const geoEmployees = config ? convertEmployeesToGeoFormat(config.employees) : []
+      // Parse the webhook response
+      const { geoBookings, geoEmployees } = parseWebhookResponse(webhookData)
 
       setBookings(geoBookings)
       setEmployees(geoEmployees)
@@ -101,7 +96,7 @@ export default function RouteOptimizationPage() {
     }
   }
 
-  const loadBookingsForDate = async (date: string) => {
+  const loadWebhookData = async (date: string) => {
     try {
       const timezoneInfo = getTimezoneInfo()
       const selectedDateInTimezone = new Date(selectedDate)
@@ -150,67 +145,113 @@ export default function RouteOptimizationPage() {
       console.log("Route optimization response:", data)
       return Array.isArray(data) ? data : []
     } catch (error) {
-      console.error("Error loading bookings for route optimization:", error)
+      console.error("Error loading webhook data:", error)
       return []
     }
   }
 
-  const convertBookingsToGeoFormat = async (bookingsData: any[]): Promise<GeoBooking[]> => {
-    const geocodingService = GeocodingService.getInstance("demo-key")
+  const parseWebhookResponse = (data: any[]) => {
     const geoBookings: GeoBooking[] = []
+    const geoEmployees: GeoEmployee[] = []
 
-    for (const booking of bookingsData) {
-      if (!booking.customer_address) continue
-
-      // Geocode the customer address
-      const location = await geocodingService.geocodeAddress(booking.customer_address)
-
-      if (location) {
-        const geoBooking: GeoBooking = {
-          booking_id: booking.booking_id || `booking_${Date.now()}_${Math.random()}`,
-          customer: {
-            customer_id: booking.customer_id || "unknown",
-            first_name: booking.customer_first_name || "Unknown",
-            last_name: booking.customer_last_name || "Customer",
-            email: booking.customer_email || "",
-            location: location,
-          },
-          services: booking.services ? booking.services.split(",").map((s: string) => s.trim()) : ["General Service"],
-          date: format(selectedDate, "yyyy-MM-dd"),
-          start_time: booking.start_time || "09:00",
-          end_time: booking.end_time || "10:00",
-          duration_minutes: booking.duration_minutes || 60,
-          location: location,
+    // Filter and process different types of data from the webhook response
+    for (const item of data) {
+      // Check if this is a booking (has booking_id and customer info)
+      if (item.booking_id && item.customer_first_name && item.customer_last_name) {
+        // Only include bookings for the selected date
+        const bookingDate = format(selectedDate, "yyyy-MM-dd")
+        if (item.booking_date_formatted === bookingDate) {
+          const geoBooking = convertToGeoBooking(item)
+          if (geoBooking) {
+            geoBookings.push(geoBooking)
+          }
         }
-
-        geoBookings.push(geoBooking)
+      }
+      // Check if this is an employee (has first_name, last_name, email)
+      else if (item.first_name && item.last_name && item.email && !item.professional_id) {
+        const geoEmployee = convertToGeoEmployee(item)
+        if (geoEmployee) {
+          geoEmployees.push(geoEmployee)
+        }
       }
     }
 
-    return geoBookings
+    console.log(`Parsed ${geoBookings.length} bookings and ${geoEmployees.length} employees`)
+    return { geoBookings, geoEmployees }
   }
 
-  const convertEmployeesToGeoFormat = (employeesData: any[]): GeoEmployee[] => {
-    return employeesData.map((employee, index) => ({
-      employee_id: employee.id || `emp_${index}`,
-      name: employee.name || `Employee ${index + 1}`,
-      services: employee.services || ["General Service"],
+  const convertToGeoBooking = async (booking: any): Promise<GeoBooking | null> => {
+    // For demo purposes, we'll use placeholder addresses since the webhook doesn't include customer addresses
+    // In a real implementation, you'd need to fetch customer addresses from your database
+    const demoAddresses = [
+      "123 Main St, Austin, TX 78701",
+      "456 Oak Ave, Austin, TX 78702",
+      "789 Pine Rd, Austin, TX 78703",
+      "321 Elm St, Austin, TX 78704",
+      "654 Cedar Ln, Austin, TX 78705",
+    ]
+
+    const randomAddress = demoAddresses[Math.floor(Math.random() * demoAddresses.length)]
+
+    try {
+      const geocodingService = GeocodingService.getInstance("demo-key")
+      const location = await geocodingService.geocodeAddress(randomAddress)
+
+      if (!location) return null
+
+      // Parse start and end times
+      const startTime = booking.start_formatted
+        ? booking.start_formatted.split(" ")[1]
+        : format(new Date(booking.start_local || booking.start), "HH:mm")
+
+      const endTime = booking.end_formatted
+        ? booking.end_formatted.split(" ")[1]
+        : format(new Date(booking.end_local || booking.end), "HH:mm")
+
+      // Calculate duration
+      const startDate = new Date(`2000-01-01 ${startTime}`)
+      const endDate = new Date(`2000-01-01 ${endTime}`)
+      const durationMinutes = Math.max(30, (endDate.getTime() - startDate.getTime()) / (1000 * 60))
+
+      return {
+        booking_id: booking.booking_id,
+        customer: {
+          customer_id: booking.customer_id || "unknown",
+          first_name: booking.customer_first_name,
+          last_name: booking.customer_last_name,
+          email: booking.customer_email || "",
+          location: location,
+        },
+        services: ["Grooming"], // Default service since not specified in webhook
+        date: format(selectedDate, "yyyy-MM-dd"),
+        start_time: startTime,
+        end_time: endTime,
+        duration_minutes: durationMinutes,
+        location: location,
+      }
+    } catch (error) {
+      console.error("Error converting booking:", error)
+      return null
+    }
+  }
+
+  const convertToGeoEmployee = (employee: any): GeoEmployee => {
+    return {
+      employee_id: `emp_${employee.first_name}_${employee.last_name}`.replace(/\s+/g, "_"),
+      name: `${employee.first_name} ${employee.last_name}`,
+      services: ["Grooming", "Nail Trimming", "Ear Cleaning"], // Default services
       working_hours: {
-        start:
-          employee.workingDays?.find((wd: any) => wd.day === format(selectedDate, "EEEE").toLowerCase())?.start ||
-          "09:00",
-        end:
-          employee.workingDays?.find((wd: any) => wd.day === format(selectedDate, "EEEE").toLowerCase())?.end ||
-          "17:00",
+        start: "08:00",
+        end: "18:00",
       },
       service_area_radius: 15, // Default 15 mile radius
       max_bookings_per_day: 8, // Default max bookings
       home_base: {
-        address: `${employee.name} Home Base`,
+        address: "Austin, TX", // Default location
         lat: 30.2672 + (Math.random() * 0.1 - 0.05), // Random location near Austin
         lng: -97.7431 + (Math.random() * 0.1 - 0.05),
       },
-    }))
+    }
   }
 
   const optimizeRoutes = async () => {
