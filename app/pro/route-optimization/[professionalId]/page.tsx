@@ -41,12 +41,21 @@ export default function RouteOptimizationPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isOptimizing, setIsOptimizing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [userTimezone, setUserTimezone] = useState<string>("")
 
   const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/5671c1dd-48f6-47a9-85ac-4e20cf261520"
 
   useEffect(() => {
-    loadData()
-  }, [professionalId, selectedDate])
+    // Get user's timezone
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    setUserTimezone(timezone)
+  }, [])
+
+  useEffect(() => {
+    if (userTimezone) {
+      loadData()
+    }
+  }, [professionalId, selectedDate, userTimezone])
 
   const loadData = async () => {
     setIsLoading(true)
@@ -73,24 +82,62 @@ export default function RouteOptimizationPage() {
     }
   }
 
+  const getTimezoneInfo = () => {
+    const now = new Date()
+    const timezone = userTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone
+    const offsetMinutes = now.getTimezoneOffset()
+    const offsetHours = Math.floor(Math.abs(offsetMinutes) / 60)
+    const offsetMins = Math.abs(offsetMinutes) % 60
+    const offsetSign = offsetMinutes <= 0 ? "+" : "-"
+
+    return {
+      timezone: timezone,
+      timezone_offset: `${offsetSign}${offsetHours.toString().padStart(2, "0")}:${offsetMins.toString().padStart(2, "0")}`,
+      timezone_offset_hours: offsetMinutes <= 0 ? offsetHours : -offsetHours,
+      timezone_offset_minutes: offsetMinutes <= 0 ? offsetMins : -offsetMins,
+      local_time: now.toISOString(),
+      local_date: format(now, "yyyy-MM-dd"),
+      local_time_formatted: format(now, "HH:mm:ss"),
+    }
+  }
+
   const loadBookingsForDate = async (date: string) => {
     try {
+      const timezoneInfo = getTimezoneInfo()
+      const selectedDateInTimezone = new Date(selectedDate)
+
       const payload = {
         action: "get_bookings_for_route_optimization",
         professional_id: professionalId,
         date: date,
+        selected_date: format(selectedDate, "yyyy-MM-dd"),
+        selected_date_local: selectedDateInTimezone.toISOString(),
         timestamp: new Date().toISOString(),
         request_type: "route_optimization",
         session_id: `route_opt_${professionalId}_${Date.now()}`,
+        user_timezone: timezoneInfo.timezone,
+        timezone_offset: timezoneInfo.timezone_offset,
+        timezone_offset_hours: timezoneInfo.timezone_offset_hours,
+        timezone_offset_minutes: timezoneInfo.timezone_offset_minutes,
+        local_time: timezoneInfo.local_time,
+        local_date: timezoneInfo.local_date,
+        local_time_formatted: timezoneInfo.local_time_formatted,
+        browser_info: {
+          user_agent: typeof window !== "undefined" ? window.navigator.userAgent : "",
+          language: typeof window !== "undefined" ? window.navigator.language : "",
+          timezone: timezoneInfo.timezone,
+        },
       }
 
-      console.log("Sending route optimization request:", payload)
+      console.log("Sending route optimization request with timezone info:", payload)
 
       const response = await fetch(WEBHOOK_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "X-Request-Source": "critter-route-optimization",
+          "X-User-Timezone": timezoneInfo.timezone,
+          "X-Timezone-Offset": timezoneInfo.timezone_offset,
         },
         body: JSON.stringify(payload),
       })
@@ -235,6 +282,7 @@ export default function RouteOptimizationPage() {
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">Route Optimization</h1>
                 <p className="text-gray-600">
                   Professional ID: {professionalId} • Optimize employee routes for maximum efficiency
+                  {userTimezone && <span className="ml-2 text-sm text-gray-500">• Timezone: {userTimezone}</span>}
                 </p>
               </div>
 
