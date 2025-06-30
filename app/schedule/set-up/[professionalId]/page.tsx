@@ -79,13 +79,13 @@ export default function ProfessionalSetupPage() {
   const [capacityRules, setCapacityRules] = useState<WebhookCapacityRules>(DEFAULT_CAPACITY_RULES)
   const [blockedTimes, setBlockedTimes] = useState<WebhookBlockedTime[]>([])
   const [lastUpdated, setLastUpdated] = useState<string>("")
-  const [originalConfig, setOriginalConfig] = useState<{
-    businessName: string
-    bookingPreferences: typeof DEFAULT_BOOKING_PREFERENCES
-    employees: WebhookEmployee[]
-    capacityRules: WebhookCapacityRules
-    blockedTimes: WebhookBlockedTime[]
-  } | null>(null)
+
+  // Original configuration snapshots for precise change detection
+  const [originalBusinessName, setOriginalBusinessName] = useState("")
+  const [originalBookingPreferences, setOriginalBookingPreferences] = useState(DEFAULT_BOOKING_PREFERENCES)
+  const [originalEmployees, setOriginalEmployees] = useState<WebhookEmployee[]>([])
+  const [originalCapacityRules, setOriginalCapacityRules] = useState<WebhookCapacityRules>(DEFAULT_CAPACITY_RULES)
+  const [originalBlockedTimes, setOriginalBlockedTimes] = useState<WebhookBlockedTime[]>([])
 
   // Form state for adding new items
   const [newEmployee, setNewEmployee] = useState<Partial<WebhookEmployee>>({
@@ -156,9 +156,7 @@ export default function ProfessionalSetupPage() {
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // LOAD CONFIGURATION (REPLACED)
-  // ─────────────────────────────────────────────────────────────────────────────
+  // Load configuration
   const loadConfiguration = async () => {
     try {
       setLoading(true)
@@ -186,7 +184,7 @@ export default function ProfessionalSetupPage() {
       const data = await response.json()
       console.log("Raw webhook response:", data)
 
-      // Default holders for originalConfig construction
+      // Default holders for configuration
       let businessNameLocal = ""
       let bookingPrefsLocal = { ...DEFAULT_BOOKING_PREFERENCES }
       let employeesLocal: WebhookEmployee[] = []
@@ -199,15 +197,11 @@ export default function ProfessionalSetupPage() {
         if (structured) {
           const config = structured.webhook_response.config_data
 
-          //-----------------------------//
           // Business Name
-          //-----------------------------//
           businessNameLocal = config.business_name || ""
           setBusinessName(businessNameLocal)
 
-          //-----------------------------//
           // Booking Preferences
-          //-----------------------------//
           const rawPrefs = config.booking_preferences ?? {}
           bookingPrefsLocal = {
             booking_system: mapBookingTypeToBookingSystem(
@@ -220,9 +214,7 @@ export default function ProfessionalSetupPage() {
           }
           setBookingPreferences(bookingPrefsLocal)
 
-          //-----------------------------//
           // Employees
-          //-----------------------------//
           if (Array.isArray(config.employees)) {
             employeesLocal = config.employees.map((emp: any) => {
               const working = emp.working_days
@@ -250,18 +242,14 @@ export default function ProfessionalSetupPage() {
           }
           setEmployees(employeesLocal)
 
-          //-----------------------------//
           // Capacity Rules
-          //-----------------------------//
           capacityRulesLocal = {
             ...DEFAULT_CAPACITY_RULES,
             ...(config.capacity_rules ?? {}),
           }
           setCapacityRules(capacityRulesLocal)
 
-          //-----------------------------//
           // Blocked Times
-          //-----------------------------//
           if (Array.isArray(config.blocked_times)) {
             blockedTimesLocal = config.blocked_times.map((bt: any) => ({
               ...bt,
@@ -270,23 +258,19 @@ export default function ProfessionalSetupPage() {
           }
           setBlockedTimes(blockedTimesLocal)
 
-          //-----------------------------//
           // Timestamp
-          //-----------------------------//
           setLastUpdated(config.last_updated || new Date().toISOString())
         }
       }
 
-      // Snapshot for diffing on save
-      setOriginalConfig({
-        businessName: businessNameLocal,
-        bookingPreferences: bookingPrefsLocal,
-        employees: employeesLocal,
-        capacityRules: capacityRulesLocal,
-        blockedTimes: blockedTimesLocal,
-      })
+      // Store original snapshots for precise change detection
+      setOriginalBusinessName(businessNameLocal)
+      setOriginalBookingPreferences({ ...bookingPrefsLocal })
+      setOriginalEmployees(JSON.parse(JSON.stringify(employeesLocal)))
+      setOriginalCapacityRules({ ...capacityRulesLocal })
+      setOriginalBlockedTimes(JSON.parse(JSON.stringify(blockedTimesLocal)))
 
-      console.log("Configuration loaded & snapshot saved.")
+      console.log("Configuration loaded & snapshots saved.")
     } catch (err) {
       console.error("Error loading configuration:", err)
       setError("Failed to load configuration. Please try again.")
@@ -295,88 +279,88 @@ export default function ProfessionalSetupPage() {
     }
   }
 
-  // Save configuration - only send changes
-  const saveConfiguration = async () => {
-    try {
-      setSaving(true)
-      setError(null)
+  // Detect changes by tab and build precise webhook payload
+  const detectChanges = () => {
+    const changes: any = {}
+    const changedTabs: string[] = []
 
-      if (!originalConfig) {
-        throw new Error("Original configuration not loaded")
-      }
+    // 1. Check Professional Config changes (business name + booking preferences)
+    const businessNameChanged = businessName !== originalBusinessName
+    const bookingPrefsChanged = JSON.stringify(bookingPreferences) !== JSON.stringify(originalBookingPreferences)
 
-      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
+    if (businessNameChanged || bookingPrefsChanged) {
+      changedTabs.push("Professional Config")
 
-      // Detect changes
-      const changes: any = {}
-
-      // Check business name changes
-      if (businessName !== originalConfig.businessName) {
-        changes.business_name = businessName
-      }
-
-      // Check booking preferences changes
-      const currentBookingPrefs = {
+      // Always include business_name and all booking_preferences fields for professional_configs table
+      changes.business_name = businessName
+      changes.booking_preferences = {
         booking_type: mapBookingSystemToBookingType(bookingPreferences.booking_system),
         allow_direct_booking: bookingPreferences.allow_direct_booking,
         require_approval: bookingPreferences.require_approval,
         online_booking_enabled: bookingPreferences.online_booking_enabled,
         custom_instructions: bookingPreferences.custom_instructions,
       }
+    }
 
-      const originalBookingPrefs = {
-        booking_type: mapBookingSystemToBookingType(originalConfig.bookingPreferences.booking_system),
-        allow_direct_booking: originalConfig.bookingPreferences.allow_direct_booking,
-        require_approval: originalConfig.bookingPreferences.require_approval,
-        online_booking_enabled: originalConfig.bookingPreferences.online_booking_enabled,
-        custom_instructions: originalConfig.bookingPreferences.custom_instructions,
-      }
+    // 2. Check Employees changes
+    const employeesChanged = JSON.stringify(employees) !== JSON.stringify(originalEmployees)
+    if (employeesChanged) {
+      changedTabs.push("Team")
+      changes.employees = employees
+    }
 
-      if (JSON.stringify(currentBookingPrefs) !== JSON.stringify(originalBookingPrefs)) {
-        changes.booking_preferences = currentBookingPrefs
-      }
+    // 3. Check Capacity Rules changes
+    const capacityChanged = JSON.stringify(capacityRules) !== JSON.stringify(originalCapacityRules)
+    if (capacityChanged) {
+      changedTabs.push("Capacity Rules")
+      changes.capacity_rules = capacityRules
+    }
 
-      // Check employees changes
-      if (JSON.stringify(employees) !== JSON.stringify(originalConfig.employees)) {
-        changes.employees = employees
-      }
+    // 4. Check Blocked Times changes
+    const blockedTimesForWebhook = blockedTimes.map((bt) => ({
+      blocked_time_id: bt.blocked_time_id,
+      employee_id: bt.employee_id || null,
+      blocked_date: bt.date,
+      start_time: bt.start_time,
+      end_time: bt.end_time,
+      reason: bt.reason || "",
+      is_recurring: bt.is_recurring || false,
+      is_all_day: bt.is_all_day || false,
+      recurrence_pattern: bt.is_recurring ? bt.recurrence_pattern || null : null,
+    }))
 
-      // Check capacity rules changes
-      if (JSON.stringify(capacityRules) !== JSON.stringify(originalConfig.capacityRules)) {
-        changes.capacity_rules = capacityRules
-      }
+    const originalBlockedTimesForWebhook = originalBlockedTimes.map((bt) => ({
+      blocked_time_id: bt.blocked_time_id,
+      employee_id: bt.employee_id || null,
+      blocked_date: bt.date,
+      start_time: bt.start_time,
+      end_time: bt.end_time,
+      reason: bt.reason || "",
+      is_recurring: bt.is_recurring || false,
+      is_all_day: bt.is_all_day || false,
+      recurrence_pattern: bt.is_recurring ? bt.recurrence_pattern || null : null,
+    }))
 
-      // Check blocked times changes
-      const currentBlockedTimesForWebhook = blockedTimes.map((bt) => ({
-        blocked_time_id: bt.blocked_time_id,
-        employee_id: bt.employee_id || null,
-        blocked_date: bt.date,
-        start_time: bt.start_time,
-        end_time: bt.end_time,
-        reason: bt.reason || "",
-        is_recurring: bt.is_recurring || false,
-        is_all_day: bt.is_all_day || false,
-        recurrence_pattern: bt.is_recurring ? bt.recurrence_pattern || null : null,
-      }))
+    const blockedTimesChanged =
+      JSON.stringify(blockedTimesForWebhook) !== JSON.stringify(originalBlockedTimesForWebhook)
+    if (blockedTimesChanged) {
+      changedTabs.push("Blocked Time")
+      changes.blocked_times = blockedTimesForWebhook
+    }
 
-      const originalBlockedTimesForWebhook = originalConfig.blockedTimes.map((bt) => ({
-        blocked_time_id: bt.blocked_time_id,
-        employee_id: bt.employee_id || null,
-        blocked_date: bt.date,
-        start_time: bt.start_time,
-        end_time: bt.end_time,
-        reason: bt.reason || "",
-        is_recurring: bt.is_recurring || false,
-        is_all_day: bt.is_all_day || false,
-        recurrence_pattern: bt.is_recurring ? bt.recurrence_pattern || null : null,
-      }))
+    return { changes, changedTabs }
+  }
 
-      if (JSON.stringify(currentBlockedTimesForWebhook) !== JSON.stringify(originalBlockedTimesForWebhook)) {
-        changes.blocked_times = currentBlockedTimesForWebhook
-      }
+  // Save configuration - only send changes by tab
+  const saveConfiguration = async () => {
+    try {
+      setSaving(true)
+      setError(null)
+
+      const { changes, changedTabs } = detectChanges()
 
       // If no changes detected, show message and return
-      if (Object.keys(changes).length === 0) {
+      if (changedTabs.length === 0) {
         toast({
           title: "No Changes Detected",
           description: "Your configuration is already up to date.",
@@ -385,16 +369,19 @@ export default function ProfessionalSetupPage() {
         return
       }
 
+      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
+
       const payload: SaveConfigWebhookPayload = {
         action: "save_professional_config",
         professional_id: professionalId,
         session_id: generateSessionId(),
         timestamp: new Date().toISOString(),
-        config_data: changes, // Only send changes
+        config_data: changes,
       }
 
       console.log("Saving configuration changes:", payload)
-      console.log("Changes detected:", Object.keys(changes))
+      console.log("Changed tabs:", changedTabs)
+      console.log("Changes being sent:", changes)
 
       const response = await fetch(webhookUrl, {
         method: "POST",
@@ -427,19 +414,17 @@ export default function ProfessionalSetupPage() {
       if (saveSuccessful) {
         setLastUpdated(new Date().toISOString())
 
-        // Update original config to current state
-        setOriginalConfig({
-          businessName,
-          bookingPreferences,
-          employees,
-          capacityRules,
-          blockedTimes,
-        })
+        // Update original snapshots to current state
+        setOriginalBusinessName(businessName)
+        setOriginalBookingPreferences({ ...bookingPreferences })
+        setOriginalEmployees(JSON.parse(JSON.stringify(employees)))
+        setOriginalCapacityRules({ ...capacityRules })
+        setOriginalBlockedTimes(JSON.parse(JSON.stringify(blockedTimes)))
 
         // Show success toast
         toast({
           title: "✅ Configuration Saved",
-          description: `Successfully updated ${Object.keys(changes).length} configuration section(s).`,
+          description: `Successfully updated: ${changedTabs.join(", ")}`,
           duration: 4000,
         })
 
@@ -647,15 +632,33 @@ export default function ProfessionalSetupPage() {
                   <CardTitle className="header-font">Professional Information</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="font-semibold text-blue-800 mb-2 header-font">Professional ID</h4>
-                    <p className="text-blue-700 body-font text-sm">
-                      Your unique professional ID:{" "}
-                      <code className="bg-blue-100 px-2 py-1 rounded">{professionalId}</code>
-                    </p>
-                    <p className="text-blue-600 body-font text-xs mt-2">
-                      This ID is used in your booking URLs and webhook configurations.
-                    </p>
+                  <div className="space-y-4">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-blue-800 mb-2 header-font">Professional ID</h4>
+                      <p className="text-blue-700 body-font text-sm">
+                        Your unique professional ID:{" "}
+                        <code className="bg-blue-100 px-2 py-1 rounded">{professionalId}</code>
+                      </p>
+                      <p className="text-blue-600 body-font text-xs mt-2">
+                        This ID is used in your booking URLs and webhook configurations.
+                      </p>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="businessName" className="body-font">
+                        Business Name
+                      </Label>
+                      <Input
+                        id="businessName"
+                        value={businessName}
+                        onChange={(e) => setBusinessName(e.target.value)}
+                        placeholder="Enter your business name"
+                        className="body-font"
+                      />
+                      <p className="text-xs text-gray-500 mt-1 body-font">
+                        This will be displayed to customers on your booking page.
+                      </p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -768,6 +771,22 @@ export default function ProfessionalSetupPage() {
                       </div>
                     </div>
                   </RadioGroup>
+
+                  <div>
+                    <Label htmlFor="customInstructions" className="body-font">
+                      Custom Instructions (Optional)
+                    </Label>
+                    <Textarea
+                      id="customInstructions"
+                      value={bookingPreferences.custom_instructions}
+                      onChange={(e) => updateBookingPreferences({ custom_instructions: e.target.value })}
+                      placeholder="Add any special instructions for customers when booking..."
+                      className="body-font"
+                    />
+                    <p className="text-xs text-gray-500 mt-1 body-font">
+                      These instructions will be shown to customers during the booking process.
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
             </div>
