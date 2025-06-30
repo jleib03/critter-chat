@@ -1,6 +1,6 @@
 "use client"
 import { useState } from "react"
-import { Loader2, Copy, Check, Settings, Users, MessageSquare, Calendar, ArrowRight, Eye } from "lucide-react"
+import { Loader2, Copy, Check, Settings, Users, MessageSquare, Calendar, ArrowRight, Eye, Route } from "lucide-react"
 import Header from "../../../components/header"
 import PasswordProtection from "../../../components/password-protection"
 import { useRouter } from "next/navigation"
@@ -22,6 +22,9 @@ export default function ProfessionalSetupPage() {
   const [showPreviewModal, setShowPreviewModal] = useState(false)
   const [previewProfessionalId, setPreviewProfessionalId] = useState("")
   const [previewError, setPreviewError] = useState("")
+  const [showRouteModal, setShowRouteModal] = useState(false)
+  const [routeProfessionalId, setRouteProfessionalId] = useState("")
+  const [routeError, setRouteError] = useState("")
 
   const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
   const router = useRouter()
@@ -173,6 +176,28 @@ ${buttonHtml}`
     router.push(`/${previewProfessionalId.trim()}`)
   }
 
+  const handleRouteClick = () => {
+    setShowRouteModal(true)
+    setRouteError("")
+    setRouteProfessionalId("")
+  }
+
+  const handleCloseRouteModal = () => {
+    setShowRouteModal(false)
+    setRouteError("")
+    setRouteProfessionalId("")
+  }
+
+  const handleRouteSubmit = () => {
+    if (!routeProfessionalId.trim()) {
+      setRouteError("Please enter your Professional ID")
+      return
+    }
+
+    // Navigate directly to route optimization page
+    router.push(`/pro/route-optimization/${routeProfessionalId.trim()}`)
+  }
+
   return (
     <div className="min-h-screen bg-[#FBF8F3] flex flex-col">
       <Header />
@@ -193,7 +218,7 @@ ${buttonHtml}`
               </div>
 
               {/* Feature Tiles Section */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
                 {/* Customer Intake Tile - Clickable */}
                 <div
                   onClick={handleSetupClick}
@@ -211,7 +236,7 @@ ${buttonHtml}`
                   </span>
                 </div>
 
-                {/* Custom Support Agent Tile - Coming Soon */}
+                {/* Custom Support Agent Tile */}
                 <div
                   onClick={() => router.push("/pro/custom-agent")}
                   className="bg-white rounded-xl shadow-md p-6 text-center transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer border border-transparent hover:border-[#94ABD6]/20"
@@ -228,7 +253,7 @@ ${buttonHtml}`
                   </span>
                 </div>
 
-                {/* Schedule Setup Tile - Replaces Under Construction */}
+                {/* Schedule Setup Tile */}
                 <div
                   onClick={() => setShowScheduleModal(true)}
                   className="bg-white rounded-xl shadow-md p-6 text-center transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer border border-transparent hover:border-[#745E25]/20"
@@ -242,6 +267,23 @@ ${buttonHtml}`
                   </p>
                   <span className="inline-flex items-center text-[#745E25] text-sm font-medium">
                     Set up now <ArrowRight className="ml-1 h-4 w-4" />
+                  </span>
+                </div>
+
+                {/* Route Optimization Tile - NEW */}
+                <div
+                  onClick={() => setShowRouteModal(true)}
+                  className="bg-white rounded-xl shadow-md p-6 text-center transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer border border-transparent hover:border-[#16A085]/20"
+                >
+                  <div className="w-12 h-12 bg-[#f0f9f7] rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Route className="h-6 w-6 text-[#16A085]" />
+                  </div>
+                  <h3 className="text-lg font-bold mb-2 header-font">Route Optimization</h3>
+                  <p className="text-gray-600 body-font mb-4">
+                    Optimize employee routes and schedules based on customer locations for maximum efficiency.
+                  </p>
+                  <span className="inline-flex items-center text-[#16A085] text-sm font-medium">
+                    Optimize now <ArrowRight className="ml-1 h-4 w-4" />
                   </span>
                 </div>
               </div>
@@ -566,6 +608,53 @@ ${buttonHtml}`
               >
                 <Eye className="h-4 w-4 mr-2" />
                 Preview Page
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Route Optimization Modal */}
+      {showRouteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold mb-4 header-font">Route Optimization</h3>
+            <p className="text-gray-600 mb-4 body-font">
+              Enter your Professional ID to access intelligent route optimization. This will analyze your bookings and
+              employee locations to create the most efficient daily routes.
+            </p>
+
+            <div className="mb-4">
+              <Label htmlFor="routeProfId" className="body-font">
+                Professional ID *
+              </Label>
+              <Input
+                id="routeProfId"
+                value={routeProfessionalId}
+                onChange={(e) => setRouteProfessionalId(e.target.value)}
+                placeholder="e.g., 22, 151, etc."
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#16A085] body-font"
+              />
+              {routeError && <p className="mt-2 text-sm text-red-600 body-font">{routeError}</p>}
+              <p className="text-xs text-gray-500 mt-2 body-font">
+                This will load your bookings and employee data to create optimized routes and schedules.
+              </p>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={handleCloseRouteModal}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors body-font"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRouteSubmit}
+                disabled={!routeProfessionalId.trim()}
+                className="px-6 py-2 bg-[#16A085] text-white rounded-lg hover:bg-[#138f7a] transition-colors body-font flex items-center disabled:opacity-50"
+              >
+                <Route className="h-4 w-4 mr-2" />
+                Optimize Routes
               </button>
             </div>
           </div>
