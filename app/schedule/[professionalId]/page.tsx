@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useMemo } from "react"
 import { useParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import type { WebhookResponse, Service, SelectedTimeSlot, CustomerInfo, Pet, PetResponse } from "@/types/schedule"
@@ -257,19 +257,19 @@ export default function SchedulePage() {
         setShowBookingDisabled(false)
       }
 
-      // Enhanced professional config creation with blocked times
+      // Create professional config from webhook data
       if (parsedData.config) {
-        const configForProfessionalConfig = {
+        const configForProfessionalConfig: ProfessionalConfig = {
           professionalId: professionalId,
           businessName: parsedData.config.business_name || "Professional",
           employees: parsedData.config.employees
-            ? parsedData.config.employees.map((emp) => ({
+            ? parsedData.config.employees.map((emp: any) => ({
                 id: emp.employee_id,
                 name: emp.name,
                 role: emp.role,
-                email: emp.email,
+                email: emp.email || "",
                 isActive: emp.is_active,
-                workingDays: emp.working_days.map((wd) => ({
+                workingDays: emp.working_days.map((wd: any) => ({
                   day: wd.day,
                   start: wd.start_time,
                   end: wd.end_time,
@@ -278,43 +278,33 @@ export default function SchedulePage() {
                 services: emp.services || [],
               }))
             : [],
-          capacityRules: parsedData.config.capacity_rules
-            ? {
-                maxConcurrentBookings: parsedData.config.capacity_rules.max_concurrent_bookings || 1,
-                bufferTimeBetweenBookings: parsedData.config.capacity_rules.buffer_time_between_bookings || 0,
-                maxBookingsPerDay: parsedData.config.capacity_rules.max_bookings_per_day || 10,
-                allowOverlapping: parsedData.config.capacity_rules.allow_overlapping || false,
-                requireAllEmployeesForService:
-                  parsedData.config.capacity_rules.require_all_employees_for_service || false,
-              }
-            : {
-                maxConcurrentBookings: 1,
-                bufferTimeBetweenBookings: 0,
-                maxBookingsPerDay: 10,
-                allowOverlapping: false,
-                requireAllEmployeesForService: false,
-              },
-          // Fixed blocked times parsing - look for blocked_times in the webhook data
-          blockedTimes: Array.isArray(parsedData.config.blocked_times)
-            ? parsedData.config.blocked_times.map((bt) => ({
-                id: bt.blocked_time_id || `blocked_${Date.now()}_${Math.random()}`,
-                date: bt.blocked_date || bt.date, // Handle both possible field names
-                startTime: bt.start_time || bt.startTime, // Handle both possible field names
-                endTime: bt.end_time || bt.endTime, // Handle both possible field names
+          capacityRules: {
+            maxConcurrentBookings: parsedData.config.capacity_rules?.max_concurrent_bookings || 1,
+            bufferTimeBetweenBookings: parsedData.config.capacity_rules?.buffer_time_between_bookings || 0,
+            maxBookingsPerDay: parsedData.config.capacity_rules?.max_bookings_per_day || 10,
+            allowOverlapping: parsedData.config.capacity_rules?.allow_overlapping || false,
+            requireAllEmployeesForService: parsedData.config.capacity_rules?.require_all_employees_for_service || false,
+          },
+          blockedTimes: parsedData.config.blocked_times
+            ? parsedData.config.blocked_times.map((bt: any) => ({
+                id: bt.blocked_time_id || `block_${Date.now()}_${Math.random()}`,
+                date: bt.blocked_date || bt.date,
+                startTime: bt.start_time,
+                endTime: bt.end_time,
                 reason: bt.reason || "Blocked",
-                employeeId: bt.employee_id || bt.employeeId || undefined,
-                isRecurring: bt.is_recurring || bt.isRecurring || false,
-                recurrencePattern: bt.recurrence_pattern || bt.recurrencePattern || undefined,
+                employeeId: bt.employee_id || undefined,
+                isRecurring: bt.is_recurring || false,
+                recurrencePattern: bt.recurrence_pattern || undefined,
               }))
             : [],
           lastUpdated: new Date().toISOString(),
         }
+
+        console.log("Setting professional config with blocked times:", configForProfessionalConfig.blockedTimes)
         setProfessionalConfig(configForProfessionalConfig)
-        console.log("Professional configuration loaded from webhook:", configForProfessionalConfig)
-        console.log("Blocked times parsed:", configForProfessionalConfig.blockedTimes)
       }
 
-      console.log("Schedule data loaded:", parsedData)
+      console.log("Schedule data loaded successfully")
     } catch (err) {
       console.error("Error initializing schedule:", err)
       setError("Failed to load scheduling data. Please try again.")
@@ -451,6 +441,9 @@ export default function SchedulePage() {
     if (serviceName.toLowerCase().includes("add on") || serviceName.toLowerCase().includes("addon")) return "Add-Ons"
     return "Services"
   }
+
+  // Memoize professional config to prevent unnecessary re-renders
+  const memoizedProfessionalConfig = useMemo(() => professionalConfig, [professionalConfig])
 
   useEffect(() => {
     if (professionalId) {
@@ -852,6 +845,16 @@ export default function SchedulePage() {
                 </span>
               </div>
             )}
+
+            {/* Debug info for blocked times */}
+            {memoizedProfessionalConfig &&
+              memoizedProfessionalConfig.blockedTimes &&
+              memoizedProfessionalConfig.blockedTimes.length > 0 && (
+                <div className="mt-2 text-xs text-blue-600 bg-blue-50 p-2 rounded">
+                  <strong>Blocked Times Active:</strong> {memoizedProfessionalConfig.blockedTimes.length} time blocks
+                  configured
+                </div>
+              )}
           </div>
         </div>
 
@@ -947,7 +950,7 @@ export default function SchedulePage() {
                     onTimeSlotSelect={handleTimeSlotSelect}
                     selectedTimeSlot={selectedTimeSlot}
                     professionalId={professionalId}
-                    professionalConfig={professionalConfig}
+                    professionalConfig={memoizedProfessionalConfig}
                     bookingType={bookingType}
                     recurringConfig={recurringConfig}
                   />
