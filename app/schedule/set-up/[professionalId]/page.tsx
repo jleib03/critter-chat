@@ -316,7 +316,7 @@ export default function ProfessionalSetupPage() {
         reason: bt.reason || "",
         is_recurring: bt.is_recurring || false,
         is_all_day: bt.is_all_day || false,
-        recurrence_pattern: bt.recurrence_pattern || null,
+        recurrence_pattern: bt.is_recurring ? bt.recurrence_pattern || null : null, // Only send pattern if recurring is true
       }))
 
       const payload: SaveConfigWebhookPayload = {
@@ -441,7 +441,7 @@ export default function ProfessionalSetupPage() {
         reason: newBlockedTime.reason || "",
         is_recurring: newBlockedTime.is_recurring ?? false,
         is_all_day: newBlockedTime.is_all_day ?? false,
-        recurrence_pattern: newBlockedTime.recurrence_pattern,
+        recurrence_pattern: newBlockedTime.is_recurring ? newBlockedTime.recurrence_pattern : undefined, // Don't set if not recurring
       }
       blockedTimeEntries.push(blockedTime)
     }
