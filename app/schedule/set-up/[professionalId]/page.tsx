@@ -79,6 +79,13 @@ export default function ProfessionalSetupPage() {
   const [capacityRules, setCapacityRules] = useState<WebhookCapacityRules>(DEFAULT_CAPACITY_RULES)
   const [blockedTimes, setBlockedTimes] = useState<WebhookBlockedTime[]>([])
   const [lastUpdated, setLastUpdated] = useState<string>("")
+  const [originalConfig, setOriginalConfig] = useState<{
+    businessName: string
+    bookingPreferences: typeof DEFAULT_BOOKING_PREFERENCES
+    employees: WebhookEmployee[]
+    capacityRules: WebhookCapacityRules
+    blockedTimes: WebhookBlockedTime[]
+  } | null>(null)
 
   // Form state for adding new items
   const [newEmployee, setNewEmployee] = useState<Partial<WebhookEmployee>>({
@@ -265,6 +272,25 @@ export default function ProfessionalSetupPage() {
             }))
             setBlockedTimes(processedBlockedTimes)
           }
+
+          // Store original configuration for change detection
+          setOriginalConfig({
+            businessName: configData.business_name || "",
+            bookingPreferences: {
+              booking_system: mapBookingTypeToBookingSystem(
+                prefs.booking_type || prefs.booking_system || "direct_booking",
+              ),
+              allow_direct_booking: prefs.allow_direct_booking ?? true,
+              require_approval: prefs.require_approval ?? false,
+              online_booking_enabled: prefs.online_booking_enabled ?? true,
+              custom_instructions: prefs.custom_instructions || "",
+            },
+            employees: employees,
+            capacityRules: configData.capacity_rules || DEFAULT_CAPACITY_RULES,
+            blockedTimes: blockedTimes,
+          })
+
+          console.log("Configuration loaded successfully")
         } else {
           console.log("No existing configuration found, using defaults")
           setBusinessName("")
@@ -273,6 +299,13 @@ export default function ProfessionalSetupPage() {
           setCapacityRules(DEFAULT_CAPACITY_RULES)
           setBlockedTimes([])
           setLastUpdated(new Date().toISOString())
+          setOriginalConfig({
+            businessName: "",
+            bookingPreferences: DEFAULT_BOOKING_PREFERENCES,
+            employees: [],
+            capacityRules: DEFAULT_CAPACITY_RULES,
+            blockedTimes: [],
+          })
         }
 
         console.log("Configuration loaded successfully")
@@ -292,15 +325,28 @@ export default function ProfessionalSetupPage() {
     }
   }
 
-  // Save configuration
+  // Save configuration - only send changes
   const saveConfiguration = async () => {
     try {
       setSaving(true)
       setError(null)
 
+      if (!originalConfig) {
+        throw new Error("Original configuration not loaded")
+      }
+
       const webhookUrl = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
 
-      const bookingPreferencesForWebhook = {
+      // Detect changes
+      const changes: any = {}
+
+      // Check business name changes
+      if (businessName !== originalConfig.businessName) {
+        changes.business_name = businessName
+      }
+
+      // Check booking preferences changes
+      const currentBookingPrefs = {
         booking_type: mapBookingSystemToBookingType(bookingPreferences.booking_system),
         allow_direct_booking: bookingPreferences.allow_direct_booking,
         require_approval: bookingPreferences.require_approval,
@@ -308,36 +354,77 @@ export default function ProfessionalSetupPage() {
         custom_instructions: bookingPreferences.custom_instructions,
       }
 
-      // Ensure all blocked times have proper structure for webhook with blocked_date field
-      const blockedTimesForWebhook = blockedTimes.map((bt) => ({
+      const originalBookingPrefs = {
+        booking_type: mapBookingSystemToBookingType(originalConfig.bookingPreferences.booking_system),
+        allow_direct_booking: originalConfig.bookingPreferences.allow_direct_booking,
+        require_approval: originalConfig.bookingPreferences.require_approval,
+        online_booking_enabled: originalConfig.bookingPreferences.online_booking_enabled,
+        custom_instructions: originalConfig.bookingPreferences.custom_instructions,
+      }
+
+      if (JSON.stringify(currentBookingPrefs) !== JSON.stringify(originalBookingPrefs)) {
+        changes.booking_preferences = currentBookingPrefs
+      }
+
+      // Check employees changes
+      if (JSON.stringify(employees) !== JSON.stringify(originalConfig.employees)) {
+        changes.employees = employees
+      }
+
+      // Check capacity rules changes
+      if (JSON.stringify(capacityRules) !== JSON.stringify(originalConfig.capacityRules)) {
+        changes.capacity_rules = capacityRules
+      }
+
+      // Check blocked times changes
+      const currentBlockedTimesForWebhook = blockedTimes.map((bt) => ({
         blocked_time_id: bt.blocked_time_id,
         employee_id: bt.employee_id || null,
-        blocked_date: bt.date, // Use blocked_date instead of date for webhook
+        blocked_date: bt.date,
         start_time: bt.start_time,
         end_time: bt.end_time,
         reason: bt.reason || "",
         is_recurring: bt.is_recurring || false,
         is_all_day: bt.is_all_day || false,
-        recurrence_pattern: bt.is_recurring ? bt.recurrence_pattern || null : null, // Only send pattern if recurring is true
+        recurrence_pattern: bt.is_recurring ? bt.recurrence_pattern || null : null,
       }))
+
+      const originalBlockedTimesForWebhook = originalConfig.blockedTimes.map((bt) => ({
+        blocked_time_id: bt.blocked_time_id,
+        employee_id: bt.employee_id || null,
+        blocked_date: bt.date,
+        start_time: bt.start_time,
+        end_time: bt.end_time,
+        reason: bt.reason || "",
+        is_recurring: bt.is_recurring || false,
+        is_all_day: bt.is_all_day || false,
+        recurrence_pattern: bt.is_recurring ? bt.recurrence_pattern || null : null,
+      }))
+
+      if (JSON.stringify(currentBlockedTimesForWebhook) !== JSON.stringify(originalBlockedTimesForWebhook)) {
+        changes.blocked_times = currentBlockedTimesForWebhook
+      }
+
+      // If no changes detected, show message and return
+      if (Object.keys(changes).length === 0) {
+        toast({
+          title: "No Changes Detected",
+          description: "Your configuration is already up to date.",
+          duration: 3000,
+        })
+        return
+      }
 
       const payload: SaveConfigWebhookPayload = {
         action: "save_professional_config",
         professional_id: professionalId,
         session_id: generateSessionId(),
         timestamp: new Date().toISOString(),
-        config_data: {
-          business_name: businessName,
-          booking_preferences: bookingPreferencesForWebhook,
-          employees: employees,
-          capacity_rules: capacityRules,
-          blocked_times: blockedTimesForWebhook, // Use the properly structured blocked times
-        },
+        config_data: changes, // Only send changes
       }
 
-      console.log("Saving professional configuration:", payload)
-      console.log("Blocked times being sent:", blockedTimesForWebhook)
-      console.log("Total blocked times:", blockedTimesForWebhook.length)
+      console.log("Saving configuration changes:", payload)
+      console.log("Changes detected:", Object.keys(changes))
 
       const response = await fetch(webhookUrl, {
         method: "POST",
@@ -354,41 +441,51 @@ export default function ProfessionalSetupPage() {
       const data = await response.json()
       console.log("Save response:", data)
 
-      if (Array.isArray(data)) {
-        const successCount = data.filter((item) => item.output === "load successful").length
+      // Check for successful save
+      let saveSuccessful = false
 
-        if (successCount > 0) {
-          setLastUpdated(new Date().toISOString())
-          toast({
-            title: "Configuration Saved",
-            description: "Your booking configuration has been saved successfully!",
-            duration: 4000,
-          })
-          console.log(`Configuration saved successfully: ${successCount} operations completed`)
-        } else {
-          throw new Error("Save operation did not complete successfully")
-        }
+      if (Array.isArray(data)) {
+        const successCount = data.filter(
+          (item) => item.output === "load successful" || (item.webhook_response && item.webhook_response.success),
+        ).length
+        saveSuccessful = successCount > 0
       } else {
         const saveResponse = data[0] || data
+        saveSuccessful = saveResponse.success || saveResponse.output === "load successful"
+      }
 
-        if (saveResponse.success || saveResponse.output === "load successful") {
-          setLastUpdated(new Date().toISOString())
-          toast({
-            title: "Configuration Saved",
-            description: "Your booking configuration has been saved successfully!",
-            duration: 4000,
-          })
-          console.log("Configuration saved successfully:", saveResponse.message || saveResponse.output)
-        } else {
-          throw new Error(saveResponse.message || "Failed to save configuration")
-        }
+      if (saveSuccessful) {
+        setLastUpdated(new Date().toISOString())
+
+        // Update original config to current state
+        setOriginalConfig({
+          businessName,
+          bookingPreferences,
+          employees,
+          capacityRules,
+          blockedTimes,
+        })
+
+        // Show success toast
+        toast({
+          title: "✅ Configuration Saved",
+          description: `Successfully updated ${Object.keys(changes).length} configuration section(s).`,
+          duration: 4000,
+        })
+
+        console.log("Configuration saved successfully")
+      } else {
+        throw new Error("Save operation did not complete successfully")
       }
     } catch (err) {
       console.error("Error saving configuration:", err)
-      setError(err instanceof Error ? err.message : "Failed to save configuration")
+      const errorMessage = err instanceof Error ? err.message : "Failed to save configuration"
+      setError(errorMessage)
+
+      // Show error toast
       toast({
-        title: "Save Failed",
-        description: err instanceof Error ? err.message : "Failed to save configuration",
+        title: "❌ Save Failed",
+        description: errorMessage,
         variant: "destructive",
         duration: 5000,
       })
