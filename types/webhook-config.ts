@@ -24,17 +24,17 @@ export interface WebhookCapacityRules {
 export interface WebhookBlockedTime {
   blocked_time_id: string
   employee_id?: string
-  date: string // Make sure this is always included
+  date: string // Internal use - maps to blocked_date in webhook
   start_time: string
   end_time: string
   reason: string
   is_recurring: boolean
-  is_all_day?: boolean // Add this field
+  is_all_day?: boolean
   recurrence_pattern?: "weekly" | "monthly"
 }
 
 export interface WebhookBookingPreferences {
-  booking_system: "direct_booking" | "request_to_book" | "no_online_booking" // Changed from booking_type
+  booking_system: "direct_booking" | "request_to_book" | "no_online_booking"
   allow_direct_booking: boolean
   require_approval: boolean
   online_booking_enabled: boolean

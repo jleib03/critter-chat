@@ -256,7 +256,12 @@ export default function ProfessionalSetupPage() {
           }
 
           if (configData.blocked_times && Array.isArray(configData.blocked_times)) {
-            setBlockedTimes(configData.blocked_times)
+            // Map blocked_date back to date for internal use
+            const processedBlockedTimes = configData.blocked_times.map((bt: any) => ({
+              ...bt,
+              date: bt.blocked_date || bt.date, // Handle both field names
+            }))
+            setBlockedTimes(processedBlockedTimes)
           }
         } else {
           console.log("No existing configuration found, using defaults")
@@ -301,11 +306,11 @@ export default function ProfessionalSetupPage() {
         custom_instructions: bookingPreferences.custom_instructions,
       }
 
-      // Ensure all blocked times have proper structure for webhook
+      // Ensure all blocked times have proper structure for webhook with blocked_date field
       const blockedTimesForWebhook = blockedTimes.map((bt) => ({
         blocked_time_id: bt.blocked_time_id,
         employee_id: bt.employee_id || null,
-        date: bt.date, // Make sure date is included
+        blocked_date: bt.date, // Use blocked_date instead of date for webhook
         start_time: bt.start_time,
         end_time: bt.end_time,
         reason: bt.reason || "",
@@ -430,7 +435,7 @@ export default function ProfessionalSetupPage() {
       const blockedTime: WebhookBlockedTime = {
         blocked_time_id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${date.getTime()}`,
         employee_id: newBlockedTime.employee_id,
-        date: date.toISOString().split("T")[0],
+        date: date.toISOString().split("T")[0], // Store as date internally
         start_time: newBlockedTime.is_all_day ? "00:00" : newBlockedTime.start_time || "09:00",
         end_time: newBlockedTime.is_all_day ? "23:59" : newBlockedTime.end_time || "17:00",
         reason: newBlockedTime.reason || "",
