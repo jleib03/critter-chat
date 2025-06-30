@@ -1,48 +1,22 @@
 "use client"
 
 import type React from "react"
+
 import { useState } from "react"
-import { User, Calendar, Clock, DollarSign, ArrowLeft, Repeat } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/components/ui/use-toast"
-import type { Service, SelectedTimeSlot, CustomerInfo, PetResponse } from "@/types/schedule"
-import { useRouter } from "next/navigation"
+import { Textarea } from "@/components/ui/textarea"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Loader2, User, Mail, Phone, MapPin, MessageSquare } from "lucide-react"
 
-type RecurringConfig = {
-  selectedDays: string[]
-  endDate: string
-  totalAppointments: number
+interface CustomerFormProps {
+  onSubmit: (customerData: any) => void
+  loading?: boolean
 }
 
-type CustomerFormProps = {
-  selectedServices: Service[]
-  selectedTimeSlot: SelectedTimeSlot
-  professionalId: string
-  professionalName: string
-  sessionId: string
-  onPetsReceived: (customerInfo: CustomerInfo, petResponse: PetResponse) => void
-  onBack: () => void
-  bookingType?: "one-time" | "recurring"
-  recurringConfig?: RecurringConfig | null
-}
-
-const CustomerForm: React.FC<CustomerFormProps> = ({
-  selectedServices,
-  selectedTimeSlot,
-  professionalId,
-  professionalName,
-  sessionId,
-  onPetsReceived,
-  onBack,
-  bookingType,
-  recurringConfig,
-}) => {
-  const { toast } = useToast()
-  const router = useRouter()
-
-  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
+export function CustomerForm({ onSubmit, loading = false }: CustomerFormProps) {
+  const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
@@ -50,310 +24,228 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
     address: "",
     city: "",
     state: "",
-    zip: "",
-    notes: "",
+    zipCode: "",
+    specialRequests: "",
   })
 
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
-  /* ------------------------------------------------------------------
-     Helpers
-  ------------------------------------------------------------------ */
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {}
 
-  const detectUserTimezone = () => {
-    try {
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-      const now = new Date()
-      const offsetMinutes = now.getTimezoneOffset()
-      const offsetHours = Math.abs(offsetMinutes / 60)
-      const offsetSign = offsetMinutes <= 0 ? "+" : "-"
-      const offsetString = `UTC${offsetSign}${offsetHours.toString().padStart(2, "0")}:${Math.abs(offsetMinutes % 60)
-        .toString()
-        .padStart(2, "0")}`
-
-      return {
-        timezone,
-        offset: offsetString,
-        offsetMinutes,
-        timestamp: now.toISOString(),
-        localTime: now.toLocaleString(),
-      }
-    } catch (error) {
-      console.error("Error detecting timezone:", error)
-      return {
-        timezone: "UTC",
-        offset: "UTC+00:00",
-        offsetMinutes: 0,
-        timestamp: new Date().toISOString(),
-        localTime: new Date().toLocaleString(),
-      }
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = "First name is required"
     }
-  }
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = "Last name is required"
+    }
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required"
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Please enter a valid email address"
+    }
+    if (!formData.phone.trim()) {
+      newErrors.phone = "Phone number is required"
+    }
 
-  /* ------------------------------------------------------------------
-     Submission
-  ------------------------------------------------------------------ */
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!customerInfo.firstName || !customerInfo.lastName || !customerInfo.email) {
-      setError("Please fill in all required fields.")
+    if (!validateForm()) {
       return
     }
 
-    setIsSubmitting(true)
-    setError(null)
-
     try {
-      /* --------------------  WEBHOOK URL  -------------------- */
+      // Send customer data to webhook
       const webhookUrl = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
 
-      const customerData = {
-        professional_id: professionalId,
-        action: "get_customer_pets",
-        session_id: sessionId,
+      const payload = {
+        action: "save_customer_data",
+        customer_data: formData,
         timestamp: new Date().toISOString(),
-        user_timezone: detectUserTimezone(),
-        customer_info: {
-          first_name: customerInfo.firstName.trim(),
-          last_name: customerInfo.lastName.trim(),
-          email: customerInfo.email.trim().toLowerCase(),
-        },
       }
+
+      console.log("Sending customer data:", payload)
 
       const response = await fetch(webhookUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(customerData),
+        body: JSON.stringify(payload),
       })
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      const result = await response.json()
-      console.log("Pet data received:", result)
+      const data = await response.json()
+      console.log("Customer data saved:", data)
 
-      onPetsReceived(customerInfo, result[0] || result)
-    } catch (err) {
-      console.error("Error fetching pets:", err)
-      setError("Failed to retrieve pet information. Please try again.")
-    } finally {
-      setIsSubmitting(false)
+      // Call the onSubmit callback
+      onSubmit(formData)
+    } catch (error) {
+      console.error("Error saving customer data:", error)
+      // Still proceed to next step even if webhook fails
+      onSubmit(formData)
     }
   }
 
-  /* ------------------------------------------------------------------
-     Totals & Formatting
-  ------------------------------------------------------------------ */
-
-  const totalDuration = selectedServices.reduce((sum, service) => {
-    let durationInMinutes = service.duration_number
-    if (service.duration_unit === "Hours") {
-      durationInMinutes = service.duration_number * 60
-    } else if (service.duration_unit === "Days") {
-      durationInMinutes = service.duration_number * 24 * 60
+  const handleInputChange = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: "" }))
     }
-    return sum + durationInMinutes
-  }, 0)
-
-  const totalCost = selectedServices.reduce((sum, service) => {
-    return sum + Number.parseFloat(service.customer_cost.toString())
-  }, 0)
-
-  const formatRecurringDays = (days: string[]) => {
-    if (!days || days.length === 0) return ""
-
-    const dayNames: Record<string, string> = {
-      monday: "Monday",
-      tuesday: "Tuesday",
-      wednesday: "Wednesday",
-      thursday: "Thursday",
-      friday: "Friday",
-      saturday: "Saturday",
-      sunday: "Sunday",
-    }
-
-    const formattedDays = days.map((day) => dayNames[day.toLowerCase()] || day)
-
-    if (formattedDays.length === 1) return formattedDays[0]
-    if (formattedDays.length === 2) return `${formattedDays[0]} and ${formattedDays[1]}`
-    return `${formattedDays.slice(0, -1).join(", ")}, and ${formattedDays[formattedDays.length - 1]}`
   }
-
-  /* ------------------------------------------------------------------
-     UI
-  ------------------------------------------------------------------ */
 
   return (
-    <div className="flex flex-col max-w-2xl mx-auto">
-      <Button variant="ghost" onClick={onBack} className="self-start mb-4">
-        <ArrowLeft className="mr-2 w-4 h-4" /> Back
-      </Button>
-
-      <h2 className="text-2xl font-semibold mb-6 header-font">Booking Summary</h2>
-
-      {/* Summary grid ------------------------------------------------ */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        {/* Professional -------------------------------------------- */}
-        <div className="flex items-center gap-2">
-          <User className="w-4 h-4 text-gray-500" />
-          <span className="text-sm body-font">{professionalName}</span>
-        </div>
-
-        {/* Date ----------------------------------------------------- */}
-        <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-gray-500" />
-          <span className="text-sm body-font">
-            {(() => {
-              const [year, month, day] = selectedTimeSlot.date.split("-").map(Number)
-              const date = new Date(year, month - 1, day)
-              const dayName = date.toLocaleDateString("en-US", {
-                weekday: "long",
-              })
-              const formattedDate = date.toLocaleDateString("en-US", {
-                month: "long",
-                day: "numeric",
-                year: "numeric",
-              })
-              return `${dayName}, ${formattedDate}`
-            })()}
-          </span>
-        </div>
-
-        {/* Time ----------------------------------------------------- */}
-        <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4 text-gray-500" />
-          <span className="text-sm body-font">
-            {selectedTimeSlot.startTime} - {selectedTimeSlot.endTime}
-          </span>
-        </div>
-
-        {/* Services -------------------------------------------------- */}
-        {selectedServices.map((service, index) => (
-          <div key={index} className="flex items-center gap-2">
-            <DollarSign className="w-4 h-4 text-gray-500" />
-            <span className="text-sm body-font">
-              {service.name}: ${service.customer_cost} ({service.duration_number}{" "}
-              {service.duration_unit?.toLowerCase() ?? ""})
-            </span>
-          </div>
-        ))}
-
-        {/* Totals --------------------------------------------------- */}
-        <div className="flex items-center gap-2">
-          <DollarSign className="w-4 h-4 text-gray-500" />
-          <span className="text-sm body-font">Total Cost: ${totalCost.toFixed(2)}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4 text-gray-500" />
-          <span className="text-sm body-font">
-            Total Duration: {Math.floor(totalDuration / 60)}h {totalDuration % 60}m
-          </span>
-        </div>
-      </div>
-
-      {/* Recurring booking details ---------------------------------- */}
-      {bookingType === "recurring" && recurringConfig && (
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h3 className="font-semibold text-blue-900 mb-3 header-font flex items-center gap-2">
-            <Repeat className="w-4 h-4" />
-            Recurring Booking Details
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div className="flex justify-between">
-              <span className="text-blue-700 body-font">Frequency:</span>
-              <span className="font-medium text-blue-900 body-font">
-                Weekly on {formatRecurringDays(recurringConfig.selectedDays)}
-              </span>
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-xl header-font">
+          <User className="w-5 h-5 text-[#E75837]" />
+          Customer Information
+        </CardTitle>
+        <p className="text-gray-600 body-font">Please provide your contact details for the appointment.</p>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Name Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="firstName" className="body-font">
+                First Name *
+              </Label>
+              <Input
+                id="firstName"
+                value={formData.firstName}
+                onChange={(e) => handleInputChange("firstName", e.target.value)}
+                placeholder="Enter your first name"
+                className={`body-font ${errors.firstName ? "border-red-500" : ""}`}
+              />
+              {errors.firstName && <p className="text-red-500 text-sm mt-1 body-font">{errors.firstName}</p>}
             </div>
-            <div className="flex justify-between">
-              <span className="text-blue-700 body-font">End Date:</span>
-              <span className="font-medium text-blue-900 body-font">
-                {(() => {
-                  const [year, month, day] = recurringConfig.endDate.split("-").map(Number)
-                  const date = new Date(year, month - 1, day)
-                  return date.toLocaleDateString("en-US", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })
-                })()}
-              </span>
+            <div>
+              <Label htmlFor="lastName" className="body-font">
+                Last Name *
+              </Label>
+              <Input
+                id="lastName"
+                value={formData.lastName}
+                onChange={(e) => handleInputChange("lastName", e.target.value)}
+                placeholder="Enter your last name"
+                className={`body-font ${errors.lastName ? "border-red-500" : ""}`}
+              />
+              {errors.lastName && <p className="text-red-500 text-sm mt-1 body-font">{errors.lastName}</p>}
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Form ------------------------------------------------------- */}
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-6">
-        <div>
-          <Label htmlFor="firstName">First Name</Label>
-          <Input
-            type="text"
-            id="firstName"
-            placeholder="John"
-            required
-            value={customerInfo.firstName}
-            onChange={(e) => setCustomerInfo({ ...customerInfo, firstName: e.target.value })}
-          />
-        </div>
-        <div>
-          <Label htmlFor="lastName">Last Name</Label>
-          <Input
-            type="text"
-            id="lastName"
-            placeholder="Doe"
-            required
-            value={customerInfo.lastName}
-            onChange={(e) => setCustomerInfo({ ...customerInfo, lastName: e.target.value })}
-          />
-        </div>
-        <div>
-          <Label htmlFor="email">Email</Label>
-          <Input
-            type="email"
-            id="email"
-            placeholder="john.doe@example.com"
-            required
-            value={customerInfo.email}
-            onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
-          />
-        </div>
-        <div>
-          <Label htmlFor="phone">Phone</Label>
-          <Input
-            type="tel"
-            id="phone"
-            placeholder="(555) 123-4567"
-            value={customerInfo.phone}
-            onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
-          />
-        </div>
-        <div>
-          <Label htmlFor="notes">Notes (Optional)</Label>
-          <Input
-            type="text"
-            id="notes"
-            placeholder="Any special requests or notes..."
-            value={customerInfo.notes}
-            onChange={(e) => setCustomerInfo({ ...customerInfo, notes: e.target.value })}
-          />
-        </div>
+          {/* Contact Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="email" className="flex items-center gap-2 body-font">
+                <Mail className="w-4 h-4" />
+                Email Address *
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange("email", e.target.value)}
+                placeholder="your.email@example.com"
+                className={`body-font ${errors.email ? "border-red-500" : ""}`}
+              />
+              {errors.email && <p className="text-red-500 text-sm mt-1 body-font">{errors.email}</p>}
+            </div>
+            <div>
+              <Label htmlFor="phone" className="flex items-center gap-2 body-font">
+                <Phone className="w-4 h-4" />
+                Phone Number *
+              </Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => handleInputChange("phone", e.target.value)}
+                placeholder="(555) 123-4567"
+                className={`body-font ${errors.phone ? "border-red-500" : ""}`}
+              />
+              {errors.phone && <p className="text-red-500 text-sm mt-1 body-font">{errors.phone}</p>}
+            </div>
+          </div>
 
-        <Button type="submit" disabled={isSubmitting} className="mt-4">
-          {isSubmitting ? "Submitting..." : "Continue to Pet Selection"}
-        </Button>
-        {error && <p className="text-red-500 text-sm">{error}</p>}
-      </form>
-    </div>
+          {/* Address Fields */}
+          <div className="space-y-4">
+            <Label className="flex items-center gap-2 body-font">
+              <MapPin className="w-4 h-4" />
+              Address (Optional)
+            </Label>
+            <Input
+              value={formData.address}
+              onChange={(e) => handleInputChange("address", e.target.value)}
+              placeholder="Street address"
+              className="body-font"
+            />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Input
+                value={formData.city}
+                onChange={(e) => handleInputChange("city", e.target.value)}
+                placeholder="City"
+                className="body-font"
+              />
+              <Input
+                value={formData.state}
+                onChange={(e) => handleInputChange("state", e.target.value)}
+                placeholder="State"
+                className="body-font"
+              />
+              <Input
+                value={formData.zipCode}
+                onChange={(e) => handleInputChange("zipCode", e.target.value)}
+                placeholder="ZIP Code"
+                className="body-font"
+              />
+            </div>
+          </div>
+
+          {/* Special Requests */}
+          <div>
+            <Label htmlFor="specialRequests" className="flex items-center gap-2 body-font">
+              <MessageSquare className="w-4 h-4" />
+              Special Requests or Notes (Optional)
+            </Label>
+            <Textarea
+              id="specialRequests"
+              value={formData.specialRequests}
+              onChange={(e) => handleInputChange("specialRequests", e.target.value)}
+              placeholder="Any special requirements, allergies, or additional information..."
+              className="body-font min-h-[100px]"
+            />
+          </div>
+
+          {/* Submit Button */}
+          <Button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-[#E75837] hover:bg-[#d14a2a] text-white py-3 text-lg header-font"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Continue to Pet Selection"
+            )}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   )
 }
 
-export { CustomerForm }
 export default CustomerForm

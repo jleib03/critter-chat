@@ -34,7 +34,6 @@ import type {
   WebhookCapacityRules,
 } from "@/types/webhook-config"
 
-// ---------- CONSTANTS ----------
 const DEFAULT_WORKING_DAYS = [
   { day: "Monday", start_time: "09:00", end_time: "17:00", is_working: true },
   { day: "Tuesday", start_time: "09:00", end_time: "17:00", is_working: true },
@@ -54,14 +53,13 @@ const DEFAULT_CAPACITY_RULES: WebhookCapacityRules = {
 }
 
 const DEFAULT_BOOKING_PREFERENCES = {
-  booking_system: "direct_booking", // Internal frontend field
+  booking_system: "direct_booking",
   allow_direct_booking: true,
   require_approval: false,
   online_booking_enabled: true,
   custom_instructions: "",
 }
 
-// ---------- COMPONENT ----------
 export default function ProfessionalSetupPage() {
   const params = useParams()
   const professionalId = params.professionalId as string
@@ -91,16 +89,34 @@ export default function ProfessionalSetupPage() {
   })
 
   const [newBlockedTime, setNewBlockedTime] = useState<Partial<WebhookBlockedTime>>({
-    date: "",
+    start_date: "",
+    end_date: "",
     start_time: "09:00",
     end_time: "17:00",
     reason: "",
     is_recurring: false,
+    is_all_day: false,
   })
 
   // Generate session ID
   const generateSessionId = () => {
     return `setup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  }
+
+  // Helper function to format date for input (YYYY-MM-DD)
+  const formatDateForInput = (dateString: string) => {
+    if (!dateString) return ""
+    const date = new Date(dateString)
+    return date.toISOString().split("T")[0]
+  }
+
+  // Helper function to parse date from input (handles timezone correctly)
+  const parseDateFromInput = (dateString: string) => {
+    if (!dateString) return ""
+    // Create date at noon local time to avoid timezone issues
+    const [year, month, day] = dateString.split("-").map(Number)
+    const date = new Date(year, month - 1, day, 12, 0, 0)
+    return date.toISOString().split("T")[0]
   }
 
   // Helper function to map booking_system to booking_type for webhook
@@ -131,7 +147,7 @@ export default function ProfessionalSetupPage() {
     }
   }
 
-  // ---------- LOAD CONFIG ----------
+  // Load configuration
   const loadConfiguration = async () => {
     try {
       setLoading(true)
@@ -163,25 +179,20 @@ export default function ProfessionalSetupPage() {
       const data = await response.json()
       console.log("Raw webhook response:", data)
 
-      // Process the webhook response - handle both structured and raw formats
       if (Array.isArray(data)) {
         console.log("Processing array response with", data.length, "items")
 
-        // Look for structured webhook_response objects first
         const webhookResponses = data.filter((item) => item.webhook_response && item.webhook_response.success)
 
         if (webhookResponses.length > 0) {
-          // Use the most recent webhook response (last one in array)
           const latestResponse = webhookResponses[webhookResponses.length - 1]
           const configData = latestResponse.webhook_response.config_data
 
           console.log("Found structured webhook response:", configData)
 
-          // Process structured configuration data
           setBusinessName(configData.business_name || "")
           setLastUpdated(configData.last_updated || new Date().toISOString())
 
-          // Process booking preferences - handle both old and new formats
           if (configData.booking_preferences) {
             const prefs = configData.booking_preferences
             setBookingPreferences({
@@ -195,23 +206,19 @@ export default function ProfessionalSetupPage() {
             })
           }
 
-          // Process employees from structured data
           if (configData.employees && Array.isArray(configData.employees)) {
             console.log("Loading employees from structured config:", configData.employees.length)
 
-            // Convert structured employees to frontend format
             const processedEmployees: WebhookEmployee[] = configData.employees.map((emp: any) => {
-              // Process each employee's individual working days
               const workingDays = emp.working_days
                 ? emp.working_days.map((day: any) => ({
                     day: day.day,
-                    start_time: day.start_time.substring(0, 5), // Convert "08:00:00" to "08:00"
-                    end_time: day.end_time.substring(0, 5), // Convert "20:00:00" to "20:00"
+                    start_time: day.start_time.substring(0, 5),
+                    end_time: day.end_time.substring(0, 5),
                     is_working: day.is_working,
                   }))
                 : [...DEFAULT_WORKING_DAYS]
 
-              // Fill in missing days if the employee doesn't have all 7 days
               const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
               const existingDays = workingDays.map((d: any) => d.day)
 
@@ -226,11 +233,8 @@ export default function ProfessionalSetupPage() {
                 }
               })
 
-              // Sort working days to ensure consistent order
               const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
               workingDays.sort((a: any, b: any) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day))
-
-              console.log(`Processing employee ${emp.name} with ${workingDays.length} working days:`, workingDays)
 
               return {
                 employee_id: emp.employee_id,
@@ -247,17 +251,14 @@ export default function ProfessionalSetupPage() {
             console.log("Processed structured employees:", processedEmployees.length)
           }
 
-          // Process capacity rules from structured data
           if (configData.capacity_rules) {
             setCapacityRules(configData.capacity_rules)
           }
 
-          // Process blocked times from structured data
           if (configData.blocked_times && Array.isArray(configData.blocked_times)) {
             setBlockedTimes(configData.blocked_times)
           }
         } else {
-          // Fallback to defaults for new configurations
           console.log("No existing configuration found, using defaults")
           setBusinessName("")
           setBookingPreferences(DEFAULT_BOOKING_PREFERENCES)
@@ -270,7 +271,6 @@ export default function ProfessionalSetupPage() {
         console.log("Configuration loaded successfully")
       } else {
         console.log("Unexpected response format:", data)
-        // Fallback to defaults
         setBusinessName("")
         setBookingPreferences(DEFAULT_BOOKING_PREFERENCES)
         setEmployees([])
@@ -285,7 +285,7 @@ export default function ProfessionalSetupPage() {
     }
   }
 
-  // ---------- SAVE CONFIG ----------
+  // Save configuration
   const saveConfiguration = async () => {
     try {
       setSaving(true)
@@ -293,9 +293,8 @@ export default function ProfessionalSetupPage() {
 
       const webhookUrl = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
 
-      // Prepare booking preferences with proper booking_type mapping
       const bookingPreferencesForWebhook = {
-        booking_type: mapBookingSystemToBookingType(bookingPreferences.booking_system), // Map to booking_type for webhook
+        booking_type: mapBookingSystemToBookingType(bookingPreferences.booking_system),
         allow_direct_booking: bookingPreferences.allow_direct_booking,
         require_approval: bookingPreferences.require_approval,
         online_booking_enabled: bookingPreferences.online_booking_enabled,
@@ -309,7 +308,7 @@ export default function ProfessionalSetupPage() {
         timestamp: new Date().toISOString(),
         config_data: {
           business_name: businessName,
-          booking_preferences: bookingPreferencesForWebhook, // Send with booking_type
+          booking_preferences: bookingPreferencesForWebhook,
           employees: employees,
           capacity_rules: capacityRules,
           blocked_times: blockedTimes,
@@ -317,7 +316,6 @@ export default function ProfessionalSetupPage() {
       }
 
       console.log("Saving professional configuration:", payload)
-      console.log("Booking preferences being sent:", bookingPreferencesForWebhook)
 
       const response = await fetch(webhookUrl, {
         method: "POST",
@@ -334,23 +332,16 @@ export default function ProfessionalSetupPage() {
       const data = await response.json()
       console.log("Save response:", data)
 
-      // Handle the new response format with "load successful" messages
       if (Array.isArray(data)) {
         const successCount = data.filter((item) => item.output === "load successful").length
 
         if (successCount > 0) {
           setLastUpdated(new Date().toISOString())
           console.log(`Configuration saved successfully: ${successCount} operations completed`)
-
-          // Show success message briefly
-          setTimeout(() => {
-            // Could add a success toast here
-          }, 2000)
         } else {
           throw new Error("Save operation did not complete successfully")
         }
       } else {
-        // Fallback for other response formats
         const saveResponse = data[0] || data
 
         if (saveResponse.success || saveResponse.output === "load successful") {
@@ -368,14 +359,13 @@ export default function ProfessionalSetupPage() {
     }
   }
 
-  // ---------- EFFECTS ----------
   useEffect(() => {
     if (professionalId) {
       loadConfiguration()
     }
   }, [professionalId])
 
-  // ---------- EMPLOYEE HELPERS ----------
+  // Employee management functions
   const addEmployee = () => {
     if (!newEmployee.name || !newEmployee.role) return
 
@@ -408,28 +398,43 @@ export default function ProfessionalSetupPage() {
     setEmployees((prev) => prev.map((emp) => (emp.employee_id === employeeId ? { ...emp, ...updates } : emp)))
   }
 
-  // ---------- BLOCKED TIME HELPERS ----------
+  // Enhanced blocked time management functions
   const addBlockedTime = () => {
-    if (!newBlockedTime.date || !newBlockedTime.start_time || !newBlockedTime.end_time) return
+    const startDate = newBlockedTime.start_date
+    const endDate = newBlockedTime.end_date || newBlockedTime.start_date
 
-    const blockedTime: WebhookBlockedTime = {
-      blocked_time_id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      employee_id: newBlockedTime.employee_id,
-      date: newBlockedTime.date,
-      start_time: newBlockedTime.start_time,
-      end_time: newBlockedTime.end_time,
-      reason: newBlockedTime.reason || "",
-      is_recurring: newBlockedTime.is_recurring ?? false,
-      recurrence_pattern: newBlockedTime.recurrence_pattern,
+    if (!startDate) return
+
+    // For multi-day blocks, create individual entries for each day
+    const start = new Date(parseDateFromInput(startDate))
+    const end = new Date(parseDateFromInput(endDate))
+
+    const blockedTimeEntries: WebhookBlockedTime[] = []
+
+    for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+      const blockedTime: WebhookBlockedTime = {
+        blocked_time_id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${date.getTime()}`,
+        employee_id: newBlockedTime.employee_id,
+        date: date.toISOString().split("T")[0],
+        start_time: newBlockedTime.is_all_day ? "00:00" : newBlockedTime.start_time || "09:00",
+        end_time: newBlockedTime.is_all_day ? "23:59" : newBlockedTime.end_time || "17:00",
+        reason: newBlockedTime.reason || "",
+        is_recurring: newBlockedTime.is_recurring ?? false,
+        is_all_day: newBlockedTime.is_all_day ?? false,
+        recurrence_pattern: newBlockedTime.recurrence_pattern,
+      }
+      blockedTimeEntries.push(blockedTime)
     }
 
-    setBlockedTimes((prev) => [...prev, blockedTime])
+    setBlockedTimes((prev) => [...prev, ...blockedTimeEntries])
     setNewBlockedTime({
-      date: "",
+      start_date: "",
+      end_date: "",
       start_time: "09:00",
       end_time: "17:00",
       reason: "",
       is_recurring: false,
+      is_all_day: false,
     })
   }
 
@@ -437,12 +442,10 @@ export default function ProfessionalSetupPage() {
     setBlockedTimes((prev) => prev.filter((bt) => bt.blocked_time_id !== blockedTimeId))
   }
 
-  // Booking preference handlers
   const updateBookingPreferences = (updates: Partial<typeof DEFAULT_BOOKING_PREFERENCES>) => {
     setBookingPreferences((prev) => ({ ...prev, ...updates }))
   }
 
-  // ---------- RENDER ----------
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -534,7 +537,6 @@ export default function ProfessionalSetupPage() {
           {/* Booking Experience Tab */}
           <TabsContent value="booking">
             <div className="space-y-6">
-              {/* Professional ID Info */}
               <Card>
                 <CardHeader>
                   <CardTitle className="header-font">Professional Information</CardTitle>
@@ -553,7 +555,6 @@ export default function ProfessionalSetupPage() {
                 </CardContent>
               </Card>
 
-              {/* Booking Experience Options */}
               <Card>
                 <CardHeader>
                   <CardTitle className="header-font">Choose Your Booking Experience</CardTitle>
@@ -575,7 +576,6 @@ export default function ProfessionalSetupPage() {
                     }}
                     className="space-y-4"
                   >
-                    {/* Direct Booking Option */}
                     <div
                       className={`flex items-start space-x-3 p-4 border rounded-lg transition-colors ${
                         bookingPreferences.booking_system === "direct_booking"
@@ -607,7 +607,6 @@ export default function ProfessionalSetupPage() {
                       </div>
                     </div>
 
-                    {/* Request to Book Option */}
                     <div
                       className={`flex items-start space-x-3 p-4 border rounded-lg transition-colors ${
                         bookingPreferences.booking_system === "request_to_book"
@@ -636,7 +635,6 @@ export default function ProfessionalSetupPage() {
                       </div>
                     </div>
 
-                    {/* No Online Booking Option */}
                     <div
                       className={`flex items-start space-x-3 p-4 border rounded-lg transition-colors ${
                         bookingPreferences.booking_system === "no_online_booking"
@@ -673,7 +671,6 @@ export default function ProfessionalSetupPage() {
           {/* Team Management Tab */}
           <TabsContent value="team">
             <div className="space-y-6">
-              {/* Add New Employee Card */}
               <Card>
                 <CardHeader>
                   <CardTitle className="header-font">Add Team Member</CardTitle>
@@ -725,7 +722,6 @@ export default function ProfessionalSetupPage() {
                 </CardContent>
               </Card>
 
-              {/* Existing Employees */}
               <div className="space-y-4">
                 {employees.map((employee) => (
                   <Card key={employee.employee_id}>
@@ -932,55 +928,105 @@ export default function ProfessionalSetupPage() {
             </Card>
           </TabsContent>
 
-          {/* Blocked Time Tab */}
+          {/* Enhanced Blocked Time Tab */}
           <TabsContent value="blocked">
             <div className="space-y-6">
-              {/* Add Blocked Time Card */}
               <Card>
                 <CardHeader>
                   <CardTitle className="header-font">Block Time</CardTitle>
+                  <p className="text-gray-600 body-font">
+                    Block specific dates and times when you're not available for appointments.
+                  </p>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                    <div>
-                      <Label htmlFor="blockDate" className="body-font">
-                        Date *
-                      </Label>
-                      <Input
-                        id="blockDate"
-                        type="date"
-                        value={newBlockedTime.date}
-                        onChange={(e) => setNewBlockedTime((prev) => ({ ...prev, date: e.target.value }))}
-                        className="body-font"
-                      />
+                  <div className="space-y-6">
+                    {/* Date Range Selection */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="startDate" className="body-font">
+                          Start Date *
+                        </Label>
+                        <Input
+                          id="startDate"
+                          type="date"
+                          value={newBlockedTime.start_date}
+                          onChange={(e) =>
+                            setNewBlockedTime((prev) => ({
+                              ...prev,
+                              start_date: e.target.value,
+                              end_date: prev.end_date || e.target.value, // Auto-set end date if not set
+                            }))
+                          }
+                          className="body-font"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="endDate" className="body-font">
+                          End Date (Optional - for multi-day blocks)
+                        </Label>
+                        <Input
+                          id="endDate"
+                          type="date"
+                          value={newBlockedTime.end_date}
+                          onChange={(e) => setNewBlockedTime((prev) => ({ ...prev, end_date: e.target.value }))}
+                          min={newBlockedTime.start_date}
+                          className="body-font"
+                        />
+                        <p className="text-xs text-gray-500 mt-1 body-font">
+                          Leave empty for single day, or select end date for vacation/multi-day blocks
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <Label htmlFor="blockStart" className="body-font">
-                        Start Time *
-                      </Label>
-                      <Input
-                        id="blockStart"
-                        type="time"
-                        value={newBlockedTime.start_time}
-                        onChange={(e) => setNewBlockedTime((prev) => ({ ...prev, start_time: e.target.value }))}
-                        className="body-font"
+
+                    {/* All Day Toggle */}
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        id="allDay"
+                        checked={newBlockedTime.is_all_day}
+                        onCheckedChange={(checked) => setNewBlockedTime((prev) => ({ ...prev, is_all_day: checked }))}
                       />
-                    </div>
-                    <div>
-                      <Label htmlFor="blockEnd" className="body-font">
-                        End Time *
+                      <Label htmlFor="allDay" className="body-font">
+                        All Day Block
                       </Label>
-                      <Input
-                        id="blockEnd"
-                        type="time"
-                        value={newBlockedTime.end_time}
-                        onChange={(e) => setNewBlockedTime((prev) => ({ ...prev, end_time: e.target.value }))}
-                        className="body-font"
-                      />
+                      <p className="text-sm text-gray-500 body-font">
+                        Block the entire day(s) instead of specific times
+                      </p>
                     </div>
+
+                    {/* Time Selection (only show if not all day) */}
+                    {!newBlockedTime.is_all_day && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="blockStart" className="body-font">
+                            Start Time *
+                          </Label>
+                          <Input
+                            id="blockStart"
+                            type="time"
+                            value={newBlockedTime.start_time}
+                            onChange={(e) => setNewBlockedTime((prev) => ({ ...prev, start_time: e.target.value }))}
+                            className="body-font"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="blockEnd" className="body-font">
+                            End Time *
+                          </Label>
+                          <Input
+                            id="blockEnd"
+                            type="time"
+                            value={newBlockedTime.end_time}
+                            onChange={(e) => setNewBlockedTime((prev) => ({ ...prev, end_time: e.target.value }))}
+                            className="body-font"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Employee Selection */}
                     <div>
                       <Label htmlFor="blockEmployee" className="body-font">
-                        Specific Employee
+                        Specific Employee (Optional)
                       </Label>
                       <Select
                         value={newBlockedTime.employee_id || "all"}
@@ -1004,61 +1050,67 @@ export default function ProfessionalSetupPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                  </div>
 
-                  <div className="mb-4">
-                    <Label htmlFor="blockReason" className="body-font">
-                      Reason
-                    </Label>
-                    <Textarea
-                      id="blockReason"
-                      value={newBlockedTime.reason}
-                      onChange={(e) => setNewBlockedTime((prev) => ({ ...prev, reason: e.target.value }))}
-                      placeholder="e.g., Personal appointment, Training, Vacation"
-                      className="body-font"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        id="isRecurring"
-                        checked={newBlockedTime.is_recurring}
-                        onCheckedChange={(checked) => setNewBlockedTime((prev) => ({ ...prev, is_recurring: checked }))}
-                      />
-                      <Label htmlFor="isRecurring" className="body-font">
-                        Recurring
+                    {/* Reason */}
+                    <div>
+                      <Label htmlFor="blockReason" className="body-font">
+                        Reason
                       </Label>
+                      <Textarea
+                        id="blockReason"
+                        value={newBlockedTime.reason}
+                        onChange={(e) => setNewBlockedTime((prev) => ({ ...prev, reason: e.target.value }))}
+                        placeholder="e.g., Personal appointment, Training, Vacation, Holiday"
+                        className="body-font"
+                      />
                     </div>
 
-                    {newBlockedTime.is_recurring && (
-                      <Select
-                        value={newBlockedTime.recurrence_pattern || "weekly"}
-                        onValueChange={(value) =>
-                          setNewBlockedTime((prev) => ({
-                            ...prev,
-                            recurrence_pattern: value as "weekly" | "monthly",
-                          }))
-                        }
-                      >
-                        <SelectTrigger className="w-32 body-font">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="weekly">Weekly</SelectItem>
-                          <SelectItem value="monthly">Monthly</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </div>
+                    {/* Recurring Options */}
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          id="isRecurring"
+                          checked={newBlockedTime.is_recurring}
+                          onCheckedChange={(checked) =>
+                            setNewBlockedTime((prev) => ({ ...prev, is_recurring: checked }))
+                          }
+                        />
+                        <Label htmlFor="isRecurring" className="body-font">
+                          Recurring
+                        </Label>
+                      </div>
 
-                  <Button
-                    onClick={addBlockedTime}
-                    disabled={!newBlockedTime.date || !newBlockedTime.start_time || !newBlockedTime.end_time}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Block Time
-                  </Button>
+                      {newBlockedTime.is_recurring && (
+                        <Select
+                          value={newBlockedTime.recurrence_pattern || "weekly"}
+                          onValueChange={(value) =>
+                            setNewBlockedTime((prev) => ({
+                              ...prev,
+                              recurrence_pattern: value as "weekly" | "monthly",
+                            }))
+                          }
+                        >
+                          <SelectTrigger className="w-32 body-font">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="weekly">Weekly</SelectItem>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+
+                    {/* Submit Button */}
+                    <Button
+                      onClick={addBlockedTime}
+                      disabled={!newBlockedTime.start_date}
+                      className="bg-[#E75837] hover:bg-[#d14a2a]"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Block Time
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -1072,25 +1124,32 @@ export default function ProfessionalSetupPage() {
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4 text-gray-500" />
                             <span className="font-medium body-font">
-                              {new Date(blockedTime.date).toLocaleDateString("en-US", {
+                              {new Date(blockedTime.date + "T12:00:00").toLocaleDateString("en-US", {
                                 weekday: "long",
                                 year: "numeric",
                                 month: "long",
                                 day: "numeric",
                               })}
                             </span>
+                            {blockedTime.is_all_day && (
+                              <Badge variant="secondary" className="text-xs">
+                                All Day
+                              </Badge>
+                            )}
                             {blockedTime.is_recurring && (
                               <Badge variant="secondary" className="text-xs">
                                 {blockedTime.recurrence_pattern}
                               </Badge>
                             )}
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-gray-500" />
-                            <span className="body-font">
-                              {blockedTime.start_time} - {blockedTime.end_time}
-                            </span>
-                          </div>
+                          {!blockedTime.is_all_day && (
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-4 h-4 text-gray-500" />
+                              <span className="body-font">
+                                {blockedTime.start_time} - {blockedTime.end_time}
+                              </span>
+                            </div>
+                          )}
                           {blockedTime.employee_id && (
                             <div className="flex items-center gap-2">
                               <Users className="w-4 h-4 text-gray-500" />
