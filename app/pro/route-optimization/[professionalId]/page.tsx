@@ -65,7 +65,7 @@ export default function RouteOptimizationPage() {
       const webhookData = await loadWebhookData(format(selectedDate, "yyyy-MM-dd"))
 
       // Parse the webhook response
-      const { geoBookings, geoEmployees } = parseWebhookResponse(webhookData)
+      const { geoBookings, geoEmployees } = await parseWebhookResponse(webhookData)
 
       setBookings(geoBookings)
       setEmployees(geoEmployees)
@@ -150,7 +150,7 @@ export default function RouteOptimizationPage() {
     }
   }
 
-  const parseWebhookResponse = (data: any[]) => {
+  const parseWebhookResponse = async (data: any[]) => {
     const geoBookings: GeoBooking[] = []
     const geoEmployees: GeoEmployee[] = []
 
@@ -161,7 +161,7 @@ export default function RouteOptimizationPage() {
         // Only include bookings for the selected date
         const bookingDate = format(selectedDate, "yyyy-MM-dd")
         if (item.booking_date_formatted === bookingDate) {
-          const geoBooking = convertToGeoBooking(item)
+          const geoBooking = await convertToGeoBooking(item)
           if (geoBooking) {
             geoBookings.push(geoBooking)
           }
@@ -189,29 +189,51 @@ export default function RouteOptimizationPage() {
       "789 Pine Rd, Austin, TX 78703",
       "321 Elm St, Austin, TX 78704",
       "654 Cedar Ln, Austin, TX 78705",
+      "987 Maple Dr, Austin, TX 78706",
+      "147 Birch Way, Austin, TX 78707",
+      "258 Willow St, Austin, TX 78708",
     ]
 
-    const randomAddress = demoAddresses[Math.floor(Math.random() * demoAddresses.length)]
+    // Use customer ID to consistently assign the same address to the same customer
+    const customerIndex = booking.customer_id
+      ? Number.parseInt(booking.customer_id) % demoAddresses.length
+      : Math.floor(Math.random() * demoAddresses.length)
+
+    const customerAddress = demoAddresses[customerIndex]
 
     try {
       const geocodingService = GeocodingService.getInstance("demo-key")
-      const location = await geocodingService.geocodeAddress(randomAddress)
+      const location = await geocodingService.geocodeAddress(customerAddress)
 
       if (!location) return null
 
-      // Parse start and end times
-      const startTime = booking.start_formatted
-        ? booking.start_formatted.split(" ")[1]
-        : format(new Date(booking.start_local || booking.start), "HH:mm")
+      // Parse start and end times more robustly
+      let startTime = "09:00"
+      let endTime = "10:00"
 
-      const endTime = booking.end_formatted
-        ? booking.end_formatted.split(" ")[1]
-        : format(new Date(booking.end_local || booking.end), "HH:mm")
+      if (booking.start_formatted) {
+        const timeMatch = booking.start_formatted.match(/(\d{1,2}:\d{2})/)
+        if (timeMatch) {
+          startTime = timeMatch[1]
+        }
+      }
 
-      // Calculate duration
-      const startDate = new Date(`2000-01-01 ${startTime}`)
-      const endDate = new Date(`2000-01-01 ${endTime}`)
-      const durationMinutes = Math.max(30, (endDate.getTime() - startDate.getTime()) / (1000 * 60))
+      if (booking.end_formatted) {
+        const timeMatch = booking.end_formatted.match(/(\d{1,2}:\d{2})/)
+        if (timeMatch) {
+          endTime = timeMatch[1]
+        }
+      }
+
+      // Calculate duration more safely
+      const startDate = new Date(`2000-01-01T${startTime}:00`)
+      const endDate = new Date(`2000-01-01T${endTime}:00`)
+      let durationMinutes = (endDate.getTime() - startDate.getTime()) / (1000 * 60)
+
+      // Default to 60 minutes if calculation fails
+      if (isNaN(durationMinutes) || durationMinutes <= 0) {
+        durationMinutes = 60
+      }
 
       return {
         booking_id: booking.booking_id,

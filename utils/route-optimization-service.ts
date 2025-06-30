@@ -13,10 +13,40 @@ export class RouteOptimizationService {
     bookings: GeoBooking[],
     employees: GeoEmployee[],
   ): Promise<ScheduleOptimizationResult> {
+    if (bookings.length === 0) {
+      return {
+        date,
+        routes: [],
+        unassigned_bookings: [],
+        total_efficiency_score: 0,
+        recommendations: ["No bookings found for this date."],
+      }
+    }
+
+    if (employees.length === 0) {
+      return {
+        date,
+        routes: [],
+        unassigned_bookings: bookings,
+        total_efficiency_score: 0,
+        recommendations: ["No employees available. Please add employees to optimize routes."],
+      }
+    }
+
     const dayBookings = bookings.filter((booking) => booking.date === date)
     const availableEmployees = employees.filter((emp) => this.isEmployeeWorkingOnDate(emp, date))
 
     console.log(`Optimizing ${dayBookings.length} bookings for ${availableEmployees.length} employees on ${date}`)
+
+    if (availableEmployees.length === 0) {
+      return {
+        date,
+        routes: [],
+        unassigned_bookings: dayBookings,
+        total_efficiency_score: 0,
+        recommendations: ["No employees are working on this date. Please check employee schedules."],
+      }
+    }
 
     // Step 1: Group bookings by service compatibility
     const serviceGroups = this.groupBookingsByServices(dayBookings, availableEmployees)
@@ -205,7 +235,13 @@ export class RouteOptimizationService {
 
   private canEmployeeHandleBooking(employee: GeoEmployee, booking: GeoBooking): boolean {
     // Check if employee can perform the required services
-    const canPerformServices = booking.services.every((service) => employee.services.includes(service))
+    const canPerformServices = booking.services.every((service) =>
+      employee.services.some(
+        (empService) =>
+          empService.toLowerCase().includes(service.toLowerCase()) ||
+          service.toLowerCase().includes(empService.toLowerCase()),
+      ),
+    )
 
     // Check if booking time fits within working hours
     const bookingStart = this.timeToMinutes(booking.start_time)
@@ -219,8 +255,17 @@ export class RouteOptimizationService {
   }
 
   private timeToMinutes(timeStr: string): number {
-    const [hours, minutes] = timeStr.split(":").map(Number)
-    return hours * 60 + minutes
+    try {
+      const [hours, minutes] = timeStr.split(":").map(Number)
+      if (isNaN(hours) || isNaN(minutes)) {
+        console.warn(`Invalid time format: ${timeStr}, defaulting to 9:00`)
+        return 9 * 60 // Default to 9:00 AM
+      }
+      return hours * 60 + minutes
+    } catch (error) {
+      console.warn(`Error parsing time: ${timeStr}, defaulting to 9:00`)
+      return 9 * 60 // Default to 9:00 AM
+    }
   }
 
   private isEmployeeWorkingOnDate(employee: GeoEmployee, date: string): boolean {
