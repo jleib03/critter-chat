@@ -8,32 +8,15 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { Loader2, User, Phone, Mail, MapPin, Calendar, Clock, DollarSign, CheckCircle } from "lucide-react"
-import type { BookingData } from "@/types/booking"
+import { Loader2, User, Mail, Phone, MapPin, MessageSquare } from "lucide-react"
 
 interface CustomerFormProps {
-  bookingData: BookingData
-  onSubmit: (customerData: CustomerData) => void
-  onBack: () => void
+  onSubmit: (customerData: any) => void
   loading?: boolean
 }
 
-interface CustomerData {
-  firstName: string
-  lastName: string
-  email: string
-  phone: string
-  address: string
-  city: string
-  state: string
-  zipCode: string
-  specialInstructions: string
-}
-
-export function CustomerForm({ bookingData, onSubmit, onBack, loading = false }: CustomerFormProps) {
-  const [customerData, setCustomerData] = useState<CustomerData>({
+export function CustomerForm({ onSubmit, loading = false }: CustomerFormProps) {
+  const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
@@ -42,48 +25,27 @@ export function CustomerForm({ bookingData, onSubmit, onBack, loading = false }:
     city: "",
     state: "",
     zipCode: "",
-    specialInstructions: "",
+    specialRequests: "",
   })
 
-  const [errors, setErrors] = useState<Partial<CustomerData>>({})
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   const validateForm = () => {
-    const newErrors: Partial<CustomerData> = {}
+    const newErrors: Record<string, string> = {}
 
-    if (!customerData.firstName.trim()) {
+    if (!formData.firstName.trim()) {
       newErrors.firstName = "First name is required"
     }
-
-    if (!customerData.lastName.trim()) {
+    if (!formData.lastName.trim()) {
       newErrors.lastName = "Last name is required"
     }
-
-    if (!customerData.email.trim()) {
+    if (!formData.email.trim()) {
       newErrors.email = "Email is required"
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerData.email)) {
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = "Please enter a valid email address"
     }
-
-    if (!customerData.phone.trim()) {
+    if (!formData.phone.trim()) {
       newErrors.phone = "Phone number is required"
-    } else if (!/^[\d\s\-$$$$+]+$/.test(customerData.phone)) {
-      newErrors.phone = "Please enter a valid phone number"
-    }
-
-    if (!customerData.address.trim()) {
-      newErrors.address = "Address is required"
-    }
-
-    if (!customerData.city.trim()) {
-      newErrors.city = "City is required"
-    }
-
-    if (!customerData.state.trim()) {
-      newErrors.state = "State is required"
-    }
-
-    if (!customerData.zipCode.trim()) {
-      newErrors.zipCode = "ZIP code is required"
     }
 
     setErrors(newErrors)
@@ -97,346 +59,192 @@ export function CustomerForm({ bookingData, onSubmit, onBack, loading = false }:
       return
     }
 
-    // Send webhook with complete booking data
     try {
-      const webhookUrl =
-        process.env.NEXT_PUBLIC_WEBHOOK_URL || "https://jleib03.app.n8n.cloud/webhook/critter-booking-webhook"
+      // Send customer data to webhook
+      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
 
-      const webhookPayload = {
-        action: "booking_submitted",
+      const payload = {
+        action: "save_customer_data",
+        customer_data: formData,
         timestamp: new Date().toISOString(),
-        professional_id: bookingData.professionalId,
-        booking_data: {
-          // Customer information
-          customer: {
-            first_name: customerData.firstName,
-            last_name: customerData.lastName,
-            email: customerData.email,
-            phone: customerData.phone,
-            address: {
-              street: customerData.address,
-              city: customerData.city,
-              state: customerData.state,
-              zip_code: customerData.zipCode,
-            },
-            special_instructions: customerData.specialInstructions,
-          },
-          // Booking details
-          booking_type: bookingData.bookingType,
-          selected_services: bookingData.selectedServices,
-          selected_pets: bookingData.selectedPets,
-          selected_date: bookingData.selectedDate,
-          selected_time: bookingData.selectedTime,
-          frequency: bookingData.frequency,
-          duration_weeks: bookingData.durationWeeks,
-          total_cost: bookingData.totalCost,
-          // Additional booking metadata
-          booking_id: `booking_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          created_at: new Date().toISOString(),
-          status: "pending_confirmation",
-        },
       }
 
-      console.log("Sending booking webhook:", webhookPayload)
+      console.log("Sending customer data:", payload)
 
       const response = await fetch(webhookUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(webhookPayload),
+        body: JSON.stringify(payload),
       })
 
       if (!response.ok) {
-        throw new Error(`Webhook failed: ${response.status}`)
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      const webhookResponse = await response.json()
-      console.log("Webhook response:", webhookResponse)
+      const data = await response.json()
+      console.log("Customer data saved:", data)
 
       // Call the onSubmit callback
-      onSubmit(customerData)
+      onSubmit(formData)
     } catch (error) {
-      console.error("Error sending booking webhook:", error)
-      // Still call onSubmit to show confirmation, but log the webhook error
-      onSubmit(customerData)
+      console.error("Error saving customer data:", error)
+      // Still proceed to next step even if webhook fails
+      onSubmit(formData)
     }
   }
 
-  const updateField = (field: keyof CustomerData, value: string) => {
-    setCustomerData((prev) => ({ ...prev, [field]: value }))
+  const handleInputChange = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }))
+      setErrors((prev) => ({ ...prev, [field]: "" }))
     }
-  }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount)
-  }
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })
-  }
-
-  const formatTime = (timeString: string) => {
-    const [hours, minutes] = timeString.split(":")
-    const hour = Number.parseInt(hours)
-    const ampm = hour >= 12 ? "PM" : "AM"
-    const displayHour = hour % 12 || 12
-    return `${displayHour}:${minutes} ${ampm}`
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      {/* Booking Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 header-font">
-            <CheckCircle className="w-5 h-5 text-green-500" />
-            Booking Summary
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-xl header-font">
+          <User className="w-5 h-5 text-[#E75837]" />
+          Customer Information
+        </CardTitle>
+        <p className="text-gray-600 body-font">Please provide your contact details for the appointment.</p>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Name Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-gray-500" />
-                <span className="body-font">
-                  <strong>Date:</strong> {formatDate(bookingData.selectedDate)}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-gray-500" />
-                <span className="body-font">
-                  <strong>Time:</strong> {formatTime(bookingData.selectedTime)}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-gray-500" />
-                <span className="body-font">
-                  <strong>Total Cost:</strong> {formatCurrency(bookingData.totalCost)}
-                </span>
-              </div>
+            <div>
+              <Label htmlFor="firstName" className="body-font">
+                First Name *
+              </Label>
+              <Input
+                id="firstName"
+                value={formData.firstName}
+                onChange={(e) => handleInputChange("firstName", e.target.value)}
+                placeholder="Enter your first name"
+                className={`body-font ${errors.firstName ? "border-red-500" : ""}`}
+              />
+              {errors.firstName && <p className="text-red-500 text-sm mt-1 body-font">{errors.firstName}</p>}
             </div>
-            <div className="space-y-3">
-              <div>
-                <strong className="body-font">Services:</strong>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {bookingData.selectedServices.map((service) => (
-                    <Badge key={service.id} variant="secondary" className="text-xs">
-                      {service.name}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <strong className="body-font">Pets:</strong>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {bookingData.selectedPets.map((pet) => (
-                    <Badge key={pet.id} variant="outline" className="text-xs">
-                      {pet.name} ({pet.type})
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-              {bookingData.bookingType === "recurring" && (
-                <div>
-                  <strong className="body-font">Frequency:</strong>
-                  <span className="ml-2 body-font">
-                    {bookingData.frequency} for {bookingData.durationWeeks} weeks
-                  </span>
-                </div>
-              )}
+            <div>
+              <Label htmlFor="lastName" className="body-font">
+                Last Name *
+              </Label>
+              <Input
+                id="lastName"
+                value={formData.lastName}
+                onChange={(e) => handleInputChange("lastName", e.target.value)}
+                placeholder="Enter your last name"
+                className={`body-font ${errors.lastName ? "border-red-500" : ""}`}
+              />
+              {errors.lastName && <p className="text-red-500 text-sm mt-1 body-font">{errors.lastName}</p>}
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Customer Information Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 header-font">
-            <User className="w-5 h-5 text-[#E75837]" />
-            Your Information
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Name Fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="firstName" className="body-font">
-                  First Name *
-                </Label>
-                <Input
-                  id="firstName"
-                  value={customerData.firstName}
-                  onChange={(e) => updateField("firstName", e.target.value)}
-                  className={`body-font ${errors.firstName ? "border-red-500" : ""}`}
-                  placeholder="Enter your first name"
-                />
-                {errors.firstName && <p className="text-red-500 text-sm mt-1 body-font">{errors.firstName}</p>}
-              </div>
-              <div>
-                <Label htmlFor="lastName" className="body-font">
-                  Last Name *
-                </Label>
-                <Input
-                  id="lastName"
-                  value={customerData.lastName}
-                  onChange={(e) => updateField("lastName", e.target.value)}
-                  className={`body-font ${errors.lastName ? "border-red-500" : ""}`}
-                  placeholder="Enter your last name"
-                />
-                {errors.lastName && <p className="text-red-500 text-sm mt-1 body-font">{errors.lastName}</p>}
-              </div>
-            </div>
-
-            {/* Contact Fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="email" className="body-font">
-                  Email Address *
-                </Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    id="email"
-                    type="email"
-                    value={customerData.email}
-                    onChange={(e) => updateField("email", e.target.value)}
-                    className={`pl-10 body-font ${errors.email ? "border-red-500" : ""}`}
-                    placeholder="your.email@example.com"
-                  />
-                </div>
-                {errors.email && <p className="text-red-500 text-sm mt-1 body-font">{errors.email}</p>}
-              </div>
-              <div>
-                <Label htmlFor="phone" className="body-font">
-                  Phone Number *
-                </Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={customerData.phone}
-                    onChange={(e) => updateField("phone", e.target.value)}
-                    className={`pl-10 body-font ${errors.phone ? "border-red-500" : ""}`}
-                    placeholder="(555) 123-4567"
-                  />
-                </div>
-                {errors.phone && <p className="text-red-500 text-sm mt-1 body-font">{errors.phone}</p>}
-              </div>
-            </div>
-
-            {/* Address Fields */}
+          {/* Contact Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="address" className="body-font">
-                Street Address *
+              <Label htmlFor="email" className="flex items-center gap-2 body-font">
+                <Mail className="w-4 h-4" />
+                Email Address *
               </Label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  id="address"
-                  value={customerData.address}
-                  onChange={(e) => updateField("address", e.target.value)}
-                  className={`pl-10 body-font ${errors.address ? "border-red-500" : ""}`}
-                  placeholder="123 Main Street"
-                />
-              </div>
-              {errors.address && <p className="text-red-500 text-sm mt-1 body-font">{errors.address}</p>}
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange("email", e.target.value)}
+                placeholder="your.email@example.com"
+                className={`body-font ${errors.email ? "border-red-500" : ""}`}
+              />
+              {errors.email && <p className="text-red-500 text-sm mt-1 body-font">{errors.email}</p>}
             </div>
+            <div>
+              <Label htmlFor="phone" className="flex items-center gap-2 body-font">
+                <Phone className="w-4 h-4" />
+                Phone Number *
+              </Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => handleInputChange("phone", e.target.value)}
+                placeholder="(555) 123-4567"
+                className={`body-font ${errors.phone ? "border-red-500" : ""}`}
+              />
+              {errors.phone && <p className="text-red-500 text-sm mt-1 body-font">{errors.phone}</p>}
+            </div>
+          </div>
 
+          {/* Address Fields */}
+          <div className="space-y-4">
+            <Label className="flex items-center gap-2 body-font">
+              <MapPin className="w-4 h-4" />
+              Address (Optional)
+            </Label>
+            <Input
+              value={formData.address}
+              onChange={(e) => handleInputChange("address", e.target.value)}
+              placeholder="Street address"
+              className="body-font"
+            />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="city" className="body-font">
-                  City *
-                </Label>
-                <Input
-                  id="city"
-                  value={customerData.city}
-                  onChange={(e) => updateField("city", e.target.value)}
-                  className={`body-font ${errors.city ? "border-red-500" : ""}`}
-                  placeholder="City"
-                />
-                {errors.city && <p className="text-red-500 text-sm mt-1 body-font">{errors.city}</p>}
-              </div>
-              <div>
-                <Label htmlFor="state" className="body-font">
-                  State *
-                </Label>
-                <Input
-                  id="state"
-                  value={customerData.state}
-                  onChange={(e) => updateField("state", e.target.value)}
-                  className={`body-font ${errors.state ? "border-red-500" : ""}`}
-                  placeholder="State"
-                />
-                {errors.state && <p className="text-red-500 text-sm mt-1 body-font">{errors.state}</p>}
-              </div>
-              <div>
-                <Label htmlFor="zipCode" className="body-font">
-                  ZIP Code *
-                </Label>
-                <Input
-                  id="zipCode"
-                  value={customerData.zipCode}
-                  onChange={(e) => updateField("zipCode", e.target.value)}
-                  className={`body-font ${errors.zipCode ? "border-red-500" : ""}`}
-                  placeholder="12345"
-                />
-                {errors.zipCode && <p className="text-red-500 text-sm mt-1 body-font">{errors.zipCode}</p>}
-              </div>
-            </div>
-
-            {/* Special Instructions */}
-            <div>
-              <Label htmlFor="specialInstructions" className="body-font">
-                Special Instructions (Optional)
-              </Label>
-              <Textarea
-                id="specialInstructions"
-                value={customerData.specialInstructions}
-                onChange={(e) => updateField("specialInstructions", e.target.value)}
+              <Input
+                value={formData.city}
+                onChange={(e) => handleInputChange("city", e.target.value)}
+                placeholder="City"
                 className="body-font"
-                placeholder="Any special instructions or notes for your appointment..."
-                rows={3}
+              />
+              <Input
+                value={formData.state}
+                onChange={(e) => handleInputChange("state", e.target.value)}
+                placeholder="State"
+                className="body-font"
+              />
+              <Input
+                value={formData.zipCode}
+                onChange={(e) => handleInputChange("zipCode", e.target.value)}
+                placeholder="ZIP Code"
+                className="body-font"
               />
             </div>
+          </div>
 
-            <Separator />
+          {/* Special Requests */}
+          <div>
+            <Label htmlFor="specialRequests" className="flex items-center gap-2 body-font">
+              <MessageSquare className="w-4 h-4" />
+              Special Requests or Notes (Optional)
+            </Label>
+            <Textarea
+              id="specialRequests"
+              value={formData.specialRequests}
+              onChange={(e) => handleInputChange("specialRequests", e.target.value)}
+              placeholder="Any special requirements, allergies, or additional information..."
+              className="body-font min-h-[100px]"
+            />
+          </div>
 
-            {/* Form Actions */}
-            <div className="flex justify-between items-center pt-4">
-              <Button type="button" variant="outline" onClick={onBack} disabled={loading}>
-                Back to Date & Time
-              </Button>
-              <Button type="submit" disabled={loading} className="bg-[#E75837] hover:bg-[#d14a2a]">
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  "Complete Booking"
-                )}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+          {/* Submit Button */}
+          <Button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-[#E75837] hover:bg-[#d14a2a] text-white py-3 text-lg header-font"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Continue to Pet Selection"
+            )}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   )
 }
 

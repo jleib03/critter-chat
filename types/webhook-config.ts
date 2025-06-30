@@ -24,12 +24,12 @@ export interface WebhookCapacityRules {
 export interface WebhookBlockedTime {
   blocked_time_id: string
   employee_id?: string
-  date: string // This is the key field that was missing
+  date: string // Make sure this is always included
   start_time: string
   end_time: string
   reason: string
   is_recurring: boolean
-  is_all_day?: boolean // Add support for all-day blocks
+  is_all_day?: boolean // Add this field
   recurrence_pattern?: "weekly" | "monthly"
 }
 
