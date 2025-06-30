@@ -38,6 +38,10 @@ export const isTimeBlocked = (
   endTime: string,
   employeeId?: string,
 ): boolean => {
+  if (!config.blockedTimes || config.blockedTimes.length === 0) {
+    return false
+  }
+
   const dateObj = new Date(date)
 
   return config.blockedTimes.some((blockedTime) => {
@@ -60,7 +64,9 @@ export const isTimeBlocked = (
       dateMatches = blockedTime.date === date
     }
 
-    if (!dateMatches) return false
+    if (!dateMatches) {
+      return false
+    }
 
     // Check time overlap - handle both HH:MM:SS and H:MM AM/PM formats
     const blockedStart = timeToMinutes(blockedTime.startTime)
@@ -68,8 +74,7 @@ export const isTimeBlocked = (
     const slotStart = timeToMinutes(startTime)
     const slotEnd = timeToMinutes(endTime)
 
-    const hasOverlap = slotStart < blockedEnd && slotEnd > blockedStart
-    return hasOverlap
+    return slotStart < blockedEnd && slotEnd > blockedStart
   })
 }
 
@@ -125,26 +130,7 @@ export const calculateAvailableSlots = (
   }
   reason?: string
 } => {
-  // LAYER 0: Check if time is globally blocked (affects all employees)
-  const isGloballyBlocked = isTimeBlocked(config, date, startTime, endTime)
-  if (isGloballyBlocked) {
-    return {
-      availableSlots: 0,
-      totalCapacity: 0,
-      workingEmployees: [],
-      existingBookingsCount: 0,
-      capacityBreakdown: {
-        employeesWorking: 0,
-        capacityLimit: 0,
-        finalCapacity: 0,
-        existingBookings: 0,
-        availableSlots: 0,
-      },
-      reason: "Time slot is blocked",
-    }
-  }
-
-  // LAYER 1: Find employees working at this specific time (excluding those individually blocked)
+  // LAYER 1: Find employees working at this specific time (this already checks blocked times per employee)
   const workingEmployees = getEmployeesWorkingAtTime(config, date, startTime, endTime, dayName)
   let employeesWorkingCount = workingEmployees.length
 
@@ -164,7 +150,7 @@ export const calculateAvailableSlots = (
           existingBookings: 0,
           availableSlots: 0,
         },
-        reason: "Professional is blocked at this time",
+        reason: "Time slot is blocked",
       }
     }
     employeesWorkingCount = 1
@@ -183,7 +169,7 @@ export const calculateAvailableSlots = (
         existingBookings: 0,
         availableSlots: 0,
       },
-      reason: "No employees working at this time",
+      reason: "No employees working at this time or time is blocked",
     }
   }
 
@@ -339,6 +325,8 @@ export const canAccommodateBooking = (
 
 // Helper: convert either "HH:MM:SS", "HH:MM" or "H:MM AM/PM" → minutes past midnight
 const timeToMinutes = (timeStr: string): number => {
+  if (!timeStr) return 0
+
   const hasPeriod = timeStr.toUpperCase().includes("AM") || timeStr.toUpperCase().includes("PM")
 
   if (hasPeriod) {
@@ -346,7 +334,7 @@ const timeToMinutes = (timeStr: string): number => {
     const [time, period] = timeStr.trim().split(" ")
     const [rawHours, rawMinutes] = time.split(":")
     let hours = Number(rawHours)
-    const minutes = Number(rawMinutes)
+    const minutes = Number(rawMinutes) || 0
 
     if (period.toUpperCase() === "PM" && hours < 12) hours += 12
     if (period.toUpperCase() === "AM" && hours === 12) hours = 0
@@ -356,8 +344,8 @@ const timeToMinutes = (timeStr: string): number => {
 
   // Handle "13:30:00" or "13:30" format
   const timeParts = timeStr.split(":")
-  const hours = Number(timeParts[0])
-  const minutes = Number(timeParts[1])
+  const hours = Number(timeParts[0]) || 0
+  const minutes = Number(timeParts[1]) || 0
   return hours * 60 + minutes
 }
 

@@ -294,26 +294,24 @@ export default function SchedulePage() {
                 allowOverlapping: false,
                 requireAllEmployeesForService: false,
               },
-          // Enhanced blocked times parsing with proper format conversion
-          blockedTimes: parsedData.config.blocked_times
+          // Fixed blocked times parsing - look for blocked_times in the webhook data
+          blockedTimes: Array.isArray(parsedData.config.blocked_times)
             ? parsedData.config.blocked_times.map((bt) => ({
-                id: bt.blocked_time_id,
-                date: bt.blocked_date, // Already in YYYY-MM-DD format from webhook
-                startTime: bt.start_time, // Already in HH:MM:SS format from webhook
-                endTime: bt.end_time, // Already in HH:MM:SS format from webhook
+                id: bt.blocked_time_id || `blocked_${Date.now()}_${Math.random()}`,
+                date: bt.blocked_date || bt.date, // Handle both possible field names
+                startTime: bt.start_time || bt.startTime, // Handle both possible field names
+                endTime: bt.end_time || bt.endTime, // Handle both possible field names
                 reason: bt.reason || "Blocked",
-                employeeId: bt.employee_id || undefined,
-                isRecurring: bt.is_recurring || false,
-                recurrencePattern: bt.recurrence_pattern || undefined,
+                employeeId: bt.employee_id || bt.employeeId || undefined,
+                isRecurring: bt.is_recurring || bt.isRecurring || false,
+                recurrencePattern: bt.recurrence_pattern || bt.recurrencePattern || undefined,
               }))
             : [],
           lastUpdated: new Date().toISOString(),
         }
         setProfessionalConfig(configForProfessionalConfig)
-        // Only log once when config is loaded
-        if (configForProfessionalConfig.blockedTimes.length > 0) {
-          console.log("Blocked times loaded:", configForProfessionalConfig.blockedTimes.length)
-        }
+        console.log("Professional configuration loaded from webhook:", configForProfessionalConfig)
+        console.log("Blocked times parsed:", configForProfessionalConfig.blockedTimes)
       }
 
       console.log("Schedule data loaded:", parsedData)
@@ -852,13 +850,6 @@ export default function SchedulePage() {
                 <span>
                   {JSON.parse(userTimezoneRef.current).timezone} • Session: {sessionIdRef.current?.slice(-6)}
                 </span>
-              </div>
-            )}
-
-            {/* Simplified debug info for blocked times */}
-            {professionalConfig && professionalConfig.blockedTimes.length > 0 && (
-              <div className="mt-2 text-xs text-blue-600 bg-blue-50 p-2 rounded">
-                <strong>Blocked Times:</strong> {professionalConfig.blockedTimes.length} configured
               </div>
             )}
           </div>
