@@ -311,7 +311,17 @@ export default function ProfessionalSetupPage() {
           booking_preferences: bookingPreferencesForWebhook,
           employees: employees,
           capacity_rules: capacityRules,
-          blocked_times: blockedTimes,
+          blocked_times: blockedTimes.map((bt) => ({
+            blocked_time_id: bt.blocked_time_id,
+            employee_id: bt.employee_id,
+            date: bt.date, // Ensure date is always included
+            start_time: bt.start_time,
+            end_time: bt.end_time,
+            reason: bt.reason,
+            is_recurring: bt.is_recurring,
+            is_all_day: bt.is_all_day,
+            recurrence_pattern: bt.recurrence_pattern,
+          })),
         },
       }
 
@@ -415,7 +425,7 @@ export default function ProfessionalSetupPage() {
       const blockedTime: WebhookBlockedTime = {
         blocked_time_id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${date.getTime()}`,
         employee_id: newBlockedTime.employee_id,
-        date: date.toISOString().split("T")[0],
+        date: date.toISOString().split("T")[0], // This is the key field that was missing
         start_time: newBlockedTime.is_all_day ? "00:00" : newBlockedTime.start_time || "09:00",
         end_time: newBlockedTime.is_all_day ? "23:59" : newBlockedTime.end_time || "17:00",
         reason: newBlockedTime.reason || "",
