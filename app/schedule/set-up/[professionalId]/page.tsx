@@ -156,7 +156,9 @@ export default function ProfessionalSetupPage() {
     }
   }
 
-  // Load configuration
+  // ─────────────────────────────────────────────────────────────────────────────
+  // LOAD CONFIGURATION (REPLACED)
+  // ─────────────────────────────────────────────────────────────────────────────
   const loadConfiguration = async () => {
     try {
       setLoading(true)
@@ -175,75 +177,65 @@ export default function ProfessionalSetupPage() {
 
       const response = await fetch(webhookUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       })
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
 
       const data = await response.json()
       console.log("Raw webhook response:", data)
 
+      // Default holders for originalConfig construction
+      let businessNameLocal = ""
+      let bookingPrefsLocal = { ...DEFAULT_BOOKING_PREFERENCES }
+      let employeesLocal: WebhookEmployee[] = []
+      let capacityRulesLocal: WebhookCapacityRules = { ...DEFAULT_CAPACITY_RULES }
+      let blockedTimesLocal: WebhookBlockedTime[] = []
+
       if (Array.isArray(data)) {
-        console.log("Processing array response with", data.length, "items")
+        const structured = data.find((item) => item.webhook_response && item.webhook_response.success)
 
-        const webhookResponses = data.filter((item) => item.webhook_response && item.webhook_response.success)
+        if (structured) {
+          const config = structured.webhook_response.config_data
 
-        if (webhookResponses.length > 0) {
-          const latestResponse = webhookResponses[webhookResponses.length - 1]
-          const configData = latestResponse.webhook_response.config_data
+          //-----------------------------//
+          // Business Name
+          //-----------------------------//
+          businessNameLocal = config.business_name || ""
+          setBusinessName(businessNameLocal)
 
-          console.log("Found structured webhook response:", configData)
-
-          setBusinessName(configData.business_name || "")
-          setLastUpdated(configData.last_updated || new Date().toISOString())
-
-          if (configData.booking_preferences) {
-            const prefs = configData.booking_preferences
-            setBookingPreferences({
-              booking_system: mapBookingTypeToBookingSystem(
-                prefs.booking_type || prefs.booking_system || "direct_booking",
-              ),
-              allow_direct_booking: prefs.allow_direct_booking ?? true,
-              require_approval: prefs.require_approval ?? false,
-              online_booking_enabled: prefs.online_booking_enabled ?? true,
-              custom_instructions: prefs.custom_instructions || "",
-            })
+          //-----------------------------//
+          // Booking Preferences
+          //-----------------------------//
+          const rawPrefs = config.booking_preferences ?? {}
+          bookingPrefsLocal = {
+            booking_system: mapBookingTypeToBookingSystem(
+              rawPrefs.booking_type || rawPrefs.booking_system || "direct_booking",
+            ),
+            allow_direct_booking: rawPrefs.allow_direct_booking ?? true,
+            require_approval: rawPrefs.require_approval ?? false,
+            online_booking_enabled: rawPrefs.online_booking_enabled ?? true,
+            custom_instructions: rawPrefs.custom_instructions || "",
           }
+          setBookingPreferences(bookingPrefsLocal)
 
-          if (configData.employees && Array.isArray(configData.employees)) {
-            console.log("Loading employees from structured config:", configData.employees.length)
-
-            const processedEmployees: WebhookEmployee[] = configData.employees.map((emp: any) => {
-              const workingDays = emp.working_days
-                ? emp.working_days.map((day: any) => ({
-                    day: day.day,
-                    start_time: day.start_time.substring(0, 5),
-                    end_time: day.end_time.substring(0, 5),
-                    is_working: day.is_working,
+          //-----------------------------//
+          // Employees
+          //-----------------------------//
+          if (Array.isArray(config.employees)) {
+            employeesLocal = config.employees.map((emp: any) => {
+              const working = emp.working_days
+                ? emp.working_days.map((d: any) => ({
+                    day: d.day,
+                    start_time: d.start_time.slice(0, 5),
+                    end_time: d.end_time.slice(0, 5),
+                    is_working: d.is_working,
                   }))
                 : [...DEFAULT_WORKING_DAYS]
 
-              const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-              const existingDays = workingDays.map((d: any) => d.day)
-
-              dayNames.forEach((dayName) => {
-                if (!existingDays.includes(dayName)) {
-                  workingDays.push({
-                    day: dayName,
-                    start_time: "09:00",
-                    end_time: "17:00",
-                    is_working: false,
-                  })
-                }
-              })
-
               const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-              workingDays.sort((a: any, b: any) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day))
+              working.sort((a, b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day))
 
               return {
                 employee_id: emp.employee_id,
@@ -251,72 +243,50 @@ export default function ProfessionalSetupPage() {
                 role: emp.role || "Staff Member",
                 email: emp.email || "",
                 is_active: emp.is_active ?? true,
-                working_days: workingDays,
+                working_days: working,
                 services: emp.services || [],
               }
             })
-
-            setEmployees(processedEmployees)
-            console.log("Processed structured employees:", processedEmployees.length)
           }
+          setEmployees(employeesLocal)
 
-          if (configData.capacity_rules) {
-            setCapacityRules(configData.capacity_rules)
+          //-----------------------------//
+          // Capacity Rules
+          //-----------------------------//
+          capacityRulesLocal = {
+            ...DEFAULT_CAPACITY_RULES,
+            ...(config.capacity_rules ?? {}),
           }
+          setCapacityRules(capacityRulesLocal)
 
-          if (configData.blocked_times && Array.isArray(configData.blocked_times)) {
-            // Map blocked_date back to date for internal use
-            const processedBlockedTimes = configData.blocked_times.map((bt: any) => ({
+          //-----------------------------//
+          // Blocked Times
+          //-----------------------------//
+          if (Array.isArray(config.blocked_times)) {
+            blockedTimesLocal = config.blocked_times.map((bt: any) => ({
               ...bt,
-              date: bt.blocked_date || bt.date, // Handle both field names
+              date: bt.blocked_date || bt.date,
             }))
-            setBlockedTimes(processedBlockedTimes)
           }
+          setBlockedTimes(blockedTimesLocal)
 
-          // Store original configuration for change detection
-          setOriginalConfig({
-            businessName: configData.business_name || "",
-            bookingPreferences: {
-              booking_system: mapBookingTypeToBookingSystem(
-                prefs.booking_type || prefs.booking_system || "direct_booking",
-              ),
-              allow_direct_booking: prefs.allow_direct_booking ?? true,
-              require_approval: prefs.require_approval ?? false,
-              online_booking_enabled: prefs.online_booking_enabled ?? true,
-              custom_instructions: prefs.custom_instructions || "",
-            },
-            employees: employees,
-            capacityRules: configData.capacity_rules || DEFAULT_CAPACITY_RULES,
-            blockedTimes: blockedTimes,
-          })
-
-          console.log("Configuration loaded successfully")
-        } else {
-          console.log("No existing configuration found, using defaults")
-          setBusinessName("")
-          setBookingPreferences(DEFAULT_BOOKING_PREFERENCES)
-          setEmployees([])
-          setCapacityRules(DEFAULT_CAPACITY_RULES)
-          setBlockedTimes([])
-          setLastUpdated(new Date().toISOString())
-          setOriginalConfig({
-            businessName: "",
-            bookingPreferences: DEFAULT_BOOKING_PREFERENCES,
-            employees: [],
-            capacityRules: DEFAULT_CAPACITY_RULES,
-            blockedTimes: [],
-          })
+          //-----------------------------//
+          // Timestamp
+          //-----------------------------//
+          setLastUpdated(config.last_updated || new Date().toISOString())
         }
-
-        console.log("Configuration loaded successfully")
-      } else {
-        console.log("Unexpected response format:", data)
-        setBusinessName("")
-        setBookingPreferences(DEFAULT_BOOKING_PREFERENCES)
-        setEmployees([])
-        setCapacityRules(DEFAULT_CAPACITY_RULES)
-        setBlockedTimes([])
       }
+
+      // Snapshot for diffing on save
+      setOriginalConfig({
+        businessName: businessNameLocal,
+        bookingPreferences: bookingPrefsLocal,
+        employees: employeesLocal,
+        capacityRules: capacityRulesLocal,
+        blockedTimes: blockedTimesLocal,
+      })
+
+      console.log("Configuration loaded & snapshot saved.")
     } catch (err) {
       console.error("Error loading configuration:", err)
       setError("Failed to load configuration. Please try again.")
