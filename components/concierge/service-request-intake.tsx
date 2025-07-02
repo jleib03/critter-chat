@@ -17,11 +17,11 @@ import type { ServiceRequest } from "@/types/concierge"
 import { DEMO_SERVICE_REQUEST } from "@/utils/demo-data"
 
 interface ServiceRequestIntakeProps {
-  onSubmit: (request: ServiceRequest) => void
-  onBack: () => void
+  onComplete: (request: ServiceRequest) => void
+  onBack?: () => void
 }
 
-export function ServiceRequestIntake({ onSubmit, onBack }: ServiceRequestIntakeProps) {
+export function ServiceRequestIntake({ onComplete, onBack = () => {} }: ServiceRequestIntakeProps) {
   // Prepopulate with demo data
   const [formData, setFormData] = useState({
     // Contact Information - prepopulated
@@ -203,7 +203,7 @@ export function ServiceRequestIntake({ onSubmit, onBack }: ServiceRequestIntakeP
       status: "pending",
     }
 
-    onSubmit(serviceRequest)
+    onComplete(serviceRequest)
   }
 
   const nextStep = () => {
