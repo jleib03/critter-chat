@@ -1,24 +1,18 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { Clock, MapPin, Star, CheckCircle, Target, Timer, Award, Zap, Phone, MessageCircle } from "lucide-react"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  Clock,
-  MapPin,
-  Star,
-  AlertCircle,
-  CheckCircle,
-  Target,
-  Timer,
-  Award,
-  Zap,
-  Phone,
-  MessageCircle,
-} from "lucide-react"
+
 import { DEMO_SERVICE_REQUEST, DEMO_MATCH_REASONING, getTimeElapsed, getTimeRemaining } from "../../../utils/demo-data"
+
+/* -------------------------------------------------------------------------- */
+/*                                Type helpers                                */
+/* -------------------------------------------------------------------------- */
 
 interface ServiceOpportunity {
   id: string
@@ -64,7 +58,12 @@ interface ServiceOpportunity {
   customerNotes: string
 }
 
+/* -------------------------------------------------------------------------- */
+/*                             Component definition                           */
+/* -------------------------------------------------------------------------- */
+
 export default function ProfessionalOpportunitiesPage() {
+  /* ------------------------------- state ---------------------------------- */
   const [opportunities, setOpportunities] = useState<ServiceOpportunity[]>([])
   const [selectedTier, setSelectedTier] = useState<1 | 2 | 3>(1)
   const [claimingOpportunity, setClaimingOpportunity] = useState<string | null>(null)
@@ -85,9 +84,9 @@ export default function ProfessionalOpportunitiesPage() {
     totalEarnings: "$15,240",
   })
 
+  /* --------------------------- initialise mock ---------------------------- */
   useEffect(() => {
-    // Convert demo data to opportunities format
-    const demoOpportunity: ServiceOpportunity = {
+    const tier1Opportunity: ServiceOpportunity = {
       id: DEMO_SERVICE_REQUEST.id,
       tier: 1,
       customerName: `${DEMO_SERVICE_REQUEST.contactInfo.firstName} ${DEMO_SERVICE_REQUEST.contactInfo.lastName.charAt(0)}.`,
@@ -115,7 +114,7 @@ export default function ProfessionalOpportunitiesPage() {
       whySelected: DEMO_MATCH_REASONING.prof_maria_rodriguez,
       estimatedEarnings: "$150-200",
       postedAt: DEMO_SERVICE_REQUEST.createdAt,
-      expiresAt: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(), // 4 hours from now
+      expiresAt: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(), // +4 h
       claimsRemaining: 2,
       totalClaims: 3,
       status: "available",
@@ -123,11 +122,10 @@ export default function ProfessionalOpportunitiesPage() {
       customerNotes: DEMO_SERVICE_REQUEST.additionalNotes,
     }
 
-    // Add a second tier 2 opportunity for demo
     const tier2Opportunity: ServiceOpportunity = {
       id: "req_20240110_002",
       tier: 2,
-      customerName: "Michael T.",
+      customerName: "Michael K.",
       pets: [
         {
           name: "Buddy",
@@ -168,8 +166,8 @@ export default function ProfessionalOpportunitiesPage() {
         ],
       },
       estimatedEarnings: "$80-120",
-      postedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-      expiresAt: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(), // 6 hours from now
+      postedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 h ago
+      expiresAt: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(), // +6 h
       claimsRemaining: 1,
       totalClaims: 2,
       status: "available",
@@ -178,390 +176,270 @@ export default function ProfessionalOpportunitiesPage() {
         "Buddy is a sweet senior dog who loves gentle walks and needs someone patient with his slower pace.",
     }
 
-    setOpportunities([demoOpportunity, tier2Opportunity])
+    setOpportunities([tier1Opportunity, tier2Opportunity])
   }, [])
 
-  const claimOpportunity = async (opportunityId: string) => {
-    setClaimingOpportunity(opportunityId)
-
-    // Simulate claiming process
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+  /* ------------------------------ helpers --------------------------------- */
+  const claimOpportunity = async (id: string) => {
+    setClaimingOpportunity(id)
+    await new Promise((r) => setTimeout(r, 1500))
 
     setOpportunities((prev) =>
       prev.map((opp) =>
-        opp.id === opportunityId
-          ? { ...opp, status: "claimed" as const, claimsRemaining: opp.claimsRemaining - 1 }
-          : opp,
+        opp.id === id ? { ...opp, status: "claimed" as const, claimsRemaining: opp.claimsRemaining - 1 } : opp,
       ),
     )
-
     setClaimingOpportunity(null)
-
-    // Show success message
-    alert(
-      "🎉 Opportunity claimed successfully!\n\nNext steps:\n• Customer will be notified\n• You'll receive contact details\n• Service coordination begins",
-    )
+    alert("🎉 Opportunity claimed! Customer will be notified shortly.")
   }
 
-  const getOpportunitiesByTier = (tier: 1 | 2 | 3) => {
-    return opportunities.filter((opp) => opp.tier === tier)
-  }
+  const getOpportunitiesByTier = (tier: 1 | 2 | 3) => opportunities.filter((o) => o.tier === tier)
 
-  const getTierDescription = (tier: 1 | 2 | 3) => {
-    switch (tier) {
-      case 1:
-        return "Perfect matches - highest compatibility with your expertise"
-      case 2:
-        return "Good opportunities - solid matches with minor considerations"
-      case 3:
-        return "Available options - may have some limitations or lower match scores"
-    }
-  }
+  const tierMeta = {
+    1: {
+      label: "Perfect matches",
+      color: "bg-green-100 text-green-800",
+    },
+    2: {
+      label: "Good fits",
+      color: "bg-blue-100 text-blue-800",
+    },
+    3: {
+      label: "Additional",
+      color: "bg-orange-100 text-orange-800",
+    },
+  } as const
 
-  const getTierColor = (tier: 1 | 2 | 3) => {
-    switch (tier) {
-      case 1:
-        return "bg-green-100 text-green-800"
-      case 2:
-        return "bg-blue-100 text-blue-800"
-      case 3:
-        return "bg-orange-100 text-orange-800"
-    }
-  }
-
+  /* ------------------------------ render ---------------------------------- */
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="border-b bg-white px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold header-font">Professional Opportunities</h1>
+            <h1 className="text-2xl font-bold header-font">Service Opportunities</h1>
             <p className="text-gray-600 body-font">Welcome back, {professionalProfile.name}</p>
           </div>
+
           <div className="flex items-center gap-4">
             <div className="text-right">
-              <div className="text-sm text-gray-500 body-font">This Month</div>
+              <div className="text-sm text-gray-500 body-font">This month</div>
               <div className="text-xl font-bold text-[#E75837] body-font">{professionalProfile.totalEarnings}</div>
             </div>
             <Badge className="bg-[#E75837] text-white body-font">
               <Star className="w-3 h-3 mr-1" />
-              {professionalProfile.rating} Rating
+              {professionalProfile.rating}
             </Badge>
           </div>
         </div>
       </div>
 
+      {/* Body */}
       <div className="max-w-7xl mx-auto px-6 py-6">
-        {/* Professional Stats */}
+        {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <Card>
             <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold text-[#E75837] body-font">
                 {professionalProfile.tier1Opportunities}
               </div>
-              <div className="text-sm text-gray-500 body-font">Tier 1 This Month</div>
+              <div className="text-sm text-gray-500 body-font">Tier 1 this month</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold text-blue-600 body-font">{professionalProfile.tier2Opportunities}</div>
-              <div className="text-sm text-gray-500 body-font">Tier 2 This Month</div>
+              <div className="text-sm text-gray-500 body-font">Tier 2 this month</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold text-green-600 body-font">{professionalProfile.responseRate}%</div>
-              <div className="text-sm text-gray-500 body-font">Response Rate</div>
+              <div className="text-sm text-gray-500 body-font">Response rate</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold text-purple-600 body-font">{professionalProfile.totalJobs}</div>
-              <div className="text-sm text-gray-500 body-font">Total Jobs</div>
+              <div className="text-sm text-gray-500 body-font">Total jobs</div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Opportunities */}
+        {/* Opportunities wrapper */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 header-font">
               <Zap className="w-5 h-5 text-[#E75837]" />
               Available Opportunities
               <Badge variant="secondary" className="body-font">
-                {opportunities.filter((opp) => opp.status === "available").length} Active
+                {opportunities.filter((o) => o.status === "available").length} active
               </Badge>
             </CardTitle>
           </CardHeader>
+
           <CardContent>
             <Tabs
               value={`tier${selectedTier}`}
-              onValueChange={(value) => setSelectedTier(Number.parseInt(value.replace("tier", "")) as 1 | 2 | 3)}
+              onValueChange={(v) => setSelectedTier(Number(v.replace("tier", "")) as 1 | 2 | 3)}
             >
+              {/* Tabs list */}
               <TabsList className="grid w-full max-w-md grid-cols-3 mb-6">
-                <TabsTrigger value="tier1" className="body-font">
-                  Tier 1 ({getOpportunitiesByTier(1).length})
-                </TabsTrigger>
-                <TabsTrigger value="tier2" className="body-font">
-                  Tier 2 ({getOpportunitiesByTier(2).length})
-                </TabsTrigger>
-                <TabsTrigger value="tier3" className="body-font">
-                  Tier 3 ({getOpportunitiesByTier(3).length})
-                </TabsTrigger>
+                {[1, 2, 3].map((tier) => (
+                  <TabsTrigger key={tier} value={`tier${tier}`} className="body-font">
+                    Tier {tier} ({getOpportunitiesByTier(tier as 1 | 2 | 3).length})
+                  </TabsTrigger>
+                ))}
               </TabsList>
 
+              {/* Tabs content */}
               {[1, 2, 3].map((tier) => (
                 <TabsContent key={tier} value={`tier${tier}`} className="space-y-4">
-                  <div className="mb-4">
-                    <h3 className="text-lg font-semibold header-font mb-1">Tier {tier} Opportunities</h3>
-                    <p className="text-sm text-gray-600 body-font">{getTierDescription(tier as 1 | 2 | 3)}</p>
-                  </div>
+                  <h3 className="text-lg font-semibold header-font mb-1">Tier {tier}</h3>
+                  <p className="text-sm text-gray-600 body-font mb-4">{tierMeta[tier as 1 | 2 | 3].label}</p>
 
-                  <div className="space-y-4">
-                    {getOpportunitiesByTier(tier as 1 | 2 | 3).map((opportunity) => (
-                      <Card
-                        key={opportunity.id}
-                        className="border-2 border-gray-200 hover:border-[#E75837] transition-colors"
-                      >
-                        <CardContent className="p-6">
-                          <div className="flex justify-between items-start mb-4">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <h4 className="font-semibold text-lg header-font">
-                                  {opportunity.pets.map((p) => p.name).join(", ")} - {opportunity.customerName}
-                                </h4>
-                                <Badge className={`${getTierColor(opportunity.tier)} body-font`}>
-                                  Tier {opportunity.tier}
-                                </Badge>
-                                <Badge className="bg-green-100 text-green-800 body-font">
-                                  {opportunity.matchScore}% Match
-                                </Badge>
-                              </div>
-
-                              <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
-                                <div className="flex items-center gap-1">
-                                  <MapPin className="w-4 h-4" />
-                                  <span className="body-font">
-                                    {opportunity.location.distance} mi - {opportunity.location.area}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Clock className="w-4 h-4" />
-                                  <span className="body-font">{opportunity.timing.urgency.replace("_", " ")}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Timer className="w-4 h-4" />
-                                  <span className="body-font">{getTimeRemaining(opportunity.expiresAt)}</span>
-                                </div>
-                              </div>
-
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                <div>
-                                  <h5 className="font-medium text-gray-700 mb-2 header-font">Pet Details</h5>
-                                  {opportunity.pets.map((pet, idx) => (
-                                    <div key={idx} className="text-sm body-font">
-                                      <p>
-                                        <strong>{pet.name}</strong> - {pet.breed} {pet.type}, {pet.age} years
-                                      </p>
-                                      {pet.specialNeeds.length > 0 && (
-                                        <div className="text-orange-600 mt-1">
-                                          <p className="font-medium">Special needs:</p>
-                                          <ul className="ml-2">
-                                            {pet.specialNeeds.map((need, needIdx) => (
-                                              <li key={needIdx}>• {need}</li>
-                                            ))}
-                                          </ul>
-                                        </div>
-                                      )}
-                                      {pet.medications.length > 0 && (
-                                        <div className="text-blue-600 mt-1">
-                                          <p className="font-medium">Medications:</p>
-                                          <ul className="ml-2">
-                                            {pet.medications.map((med, medIdx) => (
-                                              <li key={medIdx}>• {med}</li>
-                                            ))}
-                                          </ul>
-                                        </div>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-
-                                <div>
-                                  <h5 className="font-medium text-gray-700 mb-2 header-font">Services & Budget</h5>
-                                  <div className="flex flex-wrap gap-1 mb-2">
-                                    {opportunity.services.map((service) => (
-                                      <Badge key={service} variant="secondary" className="text-xs body-font">
-                                        {service.replace("_", " ")}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                  <p className="text-sm body-font">
-                                    <strong>Budget:</strong> ${opportunity.budget.min} - ${opportunity.budget.max}
-                                    {opportunity.budget.flexible && <span className="text-green-600"> (Flexible)</span>}
-                                  </p>
-                                  {opportunity.timing.preferredDate && (
-                                    <p className="text-sm body-font">
-                                      <strong>Preferred:</strong>{" "}
-                                      {new Date(opportunity.timing.preferredDate).toLocaleDateString()}
-                                      {opportunity.timing.preferredTime && ` at ${opportunity.timing.preferredTime}`}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-
-                              {opportunity.customerNotes && (
-                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
-                                  <h5 className="font-medium text-yellow-800 mb-1 header-font">Customer Notes</h5>
-                                  <p className="text-sm text-yellow-700 body-font">{opportunity.customerNotes}</p>
-                                </div>
-                              )}
-
-                              {opportunity.pets.some((pet) => pet.specialInstructions) && (
-                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                                  <h5 className="font-medium text-blue-800 mb-1 header-font">Special Instructions</h5>
-                                  {opportunity.pets.map(
-                                    (pet, idx) =>
-                                      pet.specialInstructions && (
-                                        <p key={idx} className="text-sm text-blue-700 body-font">
-                                          <strong>{pet.name}:</strong> {pet.specialInstructions}
-                                        </p>
-                                      ),
-                                  )}
-                                </div>
-                              )}
+                  {getOpportunitiesByTier(tier as 1 | 2 | 3).map((opp) => (
+                    <Card key={opp.id} className="border-2 border-gray-200 hover:border-[#E75837] transition-colors">
+                      <CardContent className="p-6">
+                        {/* Top row */}
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h4 className="font-semibold text-lg header-font">
+                                {opp.pets.map((p) => p.name).join(", ")} – {opp.customerName}
+                              </h4>
+                              <Badge className={`${tierMeta[opp.tier].color} body-font`}>Tier {opp.tier}</Badge>
+                              <Badge className="bg-green-100 text-green-800 body-font">{opp.matchScore}% Match</Badge>
                             </div>
 
-                            <div className="text-right ml-6">
-                              <div className="text-2xl font-bold text-[#E75837] body-font mb-1">
-                                {opportunity.estimatedEarnings}
-                              </div>
-                              <div className="text-sm text-gray-500 body-font mb-2">Estimated earnings</div>
-
-                              <div className="text-xs text-gray-400 body-font mb-4">
-                                {opportunity.claimsRemaining} of {opportunity.totalClaims} claims left
-                              </div>
-
-                              {opportunity.status === "available" ? (
-                                <Button
-                                  onClick={() => claimOpportunity(opportunity.id)}
-                                  disabled={claimingOpportunity === opportunity.id}
-                                  className="bg-[#E75837] hover:bg-[#d04e30] text-white body-font w-full mb-2"
-                                >
-                                  {claimingOpportunity === opportunity.id ? (
-                                    <>
-                                      <Timer className="w-4 h-4 mr-2 animate-spin" />
-                                      Claiming...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <CheckCircle className="w-4 h-4 mr-2" />
-                                      Claim Opportunity
-                                    </>
-                                  )}
-                                </Button>
-                              ) : (
-                                <Badge className="bg-green-100 text-green-800 body-font w-full justify-center py-2">
-                                  <CheckCircle className="w-4 h-4 mr-1" />
-                                  Claimed
-                                </Badge>
-                              )}
-
-                              <div className="flex gap-1">
-                                <Button size="sm" variant="outline" className="flex-1 body-font bg-transparent">
-                                  <Phone className="w-3 h-3" />
-                                </Button>
-                                <Button size="sm" variant="outline" className="flex-1 body-font bg-transparent">
-                                  <MessageCircle className="w-3 h-3" />
-                                </Button>
-                              </div>
+                            <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
+                              <span className="flex items-center gap-1 body-font">
+                                <MapPin className="w-4 h-4" />
+                                {opp.location.distance} mi – {opp.location.area}
+                              </span>
+                              <span className="flex items-center gap-1 body-font">
+                                <Clock className="w-4 h-4" />
+                                {opp.timing.urgency.replace("_", " ")}
+                              </span>
+                              <span className="flex items-center gap-1 body-font">
+                                <Timer className="w-4 h-4" />
+                                {getTimeRemaining(opp.expiresAt)}
+                              </span>
                             </div>
                           </div>
 
-                          {/* Why You Were Selected */}
-                          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                            <h5 className="font-medium text-green-800 mb-2 header-font flex items-center gap-2">
-                              <Target className="w-4 h-4" />
-                              Why You Were Selected for This Opportunity
-                            </h5>
+                          {/* Earnings & claim */}
+                          <div className="text-right ml-6">
+                            <div className="text-2xl font-bold text-[#E75837] body-font mb-1">
+                              {opp.estimatedEarnings}
+                            </div>
+                            <div className="text-sm text-gray-500 body-font mb-2">Estimated earnings</div>
+                            <div className="text-xs text-gray-400 body-font mb-4">
+                              {opp.claimsRemaining} of {opp.totalClaims} claims left
+                            </div>
 
-                            <div className="space-y-3">
+                            {opp.status === "available" ? (
+                              <Button
+                                disabled={claimingOpportunity === opp.id}
+                                onClick={() => claimOpportunity(opp.id)}
+                                className="bg-[#E75837] hover:bg-[#d04e30] w-full body-font mb-2"
+                              >
+                                {claimingOpportunity === opp.id ? (
+                                  <>
+                                    <Timer className="w-4 h-4 mr-1 animate-spin" />
+                                    Claiming…
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle className="w-4 h-4 mr-1" />
+                                    Claim Opportunity
+                                  </>
+                                )}
+                              </Button>
+                            ) : (
+                              <Badge className="bg-green-100 text-green-800 body-font w-full justify-center py-2">
+                                <CheckCircle className="w-4 h-4 mr-1" />
+                                Claimed
+                              </Badge>
+                            )}
+
+                            <div className="flex gap-1">
+                              <Button size="sm" variant="outline" className="flex-1 body-font bg-transparent">
+                                <Phone className="w-3 h-3" />
+                              </Button>
+                              <Button size="sm" variant="outline" className="flex-1 body-font bg-transparent">
+                                <MessageCircle className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Why selected */}
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                          <h5 className="font-medium text-green-800 header-font mb-2 flex items-center gap-2">
+                            <Target className="w-4 h-4" />
+                            Why You Were Selected
+                          </h5>
+
+                          <div className="space-y-3">
+                            {/* Primary */}
+                            <div>
+                              <h6 className="text-sm font-medium text-green-700 header-font">Perfect Match Factors</h6>
+                              <ul className="ml-4 text-sm text-green-600 body-font list-disc">
+                                {opp.whySelected.primary.map((reason, i) => (
+                                  <li key={i}>{reason}</li>
+                                ))}
+                              </ul>
+                            </div>
+
+                            {/* Secondary */}
+                            {opp.whySelected.secondary.length > 0 && (
                               <div>
-                                <h6 className="text-sm font-medium text-green-700 header-font">
-                                  Perfect Match Factors:
-                                </h6>
-                                <ul className="text-sm text-green-600 body-font ml-4 space-y-1">
-                                  {opportunity.whySelected.primary.map((reason, index) => (
-                                    <li key={index} className="flex items-start gap-2">
-                                      <CheckCircle className="w-3 h-3 mt-0.5 text-green-500 flex-shrink-0" />
-                                      {reason}
-                                    </li>
+                                <h6 className="text-sm font-medium text-green-700 header-font">Additional Benefits</h6>
+                                <ul className="ml-4 text-sm text-green-600 body-font list-disc">
+                                  {opp.whySelected.secondary.map((reason, i) => (
+                                    <li key={i}>{reason}</li>
                                   ))}
                                 </ul>
                               </div>
+                            )}
 
-                              {opportunity.whySelected.secondary.length > 0 && (
-                                <div>
-                                  <h6 className="text-sm font-medium text-green-700 header-font">
-                                    Additional Benefits:
-                                  </h6>
-                                  <ul className="text-sm text-green-600 body-font ml-4 space-y-1">
-                                    {opportunity.whySelected.secondary.map((reason, index) => (
-                                      <li key={index} className="flex items-start gap-2">
-                                        <CheckCircle className="w-3 h-3 mt-0.5 text-green-500 flex-shrink-0" />
-                                        {reason}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-
-                              {opportunity.whySelected.concerns.length > 0 && (
-                                <div>
-                                  <h6 className="text-sm font-medium text-orange-700 header-font">Considerations:</h6>
-                                  <ul className="text-sm text-orange-600 body-font ml-4 space-y-1">
-                                    {opportunity.whySelected.concerns.map((concern, index) => (
-                                      <li key={index} className="flex items-start gap-2">
-                                        <AlertCircle className="w-3 h-3 mt-0.5 text-orange-500 flex-shrink-0" />
-                                        {concern}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                            </div>
+                            {/* Concerns */}
+                            {opp.whySelected.concerns.length > 0 && (
+                              <div>
+                                <h6 className="text-sm font-medium text-orange-700 header-font">Considerations</h6>
+                                <ul className="ml-4 text-sm text-orange-600 body-font list-disc">
+                                  {opp.whySelected.concerns.map((c, i) => (
+                                    <li key={i}>{c}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
                           </div>
+                        </div>
 
-                          {/* Opportunity Metadata */}
-                          <div className="flex items-center justify-between text-xs text-gray-500 mt-4 pt-4 border-t">
-                            <div className="flex items-center gap-4">
-                              <span className="body-font">Posted: {getTimeElapsed(opportunity.postedAt)}</span>
-                              <span className="body-font">Expires: {getTimeRemaining(opportunity.expiresAt)}</span>
-                            </div>
-                            <Badge variant="outline" className="body-font">
-                              ID: {opportunity.id}
-                            </Badge>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                        {/* Meta */}
+                        <div className="flex items-center justify-between text-xs text-gray-500 pt-4 border-t">
+                          <span className="body-font">Posted {getTimeElapsed(opp.postedAt)}</span>
+                          <Badge variant="outline" className="body-font">
+                            ID: {opp.id}
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
 
-                    {getOpportunitiesByTier(tier as 1 | 2 | 3).length === 0 && (
-                      <Card>
-                        <CardContent className="p-8 text-center">
-                          <div className="text-gray-400 mb-4">
-                            <Award className="w-12 h-12 mx-auto" />
-                          </div>
-                          <h3 className="text-lg font-semibold text-gray-500 mb-2 header-font">
-                            No Tier {tier} opportunities available
-                          </h3>
-                          <p className="text-gray-400 body-font">
-                            Check back soon for new opportunities that match your expertise.
-                          </p>
-                        </CardContent>
-                      </Card>
-                    )}
-                  </div>
+                  {getOpportunitiesByTier(tier as 1 | 2 | 3).length === 0 && (
+                    <Card>
+                      <CardContent className="p-8 text-center">
+                        <Award className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                        <h4 className="text-lg font-semibold text-gray-500 mb-2 header-font">
+                          No Tier {tier} opportunities
+                        </h4>
+                        <p className="text-gray-400 body-font">Check back soon for new matches.</p>
+                      </CardContent>
+                    </Card>
+                  )}
                 </TabsContent>
               ))}
             </Tabs>
