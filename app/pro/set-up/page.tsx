@@ -1,9 +1,11 @@
 "use client"
 import { useState } from "react"
-import { Loader2, Copy, Check, Settings, Users, MessageSquare, Construction, ArrowRight } from "lucide-react"
+import { Loader2, Copy, Check, Settings, Users, MessageSquare, Calendar, ArrowRight, Eye } from "lucide-react"
 import Header from "../../../components/header"
 import PasswordProtection from "../../../components/password-protection"
 import { useRouter } from "next/navigation"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 export default function ProfessionalSetupPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -14,6 +16,12 @@ export default function ProfessionalSetupPage() {
   const [professionalId, setProfessionalId] = useState("")
   const [showResults, setShowResults] = useState(false)
   const [copiedStates, setCopiedStates] = useState<{ [key: string]: boolean }>({})
+  const [showScheduleModal, setShowScheduleModal] = useState(false)
+  const [scheduleProfessionalId, setScheduleProfessionalId] = useState("")
+  const [scheduleError, setScheduleError] = useState("")
+  const [showPreviewModal, setShowPreviewModal] = useState(false)
+  const [previewProfessionalId, setPreviewProfessionalId] = useState("")
+  const [previewError, setPreviewError] = useState("")
 
   const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
   const router = useRouter()
@@ -121,6 +129,50 @@ export default function ProfessionalSetupPage() {
   const buttonCode = `<!-- Critter Customer Intake Button -->
 ${buttonHtml}`
 
+  const handleScheduleSetupClick = () => {
+    setShowScheduleModal(true)
+    setScheduleError("")
+    setScheduleProfessionalId("")
+  }
+
+  const handleCloseScheduleModal = () => {
+    setShowScheduleModal(false)
+    setScheduleError("")
+    setScheduleProfessionalId("")
+  }
+
+  const handleScheduleSubmit = () => {
+    if (!scheduleProfessionalId.trim()) {
+      setScheduleError("Please enter your Professional ID")
+      return
+    }
+
+    // Navigate directly to schedule setup page
+    router.push(`/schedule/set-up/${scheduleProfessionalId.trim()}`)
+  }
+
+  const handlePreviewClick = () => {
+    setShowPreviewModal(true)
+    setPreviewError("")
+    setPreviewProfessionalId("")
+  }
+
+  const handleClosePreviewModal = () => {
+    setShowPreviewModal(false)
+    setPreviewError("")
+    setPreviewProfessionalId("")
+  }
+
+  const handlePreviewSubmit = () => {
+    if (!previewProfessionalId.trim()) {
+      setPreviewError("Please enter your Professional ID")
+      return
+    }
+
+    // Navigate directly to the professional landing page
+    router.push(`/${previewProfessionalId.trim()}`)
+  }
+
   return (
     <div className="min-h-screen bg-[#FBF8F3] flex flex-col">
       <Header />
@@ -141,7 +193,7 @@ ${buttonHtml}`
               </div>
 
               {/* Feature Tiles Section */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
                 {/* Customer Intake Tile - Clickable */}
                 <div
                   onClick={handleSetupClick}
@@ -176,22 +228,36 @@ ${buttonHtml}`
                   </span>
                 </div>
 
-                {/* Under Construction Tile */}
-                <div className="bg-white rounded-xl shadow-md p-6 text-center relative overflow-hidden">
-                  <div className="absolute top-3 right-3">
-                    <span className="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                      In Development
-                    </span>
-                  </div>
+                {/* Schedule Setup Tile - Replaces Under Construction */}
+                <div
+                  onClick={() => setShowScheduleModal(true)}
+                  className="bg-white rounded-xl shadow-md p-6 text-center transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer border border-transparent hover:border-[#745E25]/20"
+                >
                   <div className="w-12 h-12 bg-[#f9f7f2] rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Construction className="h-6 w-6 text-[#745E25]" />
+                    <Calendar className="h-6 w-6 text-[#745E25]" />
                   </div>
-                  <h3 className="text-lg font-bold mb-2 header-font">New Feature</h3>
+                  <h3 className="text-lg font-bold mb-2 header-font">Schedule Setup</h3>
                   <p className="text-gray-600 body-font mb-4">
-                    We're working on something exciting to help you manage your business more effectively.
+                    Configure your team, working hours, capacity rules, and blocked time for appointment scheduling.
                   </p>
-                  <span className="inline-flex items-center text-gray-400 text-sm font-medium">Stay tuned</span>
+                  <span className="inline-flex items-center text-[#745E25] text-sm font-medium">
+                    Set up now <ArrowRight className="ml-1 h-4 w-4" />
+                  </span>
                 </div>
+              </div>
+
+              {/* Preview Landing Page Button */}
+              <div className="text-center mb-12">
+                <button
+                  onClick={handlePreviewClick}
+                  className="inline-flex items-center px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors border border-gray-300 hover:border-gray-400 body-font"
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  Preview Landing Page
+                </button>
+                <p className="text-sm text-gray-500 mt-2 body-font">
+                  See how your professional landing page looks to customers
+                </p>
               </div>
             </>
           ) : (
@@ -366,7 +432,7 @@ ${buttonHtml}`
         </div>
       </main>
 
-      {/* Modal */}
+      {/* Customer Intake Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
@@ -408,6 +474,98 @@ ${buttonHtml}`
                 ) : (
                   "Get My Link"
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Schedule Setup Modal */}
+      {showScheduleModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold mb-4 header-font">Schedule Setup</h3>
+            <p className="text-gray-600 mb-4 body-font">
+              Enter your Professional ID to access your schedule configuration. This will set up your team, working
+              hours, and booking capacity.
+            </p>
+
+            <div className="mb-4">
+              <Label htmlFor="scheduleProfId" className="body-font">
+                Professional ID *
+              </Label>
+              <Input
+                id="scheduleProfId"
+                value={scheduleProfessionalId}
+                onChange={(e) => setScheduleProfessionalId(e.target.value)}
+                placeholder="e.g., 22, 151, etc."
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#745E25] body-font"
+              />
+              {scheduleError && <p className="mt-2 text-sm text-red-600 body-font">{scheduleError}</p>}
+              <p className="text-xs text-gray-500 mt-2 body-font">
+                Your Professional ID can be found in your Critter account or from your customer intake setup above.
+              </p>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={handleCloseScheduleModal}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors body-font"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleScheduleSubmit}
+                disabled={!scheduleProfessionalId.trim()}
+                className="px-6 py-2 bg-[#745E25] text-white rounded-lg hover:bg-[#5d4a1e] transition-colors body-font flex items-center disabled:opacity-50"
+              >
+                Access Schedule Setup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Preview Landing Page Modal */}
+      {showPreviewModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold mb-4 header-font">Preview Landing Page</h3>
+            <p className="text-gray-600 mb-4 body-font">
+              Enter your Professional ID to preview how your landing page appears to customers.
+            </p>
+
+            <div className="mb-4">
+              <Label htmlFor="previewProfId" className="body-font">
+                Professional ID *
+              </Label>
+              <Input
+                id="previewProfId"
+                value={previewProfessionalId}
+                onChange={(e) => setPreviewProfessionalId(e.target.value)}
+                placeholder="e.g., 22, 151, etc."
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 body-font"
+              />
+              {previewError && <p className="mt-2 text-sm text-red-600 body-font">{previewError}</p>}
+              <p className="text-xs text-gray-500 mt-2 body-font">
+                This will open your professional landing page where customers can book appointments and chat with you.
+              </p>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={handleClosePreviewModal}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors body-font"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePreviewSubmit}
+                disabled={!previewProfessionalId.trim()}
+                className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors body-font flex items-center disabled:opacity-50"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Preview Page
               </button>
             </div>
           </div>
