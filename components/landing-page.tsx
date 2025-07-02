@@ -16,6 +16,7 @@ import {
   PenLine,
   X,
   Heart,
+  Sparkles,
 } from "lucide-react"
 
 type UserInfo = {
@@ -55,9 +56,14 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
   }
 
   // Function to handle action card click
-  const handleActionCardClick = (action: "existing" | "new" | "find") => {
+  const handleActionCardClick = (action: "existing" | "new" | "find" | "concierge") => {
     if (action === "find") {
       router.push("/findprofessional")
+      return
+    }
+
+    if (action === "concierge") {
+      router.push("/concierge")
       return
     }
 
@@ -291,8 +297,42 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
 
       {/* Action Cards - Main Center Section */}
       <div className="mb-16">
-        {/* All Actions in One Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* All Actions in One Row - Now with 4 cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Critter Concierge Card - NEW */}
+          <div
+            onClick={() => handleActionCardClick("concierge")}
+            className="bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:scale-102 hover:shadow-lg cursor-pointer border border-gray-100 h-full flex flex-col relative group"
+          >
+            <div className="bg-gradient-to-r from-purple-600 to-pink-600 h-2 w-full"></div>
+            <div className="p-6 flex flex-col flex-grow">
+              <div className="w-12 h-12 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full flex items-center justify-center mb-4 group-hover:from-purple-600 group-hover:to-pink-600 transition-all">
+                <Sparkles className="h-6 w-6 text-purple-600 group-hover:text-white" />
+              </div>
+              <h3 className="text-xl font-bold mb-2 header-font">Critter Concierge</h3>
+              <p className="text-gray-600 mb-6 flex-grow body-font">
+                Tell us what you need, and we'll match you with the perfect professional or team in your area.
+              </p>
+              <div className="mt-auto space-y-1">
+                <div className="flex items-center text-gray-500 text-sm body-font">
+                  <Sparkles className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>AI-powered matching</span>
+                </div>
+                <div className="flex items-center text-gray-500 text-sm body-font">
+                  <Users className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>Multi-service teams available</span>
+                </div>
+                <div className="flex items-center text-gray-500 text-sm body-font">
+                  <Check className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>Vetted professionals only</span>
+                </div>
+              </div>
+              <div className="flex items-center text-purple-600 font-medium mt-6 header-font group-hover:text-purple-700">
+                Try Concierge <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+          </div>
+
           {/* Existing Customer Card */}
           <div
             onClick={() => handleActionCardClick("existing")}
