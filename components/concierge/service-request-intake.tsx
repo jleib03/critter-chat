@@ -1,807 +1,827 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Heart, Plus, X, ArrowRight } from "lucide-react"
-import type { ServiceRequest, Pet, ServiceType, UrgencyLevel, PetSize } from "../../types/concierge"
+import { Separator } from "@/components/ui/separator"
+import { DollarSign, Stethoscope } from "lucide-react"
+import type { ServiceRequest } from "@/types/concierge"
+import { DEMO_SERVICE_REQUEST } from "@/utils/demo-data"
 
 interface ServiceRequestIntakeProps {
-  onComplete: (request: ServiceRequest) => void
+  onSubmit: (request: ServiceRequest) => void
+  onBack: () => void
 }
 
-type IntakeStep = "pets" | "services" | "location" | "timing" | "budget" | "preferences" | "contact"
+export function ServiceRequestIntake({ onSubmit, onBack }: ServiceRequestIntakeProps) {
+  // Prepopulate with demo data
+  const [formData, setFormData] = useState({
+    // Contact Information - prepopulated
+    firstName: DEMO_SERVICE_REQUEST.contactInfo.firstName,
+    lastName: DEMO_SERVICE_REQUEST.contactInfo.lastName,
+    email: DEMO_SERVICE_REQUEST.contactInfo.email,
+    phone: DEMO_SERVICE_REQUEST.contactInfo.phone,
+    preferredContact: DEMO_SERVICE_REQUEST.contactInfo.preferredContact,
 
-export function ServiceRequestIntake({ onComplete }: ServiceRequestIntakeProps) {
-  const [currentStep, setCurrentStep] = useState<IntakeStep>("pets")
-  const [pets, setPets] = useState<Pet[]>([])
-  const [services, setServices] = useState<ServiceType[]>([])
-  const [location, setLocation] = useState({
-    address: "",
-    city: "",
-    state: "",
-    zipCode: "",
-  })
-  const [timing, setTiming] = useState({
-    urgency: "flexible" as UrgencyLevel,
-    preferredDate: "",
-    preferredTime: "",
-  })
-  const [budget, setBudget] = useState({
-    min: 50,
-    max: 150,
-    flexible: true,
-  })
-  const [preferences, setPreferences] = useState({
-    professionalType: "no_preference" as const,
-    experienceLevel: "experienced" as const,
-    specialRequirements: [] as string[],
-  })
-  const [contactInfo, setContactInfo] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    preferredContact: "phone" as const,
-  })
-  const [additionalNotes, setAdditionalNotes] = useState("")
+    // Pet Information - prepopulated
+    petName: DEMO_SERVICE_REQUEST.pets[0].name,
+    petType: DEMO_SERVICE_REQUEST.pets[0].type,
+    petBreed: DEMO_SERVICE_REQUEST.pets[0].breed,
+    petAge: DEMO_SERVICE_REQUEST.pets[0].age.toString(),
+    petWeight: DEMO_SERVICE_REQUEST.pets[0].weight.toString(),
+    petTemperament: DEMO_SERVICE_REQUEST.pets[0].temperament,
+    specialNeeds: DEMO_SERVICE_REQUEST.pets[0].specialNeeds,
+    medications: DEMO_SERVICE_REQUEST.pets[0].medications,
+    vetClinic: DEMO_SERVICE_REQUEST.pets[0].vetInfo.clinicName,
+    vetPhone: DEMO_SERVICE_REQUEST.pets[0].vetInfo.phone,
+    vetAddress: DEMO_SERVICE_REQUEST.pets[0].vetInfo.address,
+    emergencyContactName: DEMO_SERVICE_REQUEST.pets[0].emergencyContact.name,
+    emergencyContactPhone: DEMO_SERVICE_REQUEST.pets[0].emergencyContact.phone,
+    favoriteActivities: DEMO_SERVICE_REQUEST.pets[0].preferences.favoriteActivities,
+    dislikes: DEMO_SERVICE_REQUEST.pets[0].preferences.dislikes,
+    specialInstructions: DEMO_SERVICE_REQUEST.pets[0].preferences.specialInstructions,
 
-  const serviceOptions: { value: ServiceType; label: string; description: string }[] = [
-    { value: "grooming", label: "Grooming", description: "Full grooming services including bath, cut, nails" },
-    { value: "pet_sitting", label: "Pet Sitting", description: "In-home pet care while you're away" },
-    { value: "dog_walking", label: "Dog Walking", description: "Regular walks and exercise" },
-    { value: "overnight_care", label: "Overnight Care", description: "24-hour pet supervision" },
-    { value: "pet_transport", label: "Pet Transport", description: "Safe transportation for your pet" },
-    { value: "vet_visits", label: "Vet Visits", description: "Accompaniment to veterinary appointments" },
-    { value: "training", label: "Training", description: "Behavioral training and obedience" },
-    { value: "emergency_care", label: "Emergency Care", description: "Urgent pet care needs" },
-    { value: "medication_admin", label: "Medication Administration", description: "Giving medications and treatments" },
-    { value: "exercise_programs", label: "Exercise Programs", description: "Specialized fitness routines" },
-  ]
+    // Service Requirements - prepopulated
+    services: DEMO_SERVICE_REQUEST.services,
+    urgency: DEMO_SERVICE_REQUEST.timing.urgency,
+    preferredDate: DEMO_SERVICE_REQUEST.timing.preferredDate,
+    preferredTime: DEMO_SERVICE_REQUEST.timing.preferredTime,
 
-  const addPet = () => {
-    const newPet: Pet = {
-      id: `pet_${Date.now()}`,
-      name: "",
-      type: "dog",
-      breed: "",
-      age: 1,
-      size: "medium",
-      weight: 25,
-      temperament: [],
-      specialNeeds: [],
-      medications: [],
-      vetInfo: {
-        clinicName: "",
-        phone: "",
-        address: "",
-      },
-      emergencyContact: {
-        name: "",
-        phone: "",
-        relationship: "Owner",
-      },
-      preferences: {
-        favoriteActivities: [],
-        dislikes: [],
-        specialInstructions: "",
-      },
-    }
-    setPets([...pets, newPet])
+    // Location - prepopulated
+    address: DEMO_SERVICE_REQUEST.location.address,
+    city: DEMO_SERVICE_REQUEST.location.city,
+    state: DEMO_SERVICE_REQUEST.location.state,
+    zipCode: DEMO_SERVICE_REQUEST.location.zipCode,
+
+    // Budget - prepopulated
+    budgetMin: DEMO_SERVICE_REQUEST.budget.min.toString(),
+    budgetMax: DEMO_SERVICE_REQUEST.budget.max.toString(),
+    budgetFlexible: DEMO_SERVICE_REQUEST.budget.flexible,
+
+    // Preferences - prepopulated
+    professionalType: DEMO_SERVICE_REQUEST.preferences.professionalType,
+    experienceLevel: DEMO_SERVICE_REQUEST.preferences.experienceLevel,
+    specialRequirements: DEMO_SERVICE_REQUEST.preferences.specialRequirements,
+
+    // Additional Notes - prepopulated
+    additionalNotes: DEMO_SERVICE_REQUEST.additionalNotes,
+  })
+
+  const [currentStep, setCurrentStep] = useState(1)
+  const totalSteps = 5
+
+  const handleServiceToggle = (service: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      services: prev.services.includes(service)
+        ? prev.services.filter((s) => s !== service)
+        : [...prev.services, service],
+    }))
   }
 
-  const updatePet = (index: number, updates: Partial<Pet>) => {
-    const updatedPets = pets.map((pet, i) => (i === index ? { ...pet, ...updates } : pet))
-    setPets(updatedPets)
+  const handleTemperamentToggle = (trait: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      petTemperament: prev.petTemperament.includes(trait)
+        ? prev.petTemperament.filter((t) => t !== trait)
+        : [...prev.petTemperament, trait],
+    }))
   }
 
-  const removePet = (index: number) => {
-    setPets(pets.filter((_, i) => i !== index))
+  const handleSpecialNeedToggle = (need: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      specialNeeds: prev.specialNeeds.includes(need)
+        ? prev.specialNeeds.filter((n) => n !== need)
+        : [...prev.specialNeeds, need],
+    }))
   }
 
-  const toggleService = (service: ServiceType) => {
-    setServices((prev) => (prev.includes(service) ? prev.filter((s) => s !== service) : [...prev, service]))
+  const handleSpecialRequirementToggle = (requirement: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      specialRequirements: prev.specialRequirements.includes(requirement)
+        ? prev.specialRequirements.filter((r) => r !== requirement)
+        : [...prev.specialRequirements, requirement],
+    }))
   }
 
-  const canProceedFromStep = (step: IntakeStep): boolean => {
-    switch (step) {
-      case "pets":
-        return pets.length > 0 && pets.every((pet) => pet.name && pet.breed)
-      case "services":
-        return services.length > 0
-      case "location":
-        return location.city && location.state && location.zipCode
-      case "timing":
-        return timing.urgency !== undefined
-      case "budget":
-        return budget.min > 0 && budget.max > budget.min
-      case "preferences":
-        return true // All optional
-      case "contact":
-        return contactInfo.firstName && contactInfo.lastName && contactInfo.email && contactInfo.phone
-      default:
-        return false
-    }
+  const handleArrayInputChange = (field: string, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value
+        .split(",")
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0),
+    }))
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+
     const serviceRequest: ServiceRequest = {
       id: `req_${Date.now()}`,
       customerId: `cust_${Date.now()}`,
-      pets,
-      services,
-      location,
-      timing,
-      budget,
-      preferences,
-      additionalNotes,
-      contactInfo,
+      pets: [
+        {
+          id: `pet_${Date.now()}`,
+          name: formData.petName,
+          type: formData.petType as "dog" | "cat" | "bird" | "other",
+          breed: formData.petBreed,
+          age: Number.parseInt(formData.petAge),
+          size: formData.petWeight
+            ? Number.parseInt(formData.petWeight) > 50
+              ? "large"
+              : Number.parseInt(formData.petWeight) > 25
+                ? "medium"
+                : "small"
+            : "medium",
+          weight: Number.parseInt(formData.petWeight),
+          temperament: formData.petTemperament,
+          specialNeeds: formData.specialNeeds,
+          medications: formData.medications,
+          vetInfo: {
+            clinicName: formData.vetClinic,
+            phone: formData.vetPhone,
+            address: formData.vetAddress,
+          },
+          emergencyContact: {
+            name: formData.emergencyContactName,
+            phone: formData.emergencyContactPhone,
+            relationship: "Owner",
+          },
+          preferences: {
+            favoriteActivities: formData.favoriteActivities,
+            dislikes: formData.dislikes,
+            specialInstructions: formData.specialInstructions,
+          },
+        },
+      ],
+      services: formData.services,
+      location: {
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        zipCode: formData.zipCode,
+        coordinates: {
+          lat: 41.8947, // Chicago coordinates for demo
+          lng: -87.6197,
+        },
+      },
+      timing: {
+        urgency: formData.urgency as "asap" | "today" | "this_week" | "flexible",
+        preferredDate: formData.preferredDate,
+        preferredTime: formData.preferredTime,
+      },
+      budget: {
+        min: Number.parseInt(formData.budgetMin),
+        max: Number.parseInt(formData.budgetMax),
+        flexible: formData.budgetFlexible,
+      },
+      preferences: {
+        professionalType: formData.professionalType as "individual" | "team" | "no_preference",
+        experienceLevel: formData.experienceLevel as "any" | "experienced" | "expert",
+        specialRequirements: formData.specialRequirements,
+      },
+      additionalNotes: formData.additionalNotes,
+      contactInfo: {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        preferredContact: formData.preferredContact as "phone" | "email" | "text",
+      },
       createdAt: new Date().toISOString(),
       status: "pending",
     }
 
-    onComplete(serviceRequest)
+    onSubmit(serviceRequest)
   }
 
-  const stepTitles = {
-    pets: "Tell Us About Your Pet(s)",
-    services: "What Services Do You Need?",
-    location: "Where Are You Located?",
-    timing: "When Do You Need Service?",
-    budget: "What's Your Budget?",
-    preferences: "Any Preferences?",
-    contact: "Contact Information",
+  const nextStep = () => {
+    if (currentStep < totalSteps) {
+      setCurrentStep(currentStep + 1)
+    }
   }
 
-  const stepOrder: IntakeStep[] = ["pets", "services", "location", "timing", "budget", "preferences", "contact"]
-  const currentStepIndex = stepOrder.indexOf(currentStep)
+  const prevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1)
+    }
+  }
 
-  return (
-    <div className="max-w-4xl mx-auto">
-      {/* Progress Bar */}
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-sm font-medium text-gray-500 body-font">
-            Step {currentStepIndex + 1} of {stepOrder.length}
-          </span>
-          <span className="text-sm font-medium text-gray-500 body-font">
-            {Math.round(((currentStepIndex + 1) / stepOrder.length) * 100)}% Complete
-          </span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div
-            className="bg-[#E75837] h-2 rounded-full transition-all duration-300"
-            style={{ width: `${((currentStepIndex + 1) / stepOrder.length) * 100}%` }}
-          ></div>
-        </div>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 header-font">
-            <Heart className="w-5 h-5 text-[#E75837]" />
-            {stepTitles[currentStep]}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Pet Information Step */}
-          {currentStep === "pets" && (
-            <div className="space-y-6">
-              {pets.map((pet, index) => (
-                <Card key={pet.id} className="border-2 border-gray-100">
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <h3 className="text-lg font-semibold header-font">
-                      Pet {index + 1} {pet.name && `- ${pet.name}`}
-                    </h3>
-                    {pets.length > 1 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removePet(index)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor={`pet-name-${index}`} className="header-font">
-                          Pet Name *
-                        </Label>
-                        <Input
-                          id={`pet-name-${index}`}
-                          value={pet.name}
-                          onChange={(e) => updatePet(index, { name: e.target.value })}
-                          placeholder="Enter pet's name"
-                          className="body-font"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor={`pet-type-${index}`} className="header-font">
-                          Pet Type *
-                        </Label>
-                        <Select value={pet.type} onValueChange={(value) => updatePet(index, { type: value as any })}>
-                          <SelectTrigger className="body-font">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="dog">Dog</SelectItem>
-                            <SelectItem value="cat">Cat</SelectItem>
-                            <SelectItem value="bird">Bird</SelectItem>
-                            <SelectItem value="rabbit">Rabbit</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor={`pet-breed-${index}`} className="header-font">
-                          Breed *
-                        </Label>
-                        <Input
-                          id={`pet-breed-${index}`}
-                          value={pet.breed}
-                          onChange={(e) => updatePet(index, { breed: e.target.value })}
-                          placeholder="Enter breed"
-                          className="body-font"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor={`pet-age-${index}`} className="header-font">
-                          Age (years)
-                        </Label>
-                        <Input
-                          id={`pet-age-${index}`}
-                          type="number"
-                          value={pet.age}
-                          onChange={(e) => updatePet(index, { age: Number.parseInt(e.target.value) || 0 })}
-                          min="0"
-                          max="30"
-                          className="body-font"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor={`pet-size-${index}`} className="header-font">
-                          Size
-                        </Label>
-                        <Select
-                          value={pet.size}
-                          onValueChange={(value) => updatePet(index, { size: value as PetSize })}
-                        >
-                          <SelectTrigger className="body-font">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="small">Small (under 25 lbs)</SelectItem>
-                            <SelectItem value="medium">Medium (25-60 lbs)</SelectItem>
-                            <SelectItem value="large">Large (60-100 lbs)</SelectItem>
-                            <SelectItem value="extra_large">Extra Large (over 100 lbs)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor={`pet-weight-${index}`} className="header-font">
-                          Weight (lbs)
-                        </Label>
-                        <Input
-                          id={`pet-weight-${index}`}
-                          type="number"
-                          value={pet.weight}
-                          onChange={(e) => updatePet(index, { weight: Number.parseInt(e.target.value) || 0 })}
-                          min="1"
-                          max="300"
-                          className="body-font"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label className="header-font">Special Needs or Medical Conditions</Label>
-                      <Textarea
-                        value={pet.specialNeeds.join(", ")}
-                        onChange={(e) =>
-                          updatePet(index, {
-                            specialNeeds: e.target.value
-                              .split(",")
-                              .map((s) => s.trim())
-                              .filter(Boolean),
-                          })
-                        }
-                        placeholder="List any special needs, medical conditions, or medications (comma separated)"
-                        className="body-font"
-                      />
-                    </div>
-
-                    <div>
-                      <Label className="header-font">Special Instructions</Label>
-                      <Textarea
-                        value={pet.preferences.specialInstructions}
-                        onChange={(e) =>
-                          updatePet(index, {
-                            preferences: { ...pet.preferences, specialInstructions: e.target.value },
-                          })
-                        }
-                        placeholder="Any special care instructions, favorite activities, or things to avoid"
-                        className="body-font"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-
-              <Button
-                variant="outline"
-                onClick={addPet}
-                className="w-full border-dashed border-2 body-font bg-transparent"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Another Pet
-              </Button>
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Contact Information</h2>
+              <p className="text-gray-600">Let's start with your basic information</p>
             </div>
-          )}
 
-          {/* Services Step */}
-          {currentStep === "services" && (
-            <div className="space-y-4">
-              <p className="text-gray-600 body-font">Select all services you need for your pet(s):</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {serviceOptions.map((option) => (
-                  <Card
-                    key={option.value}
-                    className={`cursor-pointer transition-all ${
-                      services.includes(option.value)
-                        ? "border-[#E75837] bg-orange-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                    onClick={() => toggleService(option.value)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          checked={services.includes(option.value)}
-                          onChange={() => toggleService(option.value)}
-                        />
-                        <div>
-                          <h3 className="font-medium header-font">{option.label}</h3>
-                          <p className="text-sm text-gray-600 body-font">{option.description}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">First Name</Label>
+                <Input
+                  id="firstName"
+                  value={formData.firstName}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, firstName: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  value={formData.lastName}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, lastName: e.target.value }))}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
+                required
+              />
+            </div>
+
+            <div className="space-y-3">
+              <Label>Preferred Contact Method</Label>
+              <RadioGroup
+                value={formData.preferredContact}
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, preferredContact: value }))}
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="phone" id="phone-contact" />
+                  <Label htmlFor="phone-contact">Phone Call</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="text" id="text-contact" />
+                  <Label htmlFor="text-contact">Text Message</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="email" id="email-contact" />
+                  <Label htmlFor="email-contact">Email</Label>
+                </div>
+              </RadioGroup>
+            </div>
+          </div>
+        )
+
+      case 2:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Pet Information</h2>
+              <p className="text-gray-600">Tell us about your furry friend</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="petName">Pet Name</Label>
+                <Input
+                  id="petName"
+                  value={formData.petName}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, petName: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="petType">Pet Type</Label>
+                <Select
+                  value={formData.petType}
+                  onValueChange={(value) => setFormData((prev) => ({ ...prev, petType: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select pet type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="dog">Dog</SelectItem>
+                    <SelectItem value="cat">Cat</SelectItem>
+                    <SelectItem value="bird">Bird</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="petBreed">Breed</Label>
+                <Input
+                  id="petBreed"
+                  value={formData.petBreed}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, petBreed: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="petAge">Age (years)</Label>
+                <Input
+                  id="petAge"
+                  type="number"
+                  value={formData.petAge}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, petAge: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="petWeight">Weight (lbs)</Label>
+                <Input
+                  id="petWeight"
+                  type="number"
+                  value={formData.petWeight}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, petWeight: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <Label>Temperament (select all that apply)</Label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {["friendly", "energetic", "calm", "social", "shy", "protective", "playful", "anxious"].map((trait) => (
+                  <div key={trait} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={trait}
+                      checked={formData.petTemperament.includes(trait)}
+                      onCheckedChange={() => handleTemperamentToggle(trait)}
+                    />
+                    <Label htmlFor={trait} className="capitalize">
+                      {trait}
+                    </Label>
+                  </div>
                 ))}
               </div>
-              {services.length > 0 && (
-                <div className="mt-4">
-                  <p className="text-sm text-gray-600 mb-2 body-font">Selected services:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {services.map((service) => (
-                      <Badge key={service} variant="secondary" className="body-font">
-                        {serviceOptions.find((opt) => opt.value === service)?.label}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
-          )}
 
-          {/* Location Step */}
-          {currentStep === "location" && (
+            <div className="space-y-3">
+              <Label>Special Needs or Medical Conditions</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {[
+                  "Hip dysplasia monitoring",
+                  "Post-surgical recovery",
+                  "Diabetes management",
+                  "Arthritis care",
+                  "Anxiety support",
+                  "Senior care",
+                  "Medication administration",
+                  "Special diet",
+                ].map((need) => (
+                  <div key={need} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={need}
+                      checked={formData.specialNeeds.includes(need)}
+                      onCheckedChange={() => handleSpecialNeedToggle(need)}
+                    />
+                    <Label htmlFor={need}>{need}</Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="medications">Current Medications (comma-separated)</Label>
+              <Textarea
+                id="medications"
+                value={formData.medications.join(", ")}
+                onChange={(e) => handleArrayInputChange("medications", e.target.value)}
+                placeholder="e.g., Carprofen 75mg twice daily, Joint supplement"
+                rows={2}
+              />
+            </div>
+          </div>
+        )
+
+      case 3:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Veterinary & Emergency Information</h2>
+              <p className="text-gray-600">Important contacts for your pet's care</p>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <Stethoscope className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-blue-900 mb-1">Veterinary Information</h3>
+                  <p className="text-blue-700 text-sm">This helps our professionals coordinate care if needed</p>
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="vetClinic">Veterinary Clinic Name</Label>
+                <Input
+                  id="vetClinic"
+                  value={formData.vetClinic}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, vetClinic: e.target.value }))}
+                />
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <Label htmlFor="address" className="header-font">
-                    Street Address
-                  </Label>
+                <div className="space-y-2">
+                  <Label htmlFor="vetPhone">Vet Phone Number</Label>
+                  <Input
+                    id="vetPhone"
+                    type="tel"
+                    value={formData.vetPhone}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, vetPhone: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="emergencyContactPhone">Emergency Contact Phone</Label>
+                  <Input
+                    id="emergencyContactPhone"
+                    type="tel"
+                    value={formData.emergencyContactPhone}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, emergencyContactPhone: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="vetAddress">Veterinary Clinic Address</Label>
+                <Input
+                  id="vetAddress"
+                  value={formData.vetAddress}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, vetAddress: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-4">
+              <h3 className="font-semibold text-gray-900">Pet Preferences & Behavior</h3>
+
+              <div className="space-y-2">
+                <Label htmlFor="favoriteActivities">Favorite Activities (comma-separated)</Label>
+                <Textarea
+                  id="favoriteActivities"
+                  value={formData.favoriteActivities.join(", ")}
+                  onChange={(e) => handleArrayInputChange("favoriteActivities", e.target.value)}
+                  placeholder="e.g., Gentle walks, Swimming therapy, Mental stimulation games"
+                  rows={2}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="dislikes">Dislikes or Triggers (comma-separated)</Label>
+                <Textarea
+                  id="dislikes"
+                  value={formData.dislikes.join(", ")}
+                  onChange={(e) => handleArrayInputChange("dislikes", e.target.value)}
+                  placeholder="e.g., Loud noises, Rough play, Stairs"
+                  rows={2}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="specialInstructions">Special Care Instructions</Label>
+                <Textarea
+                  id="specialInstructions"
+                  value={formData.specialInstructions}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, specialInstructions: e.target.value }))}
+                  placeholder="Any specific instructions for caring for your pet..."
+                  rows={3}
+                />
+              </div>
+            </div>
+          </div>
+        )
+
+      case 4:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Service Requirements</h2>
+              <p className="text-gray-600">What services do you need?</p>
+            </div>
+
+            <div className="space-y-4">
+              <Label>Services Needed (select all that apply)</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {[
+                  { id: "dog_walking", label: "Dog Walking", icon: "🚶" },
+                  { id: "pet_sitting", label: "Pet Sitting", icon: "🏠" },
+                  { id: "medication_admin", label: "Medication Administration", icon: "💊" },
+                  { id: "vet_visits", label: "Vet Visit Assistance", icon: "🏥" },
+                  { id: "grooming", label: "Grooming", icon: "✂️" },
+                  { id: "overnight_care", label: "Overnight Care", icon: "🌙" },
+                  { id: "exercise_programs", label: "Exercise Programs", icon: "🏃" },
+                  { id: "behavioral_support", label: "Behavioral Support", icon: "🧠" },
+                ].map((service) => (
+                  <div key={service.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
+                    <Checkbox
+                      id={service.id}
+                      checked={formData.services.includes(service.id)}
+                      onCheckedChange={() => handleServiceToggle(service.id)}
+                    />
+                    <Label htmlFor={service.id} className="flex items-center gap-2 cursor-pointer">
+                      <span>{service.icon}</span>
+                      {service.label}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="urgency">How soon do you need service?</Label>
+                <Select
+                  value={formData.urgency}
+                  onValueChange={(value) => setFormData((prev) => ({ ...prev, urgency: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select urgency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="asap">ASAP (within hours)</SelectItem>
+                    <SelectItem value="today">Today</SelectItem>
+                    <SelectItem value="this_week">This week</SelectItem>
+                    <SelectItem value="flexible">I'm flexible</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="preferredTime">Preferred Time</Label>
+                <Input
+                  id="preferredTime"
+                  type="time"
+                  value={formData.preferredTime}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, preferredTime: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="preferredDate">Preferred Date</Label>
+              <Input
+                id="preferredDate"
+                type="date"
+                value={formData.preferredDate}
+                onChange={(e) => setFormData((prev) => ({ ...prev, preferredDate: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="font-semibold text-gray-900">Location</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="address">Street Address</Label>
                   <Input
                     id="address"
-                    value={location.address}
-                    onChange={(e) => setLocation({ ...location, address: e.target.value })}
-                    placeholder="123 Main Street"
-                    className="body-font"
+                    value={formData.address}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, address: e.target.value }))}
+                    required
                   />
                 </div>
-                <div>
-                  <Label htmlFor="city" className="header-font">
-                    City *
-                  </Label>
+                <div className="space-y-2">
+                  <Label htmlFor="city">City</Label>
                   <Input
                     id="city"
-                    value={location.city}
-                    onChange={(e) => setLocation({ ...location, city: e.target.value })}
-                    placeholder="Chicago"
-                    className="body-font"
+                    value={formData.city}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, city: e.target.value }))}
+                    required
                   />
                 </div>
-                <div>
-                  <Label htmlFor="state" className="header-font">
-                    State *
-                  </Label>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="state">State</Label>
                   <Input
                     id="state"
-                    value={location.state}
-                    onChange={(e) => setLocation({ ...location, state: e.target.value })}
-                    placeholder="IL"
-                    className="body-font"
+                    value={formData.state}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, state: e.target.value }))}
+                    required
                   />
                 </div>
-                <div>
-                  <Label htmlFor="zipCode" className="header-font">
-                    ZIP Code *
-                  </Label>
+                <div className="space-y-2">
+                  <Label htmlFor="zipCode">ZIP Code</Label>
                   <Input
                     id="zipCode"
-                    value={location.zipCode}
-                    onChange={(e) => setLocation({ ...location, zipCode: e.target.value })}
-                    placeholder="60611"
-                    className="body-font"
+                    value={formData.zipCode}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, zipCode: e.target.value }))}
+                    required
                   />
                 </div>
               </div>
             </div>
-          )}
+          </div>
+        )
 
-          {/* Timing Step */}
-          {currentStep === "timing" && (
-            <div className="space-y-6">
-              <div>
-                <Label className="header-font">How urgent is your need? *</Label>
-                <RadioGroup
-                  value={timing.urgency}
-                  onValueChange={(value) => setTiming({ ...timing, urgency: value as UrgencyLevel })}
-                  className="mt-2"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="asap" id="asap" />
-                    <Label htmlFor="asap" className="body-font">
-                      ASAP - I need help right now
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="today" id="today" />
-                    <Label htmlFor="today" className="body-font">
-                      Today - Within the next few hours
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="this_week" id="this_week" />
-                    <Label htmlFor="this_week" className="body-font">
-                      This week - Within the next 7 days
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="flexible" id="flexible" />
-                    <Label htmlFor="flexible" className="body-font">
-                      Flexible - I can wait for the right professional
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </div>
-
-              {timing.urgency !== "asap" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="preferredDate" className="header-font">
-                      Preferred Date
-                    </Label>
-                    <Input
-                      id="preferredDate"
-                      type="date"
-                      value={timing.preferredDate}
-                      onChange={(e) => setTiming({ ...timing, preferredDate: e.target.value })}
-                      className="body-font"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="preferredTime" className="header-font">
-                      Preferred Time
-                    </Label>
-                    <Input
-                      id="preferredTime"
-                      type="time"
-                      value={timing.preferredTime}
-                      onChange={(e) => setTiming({ ...timing, preferredTime: e.target.value })}
-                      className="body-font"
-                    />
-                  </div>
-                </div>
-              )}
+      case 5:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Budget & Preferences</h2>
+              <p className="text-gray-600">Help us find the right professional for you</p>
             </div>
-          )}
 
-          {/* Budget Step */}
-          {currentStep === "budget" && (
-            <div className="space-y-6">
-              <div>
-                <Label className="header-font">Budget Range *</Label>
-                <p className="text-sm text-gray-600 mb-4 body-font">
-                  What's your budget for the services you've selected?
-                </p>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="minBudget" className="header-font">
-                      Minimum ($)
-                    </Label>
-                    <Input
-                      id="minBudget"
-                      type="number"
-                      value={budget.min}
-                      onChange={(e) => setBudget({ ...budget, min: Number.parseInt(e.target.value) || 0 })}
-                      min="0"
-                      className="body-font"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="maxBudget" className="header-font">
-                      Maximum ($)
-                    </Label>
-                    <Input
-                      id="maxBudget"
-                      type="number"
-                      value={budget.max}
-                      onChange={(e) => setBudget({ ...budget, max: Number.parseInt(e.target.value) || 0 })}
-                      min={budget.min}
-                      className="body-font"
-                    />
-                  </div>
+            <div className="space-y-4">
+              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                <DollarSign className="w-5 h-5" />
+                Budget Range
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="budgetMin">Minimum Budget ($)</Label>
+                  <Input
+                    id="budgetMin"
+                    type="number"
+                    value={formData.budgetMin}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, budgetMin: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="budgetMax">Maximum Budget ($)</Label>
+                  <Input
+                    id="budgetMax"
+                    type="number"
+                    value={formData.budgetMax}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, budgetMax: e.target.value }))}
+                  />
                 </div>
               </div>
-
               <div className="flex items-center space-x-2">
                 <Checkbox
-                  id="flexible"
-                  checked={budget.flexible}
-                  onCheckedChange={(checked) => setBudget({ ...budget, flexible: !!checked })}
+                  id="budgetFlexible"
+                  checked={formData.budgetFlexible}
+                  onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, budgetFlexible: !!checked }))}
                 />
-                <Label htmlFor="flexible" className="body-font">
-                  I'm flexible with my budget for the right professional
-                </Label>
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-700 body-font">
-                  <strong>
-                    Budget Range: ${budget.min} - ${budget.max}
-                  </strong>
-                  {budget.flexible && " (Flexible)"}
-                </p>
-                <p className="text-xs text-blue-600 mt-1 body-font">
-                  Our concierge team will find professionals within your budget range and may suggest premium options if
-                  you're flexible.
-                </p>
+                <Label htmlFor="budgetFlexible">I'm flexible with budget for the right professional</Label>
               </div>
             </div>
-          )}
 
-          {/* Preferences Step */}
-          {currentStep === "preferences" && (
-            <div className="space-y-6">
-              <div>
-                <Label className="header-font">Professional Type Preference</Label>
+            <div className="space-y-4">
+              <h3 className="font-semibold text-gray-900">Professional Preferences</h3>
+
+              <div className="space-y-2">
+                <Label>Professional Type</Label>
                 <RadioGroup
-                  value={preferences.professionalType}
-                  onValueChange={(value) => setPreferences({ ...preferences, professionalType: value as any })}
-                  className="mt-2"
+                  value={formData.professionalType}
+                  onValueChange={(value) => setFormData((prev) => ({ ...prev, professionalType: value }))}
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="individual" id="individual" />
-                    <Label htmlFor="individual" className="body-font">
-                      Individual specialist
-                    </Label>
+                    <Label htmlFor="individual">Individual professional</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="team" id="team" />
-                    <Label htmlFor="team" className="body-font">
-                      Team of professionals
-                    </Label>
+                    <Label htmlFor="team">Team/Company</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="no_preference" id="no_preference" />
-                    <Label htmlFor="no_preference" className="body-font">
-                      No preference
-                    </Label>
+                    <Label htmlFor="no_preference">No preference</Label>
                   </div>
                 </RadioGroup>
               </div>
 
-              <div>
-                <Label className="header-font">Experience Level</Label>
+              <div className="space-y-2">
+                <Label>Experience Level Required</Label>
                 <RadioGroup
-                  value={preferences.experienceLevel}
-                  onValueChange={(value) => setPreferences({ ...preferences, experienceLevel: value as any })}
-                  className="mt-2"
+                  value={formData.experienceLevel}
+                  onValueChange={(value) => setFormData((prev) => ({ ...prev, experienceLevel: value }))}
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="any" id="any" />
-                    <Label htmlFor="any" className="body-font">
-                      Any experience level
-                    </Label>
+                    <Label htmlFor="any">Any experience level</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="experienced" id="experienced" />
-                    <Label htmlFor="experienced" className="body-font">
-                      Experienced professionals only
-                    </Label>
+                    <Label htmlFor="experienced">Experienced (2+ years)</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="expert" id="expert" />
-                    <Label htmlFor="expert" className="body-font">
-                      Expert/specialist level only
-                    </Label>
+                    <Label htmlFor="expert">Expert/Specialist</Label>
                   </div>
                 </RadioGroup>
               </div>
 
-              <div>
-                <Label htmlFor="specialRequirements" className="header-font">
-                  Special Requirements
-                </Label>
-                <Textarea
-                  id="specialRequirements"
-                  value={preferences.specialRequirements.join(", ")}
-                  onChange={(e) =>
-                    setPreferences({
-                      ...preferences,
-                      specialRequirements: e.target.value
-                        .split(",")
-                        .map((s) => s.trim())
-                        .filter(Boolean),
-                    })
-                  }
-                  placeholder="Any specific requirements or certifications needed (comma separated)"
-                  className="body-font"
-                />
+              <div className="space-y-3">
+                <Label>Special Requirements (select all that apply)</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {[
+                    "Post-surgical experience",
+                    "Large dog handling",
+                    "German Shepherd familiarity",
+                    "Medical administration",
+                    "Senior pet care",
+                    "Behavioral training",
+                    "Emergency response",
+                    "Flexible scheduling",
+                  ].map((requirement) => (
+                    <div key={requirement} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={requirement}
+                        checked={formData.specialRequirements.includes(requirement)}
+                        onCheckedChange={() => handleSpecialRequirementToggle(requirement)}
+                      />
+                      <Label htmlFor={requirement}>{requirement}</Label>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          )}
 
-          {/* Contact Step */}
-          {currentStep === "contact" && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="firstName" className="header-font">
-                    First Name *
-                  </Label>
-                  <Input
-                    id="firstName"
-                    value={contactInfo.firstName}
-                    onChange={(e) => setContactInfo({ ...contactInfo, firstName: e.target.value })}
-                    placeholder="John"
-                    className="body-font"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="lastName" className="header-font">
-                    Last Name *
-                  </Label>
-                  <Input
-                    id="lastName"
-                    value={contactInfo.lastName}
-                    onChange={(e) => setContactInfo({ ...contactInfo, lastName: e.target.value })}
-                    placeholder="Smith"
-                    className="body-font"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="email" className="header-font">
-                    Email *
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={contactInfo.email}
-                    onChange={(e) => setContactInfo({ ...contactInfo, email: e.target.value })}
-                    placeholder="john@example.com"
-                    className="body-font"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="phone" className="header-font">
-                    Phone *
-                  </Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={contactInfo.phone}
-                    onChange={(e) => setContactInfo({ ...contactInfo, phone: e.target.value })}
-                    placeholder="(555) 123-4567"
-                    className="body-font"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label className="header-font">Preferred Contact Method</Label>
-                <RadioGroup
-                  value={contactInfo.preferredContact}
-                  onValueChange={(value) => setContactInfo({ ...contactInfo, preferredContact: value as any })}
-                  className="mt-2"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="phone" id="phone" />
-                    <Label htmlFor="phone" className="body-font">
-                      Phone call
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="text" id="text" />
-                    <Label htmlFor="text" className="body-font">
-                      Text message
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="email" id="email" />
-                    <Label htmlFor="email" className="body-font">
-                      Email
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </div>
-
-              <div>
-                <Label htmlFor="additionalNotes" className="header-font">
-                  Additional Notes
-                </Label>
-                <Textarea
-                  id="additionalNotes"
-                  value={additionalNotes}
-                  onChange={(e) => setAdditionalNotes(e.target.value)}
-                  placeholder="Any additional information that would help us find the perfect professional for your pet"
-                  className="body-font"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="additionalNotes">Additional Notes</Label>
+              <Textarea
+                id="additionalNotes"
+                value={formData.additionalNotes}
+                onChange={(e) => setFormData((prev) => ({ ...prev, additionalNotes: e.target.value }))}
+                placeholder="Any additional information that would help us find the perfect professional for your pet..."
+                rows={4}
+              />
             </div>
-          )}
-
-          {/* Navigation */}
-          <div className="flex justify-between pt-6 border-t">
-            <Button
-              variant="outline"
-              onClick={() => {
-                const currentIndex = stepOrder.indexOf(currentStep)
-                if (currentIndex > 0) {
-                  setCurrentStep(stepOrder[currentIndex - 1])
-                }
-              }}
-              disabled={currentStepIndex === 0}
-              className="body-font"
-            >
-              Previous
-            </Button>
-
-            {currentStepIndex === stepOrder.length - 1 ? (
-              <Button
-                onClick={handleSubmit}
-                disabled={!canProceedFromStep(currentStep)}
-                className="bg-[#E75837] hover:bg-[#d04e30] body-font"
-              >
-                Submit Request
-              </Button>
-            ) : (
-              <Button
-                onClick={() => {
-                  const currentIndex = stepOrder.indexOf(currentStep)
-                  if (currentIndex < stepOrder.length - 1) {
-                    setCurrentStep(stepOrder[currentIndex + 1])
-                  }
-                }}
-                disabled={!canProceedFromStep(currentStep)}
-                className="bg-[#E75837] hover:bg-[#d04e30] body-font"
-              >
-                Next Step
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            )}
           </div>
+        )
+
+      default:
+        return null
+    }
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <CardTitle className="text-2xl">Service Request</CardTitle>
+              <p className="text-gray-600 mt-1">
+                Step {currentStep} of {totalSteps}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex space-x-1">
+                {Array.from({ length: totalSteps }, (_, i) => (
+                  <div
+                    key={i}
+                    className={`w-2 h-2 rounded-full ${i + 1 <= currentStep ? "bg-blue-600" : "bg-gray-200"}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent>
+          <form onSubmit={handleSubmit}>
+            {renderStepContent()}
+
+            <div className="flex justify-between pt-8">
+              <div className="flex gap-2">
+                {currentStep > 1 && (
+                  <Button type="button" variant="outline" onClick={prevStep}>
+                    Previous
+                  </Button>
+                )}
+                <Button type="button" variant="ghost" onClick={onBack}>
+                  Cancel
+                </Button>
+              </div>
+
+              <div className="flex gap-2">
+                {currentStep < totalSteps ? (
+                  <Button type="button" onClick={nextStep}>
+                    Next Step
+                  </Button>
+                ) : (
+                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                    Submit Request
+                  </Button>
+                )}
+              </div>
+            </div>
+          </form>
         </CardContent>
       </Card>
     </div>

@@ -1,448 +1,380 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Clock, MapPin, Star, CheckCircle, Target, Timer, Award, Zap, Phone, MessageCircle } from "lucide-react"
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-
-import { DEMO_SERVICE_REQUEST, DEMO_MATCH_REASONING, getTimeElapsed, getTimeRemaining } from "../../../utils/demo-data"
-
-/* -------------------------------------------------------------------------- */
-/*                                Type helpers                                */
-/* -------------------------------------------------------------------------- */
-
-interface ServiceOpportunity {
-  id: string
-  tier: 1 | 2 | 3
-  customerName: string
-  pets: Array<{
-    name: string
-    type: string
-    breed: string
-    age: number
-    specialNeeds: string[]
-    medications: string[]
-    specialInstructions: string
-  }>
-  services: string[]
-  location: {
-    distance: number
-    area: string
-    fullAddress: string
-  }
-  timing: {
-    urgency: string
-    preferredDate?: string
-    preferredTime?: string
-  }
-  budget: {
-    min: number
-    max: number
-    flexible: boolean
-  }
-  whySelected: {
-    primary: string[]
-    secondary: string[]
-    concerns: string[]
-  }
-  estimatedEarnings: string
-  postedAt: string
-  expiresAt: string
-  claimsRemaining: number
-  totalClaims: number
-  status: "available" | "claimed" | "expired"
-  matchScore: number
-  customerNotes: string
-}
-
-/* -------------------------------------------------------------------------- */
-/*                             Component definition                           */
-/* -------------------------------------------------------------------------- */
+import { Separator } from "@/components/ui/separator"
+import { Clock, MapPin, Star, Users, CheckCircle, AlertCircle, TrendingUp } from "lucide-react"
+import {
+  DEMO_MATCHED_PROFESSIONALS,
+  DEMO_MATCH_REASONING,
+  DEMO_SERVICE_REQUEST,
+  getTimeElapsed,
+  getTimeRemaining,
+} from "@/utils/demo-data"
+import { DemoNavigation } from "@/components/demo-navigation"
 
 export default function ProfessionalOpportunitiesPage() {
-  /* ------------------------------- state ---------------------------------- */
-  const [opportunities, setOpportunities] = useState<ServiceOpportunity[]>([])
-  const [selectedTier, setSelectedTier] = useState<1 | 2 | 3>(1)
-  const [claimingOpportunity, setClaimingOpportunity] = useState<string | null>(null)
+  const [claimedOpportunities, setClaimedOpportunities] = useState<string[]>([])
+  const [showSuccessMessage, setShowSuccessMessage] = useState<string | null>(null)
 
-  const [professionalProfile] = useState({
-    name: "Dr. Maria Rodriguez",
-    specialties: [
-      "Post-Surgical Care",
-      "German Shepherd Specialist",
-      "Veterinary Physical Therapy",
-      "Large Breed Expert",
-    ],
-    rating: 4.9,
-    totalJobs: 156,
-    responseRate: 98,
-    tier1Opportunities: 12,
-    tier2Opportunities: 8,
-    totalEarnings: "$15,240",
-  })
-
-  /* --------------------------- initialise mock ---------------------------- */
+  // Simulate some claimed opportunities for demo
   useEffect(() => {
-    const tier1Opportunity: ServiceOpportunity = {
-      id: DEMO_SERVICE_REQUEST.id,
-      tier: 1,
-      customerName: `${DEMO_SERVICE_REQUEST.contactInfo.firstName} ${DEMO_SERVICE_REQUEST.contactInfo.lastName.charAt(0)}.`,
-      pets: DEMO_SERVICE_REQUEST.pets.map((pet) => ({
-        name: pet.name,
-        type: pet.type,
-        breed: pet.breed,
-        age: pet.age,
-        specialNeeds: pet.specialNeeds,
-        medications: pet.medications,
-        specialInstructions: pet.preferences.specialInstructions,
-      })),
-      services: DEMO_SERVICE_REQUEST.services,
-      location: {
-        distance: 0.8,
-        area: "Lincoln Park",
-        fullAddress: `${DEMO_SERVICE_REQUEST.location.city}, ${DEMO_SERVICE_REQUEST.location.state}`,
-      },
-      timing: {
-        urgency: DEMO_SERVICE_REQUEST.timing.urgency,
-        preferredDate: DEMO_SERVICE_REQUEST.timing.preferredDate,
-        preferredTime: DEMO_SERVICE_REQUEST.timing.preferredTime,
-      },
-      budget: DEMO_SERVICE_REQUEST.budget,
-      whySelected: DEMO_MATCH_REASONING.prof_maria_rodriguez,
-      estimatedEarnings: "$150-200",
-      postedAt: DEMO_SERVICE_REQUEST.createdAt,
-      expiresAt: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(), // +4 h
-      claimsRemaining: 2,
-      totalClaims: 3,
-      status: "available",
-      matchScore: 96,
-      customerNotes: DEMO_SERVICE_REQUEST.additionalNotes,
-    }
+    // Simulate Dr. Rodriguez claiming the tier 1 opportunity after a delay
+    const timer = setTimeout(() => {
+      if (!claimedOpportunities.includes("prof_maria_rodriguez")) {
+        setClaimedOpportunities((prev) => [...prev, "prof_maria_rodriguez"])
+      }
+    }, 3000)
 
-    const tier2Opportunity: ServiceOpportunity = {
-      id: "req_20240110_002",
-      tier: 2,
-      customerName: "Michael K.",
-      pets: [
-        {
-          name: "Buddy",
-          type: "dog",
-          breed: "Golden Retriever",
-          age: 7,
-          specialNeeds: ["Arthritis management"],
-          medications: ["Glucosamine supplement"],
-          specialInstructions: "Senior dog, needs gentle exercise and joint care",
-        },
-      ],
-      services: ["dog_walking", "pet_sitting"],
-      location: {
-        distance: 2.1,
-        area: "Old Town",
-        fullAddress: "Chicago, IL",
-      },
-      timing: {
-        urgency: "this_week",
-        preferredDate: "2024-01-12",
-        preferredTime: "10:00",
-      },
-      budget: {
-        min: 80,
-        max: 120,
-        flexible: true,
-      },
-      whySelected: {
-        primary: [
-          "Experience with senior dogs and joint care",
-          "Available within customer's preferred timeframe",
-          "Good location match in Chicago area",
-        ],
-        secondary: ["Strong customer reviews for gentle care", "Flexible scheduling capabilities"],
-        concerns: [
-          "Lower budget range than typical premium services",
-          "Customer prefers individual walker over team approach",
-        ],
-      },
-      estimatedEarnings: "$80-120",
-      postedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 h ago
-      expiresAt: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(), // +6 h
-      claimsRemaining: 1,
-      totalClaims: 2,
-      status: "available",
-      matchScore: 78,
-      customerNotes:
-        "Buddy is a sweet senior dog who loves gentle walks and needs someone patient with his slower pace.",
-    }
+    return () => clearTimeout(timer)
+  }, [claimedOpportunities])
 
-    setOpportunities([tier1Opportunity, tier2Opportunity])
-  }, [])
+  const handleClaimOpportunity = (professionalId: string) => {
+    setClaimedOpportunities((prev) => [...prev, professionalId])
+    setShowSuccessMessage(professionalId)
 
-  /* ------------------------------ helpers --------------------------------- */
-  const claimOpportunity = async (id: string) => {
-    setClaimingOpportunity(id)
-    await new Promise((r) => setTimeout(r, 1500))
-
-    setOpportunities((prev) =>
-      prev.map((opp) =>
-        opp.id === id ? { ...opp, status: "claimed" as const, claimsRemaining: opp.claimsRemaining - 1 } : opp,
-      ),
-    )
-    setClaimingOpportunity(null)
-    alert("🎉 Opportunity claimed! Customer will be notified shortly.")
+    // Hide success message after 3 seconds
+    setTimeout(() => {
+      setShowSuccessMessage(null)
+    }, 3000)
   }
 
-  const getOpportunitiesByTier = (tier: 1 | 2 | 3) => opportunities.filter((o) => o.tier === tier)
+  const tier1Opportunity = DEMO_MATCHED_PROFESSIONALS[0] // Dr. Maria Rodriguez
+  const tier2Opportunity = {
+    id: "req_20240110_002",
+    customerName: "Michael K.",
+    petName: "Buddy",
+    petType: "Golden Retriever",
+    services: ["Dog Walking", "Pet Sitting"],
+    location: "River North",
+    distance: 1.5,
+    timing: "Tomorrow, 10:00 AM",
+    estimatedEarnings: "$45-65",
+    matchScore: 78,
+    urgency: "medium",
+    specialRequirements: ["Large dog experience", "Weekend availability"],
+    customerNotes:
+      "Buddy is very friendly and loves meeting new people. He needs a good walk in the morning and some playtime.",
+    submittedAt: "2024-01-10T11:15:00Z",
+  }
 
-  const tierMeta = {
-    1: {
-      label: "Perfect matches",
-      color: "bg-green-100 text-green-800",
-    },
-    2: {
-      label: "Good fits",
-      color: "bg-blue-100 text-blue-800",
-    },
-    3: {
-      label: "Additional",
-      color: "bg-orange-100 text-orange-800",
-    },
-  } as const
-
-  /* ------------------------------ render ---------------------------------- */
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="border-b bg-white px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold header-font">Service Opportunities</h1>
-            <p className="text-gray-600 body-font">Welcome back, {professionalProfile.name}</p>
-          </div>
+      <DemoNavigation currentView="professional" />
 
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <div className="text-sm text-gray-500 body-font">This month</div>
-              <div className="text-xl font-bold text-[#E75837] body-font">{professionalProfile.totalEarnings}</div>
+      <div className="max-w-6xl mx-auto p-6">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Professional Opportunities</h1>
+          <p className="text-gray-600">New service requests matched to your expertise and location</p>
+        </div>
+
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-green-600" />
+                <div>
+                  <p className="text-sm text-gray-600">This Week</p>
+                  <p className="text-2xl font-bold text-gray-900">$1,240</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-blue-600" />
+                <div>
+                  <p className="text-sm text-gray-600">Completed</p>
+                  <p className="text-2xl font-bold text-gray-900">23</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Star className="w-5 h-5 text-yellow-500" />
+                <div>
+                  <p className="text-sm text-gray-600">Rating</p>
+                  <p className="text-2xl font-bold text-gray-900">4.9</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-orange-500" />
+                <div>
+                  <p className="text-sm text-gray-600">Available</p>
+                  <p className="text-2xl font-bold text-gray-900">2</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Success Message */}
+        {showSuccessMessage && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              <p className="text-green-800 font-medium">
+                Opportunity claimed successfully! The customer will be notified and you'll receive booking details
+                shortly.
+              </p>
             </div>
-            <Badge className="bg-[#E75837] text-white body-font">
-              <Star className="w-3 h-3 mr-1" />
-              {professionalProfile.rating}
+          </div>
+        )}
+
+        {/* Tier 1 Opportunity - Premium Match */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Badge variant="default" className="bg-purple-100 text-purple-800 border-purple-200">
+              Tier 1 - Premium Match
+            </Badge>
+            <Badge variant="outline" className="text-green-700 border-green-300">
+              96% Match Score
             </Badge>
           </div>
-        </div>
-      </div>
 
-      {/* Body */}
-      <div className="max-w-7xl mx-auto px-6 py-6">
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-[#E75837] body-font">
-                {professionalProfile.tier1Opportunities}
+          <Card className="border-2 border-purple-200 bg-purple-50/30">
+            <CardHeader>
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="text-xl text-gray-900">Post-Surgical Care for Luna (German Shepherd)</CardTitle>
+                  <p className="text-gray-600 mt-1">
+                    Customer: {DEMO_SERVICE_REQUEST.contactInfo.firstName} {DEMO_SERVICE_REQUEST.contactInfo.lastName}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-green-600">{tier1Opportunity.pricing.estimatedCost}</p>
+                  <p className="text-sm text-gray-500">Estimated earnings</p>
+                </div>
               </div>
-              <div className="text-sm text-gray-500 body-font">Tier 1 this month</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-blue-600 body-font">{professionalProfile.tier2Opportunities}</div>
-              <div className="text-sm text-gray-500 body-font">Tier 2 this month</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-green-600 body-font">{professionalProfile.responseRate}%</div>
-              <div className="text-sm text-gray-500 body-font">Response rate</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-purple-600 body-font">{professionalProfile.totalJobs}</div>
-              <div className="text-sm text-gray-500 body-font">Total jobs</div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Request Details */}
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Service Requirements</h4>
+                    <div className="space-y-2">
+                      {DEMO_SERVICE_REQUEST.services.map((service, index) => (
+                        <Badge key={index} variant="secondary" className="mr-2">
+                          {service.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <MapPin className="w-4 h-4" />
+                    <span>
+                      {DEMO_SERVICE_REQUEST.location.address}, {tier1Opportunity.location.area}
+                    </span>
+                    <Badge variant="outline" className="ml-2">
+                      {tier1Opportunity.location.distance} miles
+                    </Badge>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Clock className="w-4 h-4" />
+                    <span>
+                      Preferred: {DEMO_SERVICE_REQUEST.timing.preferredDate} at{" "}
+                      {DEMO_SERVICE_REQUEST.timing.preferredTime}
+                    </span>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Special Requirements</h4>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                      {DEMO_SERVICE_REQUEST.preferences.specialRequirements.map((req, index) => (
+                        <li key={index} className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+                          {req}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Why You're Matched */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-gray-900">Why You're a Perfect Match</h4>
+
+                  <div>
+                    <h5 className="font-medium text-green-700 mb-2">Primary Strengths</h5>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                      {DEMO_MATCH_REASONING.prof_maria_rodriguez.primary.map((reason, index) => (
+                        <li key={index} className="flex items-start gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          {reason}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h5 className="font-medium text-blue-700 mb-2">Additional Benefits</h5>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                      {DEMO_MATCH_REASONING.prof_maria_rodriguez.secondary.map((reason, index) => (
+                        <li key={index} className="flex items-start gap-2">
+                          <div className="w-4 h-4 border-2 border-blue-500 rounded-full mt-0.5 flex-shrink-0"></div>
+                          {reason}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <Separator className="my-6" />
+
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-gray-900 mb-2">Customer Notes</h4>
+                <p className="text-gray-700 text-sm leading-relaxed">"{DEMO_SERVICE_REQUEST.additionalNotes}"</p>
+              </div>
+
+              <div className="flex justify-between items-center mt-6">
+                <div className="flex items-center gap-4 text-sm text-gray-500">
+                  <span>Submitted {getTimeElapsed(DEMO_SERVICE_REQUEST.createdAt)}</span>
+                  <span>•</span>
+                  <span>Response needed within {getTimeRemaining("2024-01-10T12:00:00Z")}</span>
+                </div>
+
+                {claimedOpportunities.includes(tier1Opportunity.id) ? (
+                  <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                    Claimed
+                  </Badge>
+                ) : (
+                  <Button
+                    onClick={() => handleClaimOpportunity(tier1Opportunity.id)}
+                    className="bg-purple-600 hover:bg-purple-700"
+                  >
+                    Claim This Opportunity
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Opportunities wrapper */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 header-font">
-              <Zap className="w-5 h-5 text-[#E75837]" />
-              Available Opportunities
-              <Badge variant="secondary" className="body-font">
-                {opportunities.filter((o) => o.status === "available").length} active
-              </Badge>
-            </CardTitle>
-          </CardHeader>
+        {/* Tier 2 Opportunity - Standard Match */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Badge variant="outline" className="text-blue-700 border-blue-300">
+              Tier 2 - Good Match
+            </Badge>
+            <Badge variant="outline" className="text-orange-700 border-orange-300">
+              78% Match Score
+            </Badge>
+          </div>
 
-          <CardContent>
-            <Tabs
-              value={`tier${selectedTier}`}
-              onValueChange={(v) => setSelectedTier(Number(v.replace("tier", "")) as 1 | 2 | 3)}
-            >
-              {/* Tabs list */}
-              <TabsList className="grid w-full max-w-md grid-cols-3 mb-6">
-                {[1, 2, 3].map((tier) => (
-                  <TabsTrigger key={tier} value={`tier${tier}`} className="body-font">
-                    Tier {tier} ({getOpportunitiesByTier(tier as 1 | 2 | 3).length})
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="text-xl text-gray-900">
+                    Daily Care for {tier2Opportunity.petName} ({tier2Opportunity.petType})
+                  </CardTitle>
+                  <p className="text-gray-600 mt-1">Customer: {tier2Opportunity.customerName}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-green-600">{tier2Opportunity.estimatedEarnings}</p>
+                  <p className="text-sm text-gray-500">Estimated earnings</p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Services Needed</h4>
+                    <div className="space-y-2">
+                      {tier2Opportunity.services.map((service, index) => (
+                        <Badge key={index} variant="secondary" className="mr-2">
+                          {service}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
 
-              {/* Tabs content */}
-              {[1, 2, 3].map((tier) => (
-                <TabsContent key={tier} value={`tier${tier}`} className="space-y-4">
-                  <h3 className="text-lg font-semibold header-font mb-1">Tier {tier}</h3>
-                  <p className="text-sm text-gray-600 body-font mb-4">{tierMeta[tier as 1 | 2 | 3].label}</p>
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <MapPin className="w-4 h-4" />
+                    <span>{tier2Opportunity.location}</span>
+                    <Badge variant="outline" className="ml-2">
+                      {tier2Opportunity.distance} miles
+                    </Badge>
+                  </div>
 
-                  {getOpportunitiesByTier(tier as 1 | 2 | 3).map((opp) => (
-                    <Card key={opp.id} className="border-2 border-gray-200 hover:border-[#E75837] transition-colors">
-                      <CardContent className="p-6">
-                        {/* Top row */}
-                        <div className="flex justify-between items-start mb-4">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h4 className="font-semibold text-lg header-font">
-                                {opp.pets.map((p) => p.name).join(", ")} – {opp.customerName}
-                              </h4>
-                              <Badge className={`${tierMeta[opp.tier].color} body-font`}>Tier {opp.tier}</Badge>
-                              <Badge className="bg-green-100 text-green-800 body-font">{opp.matchScore}% Match</Badge>
-                            </div>
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Clock className="w-4 h-4" />
+                    <span>{tier2Opportunity.timing}</span>
+                  </div>
 
-                            <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
-                              <span className="flex items-center gap-1 body-font">
-                                <MapPin className="w-4 h-4" />
-                                {opp.location.distance} mi – {opp.location.area}
-                              </span>
-                              <span className="flex items-center gap-1 body-font">
-                                <Clock className="w-4 h-4" />
-                                {opp.timing.urgency.replace("_", " ")}
-                              </span>
-                              <span className="flex items-center gap-1 body-font">
-                                <Timer className="w-4 h-4" />
-                                {getTimeRemaining(opp.expiresAt)}
-                              </span>
-                            </div>
-                          </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Requirements</h4>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                      {tier2Opportunity.specialRequirements.map((req, index) => (
+                        <li key={index} className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+                          {req}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
 
-                          {/* Earnings & claim */}
-                          <div className="text-right ml-6">
-                            <div className="text-2xl font-bold text-[#E75837] body-font mb-1">
-                              {opp.estimatedEarnings}
-                            </div>
-                            <div className="text-sm text-gray-500 body-font mb-2">Estimated earnings</div>
-                            <div className="text-xs text-gray-400 body-font mb-4">
-                              {opp.claimsRemaining} of {opp.totalClaims} claims left
-                            </div>
+                <div className="space-y-4">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-gray-900 mb-2">Customer Notes</h4>
+                    <p className="text-gray-700 text-sm">"{tier2Opportunity.customerNotes}"</p>
+                  </div>
+                </div>
+              </div>
 
-                            {opp.status === "available" ? (
-                              <Button
-                                disabled={claimingOpportunity === opp.id}
-                                onClick={() => claimOpportunity(opp.id)}
-                                className="bg-[#E75837] hover:bg-[#d04e30] w-full body-font mb-2"
-                              >
-                                {claimingOpportunity === opp.id ? (
-                                  <>
-                                    <Timer className="w-4 h-4 mr-1 animate-spin" />
-                                    Claiming…
-                                  </>
-                                ) : (
-                                  <>
-                                    <CheckCircle className="w-4 h-4 mr-1" />
-                                    Claim Opportunity
-                                  </>
-                                )}
-                              </Button>
-                            ) : (
-                              <Badge className="bg-green-100 text-green-800 body-font w-full justify-center py-2">
-                                <CheckCircle className="w-4 h-4 mr-1" />
-                                Claimed
-                              </Badge>
-                            )}
+              <div className="flex justify-between items-center mt-6">
+                <div className="flex items-center gap-4 text-sm text-gray-500">
+                  <span>Submitted {getTimeElapsed(tier2Opportunity.submittedAt)}</span>
+                  <span>•</span>
+                  <span>Standard response time: 2 hours</span>
+                </div>
 
-                            <div className="flex gap-1">
-                              <Button size="sm" variant="outline" className="flex-1 body-font bg-transparent">
-                                <Phone className="w-3 h-3" />
-                              </Button>
-                              <Button size="sm" variant="outline" className="flex-1 body-font bg-transparent">
-                                <MessageCircle className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
+                {claimedOpportunities.includes(tier2Opportunity.id) ? (
+                  <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                    Claimed
+                  </Badge>
+                ) : (
+                  <Button variant="outline" onClick={() => handleClaimOpportunity(tier2Opportunity.id)}>
+                    Claim Opportunity
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-                        {/* Why selected */}
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-                          <h5 className="font-medium text-green-800 header-font mb-2 flex items-center gap-2">
-                            <Target className="w-4 h-4" />
-                            Why You Were Selected
-                          </h5>
-
-                          <div className="space-y-3">
-                            {/* Primary */}
-                            <div>
-                              <h6 className="text-sm font-medium text-green-700 header-font">Perfect Match Factors</h6>
-                              <ul className="ml-4 text-sm text-green-600 body-font list-disc">
-                                {opp.whySelected.primary.map((reason, i) => (
-                                  <li key={i}>{reason}</li>
-                                ))}
-                              </ul>
-                            </div>
-
-                            {/* Secondary */}
-                            {opp.whySelected.secondary.length > 0 && (
-                              <div>
-                                <h6 className="text-sm font-medium text-green-700 header-font">Additional Benefits</h6>
-                                <ul className="ml-4 text-sm text-green-600 body-font list-disc">
-                                  {opp.whySelected.secondary.map((reason, i) => (
-                                    <li key={i}>{reason}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-
-                            {/* Concerns */}
-                            {opp.whySelected.concerns.length > 0 && (
-                              <div>
-                                <h6 className="text-sm font-medium text-orange-700 header-font">Considerations</h6>
-                                <ul className="ml-4 text-sm text-orange-600 body-font list-disc">
-                                  {opp.whySelected.concerns.map((c, i) => (
-                                    <li key={i}>{c}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Meta */}
-                        <div className="flex items-center justify-between text-xs text-gray-500 pt-4 border-t">
-                          <span className="body-font">Posted {getTimeElapsed(opp.postedAt)}</span>
-                          <Badge variant="outline" className="body-font">
-                            ID: {opp.id}
-                          </Badge>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-
-                  {getOpportunitiesByTier(tier as 1 | 2 | 3).length === 0 && (
-                    <Card>
-                      <CardContent className="p-8 text-center">
-                        <Award className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                        <h4 className="text-lg font-semibold text-gray-500 mb-2 header-font">
-                          No Tier {tier} opportunities
-                        </h4>
-                        <p className="text-gray-400 body-font">Check back soon for new matches.</p>
-                      </CardContent>
-                    </Card>
-                  )}
-                </TabsContent>
-              ))}
-            </Tabs>
+        {/* No More Opportunities */}
+        <Card className="border-dashed border-2 border-gray-200">
+          <CardContent className="p-8 text-center">
+            <div className="text-gray-400 mb-4">
+              <Users className="w-12 h-12 mx-auto" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">You're All Caught Up!</h3>
+            <p className="text-gray-600 mb-4">
+              No more opportunities available right now. New matches will appear here as they come in.
+            </p>
+            <p className="text-sm text-gray-500">
+              Your profile is active and you'll be notified of new opportunities that match your expertise.
+            </p>
           </CardContent>
         </Card>
       </div>
