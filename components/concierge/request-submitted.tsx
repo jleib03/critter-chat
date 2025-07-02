@@ -3,7 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, Clock, MapPin, Heart, Phone, Mail, MessageCircle } from "lucide-react"
+import { CheckCircle, Clock, MapPin, Heart, Phone, Mail, MessageCircle, ArrowRight, Users, Zap } from "lucide-react"
 import type { ServiceRequest } from "../../types/concierge"
 
 interface RequestSubmittedProps {
@@ -32,6 +32,72 @@ export function RequestSubmitted({ serviceRequest }: RequestSubmittedProps) {
             <p className="text-gray-600 body-font text-sm">
               Our concierge team is analyzing your request and matching you with the best professionals in your area.
             </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* What Happens Next - Updated Flow */}
+      <Card className="mt-6">
+        <CardContent className="p-6">
+          <h3 className="text-lg font-semibold mb-4 header-font">What Happens Next?</h3>
+
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-[#E75837] text-white text-sm flex items-center justify-center font-medium">
+                1
+              </div>
+              <div>
+                <h4 className="font-medium header-font flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-[#E75837]" />
+                  AI Analysis & Concierge Review
+                </h4>
+                <p className="text-sm text-gray-600 body-font">
+                  Our AI system analyzes your request and our {conciergeTeam} identifies the best professionals for your
+                  pet's specific needs.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-[#E75837] text-white text-sm flex items-center justify-center font-medium">
+                2
+              </div>
+              <div>
+                <h4 className="font-medium header-font flex items-center gap-2">
+                  <Users className="w-4 h-4 text-[#E75837]" />
+                  Professional Matching & Outreach
+                </h4>
+                <p className="text-sm text-gray-600 body-font">
+                  We reach out to our top-tier professionals who specialize in your pet's needs. They review your
+                  request and claim the opportunity.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-[#E75837] text-white text-sm flex items-center justify-center font-medium">
+                3
+              </div>
+              <div>
+                <h4 className="font-medium header-font flex items-center gap-2">
+                  <ArrowRight className="w-4 h-4 text-[#E75837]" />
+                  Professional Confirmation & Introduction
+                </h4>
+                <p className="text-sm text-gray-600 body-font">
+                  Once a professional accepts your request, we'll personally introduce you and coordinate all the
+                  service details.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h4 className="font-medium text-blue-800 mb-2 header-font">You'll be notified when:</h4>
+            <ul className="text-sm text-blue-700 body-font space-y-1">
+              <li>• A professional has been matched and confirmed</li>
+              <li>• Service details and scheduling are finalized</li>
+              <li>• Your professional is ready to begin care</li>
+            </ul>
           </div>
         </CardContent>
       </Card>
@@ -103,51 +169,6 @@ export function RequestSubmitted({ serviceRequest }: RequestSubmittedProps) {
               ${serviceRequest.budget.min} - ${serviceRequest.budget.max}
               {serviceRequest.budget.flexible && <span className="text-green-600"> (Flexible)</span>}
             </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* What Happens Next */}
-      <Card className="mt-6">
-        <CardContent className="p-6">
-          <h3 className="text-lg font-semibold mb-4 header-font">What Happens Next?</h3>
-
-          <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-[#E75837] text-white text-sm flex items-center justify-center font-medium">
-                1
-              </div>
-              <div>
-                <h4 className="font-medium header-font">Concierge Review</h4>
-                <p className="text-sm text-gray-600 body-font">
-                  Our {conciergeTeam} will analyze your request and identify the best professionals for your needs.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-[#E75837] text-white text-sm flex items-center justify-center font-medium">
-                2
-              </div>
-              <div>
-                <h4 className="font-medium header-font">Professional Matching</h4>
-                <p className="text-sm text-gray-600 body-font">
-                  We'll reach out to our top-tier professionals who specialize in your pet's specific needs.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-[#E75837] text-white text-white text-sm flex items-center justify-center font-medium">
-                3
-              </div>
-              <div>
-                <h4 className="font-medium header-font">Personal Introduction</h4>
-                <p className="text-sm text-gray-600 body-font">
-                  We'll personally introduce you to your matched professional and coordinate the service details.
-                </p>
-              </div>
-            </div>
           </div>
         </CardContent>
       </Card>

@@ -21,9 +21,17 @@ export default function ConciergePage() {
 
   const handleIntakeComplete = async (request: ServiceRequest) => {
     setServiceRequest(request)
-    setCurrentStep("matching")
-    // In real implementation, this would trigger the matching algorithm
-    simulateMatching(request)
+
+    // Simulate submission processing
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
+    // In real implementation, this would:
+    // 1. Save the request to database
+    // 2. Trigger AI analysis for professional matching
+    // 3. Route to appropriate geographic concierge team
+    // 4. Send notifications to concierge admins
+
+    setIsSubmitted(true)
   }
 
   const simulateMatching = async (request: ServiceRequest) => {
@@ -216,27 +224,29 @@ export default function ConciergePage() {
 
           {/* Step Content */}
           <div className="flex-1 flex flex-col mb-12">
-            {currentStep === "intake" && <ServiceRequestIntake onComplete={handleIntakeComplete} />}
-
-            {currentStep === "matching" && serviceRequest && (
-              <ProfessionalMatching
-                serviceRequest={serviceRequest}
-                matchedProfessionals={matchedProfessionals}
-                onProfessionalSelect={handleProfessionalSelect}
-                onBack={handleBackToIntake}
-              />
+            {!isSubmitted ? (
+              <>
+                {currentStep === "intake" && <ServiceRequestIntake onComplete={handleIntakeComplete} />}
+                {currentStep === "matching" && serviceRequest && (
+                  <ProfessionalMatching
+                    serviceRequest={serviceRequest}
+                    matchedProfessionals={matchedProfessionals}
+                    onProfessionalSelect={handleProfessionalSelect}
+                    onBack={handleBackToIntake}
+                  />
+                )}
+                {currentStep === "confirmation" && serviceRequest && selectedProfessional && (
+                  <RequestConfirmation
+                    serviceRequest={serviceRequest}
+                    selectedProfessional={selectedProfessional}
+                    onBack={handleBackToMatching}
+                    onConfirm={handleConfirmAndSubmit}
+                  />
+                )}
+              </>
+            ) : (
+              serviceRequest && <RequestSubmitted serviceRequest={serviceRequest} />
             )}
-
-            {currentStep === "confirmation" && serviceRequest && selectedProfessional && (
-              <RequestConfirmation
-                serviceRequest={serviceRequest}
-                selectedProfessional={selectedProfessional}
-                onBack={handleBackToMatching}
-                onConfirm={handleConfirmAndSubmit}
-              />
-            )}
-
-            {isSubmitted && serviceRequest && <RequestSubmitted serviceRequest={serviceRequest} />}
           </div>
         </div>
       </main>
