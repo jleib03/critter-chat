@@ -6,6 +6,7 @@ import Header from "../../components/header"
 import { ServiceRequestIntake } from "../../components/concierge/service-request-intake"
 import { ProfessionalMatching } from "../../components/concierge/professional-matching"
 import { RequestConfirmation } from "../../components/concierge/request-confirmation"
+import { RequestSubmitted } from "../../components/concierge/request-submitted"
 import type { ServiceRequest, MatchedProfessional } from "../../types/concierge"
 
 type ConciergeStep = "intake" | "matching" | "confirmation"
@@ -16,8 +17,9 @@ export default function ConciergePage() {
   const [serviceRequest, setServiceRequest] = useState<ServiceRequest | null>(null)
   const [matchedProfessionals, setMatchedProfessionals] = useState<MatchedProfessional[]>([])
   const [selectedProfessional, setSelectedProfessional] = useState<MatchedProfessional | null>(null)
+  const [isSubmitted, setIsSubmitted] = useState(false)
 
-  const handleIntakeComplete = (request: ServiceRequest) => {
+  const handleIntakeComplete = async (request: ServiceRequest) => {
     setServiceRequest(request)
     setCurrentStep("matching")
     // In real implementation, this would trigger the matching algorithm
@@ -137,6 +139,22 @@ export default function ConciergePage() {
     setSelectedProfessional(null)
   }
 
+  const handleConfirmAndSubmit = async () => {
+    // Handle final confirmation
+    console.log("Service request confirmed!")
+
+    // Simulate API submission
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
+    // In real implementation, this would:
+    // 1. Save the request to database
+    // 2. Trigger AI analysis for professional matching
+    // 3. Route to appropriate geographic concierge team
+    // 4. Send notifications to concierge admins
+
+    setIsSubmitted(true)
+  }
+
   return (
     <div className="min-h-screen bg-[#FBF8F3] flex flex-col">
       <Header />
@@ -147,8 +165,8 @@ export default function ConciergePage() {
           <div className="text-center mb-8">
             <h1 className="text-4xl title-font mb-4 font-sangbleu">Critter Concierge</h1>
             <p className="text-gray-700 max-w-3xl mx-auto body-font text-lg">
-              Tell us what your pet needs, and we'll connect you with the perfect professional or team of professionals
-              in your area.
+              Tell us what your pet needs, and our concierge team will connect you with the perfect professional or team
+              of professionals in your area.
             </p>
           </div>
 
@@ -214,12 +232,11 @@ export default function ConciergePage() {
                 serviceRequest={serviceRequest}
                 selectedProfessional={selectedProfessional}
                 onBack={handleBackToMatching}
-                onConfirm={() => {
-                  // Handle final confirmation
-                  console.log("Service request confirmed!")
-                }}
+                onConfirm={handleConfirmAndSubmit}
               />
             )}
+
+            {isSubmitted && serviceRequest && <RequestSubmitted serviceRequest={serviceRequest} />}
           </div>
         </div>
       </main>

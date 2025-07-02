@@ -125,6 +125,12 @@ export interface MatchedProfessional {
   claimedAt?: string
 }
 
+export interface MatchReasoning {
+  primary: string[]
+  secondary: string[]
+  concerns: string[]
+}
+
 export interface ServiceMatch {
   requestId: string
   professionalId: string
