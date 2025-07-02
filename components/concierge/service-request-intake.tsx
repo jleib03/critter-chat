@@ -4,90 +4,66 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Heart,
-  MapPin,
-  Clock,
-  DollarSign,
-  User,
-  Phone,
-  Mail,
-  Plus,
-  X,
-  Scissors,
-  Home,
-  Car,
-  Stethoscope,
-  GraduationCap,
-  AlertTriangle,
-} from "lucide-react"
-import type { ServiceRequest, Pet, ServiceType } from "../../types/concierge"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { Heart, Plus, X, ArrowRight } from "lucide-react"
+import type { ServiceRequest, Pet, ServiceType, UrgencyLevel, PetSize } from "../../types/concierge"
 
 interface ServiceRequestIntakeProps {
   onComplete: (request: ServiceRequest) => void
 }
 
+type IntakeStep = "pets" | "services" | "location" | "timing" | "budget" | "preferences" | "contact"
+
 export function ServiceRequestIntake({ onComplete }: ServiceRequestIntakeProps) {
-  const [currentSection, setCurrentSection] = useState(0)
+  const [currentStep, setCurrentStep] = useState<IntakeStep>("pets")
   const [pets, setPets] = useState<Pet[]>([])
-  const [selectedServices, setSelectedServices] = useState<ServiceType[]>([])
-  const [formData, setFormData] = useState({
-    location: {
-      address: "",
-      city: "",
-      state: "",
-      zipCode: "",
-    },
-    timing: {
-      urgency: "flexible" as const,
-      preferredDate: "",
-      preferredTime: "",
-      duration: 60,
-    },
-    budget: {
-      min: 50,
-      max: 200,
-      flexible: true,
-    },
-    preferences: {
-      professionalType: "no_preference" as const,
-      experienceLevel: "experienced" as const,
-      specialRequirements: [] as string[],
-    },
-    additionalNotes: "",
-    contactInfo: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      preferredContact: "email" as const,
-    },
+  const [services, setServices] = useState<ServiceType[]>([])
+  const [location, setLocation] = useState({
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
   })
+  const [timing, setTiming] = useState({
+    urgency: "flexible" as UrgencyLevel,
+    preferredDate: "",
+    preferredTime: "",
+  })
+  const [budget, setBudget] = useState({
+    min: 50,
+    max: 150,
+    flexible: true,
+  })
+  const [preferences, setPreferences] = useState({
+    professionalType: "no_preference" as const,
+    experienceLevel: "experienced" as const,
+    specialRequirements: [] as string[],
+  })
+  const [contactInfo, setContactInfo] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    preferredContact: "phone" as const,
+  })
+  const [additionalNotes, setAdditionalNotes] = useState("")
 
-  const sections = [
-    "Pet Information",
-    "Services Needed",
-    "Location & Timing",
-    "Budget & Preferences",
-    "Contact Information",
-  ]
-
-  const serviceOptions = [
-    { id: "grooming" as ServiceType, label: "Grooming", icon: Scissors, description: "Baths, haircuts, nail trims" },
-    { id: "pet_sitting" as ServiceType, label: "Pet Sitting", icon: Home, description: "In-home pet care" },
-    { id: "dog_walking" as ServiceType, label: "Dog Walking", icon: User, description: "Daily walks and exercise" },
-    { id: "overnight_care" as ServiceType, label: "Overnight Care", icon: Home, description: "Overnight pet sitting" },
-    { id: "pet_transport" as ServiceType, label: "Pet Transport", icon: Car, description: "Safe transportation" },
-    { id: "vet_visits" as ServiceType, label: "Vet Visits", icon: Stethoscope, description: "Veterinary appointments" },
-    { id: "training" as ServiceType, label: "Training", icon: GraduationCap, description: "Behavioral training" },
-    {
-      id: "emergency_care" as ServiceType,
-      label: "Emergency Care",
-      icon: AlertTriangle,
-      description: "Urgent pet care",
-    },
+  const serviceOptions: { value: ServiceType; label: string; description: string }[] = [
+    { value: "grooming", label: "Grooming", description: "Full grooming services including bath, cut, nails" },
+    { value: "pet_sitting", label: "Pet Sitting", description: "In-home pet care while you're away" },
+    { value: "dog_walking", label: "Dog Walking", description: "Regular walks and exercise" },
+    { value: "overnight_care", label: "Overnight Care", description: "24-hour pet supervision" },
+    { value: "pet_transport", label: "Pet Transport", description: "Safe transportation for your pet" },
+    { value: "vet_visits", label: "Vet Visits", description: "Accompaniment to veterinary appointments" },
+    { value: "training", label: "Training", description: "Behavioral training and obedience" },
+    { value: "emergency_care", label: "Emergency Care", description: "Urgent pet care needs" },
+    { value: "medication_admin", label: "Medication Administration", description: "Giving medications and treatments" },
+    { value: "exercise_programs", label: "Exercise Programs", description: "Specialized fitness routines" },
   ]
 
   const addPet = () => {
@@ -110,7 +86,7 @@ export function ServiceRequestIntake({ onComplete }: ServiceRequestIntakeProps) 
       emergencyContact: {
         name: "",
         phone: "",
-        relationship: "",
+        relationship: "Owner",
       },
       preferences: {
         favoriteActivities: [],
@@ -130,581 +106,658 @@ export function ServiceRequestIntake({ onComplete }: ServiceRequestIntakeProps) 
     setPets(pets.filter((_, i) => i !== index))
   }
 
-  const handleServiceToggle = (service: ServiceType) => {
-    setSelectedServices((prev) => (prev.includes(service) ? prev.filter((s) => s !== service) : [...prev, service]))
+  const toggleService = (service: ServiceType) => {
+    setServices((prev) => (prev.includes(service) ? prev.filter((s) => s !== service) : [...prev, service]))
   }
 
-  const handleSubmit = () => {
-    const request: ServiceRequest = {
-      id: `req_${Date.now()}`,
-      customerId: `customer_${Date.now()}`,
-      pets,
-      services: selectedServices,
-      location: formData.location,
-      timing: formData.timing,
-      budget: formData.budget,
-      preferences: formData.preferences,
-      additionalNotes: formData.additionalNotes,
-      contactInfo: formData.contactInfo,
-      createdAt: new Date().toISOString(),
-      status: "pending",
-    }
-
-    onComplete(request)
-  }
-
-  const canProceed = () => {
-    switch (currentSection) {
-      case 0:
+  const canProceedFromStep = (step: IntakeStep): boolean => {
+    switch (step) {
+      case "pets":
         return pets.length > 0 && pets.every((pet) => pet.name && pet.breed)
-      case 1:
-        return selectedServices.length > 0
-      case 2:
-        return formData.location.zipCode && formData.timing.urgency
-      case 3:
-        return formData.budget.min > 0 && formData.budget.max > 0
-      case 4:
-        return formData.contactInfo.firstName && formData.contactInfo.email
+      case "services":
+        return services.length > 0
+      case "location":
+        return location.city && location.state && location.zipCode
+      case "timing":
+        return timing.urgency !== undefined
+      case "budget":
+        return budget.min > 0 && budget.max > budget.min
+      case "preferences":
+        return true // All optional
+      case "contact":
+        return contactInfo.firstName && contactInfo.lastName && contactInfo.email && contactInfo.phone
       default:
         return false
     }
   }
 
+  const handleSubmit = () => {
+    const serviceRequest: ServiceRequest = {
+      id: `req_${Date.now()}`,
+      customerId: `cust_${Date.now()}`,
+      pets,
+      services,
+      location,
+      timing,
+      budget,
+      preferences,
+      additionalNotes,
+      contactInfo,
+      createdAt: new Date().toISOString(),
+      status: "pending",
+    }
+
+    onComplete(serviceRequest)
+  }
+
+  const stepTitles = {
+    pets: "Tell Us About Your Pet(s)",
+    services: "What Services Do You Need?",
+    location: "Where Are You Located?",
+    timing: "When Do You Need Service?",
+    budget: "What's Your Budget?",
+    preferences: "Any Preferences?",
+    contact: "Contact Information",
+  }
+
+  const stepOrder: IntakeStep[] = ["pets", "services", "location", "timing", "budget", "preferences", "contact"]
+  const currentStepIndex = stepOrder.indexOf(currentStep)
+
   return (
     <div className="max-w-4xl mx-auto">
+      {/* Progress Bar */}
+      <div className="mb-8">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-sm font-medium text-gray-500 body-font">
+            Step {currentStepIndex + 1} of {stepOrder.length}
+          </span>
+          <span className="text-sm font-medium text-gray-500 body-font">
+            {Math.round(((currentStepIndex + 1) / stepOrder.length) * 100)}% Complete
+          </span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div
+            className="bg-[#E75837] h-2 rounded-full transition-all duration-300"
+            style={{ width: `${((currentStepIndex + 1) / stepOrder.length) * 100}%` }}
+          ></div>
+        </div>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 header-font">
             <Heart className="w-5 h-5 text-[#E75837]" />
-            {sections[currentSection]}
+            {stepTitles[currentStep]}
           </CardTitle>
-          <div className="flex space-x-2 mt-4">
-            {sections.map((_, index) => (
-              <div
-                key={index}
-                className={`h-2 flex-1 rounded ${
-                  index < currentSection ? "bg-green-500" : index === currentSection ? "bg-[#E75837]" : "bg-gray-200"
-                }`}
-              />
-            ))}
-          </div>
         </CardHeader>
-
         <CardContent className="space-y-6">
-          {/* Pet Information Section */}
-          {currentSection === 0 && (
+          {/* Pet Information Step */}
+          {currentStep === "pets" && (
             <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold header-font">Tell us about your pet(s)</h3>
-                <Button onClick={addPet} variant="outline" size="sm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Pet
-                </Button>
-              </div>
-
               {pets.map((pet, index) => (
-                <Card key={pet.id} className="p-4">
-                  <div className="flex justify-between items-start mb-4">
-                    <h4 className="font-medium header-font">Pet #{index + 1}</h4>
+                <Card key={pet.id} className="border-2 border-gray-100">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <h3 className="text-lg font-semibold header-font">
+                      Pet {index + 1} {pet.name && `- ${pet.name}`}
+                    </h3>
                     {pets.length > 1 && (
                       <Button
-                        onClick={() => removePet(index)}
                         variant="ghost"
                         size="sm"
+                        onClick={() => removePet(index)}
                         className="text-red-500 hover:text-red-700"
                       >
                         <X className="w-4 h-4" />
                       </Button>
                     )}
-                  </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor={`pet-name-${index}`} className="header-font">
+                          Pet Name *
+                        </Label>
+                        <Input
+                          id={`pet-name-${index}`}
+                          value={pet.name}
+                          onChange={(e) => updatePet(index, { name: e.target.value })}
+                          placeholder="Enter pet's name"
+                          className="body-font"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor={`pet-type-${index}`} className="header-font">
+                          Pet Type *
+                        </Label>
+                        <Select value={pet.type} onValueChange={(value) => updatePet(index, { type: value as any })}>
+                          <SelectTrigger className="body-font">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="dog">Dog</SelectItem>
+                            <SelectItem value="cat">Cat</SelectItem>
+                            <SelectItem value="bird">Bird</SelectItem>
+                            <SelectItem value="rabbit">Rabbit</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor={`pet-breed-${index}`} className="header-font">
+                          Breed *
+                        </Label>
+                        <Input
+                          id={`pet-breed-${index}`}
+                          value={pet.breed}
+                          onChange={(e) => updatePet(index, { breed: e.target.value })}
+                          placeholder="Enter breed"
+                          className="body-font"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor={`pet-age-${index}`} className="header-font">
+                          Age (years)
+                        </Label>
+                        <Input
+                          id={`pet-age-${index}`}
+                          type="number"
+                          value={pet.age}
+                          onChange={(e) => updatePet(index, { age: Number.parseInt(e.target.value) || 0 })}
+                          min="0"
+                          max="30"
+                          className="body-font"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor={`pet-size-${index}`} className="header-font">
+                          Size
+                        </Label>
+                        <Select
+                          value={pet.size}
+                          onValueChange={(value) => updatePet(index, { size: value as PetSize })}
+                        >
+                          <SelectTrigger className="body-font">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="small">Small (under 25 lbs)</SelectItem>
+                            <SelectItem value="medium">Medium (25-60 lbs)</SelectItem>
+                            <SelectItem value="large">Large (60-100 lbs)</SelectItem>
+                            <SelectItem value="extra_large">Extra Large (over 100 lbs)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor={`pet-weight-${index}`} className="header-font">
+                          Weight (lbs)
+                        </Label>
+                        <Input
+                          id={`pet-weight-${index}`}
+                          type="number"
+                          value={pet.weight}
+                          onChange={(e) => updatePet(index, { weight: Number.parseInt(e.target.value) || 0 })}
+                          min="1"
+                          max="300"
+                          className="body-font"
+                        />
+                      </div>
+                    </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-1 body-font">Pet Name *</label>
-                      <Input
-                        value={pet.name}
-                        onChange={(e) => updatePet(index, { name: e.target.value })}
-                        placeholder="Enter pet's name"
+                      <Label className="header-font">Special Needs or Medical Conditions</Label>
+                      <Textarea
+                        value={pet.specialNeeds.join(", ")}
+                        onChange={(e) =>
+                          updatePet(index, {
+                            specialNeeds: e.target.value
+                              .split(",")
+                              .map((s) => s.trim())
+                              .filter(Boolean),
+                          })
+                        }
+                        placeholder="List any special needs, medical conditions, or medications (comma separated)"
+                        className="body-font"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium mb-1 body-font">Type</label>
-                      <select
-                        value={pet.type}
-                        onChange={(e) => updatePet(index, { type: e.target.value as any })}
-                        className="w-full p-2 border border-gray-300 rounded-md body-font"
-                      >
-                        <option value="dog">Dog</option>
-                        <option value="cat">Cat</option>
-                        <option value="bird">Bird</option>
-                        <option value="rabbit">Rabbit</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium mb-1 body-font">Breed *</label>
-                      <Input
-                        value={pet.breed}
-                        onChange={(e) => updatePet(index, { breed: e.target.value })}
-                        placeholder="Enter breed"
+                      <Label className="header-font">Special Instructions</Label>
+                      <Textarea
+                        value={pet.preferences.specialInstructions}
+                        onChange={(e) =>
+                          updatePet(index, {
+                            preferences: { ...pet.preferences, specialInstructions: e.target.value },
+                          })
+                        }
+                        placeholder="Any special care instructions, favorite activities, or things to avoid"
+                        className="body-font"
                       />
                     </div>
-
-                    <div>
-                      <label className="block text-sm font-medium mb-1 body-font">Age (years)</label>
-                      <Input
-                        type="number"
-                        value={pet.age}
-                        onChange={(e) => updatePet(index, { age: Number.parseInt(e.target.value) || 1 })}
-                        min="0"
-                        max="30"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium mb-1 body-font">Size</label>
-                      <select
-                        value={pet.size}
-                        onChange={(e) => updatePet(index, { size: e.target.value as any })}
-                        className="w-full p-2 border border-gray-300 rounded-md body-font"
-                      >
-                        <option value="small">Small (under 25 lbs)</option>
-                        <option value="medium">Medium (25-60 lbs)</option>
-                        <option value="large">Large (60-100 lbs)</option>
-                        <option value="extra_large">Extra Large (over 100 lbs)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium mb-1 body-font">Weight (lbs)</label>
-                      <Input
-                        type="number"
-                        value={pet.weight}
-                        onChange={(e) => updatePet(index, { weight: Number.parseInt(e.target.value) || 25 })}
-                        min="1"
-                        max="200"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium mb-2 body-font">Special Instructions</label>
-                    <Textarea
-                      value={pet.preferences.specialInstructions}
-                      onChange={(e) =>
-                        updatePet(index, {
-                          preferences: { ...pet.preferences, specialInstructions: e.target.value },
-                        })
-                      }
-                      placeholder="Any special needs, medications, behavioral notes, or care instructions..."
-                      rows={3}
-                    />
-                  </div>
+                  </CardContent>
                 </Card>
               ))}
 
-              {pets.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  <Heart className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                  <p className="body-font">Add your first pet to get started</p>
+              <Button
+                variant="outline"
+                onClick={addPet}
+                className="w-full border-dashed border-2 body-font bg-transparent"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Another Pet
+              </Button>
+            </div>
+          )}
+
+          {/* Services Step */}
+          {currentStep === "services" && (
+            <div className="space-y-4">
+              <p className="text-gray-600 body-font">Select all services you need for your pet(s):</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {serviceOptions.map((option) => (
+                  <Card
+                    key={option.value}
+                    className={`cursor-pointer transition-all ${
+                      services.includes(option.value)
+                        ? "border-[#E75837] bg-orange-50"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                    onClick={() => toggleService(option.value)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          checked={services.includes(option.value)}
+                          onChange={() => toggleService(option.value)}
+                        />
+                        <div>
+                          <h3 className="font-medium header-font">{option.label}</h3>
+                          <p className="text-sm text-gray-600 body-font">{option.description}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              {services.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm text-gray-600 mb-2 body-font">Selected services:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {services.map((service) => (
+                      <Badge key={service} variant="secondary" className="body-font">
+                        {serviceOptions.find((opt) => opt.value === service)?.label}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
           )}
 
-          {/* Services Section */}
-          {currentSection === 1 && (
-            <div className="space-y-6">
-              <h3 className="text-lg font-semibold header-font">What services do you need?</h3>
-              <p className="text-gray-600 body-font">
-                Select all services you're interested in. We'll match you with professionals who can handle multiple
-                services.
-              </p>
-
+          {/* Location Step */}
+          {currentStep === "location" && (
+            <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {serviceOptions.map((service) => {
-                  const IconComponent = service.icon
-                  const isSelected = selectedServices.includes(service.id)
-
-                  return (
-                    <Card
-                      key={service.id}
-                      className={`cursor-pointer transition-all ${
-                        isSelected ? "ring-2 ring-[#E75837] bg-orange-50" : "hover:shadow-md"
-                      }`}
-                      onClick={() => handleServiceToggle(service.id)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-start space-x-3">
-                          <div
-                            className={`p-2 rounded-lg ${
-                              isSelected ? "bg-[#E75837] text-white" : "bg-gray-100 text-gray-600"
-                            }`}
-                          >
-                            <IconComponent className="w-5 h-5" />
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="font-medium header-font">{service.label}</h4>
-                            <p className="text-sm text-gray-600 body-font">{service.description}</p>
-                          </div>
-                          <Checkbox checked={isSelected} />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Location & Timing Section */}
-          {currentSection === 2 && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold mb-4 header-font flex items-center gap-2">
-                  <MapPin className="w-5 h-5 text-[#E75837]" />
-                  Location & Timing
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  <div>
-                    <label className="block text-sm font-medium mb-1 body-font">Address</label>
-                    <Input
-                      value={formData.location.address}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          location: { ...formData.location, address: e.target.value },
-                        })
-                      }
-                      placeholder="Street address"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-1 body-font">City</label>
-                    <Input
-                      value={formData.location.city}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          location: { ...formData.location, city: e.target.value },
-                        })
-                      }
-                      placeholder="City"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-1 body-font">State</label>
-                    <Input
-                      value={formData.location.state}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          location: { ...formData.location, state: e.target.value },
-                        })
-                      }
-                      placeholder="State"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-1 body-font">ZIP Code *</label>
-                    <Input
-                      value={formData.location.zipCode}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          location: { ...formData.location, zipCode: e.target.value },
-                        })
-                      }
-                      placeholder="ZIP Code"
-                    />
-                  </div>
+                <div className="md:col-span-2">
+                  <Label htmlFor="address" className="header-font">
+                    Street Address
+                  </Label>
+                  <Input
+                    id="address"
+                    value={location.address}
+                    onChange={(e) => setLocation({ ...location, address: e.target.value })}
+                    placeholder="123 Main Street"
+                    className="body-font"
+                  />
                 </div>
-              </div>
-
-              <div>
-                <h4 className="font-medium mb-3 header-font flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-[#E75837]" />
-                  When do you need service?
-                </h4>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                  {[
-                    { value: "asap", label: "ASAP" },
-                    { value: "today", label: "Today" },
-                    { value: "this_week", label: "This Week" },
-                    { value: "flexible", label: "I'm Flexible" },
-                  ].map((option) => (
-                    <Button
-                      key={option.value}
-                      variant={formData.timing.urgency === option.value ? "default" : "outline"}
-                      onClick={() =>
-                        setFormData({
-                          ...formData,
-                          timing: { ...formData.timing, urgency: option.value as any },
-                        })
-                      }
-                      className="body-font"
-                    >
-                      {option.label}
-                    </Button>
-                  ))}
-                </div>
-
-                {formData.timing.urgency !== "flexible" && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1 body-font">Preferred Date</label>
-                      <Input
-                        type="date"
-                        value={formData.timing.preferredDate}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            timing: { ...formData.timing, preferredDate: e.target.value },
-                          })
-                        }
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium mb-1 body-font">Preferred Time</label>
-                      <Input
-                        type="time"
-                        value={formData.timing.preferredTime}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            timing: { ...formData.timing, preferredTime: e.target.value },
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Budget & Preferences Section */}
-          {currentSection === 3 && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold mb-4 header-font flex items-center gap-2">
-                  <DollarSign className="w-5 h-5 text-[#E75837]" />
-                  Budget & Preferences
-                </h3>
-
-                <div className="mb-6">
-                  <label className="block text-sm font-medium mb-3 body-font">Budget Range</label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1 body-font">Minimum ($)</label>
-                      <Input
-                        type="number"
-                        value={formData.budget.min}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            budget: { ...formData.budget, min: Number.parseInt(e.target.value) || 0 },
-                          })
-                        }
-                        min="0"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1 body-font">Maximum ($)</label>
-                      <Input
-                        type="number"
-                        value={formData.budget.max}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            budget: { ...formData.budget, max: Number.parseInt(e.target.value) || 0 },
-                          })
-                        }
-                        min="0"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-2 mt-3">
-                    <Checkbox
-                      checked={formData.budget.flexible}
-                      onCheckedChange={(checked) =>
-                        setFormData({
-                          ...formData,
-                          budget: { ...formData.budget, flexible: !!checked },
-                        })
-                      }
-                    />
-                    <label className="text-sm body-font">I'm flexible with pricing for the right professional</label>
-                  </div>
-                </div>
-
-                <div className="mb-6">
-                  <label className="block text-sm font-medium mb-3 body-font">Professional Preference</label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    {[
-                      { value: "individual", label: "Individual Professional" },
-                      { value: "team", label: "Team of Professionals" },
-                      { value: "no_preference", label: "No Preference" },
-                    ].map((option) => (
-                      <Button
-                        key={option.value}
-                        variant={formData.preferences.professionalType === option.value ? "default" : "outline"}
-                        onClick={() =>
-                          setFormData({
-                            ...formData,
-                            preferences: { ...formData.preferences, professionalType: option.value as any },
-                          })
-                        }
-                        className="body-font text-sm"
-                      >
-                        {option.label}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-
                 <div>
-                  <label className="block text-sm font-medium mb-3 body-font">Experience Level</label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    {[
-                      { value: "any", label: "Any Experience" },
-                      { value: "experienced", label: "Experienced" },
-                      { value: "expert", label: "Expert Level" },
-                    ].map((option) => (
-                      <Button
-                        key={option.value}
-                        variant={formData.preferences.experienceLevel === option.value ? "default" : "outline"}
-                        onClick={() =>
-                          setFormData({
-                            ...formData,
-                            preferences: { ...formData.preferences, experienceLevel: option.value as any },
-                          })
-                        }
-                        className="body-font text-sm"
-                      >
-                        {option.label}
-                      </Button>
-                    ))}
+                  <Label htmlFor="city" className="header-font">
+                    City *
+                  </Label>
+                  <Input
+                    id="city"
+                    value={location.city}
+                    onChange={(e) => setLocation({ ...location, city: e.target.value })}
+                    placeholder="Chicago"
+                    className="body-font"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="state" className="header-font">
+                    State *
+                  </Label>
+                  <Input
+                    id="state"
+                    value={location.state}
+                    onChange={(e) => setLocation({ ...location, state: e.target.value })}
+                    placeholder="IL"
+                    className="body-font"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="zipCode" className="header-font">
+                    ZIP Code *
+                  </Label>
+                  <Input
+                    id="zipCode"
+                    value={location.zipCode}
+                    onChange={(e) => setLocation({ ...location, zipCode: e.target.value })}
+                    placeholder="60611"
+                    className="body-font"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Timing Step */}
+          {currentStep === "timing" && (
+            <div className="space-y-6">
+              <div>
+                <Label className="header-font">How urgent is your need? *</Label>
+                <RadioGroup
+                  value={timing.urgency}
+                  onValueChange={(value) => setTiming({ ...timing, urgency: value as UrgencyLevel })}
+                  className="mt-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="asap" id="asap" />
+                    <Label htmlFor="asap" className="body-font">
+                      ASAP - I need help right now
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="today" id="today" />
+                    <Label htmlFor="today" className="body-font">
+                      Today - Within the next few hours
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="this_week" id="this_week" />
+                    <Label htmlFor="this_week" className="body-font">
+                      This week - Within the next 7 days
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="flexible" id="flexible" />
+                    <Label htmlFor="flexible" className="body-font">
+                      Flexible - I can wait for the right professional
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {timing.urgency !== "asap" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="preferredDate" className="header-font">
+                      Preferred Date
+                    </Label>
+                    <Input
+                      id="preferredDate"
+                      type="date"
+                      value={timing.preferredDate}
+                      onChange={(e) => setTiming({ ...timing, preferredDate: e.target.value })}
+                      className="body-font"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="preferredTime" className="header-font">
+                      Preferred Time
+                    </Label>
+                    <Input
+                      id="preferredTime"
+                      type="time"
+                      value={timing.preferredTime}
+                      onChange={(e) => setTiming({ ...timing, preferredTime: e.target.value })}
+                      className="body-font"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Budget Step */}
+          {currentStep === "budget" && (
+            <div className="space-y-6">
+              <div>
+                <Label className="header-font">Budget Range *</Label>
+                <p className="text-sm text-gray-600 mb-4 body-font">
+                  What's your budget for the services you've selected?
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="minBudget" className="header-font">
+                      Minimum ($)
+                    </Label>
+                    <Input
+                      id="minBudget"
+                      type="number"
+                      value={budget.min}
+                      onChange={(e) => setBudget({ ...budget, min: Number.parseInt(e.target.value) || 0 })}
+                      min="0"
+                      className="body-font"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="maxBudget" className="header-font">
+                      Maximum ($)
+                    </Label>
+                    <Input
+                      id="maxBudget"
+                      type="number"
+                      value={budget.max}
+                      onChange={(e) => setBudget({ ...budget, max: Number.parseInt(e.target.value) || 0 })}
+                      min={budget.min}
+                      className="body-font"
+                    />
                   </div>
                 </div>
               </div>
 
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="flexible"
+                  checked={budget.flexible}
+                  onCheckedChange={(checked) => setBudget({ ...budget, flexible: !!checked })}
+                />
+                <Label htmlFor="flexible" className="body-font">
+                  I'm flexible with my budget for the right professional
+                </Label>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-700 body-font">
+                  <strong>
+                    Budget Range: ${budget.min} - ${budget.max}
+                  </strong>
+                  {budget.flexible && " (Flexible)"}
+                </p>
+                <p className="text-xs text-blue-600 mt-1 body-font">
+                  Our concierge team will find professionals within your budget range and may suggest premium options if
+                  you're flexible.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Preferences Step */}
+          {currentStep === "preferences" && (
+            <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium mb-2 body-font">Additional Notes</label>
+                <Label className="header-font">Professional Type Preference</Label>
+                <RadioGroup
+                  value={preferences.professionalType}
+                  onValueChange={(value) => setPreferences({ ...preferences, professionalType: value as any })}
+                  className="mt-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="individual" id="individual" />
+                    <Label htmlFor="individual" className="body-font">
+                      Individual specialist
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="team" id="team" />
+                    <Label htmlFor="team" className="body-font">
+                      Team of professionals
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="no_preference" id="no_preference" />
+                    <Label htmlFor="no_preference" className="body-font">
+                      No preference
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              <div>
+                <Label className="header-font">Experience Level</Label>
+                <RadioGroup
+                  value={preferences.experienceLevel}
+                  onValueChange={(value) => setPreferences({ ...preferences, experienceLevel: value as any })}
+                  className="mt-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="any" id="any" />
+                    <Label htmlFor="any" className="body-font">
+                      Any experience level
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="experienced" id="experienced" />
+                    <Label htmlFor="experienced" className="body-font">
+                      Experienced professionals only
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="expert" id="expert" />
+                    <Label htmlFor="expert" className="body-font">
+                      Expert/specialist level only
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              <div>
+                <Label htmlFor="specialRequirements" className="header-font">
+                  Special Requirements
+                </Label>
                 <Textarea
-                  value={formData.additionalNotes}
-                  onChange={(e) => setFormData({ ...formData, additionalNotes: e.target.value })}
-                  placeholder="Any additional requirements, preferences, or special instructions..."
-                  rows={4}
+                  id="specialRequirements"
+                  value={preferences.specialRequirements.join(", ")}
+                  onChange={(e) =>
+                    setPreferences({
+                      ...preferences,
+                      specialRequirements: e.target.value
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean),
+                    })
+                  }
+                  placeholder="Any specific requirements or certifications needed (comma separated)"
+                  className="body-font"
                 />
               </div>
             </div>
           )}
 
-          {/* Contact Information Section */}
-          {currentSection === 4 && (
+          {/* Contact Step */}
+          {currentStep === "contact" && (
             <div className="space-y-6">
-              <h3 className="text-lg font-semibold header-font flex items-center gap-2">
-                <User className="w-5 h-5 text-[#E75837]" />
-                Contact Information
-              </h3>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1 body-font">First Name *</label>
+                  <Label htmlFor="firstName" className="header-font">
+                    First Name *
+                  </Label>
                   <Input
-                    value={formData.contactInfo.firstName}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        contactInfo: { ...formData.contactInfo, firstName: e.target.value },
-                      })
-                    }
-                    placeholder="First name"
+                    id="firstName"
+                    value={contactInfo.firstName}
+                    onChange={(e) => setContactInfo({ ...contactInfo, firstName: e.target.value })}
+                    placeholder="John"
+                    className="body-font"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium mb-1 body-font">Last Name</label>
+                  <Label htmlFor="lastName" className="header-font">
+                    Last Name *
+                  </Label>
                   <Input
-                    value={formData.contactInfo.lastName}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        contactInfo: { ...formData.contactInfo, lastName: e.target.value },
-                      })
-                    }
-                    placeholder="Last name"
+                    id="lastName"
+                    value={contactInfo.lastName}
+                    onChange={(e) => setContactInfo({ ...contactInfo, lastName: e.target.value })}
+                    placeholder="Smith"
+                    className="body-font"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium mb-1 body-font">Email *</label>
+                  <Label htmlFor="email" className="header-font">
+                    Email *
+                  </Label>
                   <Input
+                    id="email"
                     type="email"
-                    value={formData.contactInfo.email}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        contactInfo: { ...formData.contactInfo, email: e.target.value },
-                      })
-                    }
-                    placeholder="your.email@example.com"
+                    value={contactInfo.email}
+                    onChange={(e) => setContactInfo({ ...contactInfo, email: e.target.value })}
+                    placeholder="john@example.com"
+                    className="body-font"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium mb-1 body-font">Phone</label>
+                  <Label htmlFor="phone" className="header-font">
+                    Phone *
+                  </Label>
                   <Input
+                    id="phone"
                     type="tel"
-                    value={formData.contactInfo.phone}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        contactInfo: { ...formData.contactInfo, phone: e.target.value },
-                      })
-                    }
+                    value={contactInfo.phone}
+                    onChange={(e) => setContactInfo({ ...contactInfo, phone: e.target.value })}
                     placeholder="(555) 123-4567"
+                    className="body-font"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-3 body-font">Preferred Contact Method</label>
-                <div className="flex space-x-4">
-                  {[
-                    { value: "email", label: "Email", icon: Mail },
-                    { value: "phone", label: "Phone", icon: Phone },
-                    { value: "text", label: "Text", icon: Phone },
-                  ].map((option) => {
-                    const IconComponent = option.icon
-                    return (
-                      <Button
-                        key={option.value}
-                        variant={formData.contactInfo.preferredContact === option.value ? "default" : "outline"}
-                        onClick={() =>
-                          setFormData({
-                            ...formData,
-                            contactInfo: { ...formData.contactInfo, preferredContact: option.value as any },
-                          })
-                        }
-                        className="body-font"
-                      >
-                        <IconComponent className="w-4 h-4 mr-2" />
-                        {option.label}
-                      </Button>
-                    )
-                  })}
-                </div>
+                <Label className="header-font">Preferred Contact Method</Label>
+                <RadioGroup
+                  value={contactInfo.preferredContact}
+                  onValueChange={(value) => setContactInfo({ ...contactInfo, preferredContact: value as any })}
+                  className="mt-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="phone" id="phone" />
+                    <Label htmlFor="phone" className="body-font">
+                      Phone call
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="text" id="text" />
+                    <Label htmlFor="text" className="body-font">
+                      Text message
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="email" id="email" />
+                    <Label htmlFor="email" className="body-font">
+                      Email
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              <div>
+                <Label htmlFor="additionalNotes" className="header-font">
+                  Additional Notes
+                </Label>
+                <Textarea
+                  id="additionalNotes"
+                  value={additionalNotes}
+                  onChange={(e) => setAdditionalNotes(e.target.value)}
+                  placeholder="Any additional information that would help us find the perfect professional for your pet"
+                  className="body-font"
+                />
               </div>
             </div>
           )}
@@ -713,28 +766,39 @@ export function ServiceRequestIntake({ onComplete }: ServiceRequestIntakeProps) 
           <div className="flex justify-between pt-6 border-t">
             <Button
               variant="outline"
-              onClick={() => setCurrentSection(Math.max(0, currentSection - 1))}
-              disabled={currentSection === 0}
+              onClick={() => {
+                const currentIndex = stepOrder.indexOf(currentStep)
+                if (currentIndex > 0) {
+                  setCurrentStep(stepOrder[currentIndex - 1])
+                }
+              }}
+              disabled={currentStepIndex === 0}
               className="body-font"
             >
               Previous
             </Button>
 
-            {currentSection < sections.length - 1 ? (
+            {currentStepIndex === stepOrder.length - 1 ? (
               <Button
-                onClick={() => setCurrentSection(currentSection + 1)}
-                disabled={!canProceed()}
-                className="body-font"
+                onClick={handleSubmit}
+                disabled={!canProceedFromStep(currentStep)}
+                className="bg-[#E75837] hover:bg-[#d04e30] body-font"
               >
-                Next
+                Submit Request
               </Button>
             ) : (
               <Button
-                onClick={handleSubmit}
-                disabled={!canProceed()}
+                onClick={() => {
+                  const currentIndex = stepOrder.indexOf(currentStep)
+                  if (currentIndex < stepOrder.length - 1) {
+                    setCurrentStep(stepOrder[currentIndex + 1])
+                  }
+                }}
+                disabled={!canProceedFromStep(currentStep)}
                 className="bg-[#E75837] hover:bg-[#d04e30] body-font"
               >
-                Find My Perfect Match
+                Next Step
+                <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             )}
           </div>
