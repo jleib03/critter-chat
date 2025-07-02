@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
-import { CheckCircle2, Circle, Heart, Activity, Pill, FileText, Sparkles, User } from "lucide-react"
+import { CheckCircle2, Circle, Sparkles, Stethoscope, Activity, Heart, FileText, AlertCircle } from "lucide-react"
 
 type CarePlanItem = {
   id: string
@@ -28,178 +28,153 @@ interface CarePlanProps {
   serviceActive: boolean
 }
 
+const categoryIcons = {
+  medical: Stethoscope,
+  exercise: Activity,
+  feeding: Heart,
+  comfort: Heart,
+  documentation: FileText,
+}
+
+const categoryColors = {
+  medical: "bg-red-50 border-red-200 text-red-800",
+  exercise: "bg-blue-50 border-blue-200 text-blue-800",
+  feeding: "bg-green-50 border-green-200 text-green-800",
+  comfort: "bg-purple-50 border-purple-200 text-purple-800",
+  documentation: "bg-gray-50 border-gray-200 text-gray-800",
+}
+
 export function CarePlan({ items, onItemComplete, progressPercentage, pet, serviceActive }: CarePlanProps) {
   const [expandedItem, setExpandedItem] = useState<string | null>(null)
-  const [itemNotes, setItemNotes] = useState<{ [key: string]: string }>({})
-
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case "medical":
-        return <Pill className="w-4 h-4" />
-      case "exercise":
-        return <Activity className="w-4 h-4" />
-      case "comfort":
-        return <Heart className="w-4 h-4" />
-      case "documentation":
-        return <FileText className="w-4 h-4" />
-      default:
-        return <Circle className="w-4 h-4" />
-    }
-  }
-
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case "medical":
-        return "text-red-600 bg-red-50 border-red-200"
-      case "exercise":
-        return "text-blue-600 bg-blue-50 border-blue-200"
-      case "comfort":
-        return "text-purple-600 bg-purple-50 border-purple-200"
-      case "documentation":
-        return "text-green-600 bg-green-50 border-green-200"
-      default:
-        return "text-gray-600 bg-gray-50 border-gray-200"
-    }
-  }
+  const [notes, setNotes] = useState<Record<string, string>>({})
 
   const handleItemClick = (itemId: string) => {
     if (!serviceActive) return
+
+    const item = items.find((i) => i.id === itemId)
+    if (item?.completed) return
+
     setExpandedItem(expandedItem === itemId ? null : itemId)
   }
 
-  const handleCompleteItem = (itemId: string) => {
-    const notes = itemNotes[itemId] || ""
-    onItemComplete(itemId, notes)
+  const handleComplete = (itemId: string) => {
+    const itemNotes = notes[itemId] || ""
+    onItemComplete(itemId, itemNotes)
     setExpandedItem(null)
-    setItemNotes((prev) => ({ ...prev, [itemId]: "" }))
+    setNotes((prev) => ({ ...prev, [itemId]: "" }))
   }
 
-  const groupedItems = items.reduce(
-    (acc, item) => {
-      if (!acc[item.category]) acc[item.category] = []
-      acc[item.category].push(item)
-      return acc
-    },
-    {} as { [key: string]: CarePlanItem[] },
-  )
+  const completedItems = items.filter((item) => item.completed)
+  const pendingItems = items.filter((item) => !item.completed)
 
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xl header-font text-[#E75837] flex items-center gap-2">
-            <Sparkles className="w-5 h-5" />
+          <CardTitle className="flex items-center gap-2 header-font">
+            <Sparkles className="w-5 h-5 text-[#E75837]" />
             Critter Care Plan - {pet.name}
           </CardTitle>
           <Badge variant="outline" className="body-font">
-            {Math.round(progressPercentage)}% Complete
+            {completedItems.length} of {items.length} completed
           </Badge>
         </div>
-        <Progress value={progressPercentage} className="mt-2" />
 
-        {/* Auto-completion notice */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
-          <div className="flex items-center gap-2 text-blue-800 text-sm">
-            <User className="w-4 h-4" />
-            <span className="font-medium">Smart Care Plan</span>
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm text-gray-600 body-font">
+            <span>Progress</span>
+            <span>{Math.round(progressPercentage)}%</span>
           </div>
-          <p className="text-blue-700 text-xs mt-1 body-font">
-            Items marked with ✨ are auto-populated from {pet.name}'s Critter profile including medications,
-            preferences, and vet instructions.
-          </p>
+          <Progress value={progressPercentage} className="h-2" />
         </div>
+
+        {!serviceActive && (
+          <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <AlertCircle className="w-4 h-4 text-amber-600" />
+            <span className="text-sm text-amber-800 body-font">
+              Start the service timer to begin completing care plan items
+            </span>
+          </div>
+        )}
       </CardHeader>
 
-      <CardContent className="space-y-6">
-        {Object.entries(groupedItems).map(([category, categoryItems]) => (
-          <div key={category}>
-            <h3 className="font-semibold text-gray-900 mb-3 header-font capitalize flex items-center gap-2">
-              {getCategoryIcon(category)}
-              {category} Care
-            </h3>
+      <CardContent className="space-y-4">
+        {/* Auto-completed items notice */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="w-4 h-4 text-blue-600" />
+            <span className="text-sm font-medium text-blue-800 header-font">Smart Care Plan</span>
+          </div>
+          <p className="text-xs text-blue-700 body-font">
+            Items marked with ✨ are auto-populated from {pet.name}'s Critter profile, including vet instructions,
+            medication schedules, and care preferences.
+          </p>
+        </div>
 
-            <div className="space-y-2">
-              {categoryItems.map((item) => (
-                <div key={item.id}>
+        {/* Pending Items */}
+        {pendingItems.length > 0 && (
+          <div className="space-y-3">
+            <h4 className="font-medium text-gray-900 header-font">Pending Tasks</h4>
+            {pendingItems.map((item) => {
+              const Icon = categoryIcons[item.category]
+              const isExpanded = expandedItem === item.id
+
+              return (
+                <div key={item.id} className="border rounded-lg overflow-hidden">
                   <div
-                    className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                      item.completed
-                        ? "bg-green-50 border-green-200"
-                        : serviceActive
-                          ? "hover:bg-gray-50 border-gray-200"
-                          : "border-gray-200 opacity-60"
+                    className={`p-4 cursor-pointer transition-colors ${
+                      serviceActive ? "hover:bg-gray-50" : "opacity-60"
                     }`}
                     onClick={() => handleItemClick(item.id)}
                   >
                     <div className="flex items-start gap-3">
-                      <div className="mt-0.5">
-                        {item.completed ? (
-                          <CheckCircle2 className="w-5 h-5 text-green-600" />
-                        ) : (
-                          <Circle className="w-5 h-5 text-gray-400" />
-                        )}
-                      </div>
+                      <Circle className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
 
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <h4
-                            className={`font-medium body-font ${item.completed ? "text-green-800" : "text-gray-900"}`}
-                          >
-                            {item.title}
-                          </h4>
-                          {item.autoCompleted && (
-                            <Sparkles className="w-3 h-3 text-blue-500" title="Auto-populated from pet profile" />
-                          )}
+                          <Icon className="w-4 h-4 text-gray-600" />
+                          <span className="font-medium text-gray-900 header-font">{item.title}</span>
+                          {item.autoCompleted && <Sparkles className="w-3 h-3 text-blue-500" />}
                           {item.fromProfile && (
-                            <Badge variant="outline" className="text-xs body-font">
+                            <Badge variant="secondary" className="text-xs body-font">
                               From Profile
                             </Badge>
                           )}
                         </div>
 
-                        <p className={`text-sm body-font ${item.completed ? "text-green-700" : "text-gray-600"}`}>
-                          {item.description}
-                        </p>
+                        <p className="text-sm text-gray-600 body-font">{item.description}</p>
 
-                        {item.completed && item.completedAt && (
-                          <p className="text-xs text-green-600 mt-1 body-font">
-                            Completed at {new Date(item.completedAt).toLocaleTimeString()}
-                            {item.notes && ` • ${item.notes}`}
-                          </p>
-                        )}
+                        <Badge variant="outline" className={`mt-2 text-xs ${categoryColors[item.category]} body-font`}>
+                          {item.category.charAt(0).toUpperCase() + item.category.slice(1)}
+                        </Badge>
                       </div>
                     </div>
                   </div>
 
-                  {/* Expanded item for completion */}
-                  {expandedItem === item.id && !item.completed && serviceActive && (
-                    <div className="mt-2 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  {isExpanded && serviceActive && (
+                    <div className="border-t bg-gray-50 p-4">
                       <div className="space-y-3">
                         <div>
-                          <label className="text-sm font-medium text-gray-700 body-font">Add notes (optional):</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1 header-font">
+                            Completion Notes
+                          </label>
                           <Textarea
-                            placeholder="Any observations or notes about this task..."
-                            value={itemNotes[item.id] || ""}
-                            onChange={(e) => setItemNotes((prev) => ({ ...prev, [item.id]: e.target.value }))}
-                            className="mt-1"
+                            placeholder="Add any observations, notes, or details about completing this task..."
+                            value={notes[item.id] || ""}
+                            onChange={(e) => setNotes((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                            className="body-font"
                           />
                         </div>
 
                         <div className="flex gap-2">
                           <Button
-                            onClick={() => handleCompleteItem(item.id)}
-                            size="sm"
+                            onClick={() => handleComplete(item.id)}
                             className="bg-green-600 hover:bg-green-700 text-white body-font"
                           >
-                            <CheckCircle2 className="w-4 h-4 mr-1" />
+                            <CheckCircle2 className="w-4 h-4 mr-2" />
                             Mark Complete
                           </Button>
-                          <Button
-                            onClick={() => setExpandedItem(null)}
-                            size="sm"
-                            variant="outline"
-                            className="body-font"
-                          >
+                          <Button variant="outline" onClick={() => setExpandedItem(null)} className="body-font">
                             Cancel
                           </Button>
                         </div>
@@ -207,14 +182,60 @@ export function CarePlan({ items, onItemComplete, progressPercentage, pet, servi
                     </div>
                   )}
                 </div>
-              ))}
-            </div>
+              )
+            })}
           </div>
-        ))}
+        )}
 
-        {!serviceActive && (
-          <div className="text-center py-8 text-gray-500 body-font">
-            Start the service to begin completing care plan items
+        {/* Completed Items */}
+        {completedItems.length > 0 && (
+          <div className="space-y-3">
+            <h4 className="font-medium text-gray-900 header-font">Completed Tasks</h4>
+            {completedItems.map((item) => {
+              const Icon = categoryIcons[item.category]
+
+              return (
+                <div key={item.id} className="border rounded-lg p-4 bg-green-50 border-green-200">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Icon className="w-4 h-4 text-green-600" />
+                        <span className="font-medium text-green-900 header-font">{item.title}</span>
+                        {item.autoCompleted && <Sparkles className="w-3 h-3 text-blue-500" />}
+                        {item.fromProfile && (
+                          <Badge variant="secondary" className="text-xs body-font">
+                            From Profile
+                          </Badge>
+                        )}
+                      </div>
+
+                      <p className="text-sm text-green-700 body-font">{item.description}</p>
+
+                      {item.notes && (
+                        <div className="mt-2 p-2 bg-white rounded border">
+                          <p className="text-sm text-gray-700 body-font">
+                            <strong>Notes:</strong> {item.notes}
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge variant="outline" className={`text-xs ${categoryColors[item.category]} body-font`}>
+                          {item.category.charAt(0).toUpperCase() + item.category.slice(1)}
+                        </Badge>
+                        {item.completedAt && (
+                          <span className="text-xs text-green-600 body-font">
+                            Completed at {new Date(item.completedAt).toLocaleTimeString()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )}
       </CardContent>
