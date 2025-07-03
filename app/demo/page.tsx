@@ -1,290 +1,216 @@
 "use client"
+
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Users, UserCheck, Calendar, Heart, ArrowRight, Clock, CheckCircle2, Star, Sparkles } from "lucide-react"
 import Link from "next/link"
-import { Users, MessageSquare, Settings, Heart, Clock, CheckCircle2, ArrowRight, Play } from "lucide-react"
 
 export default function DemoPage() {
+  const [currentStep, setCurrentStep] = useState(1)
+
+  const demoSteps = [
+    {
+      id: 1,
+      title: "Customer Request",
+      description: "See how customers submit service requests",
+      icon: Users,
+      color: "bg-blue-500",
+      path: "/concierge",
+      status: "available",
+    },
+    {
+      id: 2,
+      title: "Admin Concierge",
+      description: "AI-powered request analysis and professional matching",
+      icon: UserCheck,
+      color: "bg-green-500",
+      path: "/admin/concierge",
+      status: "available",
+    },
+    {
+      id: 3,
+      title: "Professional Opportunities",
+      description: "How professionals claim and manage opportunities",
+      icon: Calendar,
+      color: "bg-purple-500",
+      path: "/pro/opportunities",
+      status: "available",
+    },
+    {
+      id: 4,
+      title: "Service Delivery",
+      description: "Real-time care execution and quality tracking",
+      icon: Heart,
+      color: "bg-orange-500",
+      path: "/service/demo-service-123",
+      status: "available",
+    },
+    {
+      id: 5,
+      title: "Customer Live View",
+      description: "Real-time updates during service delivery",
+      icon: Clock,
+      color: "bg-pink-500",
+      path: "/customer/service/demo-service-123",
+      status: "new",
+    },
+  ]
+
   return (
-    <div className="min-h-screen bg-[#FBF8F3] p-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50">
+      <div className="max-w-6xl mx-auto p-8">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-[#E75837] mb-4 header-font">Critter Pet Services Demo</h1>
-          <p className="text-gray-700 text-lg body-font max-w-3xl mx-auto">
-            Experience the complete pet care ecosystem - from customer requests to professional service delivery
-          </p>
-        </div>
-
-        {/* Demo Flow Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Customer Experience */}
-          <Card className="border-2 border-blue-200 hover:border-blue-300 transition-colors">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-blue-800 header-font">
-                <Heart className="w-5 h-5" />
-                Customer Experience
-              </CardTitle>
-              <Badge variant="outline" className="w-fit body-font">
-                Start Here
-              </Badge>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-gray-600 body-font">
-                See how pet owners request services through our concierge platform
-              </p>
-
-              <div className="space-y-2">
-                <Link href="/concierge">
-                  <Button className="w-full justify-between bg-blue-600 hover:bg-blue-700 text-white body-font">
-                    Concierge Request
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </Link>
-
-                <Link href="/schedule/sarah-johnson">
-                  <Button variant="outline" className="w-full justify-between body-font bg-transparent">
-                    Direct Booking
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </Link>
-              </div>
-
-              <div className="text-xs text-gray-500 body-font">
-                • Pre-populated with demo data
-                <br />• Shows AI-powered matching
-                <br />• Real-time notifications
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Professional Tools */}
-          <Card className="border-2 border-green-200 hover:border-green-300 transition-colors">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-green-800 header-font">
-                <Users className="w-5 h-5" />
-                Professional Tools
-              </CardTitle>
-              <Badge variant="outline" className="w-fit body-font">
-                Business Side
-              </Badge>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-gray-600 body-font">
-                Professional dashboard, setup, and opportunity management
-              </p>
-
-              <div className="space-y-2">
-                <Link href="/pro/opportunities">
-                  <Button className="w-full justify-between bg-green-600 hover:bg-green-700 text-white body-font">
-                    Opportunities
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </Link>
-
-                <Link href="/pro/set-up">
-                  <Button variant="outline" className="w-full justify-between body-font bg-transparent">
-                    Setup & Config
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </Link>
-              </div>
-
-              <div className="text-xs text-gray-500 body-font">
-                • Claim opportunities
-                <br />• Configure services
-                <br />• Team management
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Service Delivery */}
-          <Card className="border-2 border-purple-200 hover:border-purple-300 transition-colors">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-purple-800 header-font">
-                <Clock className="w-5 h-5" />
-                Service Delivery
-              </CardTitle>
-              <Badge variant="outline" className="w-fit body-font">
-                Quality Focus
-              </Badge>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-gray-600 body-font">
-                Professional service execution with real-time tracking and reporting
-              </p>
-
-              <div className="space-y-2">
-                <Link href="/service/demo-service-123">
-                  <Button className="w-full justify-between bg-purple-600 hover:bg-purple-700 text-white body-font">
-                    <div className="flex items-center gap-2">
-                      <Play className="w-4 h-4" />
-                      Start Service Demo
-                    </div>
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </Link>
-              </div>
-
-              <div className="text-xs text-gray-500 body-font">
-                • Smart care plans
-                <br />• Real-time tracking
-                <br />• AI-generated reports
-                <br />• Quality assurance
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Admin/Concierge */}
-          <Card className="border-2 border-orange-200 hover:border-orange-300 transition-colors">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-orange-800 header-font">
-                <MessageSquare className="w-5 h-5" />
-                Admin & Concierge
-              </CardTitle>
-              <Badge variant="outline" className="w-fit body-font">
-                Operations
-              </Badge>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-gray-600 body-font">
-                Behind-the-scenes request management and professional coordination
-              </p>
-
-              <div className="space-y-2">
-                <Link href="/admin/concierge">
-                  <Button className="w-full justify-between bg-orange-600 hover:bg-orange-700 text-white body-font">
-                    Concierge Dashboard
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </Link>
-              </div>
-
-              <div className="text-xs text-gray-500 body-font">
-                • Request management
-                <br />• AI-powered matching
-                <br />• Professional coordination
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Configuration */}
-          <Card className="border-2 border-gray-200 hover:border-gray-300 transition-colors">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-gray-800 header-font">
-                <Settings className="w-5 h-5" />
-                Platform Setup
-              </CardTitle>
-              <Badge variant="outline" className="w-fit body-font">
-                Configuration
-              </Badge>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-gray-600 body-font">
-                Platform configuration and professional onboarding tools
-              </p>
-
-              <div className="space-y-2">
-                <Link href="/pro/custom-agent">
-                  <Button variant="outline" className="w-full justify-between body-font bg-transparent">
-                    Custom AI Agent
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </Link>
-
-                <Link href="/pro/how-to-use">
-                  <Button variant="outline" className="w-full justify-between body-font bg-transparent">
-                    How to Use
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </Link>
-              </div>
-
-              <div className="text-xs text-gray-500 body-font">
-                • AI agent setup
-                <br />• Platform tutorials
-                <br />• Integration guides
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Demo Flow */}
-          <Card className="border-2 border-[#E75837] hover:border-[#d04e30] transition-colors">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-[#E75837] header-font">
-                <CheckCircle2 className="w-5 h-5" />
-                Complete Demo Flow
-              </CardTitle>
-              <Badge variant="outline" className="w-fit body-font">
-                Recommended
-              </Badge>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-gray-600 body-font">
-                Experience the complete customer-to-professional journey
-              </p>
-
-              <div className="space-y-3">
-                <div className="text-xs space-y-1 body-font">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center">
-                      1
-                    </div>
-                    <span>Customer submits concierge request</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded-full bg-orange-500 text-white text-xs flex items-center justify-center">
-                      2
-                    </div>
-                    <span>Admin reviews and matches professionals</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded-full bg-green-500 text-white text-xs flex items-center justify-center">
-                      3
-                    </div>
-                    <span>Professional claims opportunity</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded-full bg-purple-500 text-white text-xs flex items-center justify-center">
-                      4
-                    </div>
-                    <span>Service delivery with real-time tracking</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Quick Start Guide */}
-        <Card className="mt-8 bg-gradient-to-r from-[#E75837] to-[#d04e30] text-white">
-          <CardHeader>
-            <CardTitle className="text-white header-font">🚀 Quick Start for Investors</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="font-semibold mb-2 header-font">Customer Journey (2 min)</h4>
-                <ol className="text-sm space-y-1 body-font">
-                  <li>1. Start with Concierge Request</li>
-                  <li>2. See AI matching in action</li>
-                  <li>3. View professional selection</li>
-                  <li>4. Experience service delivery</li>
-                </ol>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-2 header-font">Professional Tools (3 min)</h4>
-                <ol className="text-sm space-y-1 body-font">
-                  <li>1. Check opportunities dashboard</li>
-                  <li>2. Review setup and configuration</li>
-                  <li>3. Experience service delivery interface</li>
-                  <li>4. See AI-generated reporting</li>
-                </ol>
-              </div>
+        <div className="text-center mb-12">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="w-12 h-12 bg-[#E75837] rounded-xl flex items-center justify-center">
+              <Heart className="w-6 h-6 text-white" />
             </div>
-          </CardContent>
-        </Card>
+            <h1 className="text-4xl font-bold text-gray-900 header-font">Critter Platform Demo</h1>
+          </div>
+          <p className="text-xl text-gray-600 body-font max-w-3xl mx-auto">
+            Experience the complete pet care ecosystem - from customer request to professional service delivery
+          </p>
+          <div className="flex items-center justify-center gap-2 mt-4">
+            <Sparkles className="w-5 h-5 text-[#E75837]" />
+            <span className="text-sm text-gray-600 body-font">
+              Full end-to-end demonstration with real-time features
+            </span>
+          </div>
+        </div>
+
+        {/* Demo Flow */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          {demoSteps.map((step, index) => {
+            const Icon = step.icon
+            const isActive = currentStep === step.id
+            const isCompleted = currentStep > step.id
+
+            return (
+              <Card
+                key={step.id}
+                className={`relative transition-all duration-300 hover:shadow-lg ${
+                  isActive ? "ring-2 ring-[#E75837] shadow-lg" : ""
+                }`}
+              >
+                <CardHeader>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className={`w-10 h-10 rounded-lg ${step.color} flex items-center justify-center`}>
+                      <Icon className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {step.status === "new" && (
+                        <Badge variant="secondary" className="text-xs body-font bg-green-100 text-green-800">
+                          New!
+                        </Badge>
+                      )}
+                      <span className="text-sm text-gray-500 body-font">Step {step.id}</span>
+                    </div>
+                  </div>
+                  <CardTitle className="text-lg header-font">{step.title}</CardTitle>
+                </CardHeader>
+
+                <CardContent>
+                  <p className="text-gray-600 body-font mb-4">{step.description}</p>
+
+                  <Link href={step.path}>
+                    <Button
+                      className="w-full body-font"
+                      variant={isActive ? "default" : "outline"}
+                      onClick={() => setCurrentStep(step.id)}
+                    >
+                      {isCompleted ? (
+                        <>
+                          <CheckCircle2 className="w-4 h-4 mr-2" />
+                          View Again
+                        </>
+                      ) : (
+                        <>
+                          {step.status === "new" ? "Try New Feature" : "Start Demo"}
+                          <ArrowRight className="w-4 h-4 ml-2" />
+                        </>
+                      )}
+                    </Button>
+                  </Link>
+                </CardContent>
+
+                {/* Connection line */}
+                {index < demoSteps.length - 1 && (
+                  <div className="hidden lg:block absolute -right-3 top-1/2 transform -translate-y-1/2">
+                    <ArrowRight className="w-6 h-6 text-gray-300" />
+                  </div>
+                )}
+              </Card>
+            )
+          })}
+        </div>
+
+        {/* Key Features */}
+        <div className="bg-white rounded-2xl shadow-sm border p-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 header-font text-center">Platform Highlights</h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="text-center">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                <Users className="w-6 h-6 text-blue-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-2 header-font">Smart Matching</h3>
+              <p className="text-sm text-gray-600 body-font">
+                AI-powered professional matching based on pet needs and location
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                <Clock className="w-6 h-6 text-green-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-2 header-font">Real-Time Updates</h3>
+              <p className="text-sm text-gray-600 body-font">
+                Live service tracking with instant notifications to customers
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                <Heart className="w-6 h-6 text-purple-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-2 header-font">Quality Care</h3>
+              <p className="text-sm text-gray-600 body-font">
+                Comprehensive care plans with professional documentation
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                <Star className="w-6 h-6 text-orange-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-2 header-font">Professional Network</h3>
+              <p className="text-sm text-gray-600 body-font">
+                Vetted professionals with specialized expertise and ratings
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Navigation */}
+        <div className="mt-8 text-center">
+          <p className="text-gray-600 body-font mb-4">Jump directly to any part of the demo:</p>
+          <div className="flex flex-wrap justify-center gap-3">
+            {demoSteps.map((step) => (
+              <Link key={step.id} href={step.path}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="body-font bg-transparent"
+                  onClick={() => setCurrentStep(step.id)}
+                >
+                  {step.title}
+                </Button>
+              </Link>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   )
