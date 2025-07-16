@@ -9,11 +9,9 @@ import {
   MapPin,
   Phone,
   Mail,
-  Star,
   UserPlus,
   MessageCircle,
   ArrowRight,
-  CheckCircle,
   Scissors,
   Loader2,
 } from "lucide-react"
@@ -177,17 +175,6 @@ export default function ProfessionalLandingPage() {
                   <div>
                     <h1 className="text-4xl font-bold text-gray-900 mb-2 title-font">{professionalData.name}</h1>
                     <p className="text-xl text-gray-600 mb-4 body-font">{professionalData.tagline}</p>
-                    <div className="flex items-center gap-4 text-sm">
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                        <span className="font-medium body-font">{professionalData.rating}</span>
-                        <span className="text-gray-500 body-font">({professionalData.total_reviews} reviews)</span>
-                      </div>
-                      <div className="flex items-center gap-1 text-gray-600">
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                        <span className="body-font">{professionalData.years_experience} years experience</span>
-                      </div>
-                    </div>
                   </div>
                 </div>
 
@@ -371,19 +358,6 @@ export default function ProfessionalLandingPage() {
                       <span className="text-gray-600 body-font">
                         {hours.isOpen ? `${hours.open} - ${hours.close}` : "Closed"}
                       </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Certifications */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 header-font">Certifications</h3>
-                <div className="space-y-2">
-                  {professionalData.certifications.map((cert, index) => (
-                    <div key={index} className="flex items-center gap-3">
-                      <CheckCircle className="w-5 h-5 text-green-500" />
-                      <span className="body-font">{cert}</span>
                     </div>
                   ))}
                 </div>
