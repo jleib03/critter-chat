@@ -145,6 +145,50 @@ export default function ProfessionalSetupPage() {
     }
   }
 
+  // Helper function to compare blocked times for changes
+  const compareBlockedTimes = (current: WebhookBlockedTime[], original: WebhookBlockedTime[]) => {
+    // Find added blocked times (in current but not in original)
+    const addedBlockedTimes = current.filter(
+      (currentBt) => !original.some((originalBt) => originalBt.blocked_time_id === currentBt.blocked_time_id),
+    )
+
+    // Find deleted blocked times (in original but not in current)
+    const deletedBlockedTimes = original.filter(
+      (originalBt) => !current.some((currentBt) => currentBt.blocked_time_id === originalBt.blocked_time_id),
+    )
+
+    // Convert to webhook format
+    const addedForWebhook = addedBlockedTimes.map((bt) => ({
+      blocked_time_id: bt.blocked_time_id,
+      employee_id: bt.employee_id || null,
+      blocked_date: bt.date,
+      start_time: bt.start_time,
+      end_time: bt.end_time,
+      reason: bt.reason || "",
+      is_recurring: bt.is_recurring || false,
+      is_all_day: bt.is_all_day || false,
+      recurrence_pattern: bt.is_recurring ? bt.recurrence_pattern || null : null,
+    }))
+
+    const deletedForWebhook = deletedBlockedTimes.map((bt) => ({
+      blocked_time_id: bt.blocked_time_id,
+      employee_id: bt.employee_id || null,
+      blocked_date: bt.date,
+      start_time: bt.start_time,
+      end_time: bt.end_time,
+      reason: bt.reason || "",
+      is_recurring: bt.is_recurring || false,
+      is_all_day: bt.is_all_day || false,
+      recurrence_pattern: bt.is_recurring ? bt.recurrence_pattern || null : null,
+    }))
+
+    return {
+      hasChanges: addedBlockedTimes.length > 0 || deletedBlockedTimes.length > 0,
+      added: addedForWebhook,
+      deleted: deletedForWebhook,
+    }
+  }
+
   // Load configuration
   const loadConfiguration = async () => {
     try {
@@ -297,36 +341,22 @@ export default function ProfessionalSetupPage() {
       changes.capacity_rules = capacityRules
     }
 
-    // 4. Check Blocked Times changes
-    const blockedTimesForWebhook = blockedTimes.map((bt) => ({
-      blocked_time_id: bt.blocked_time_id,
-      employee_id: bt.employee_id || null,
-      blocked_date: bt.date,
-      start_time: bt.start_time,
-      end_time: bt.end_time,
-      reason: bt.reason || "",
-      is_recurring: bt.is_recurring || false,
-      is_all_day: bt.is_all_day || false,
-      recurrence_pattern: bt.is_recurring ? bt.recurrence_pattern || null : null,
-    }))
+    // 4. Check Blocked Times changes - NEW IMPROVED LOGIC
+    const blockedTimesComparison = compareBlockedTimes(blockedTimes, originalBlockedTimes)
 
-    const originalBlockedTimesForWebhook = originalBlockedTimes.map((bt) => ({
-      blocked_time_id: bt.blocked_time_id,
-      employee_id: bt.employee_id || null,
-      blocked_date: bt.date,
-      start_time: bt.start_time,
-      end_time: bt.end_time,
-      reason: bt.reason || "",
-      is_recurring: bt.is_recurring || false,
-      is_all_day: bt.is_all_day || false,
-      recurrence_pattern: bt.is_recurring ? bt.recurrence_pattern || null : null,
-    }))
-
-    const blockedTimesChanged =
-      JSON.stringify(blockedTimesForWebhook) !== JSON.stringify(originalBlockedTimesForWebhook)
-    if (blockedTimesChanged) {
+    if (blockedTimesComparison.hasChanges) {
       changedTabs.push("Blocked Time")
-      changes.blocked_times = blockedTimesForWebhook
+
+      // Only send the specific changes, not all blocked times
+      changes.blocked_times_changes = {
+        added: blockedTimesComparison.added,
+        deleted: blockedTimesComparison.deleted,
+      }
+
+      // Log the changes for debugging
+      console.log("Blocked Times Changes Detected:")
+      console.log("Added:", blockedTimesComparison.added)
+      console.log("Deleted:", blockedTimesComparison.deleted)
     }
 
     return { changes, changedTabs }
@@ -363,6 +393,12 @@ export default function ProfessionalSetupPage() {
       console.log("Saving configuration changes:", payload)
       console.log("Changed tabs:", changedTabs)
       console.log("Changes being sent:", changes)
+
+      // Special logging for blocked times changes
+      if (changes.blocked_times_changes) {
+        console.log("Blocked Times - Added:", changes.blocked_times_changes.added.length, "items")
+        console.log("Blocked Times - Deleted:", changes.blocked_times_changes.deleted.length, "items")
+      }
 
       const response = await fetch(webhookUrl, {
         method: "POST",
