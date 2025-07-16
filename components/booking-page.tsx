@@ -21,8 +21,7 @@ type BookingPageProps = {
   onStartOnboarding?: (sessionId: string | null, userId: string | null) => void
 }
 
-export default function BookingPage({ userInfo, onStartOnboarding }: BookingPageProps) {
-          
+export function BookingPage({ userInfo, onStartOnboarding }: BookingPageProps) {
   // State for messages and UI
   const [statusColor, setStatusColor] = useState("#E75837")
   const [messages, setMessages] = useState<Message[]>([
@@ -925,3 +924,5 @@ export default function BookingPage({ userInfo, onStartOnboarding }: BookingPage
     </div>
   )
 }
+
+export default BookingPage
