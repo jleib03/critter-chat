@@ -187,17 +187,17 @@ function parseLocationInfo(businessData: any): { address: string; city: string; 
 }
 
 export async function loadProfessionalLandingData(
-  professionalId: string,
+  uniqueUrl: string,
   forceRefresh = false,
 ): Promise<ProfessionalLandingData | null> {
   try {
-    console.log("🚀 Loading professional landing data for ID:", professionalId)
+    console.log("🚀 Loading professional landing data for URL:", uniqueUrl)
     console.log("🌐 Always fetching fresh data from webhook...")
     console.log("🔗 Using webhook URL:", WEBHOOK_URL)
 
     const payload = {
       action: "external_page_initialization",
-      professionalId: professionalId,
+      uniqueUrl: uniqueUrl,
     }
 
     console.log("📤 Sending payload:", JSON.stringify(payload, null, 2))
@@ -343,7 +343,7 @@ export async function loadProfessionalLandingData(
       const description = business?.business_description || generateDescription(serviceTypes, formattedServices)
 
       const landingData: ProfessionalLandingData = {
-        professional_id: business?.business_id?.toString() || professionalId,
+        professional_id: business?.business_id?.toString() || uniqueUrl,
         name: business?.business_name || "Professional Pet Services",
         tagline: business?.tagline || "Quality pet care services",
         description: description,
@@ -381,9 +381,9 @@ export async function loadProfessionalLandingData(
 }
 
 // Fallback data in case webhook fails
-export function getDefaultProfessionalData(professionalId: string): ProfessionalLandingData {
+export function getDefaultProfessionalData(uniqueUrl: string): ProfessionalLandingData {
   return {
-    professional_id: professionalId,
+    professional_id: uniqueUrl,
     name: "Professional Pet Services",
     tagline: "Quality pet care services",
     description: "Professional pet care services with experienced and caring staff dedicated to your pet's wellbeing.",
@@ -417,7 +417,7 @@ export function getDefaultProfessionalData(professionalId: string): Professional
 }
 
 // Legacy functions for compatibility - no longer used but kept to avoid breaking changes
-export function clearProfessionalCache(professionalId: string): void {
+export function clearProfessionalCache(uniqueUrl: string): void {
   console.log("🗑️ Cache clearing not needed - always using fresh data")
 }
 

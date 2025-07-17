@@ -1,97 +1,105 @@
 "use client"
 import { useRef, useEffect, useState } from "react"
 import type React from "react"
-import { Send, Loader2, X, MessageCircle, Minimize2 } from "lucide-react"
+import { Send, Loader2, X, MessageCircle } from "lucide-react"
 import type { ChatAgentConfig } from "../types/chat-config"
 
-type ChatMessage = {
+interface ChatMessage {
+  id: string
   text: string
-  isUser: boolean
+  sender: "user" | "agent"
+  timestamp: Date
 }
 
-type LiveChatWidgetProps = {
+interface LiveChatWidgetProps {
   professionalId: string
   professionalName: string
-  chatConfig?: ChatAgentConfig | null
-  isConfigLoading?: boolean
+  chatConfig: ChatAgentConfig
+  isConfigLoading: boolean
 }
 
-// Use the same webhook URL as the custom agent setup
 const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/803d260b-1b17-4abf-8079-2d40225c29b0"
 
 export default function LiveChatWidget({
   professionalId,
   professionalName,
   chatConfig,
-  isConfigLoading = false,
+  isConfigLoading,
 }: LiveChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [isMinimized, setIsMinimized] = useState(false)
+  const [message, setMessage] = useState("")
   const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [inputValue, setInputValue] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [sessionId, setSessionId] = useState<string>("")
 
-  // Use dynamic config or fallback to defaults
-  const chatName = chatConfig?.chat_name || `${professionalName} Support`
-  const primaryColor = chatConfig?.widget_config?.primary_color || "#E75837"
-  const welcomeMessage =
-    chatConfig?.welcome_message ||
-    `Hi! I'm here to help you with ${professionalName}. I can assist with booking appointments, answering questions about our services, and helping with any other inquiries. How can I help you today?`
-  const agentInstructions = chatConfig?.instructions || ""
+  // Generate a unique session ID when the component mounts
+  useEffect(() => {
+    const newSessionId = `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    setSessionId(newSessionId)
+    console.log("Generated chat session ID:", newSessionId)
+  }, [])
 
-  // Initialize chat with welcome message
+  // Add welcome message when chat is opened for the first time
   useEffect(() => {
     if (isOpen && messages.length === 0 && !isConfigLoading) {
+      const welcomeMessage =
+        chatConfig.welcome_message || `Hello! How can I help you with ${professionalName}'s services today?`
+
       setMessages([
         {
+          id: `welcome_${Date.now()}`,
           text: welcomeMessage,
-          isUser: false,
+          sender: "agent",
+          timestamp: new Date(),
         },
       ])
     }
-  }, [isOpen, messages.length, welcomeMessage, isConfigLoading])
+  }, [isOpen, messages.length, chatConfig, professionalName, isConfigLoading])
 
   // Scroll to bottom when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" })
+    }
   }, [messages])
 
-  const sendMessage = async (message: string) => {
-    if (!message.trim() || isLoading) return
+  const toggleChat = () => {
+    setIsOpen(!isOpen)
+  }
 
-    // Add user message
-    const userMessage: ChatMessage = { text: message, isUser: true }
+  const handleSendMessage = async () => {
+    if (!message.trim()) return
+
+    const userMessage: ChatMessage = {
+      id: `user_${Date.now()}`,
+      text: message,
+      sender: "user",
+      timestamp: new Date(),
+    }
+
+    // Add user message to chat
     setMessages((prev) => [...prev, userMessage])
-    setInputValue("")
-    setIsLoading(true)
+    setMessage("")
+    setIsTyping(true)
 
     try {
-      console.log("💬 Sending chat message:", message)
-      console.log("🔗 Using webhook URL:", WEBHOOK_URL)
+      // Send message to webhook
 
-      // Use the same webhook URL and payload format as the custom agent setup
       const payload = {
-        action: "support_conversation",
-        professionalId: professionalId,
-        message: message,
-        userInfo: {
-          source: "live_chat_widget",
-          sessionId: "chat_" + Date.now(),
-          timestamp: new Date().toISOString(),
-        },
-        // Include agent configuration for context
-        agentConfig: {
-          instructions: agentInstructions,
-          response_tone: chatConfig?.agent_behavior?.response_tone || "friendly",
-          max_response_length: chatConfig?.agent_behavior?.max_response_length || 200,
-          include_booking_links: chatConfig?.agent_behavior?.include_booking_links || true,
-          professional_name: professionalName,
-          business_context: chatConfig?.business_context || {},
-        },
+        action: "chat_message",
+        uniqueUrl: professionalId,
+        session_id: sessionId,
+        message: message.trim(),
+        timestamp: new Date().toISOString(),
+        chat_history: messages.map((m) => ({
+          role: m.sender === "user" ? "user" : "assistant",
+          content: m.text,
+          timestamp: m.timestamp.toISOString(),
+        })),
       }
 
-      console.log("📤 Chat payload:", JSON.stringify(payload, null, 2))
+      console.log("Sending chat message to webhook:", payload)
 
       const response = await fetch(WEBHOOK_URL, {
         method: "POST",
@@ -101,200 +109,144 @@ export default function LiveChatWidget({
         body: JSON.stringify(payload),
       })
 
-      console.log("📡 Chat response status:", response.status)
-
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
 
       const data = await response.json()
-      console.log("📥 Chat response data:", JSON.stringify(data, null, 2))
+      console.log("Received chat response:", data)
 
-      // Parse the response using the same logic as the testing step
-      let responseMessage = "I'm sorry, I couldn't process that request."
+      // Extract the response message
+      let responseText = "I'm sorry, I couldn't process your request at the moment."
 
       if (Array.isArray(data) && data.length > 0) {
         const firstItem = data[0]
-        if (firstItem.output) {
-          responseMessage = firstItem.output
-        } else if (firstItem.response) {
-          responseMessage = firstItem.response
+        if (firstItem.response) {
+          responseText = firstItem.response
+        } else if (firstItem.message) {
+          responseText = firstItem.message
+        } else if (firstItem.text) {
+          responseText = firstItem.text
+        } else if (firstItem.content) {
+          responseText = firstItem.content
         } else if (typeof firstItem === "string") {
-          responseMessage = firstItem
-        }
-      } else if (data && typeof data === "object") {
-        if (data.output) {
-          responseMessage = data.output
-        } else if (data.response) {
-          responseMessage = data.response
+          responseText = firstItem
         }
       } else if (typeof data === "string") {
-        responseMessage = data
+        responseText = data
+      } else if (data.response) {
+        responseText = data.response
+      } else if (data.message) {
+        responseText = data.message
+      } else if (data.text) {
+        responseText = data.text
+      } else if (data.content) {
+        responseText = data.content
       }
 
-      console.log("✅ Final response message:", responseMessage)
-
-      // Add bot response
-      const botMessage: ChatMessage = {
-        text: responseMessage,
-        isUser: false,
-      }
-
-      setMessages((prev) => [...prev, botMessage])
+      // Add agent response to chat
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `agent_${Date.now()}`,
+          text: responseText,
+          sender: "agent",
+          timestamp: new Date(),
+        },
+      ])
     } catch (error) {
-      console.error("💥 Chat error:", error)
+      console.error("Error sending chat message:", error)
 
-      // Add error message
-      const errorMessage: ChatMessage = {
-        text: "I'm sorry, I'm having trouble connecting right now. Please try again in a moment or contact us directly for immediate assistance.",
-        isUser: false,
-      }
-
-      setMessages((prev) => [...prev, errorMessage])
+      // Add error message to chat
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `error_${Date.now()}`,
+          text: "I'm sorry, I'm having trouble connecting right now. Please try again later.",
+          sender: "agent",
+          timestamp: new Date(),
+        },
+      ])
     } finally {
-      setIsLoading(false)
+      setIsTyping(false)
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    sendMessage(inputValue)
-  }
-
-  const openChat = () => {
-    setIsOpen(true)
-    setIsMinimized(false)
-  }
-
-  const closeChat = () => {
-    setIsOpen(false)
-    setIsMinimized(false)
-  }
-
-  const minimizeChat = () => {
-    setIsMinimized(true)
-  }
-
-  const restoreChat = () => {
-    setIsMinimized(false)
-  }
-
-  // Don't render if config is still loading
-  if (isConfigLoading) {
-    return (
-      <div className="fixed bottom-6 right-6 w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center z-50 animate-pulse">
-        <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
-      </div>
-    )
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault()
+      handleSendMessage()
+    }
   }
 
   return (
     <>
-      {/* Chat Button - Fixed position */}
-      {!isOpen && (
-        <button
-          onClick={openChat}
-          className="fixed bottom-6 right-6 w-16 h-16 rounded-full text-white shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-50"
-          style={{ backgroundColor: primaryColor }}
-          aria-label="Open chat"
-        >
-          <MessageCircle className="w-6 h-6" />
-        </button>
-      )}
+      {/* Chat Button */}
+      <button
+        onClick={toggleChat}
+        className="fixed bottom-6 right-6 bg-[#94ABD6] text-white p-4 rounded-full shadow-lg hover:bg-[#7a90ba] transition-colors z-40"
+        aria-label="Chat with us"
+      >
+        {isOpen ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
+      </button>
 
-      {/* Chat Widget */}
+      {/* Chat Window */}
       {isOpen && (
-        <div
-          className={`fixed bottom-6 right-6 w-96 bg-white rounded-lg shadow-2xl border border-gray-200 z-50 transition-all duration-300 ${
-            isMinimized ? "h-14" : "h-[500px]"
-          }`}
-        >
+        <div className="fixed bottom-24 right-6 w-80 sm:w-96 bg-white rounded-xl shadow-xl z-40 flex flex-col max-h-[70vh] border border-gray-200">
           {/* Chat Header */}
-          <div
-            className="p-4 border-b border-gray-200 rounded-t-lg cursor-pointer"
-            style={{ backgroundColor: primaryColor }}
-            onClick={isMinimized ? restoreChat : undefined}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-white font-medium mr-3">
-                  {chatName.charAt(0)}
-                </div>
-                <h3 className="font-medium text-white header-font">{chatName}</h3>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={minimizeChat}
-                  className="text-white hover:bg-white hover:bg-opacity-20 p-1 rounded transition-colors"
-                  aria-label="Minimize chat"
-                >
-                  <Minimize2 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={closeChat}
-                  className="text-white hover:bg-white hover:bg-opacity-20 p-1 rounded transition-colors"
-                  aria-label="Close chat"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+          <div className="bg-[#94ABD6] text-white p-4 rounded-t-xl">
+            <h3 className="font-bold header-font">Chat with {professionalName}</h3>
+            <p className="text-sm text-white/80 body-font">Ask questions about services and booking</p>
           </div>
 
-          {/* Chat Messages - Hidden when minimized */}
-          {!isMinimized && (
-            <>
-              <div className="h-80 overflow-y-auto p-4">
-                {messages.map((message, index) => (
-                  <div key={index} className={`mb-4 flex ${message.isUser ? "justify-end" : "justify-start"}`}>
-                    <div
-                      className={`max-w-[80%] p-3 rounded-lg ${
-                        message.isUser ? `text-white` : "bg-gray-100 text-gray-800"
-                      } body-font`}
-                      style={message.isUser ? { backgroundColor: primaryColor } : {}}
-                    >
-                      {message.isUser ? message.text : <div dangerouslySetInnerHTML={{ __html: message.text }} />}
-                    </div>
-                  </div>
-                ))}
-
-                {isLoading && (
-                  <div className="flex justify-start mb-4">
-                    <div className="bg-gray-100 p-3 rounded-lg flex items-center">
-                      <Loader2 className="h-4 w-4 text-gray-500 animate-spin mr-2" />
-                      <span className="text-gray-500 text-sm">Thinking...</span>
-                    </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-
-              {/* Chat Input */}
-              <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 flex">
-                <input
-                  type="text"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="Type your message..."
-                  className="flex-1 p-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 body-font"
-                  style={{ focusRingColor: primaryColor }}
-                  disabled={isLoading}
-                />
-                <button
-                  type="submit"
-                  disabled={!inputValue.trim() || isLoading}
-                  className={`px-4 py-2 rounded-r-lg flex items-center justify-center transition-colors ${
-                    !inputValue.trim() || isLoading
-                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "text-white hover:opacity-90"
-                  }`}
-                  style={{ backgroundColor: !inputValue.trim() || isLoading ? undefined : primaryColor }}
+          {/* Chat Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-[300px] max-h-[50vh]">
+            {messages.map((msg) => (
+              <div key={msg.id} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
+                <div
+                  className={`max-w-[80%] rounded-lg p-3 ${
+                    msg.sender === "user"
+                      ? "bg-[#E75837] text-white rounded-tr-none"
+                      : "bg-gray-100 text-gray-800 rounded-tl-none"
+                  } body-font`}
                 >
-                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                </button>
-              </form>
-            </>
-          )}
+                  {msg.text}
+                </div>
+              </div>
+            ))}
+            {isTyping && (
+              <div className="flex justify-start">
+                <div className="bg-gray-100 text-gray-800 rounded-lg rounded-tl-none p-3 body-font flex items-center">
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Typing...
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Chat Input */}
+          <div className="border-t border-gray-200 p-4">
+            <div className="flex items-center">
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Type your message..."
+                className="flex-1 border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-[#94ABD6] resize-none body-font"
+                rows={2}
+                disabled={isTyping}
+              />
+              <button
+                onClick={handleSendMessage}
+                disabled={!message.trim() || isTyping}
+                className="ml-2 bg-[#94ABD6] text-white p-2 rounded-lg hover:bg-[#7a90ba] transition-colors disabled:opacity-50"
+              >
+                <Send className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-2 text-center body-font">Powered by Critter AI Assistant</p>
+          </div>
         </div>
       )}
     </>
