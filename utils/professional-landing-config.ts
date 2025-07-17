@@ -130,68 +130,46 @@ function getServiceTypeDisplayName(serviceType: string): string {
   }
 }
 
-// Helper function to parse location from service areas - show exactly what comes from Critter
+// Helper function to parse location from service areas - show with Service Area prefix
 function parseLocationInfo(businessData: any): { address: string; city: string; state: string; zip: string } {
   console.log("🗺️ Parsing location info:", {
-    business_name: businessData.business?.business_name,
-    tagline: businessData.business?.tagline,
     service_areas: businessData.service_areas,
   })
 
   let address = ""
   let city = ""
-  let state = ""
+  const state = ""
   let zip = ""
 
-  // Check service areas - show exactly what comes from Critter
+  // Check service areas - show with "Service Area:" prefix
   if (businessData.service_areas && businessData.service_areas.length > 0) {
     const serviceAreas = businessData.service_areas
     console.log("📮 Found service areas:", serviceAreas)
 
-    // If we have multiple service areas, join them with commas
+    // If we have multiple service areas, join them
     if (serviceAreas.length > 1) {
-      address = serviceAreas.join(", ")
+      address = `Service Areas: ${serviceAreas.join(", ")}`
       zip = serviceAreas[0] // Use first as primary
     } else {
-      // Single service area - show exactly as it comes from Critter
-      address = serviceAreas[0]
+      const firstServiceArea = serviceAreas[0]
 
-      // If it's a 5-digit zip code, also set it as zip
-      if (/^\d{5}$/.test(serviceAreas[0])) {
-        zip = serviceAreas[0]
-        city = serviceAreas[0] // Use zip as city for consistency
+      // If it's a 5-digit zip code, show with Service Area prefix
+      if (/^\d{5}$/.test(firstServiceArea)) {
+        address = `Service Area: ${firstServiceArea}`
+        zip = firstServiceArea
+        city = firstServiceArea // Use zip as city for consistency
+      } else {
+        // If it's a description, use it as-is
+        address = firstServiceArea
       }
     }
 
     console.log("📍 Set address from service areas:", address)
   }
 
-  // Try to extract state context from business name/tagline (but don't change the address)
-  if (businessData.business?.business_name) {
-    const businessName = businessData.business.business_name.toLowerCase()
-    if (businessName.includes("chicago")) {
-      state = "IL"
-    } else if (businessName.includes("summerton")) {
-      state = "SC"
-    } else if (businessName.includes("dayton")) {
-      state = "OH"
-    }
-  }
-
-  if (businessData.business?.tagline) {
-    const tagline = businessData.business.tagline.toLowerCase()
-    if (tagline.includes("chicago")) {
-      state = "IL"
-    } else if (tagline.includes("summerton")) {
-      state = "SC"
-    } else if (tagline.includes("dayton")) {
-      state = "OH"
-    }
-  }
-
   // Set default address if we don't have one
   if (!address) {
-    address = "Local Area"
+    address = "Service Area"
   }
 
   const result = { address, city, state, zip }
@@ -338,13 +316,10 @@ export async function loadProfessionalLandingData(
         },
       }
 
-      // Create specialties from service types - show exactly what comes from Critter
+      // Create specialties from service types only - no inference
       const specialties = Array.from(serviceTypes).map((type) => getServiceTypeDisplayName(type))
 
-      // Add context-based specialties only if they're in the business info
-      if (business?.tagline && business.tagline.toLowerCase().includes("chicago")) {
-        specialties.push("Chicago Area Service")
-      }
+      // Only add specialties based on actual service content, not business name/tagline inference
       if (formattedServices.some((s) => s.name.toLowerCase().includes("small"))) {
         specialties.push("Small Dog Specialist")
       }
@@ -353,21 +328,14 @@ export async function loadProfessionalLandingData(
       }
 
       // Parse location information
-      const locationInfo = parseLocationInfo({ business, service_areas: serviceAreas })
+      const locationInfo = parseLocationInfo({ service_areas: serviceAreas })
 
       const landingData: ProfessionalLandingData = {
         professional_id: business?.business_id?.toString() || professionalId,
         name: business?.business_name || "Professional Pet Services",
         tagline: business?.tagline || "Quality pet care services",
-        description:
-          business?.business_description ||
-          `Professional ${Array.from(serviceTypes)
-            .map((type) => getServiceTypeDisplayName(type))
-            .join(" and ")
-            .toLowerCase()} services with experienced staff. We offer a full range of services including ${formattedServices
-            .slice(0, 3)
-            .map((s) => s.name)
-            .join(", ")} and more.`,
+        // Use business description directly from Critter, no generated summary
+        description: business?.business_description || "",
         location: locationInfo,
         contact: {
           phone: formatPhoneNumber(business?.primary_phone_number),
@@ -409,10 +377,10 @@ export function getDefaultProfessionalData(professionalId: string): Professional
     tagline: "Quality pet care services",
     description: "Professional pet care services with experienced and caring staff dedicated to your pet's wellbeing.",
     location: {
-      address: "Local Area",
-      city: "Your City",
-      state: "State",
-      zip: "12345",
+      address: "Service Area",
+      city: "Local Area",
+      state: "",
+      zip: "",
     },
     contact: {
       phone: "(555) 123-4567",
