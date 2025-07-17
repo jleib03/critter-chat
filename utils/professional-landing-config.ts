@@ -267,12 +267,20 @@ function formatPhoneNumber(phone: string): string {
   // Remove all non-digits
   const digits = phone.replace(/\D/g, "")
 
-  // Format as (XXX) XXX-XXXX
+  // Validate phone number format with corrected regex
+  const phoneRegex = /^([0-9]{3})[-. ]?([0-9]{3})[-. ]?([0-9]{4})$/
+
+  // Format as (XXX) XXX-XXXX if we have 10 digits
   if (digits.length === 10) {
     return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
   }
 
-  return phone // Return original if not 10 digits
+  // If original phone matches expected pattern, return as-is
+  if (phoneRegex.test(phone)) {
+    return phone
+  }
+
+  return phone // Return original if not standard format
 }
 
 // Helper function to format duration
