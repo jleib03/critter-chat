@@ -20,7 +20,7 @@ export default function ProfessionalSetupPage() {
   const [scheduleProfessionalId, setScheduleProfessionalId] = useState("")
   const [scheduleError, setScheduleError] = useState("")
   const [showPreviewModal, setShowPreviewModal] = useState(false)
-  const [previewProfessionalId, setPreviewProfessionalId] = useState("")
+  const [previewUniqueUrl, setPreviewUniqueUrl] = useState("")
   const [previewError, setPreviewError] = useState("")
 
   // Custom URL states
@@ -215,23 +215,23 @@ export default function ProfessionalSetupPage() {
   const handlePreviewClick = () => {
     setShowPreviewModal(true)
     setPreviewError("")
-    setPreviewProfessionalId("")
+    setPreviewUniqueUrl("")
   }
 
   const handleClosePreviewModal = () => {
     setShowPreviewModal(false)
     setPreviewError("")
-    setPreviewProfessionalId("")
+    setPreviewUniqueUrl("")
   }
 
   const handlePreviewSubmit = () => {
-    if (!previewProfessionalId.trim()) {
-      setPreviewError("Please enter your Professional ID")
+    if (!previewUniqueUrl.trim()) {
+      setPreviewError("Please enter your unique URL")
       return
     }
 
-    // Navigate directly to the professional landing page
-    router.push(`/${previewProfessionalId.trim()}`)
+    // Navigate directly to the professional landing page using unique URL
+    router.push(`/${previewUniqueUrl.trim()}`)
   }
 
   return (
@@ -312,12 +312,12 @@ export default function ProfessionalSetupPage() {
               <div className="text-center mb-12">
                 <button
                   onClick={handlePreviewClick}
-                  className="inline-flex items-center px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors border border-gray-300 hover:border-gray-400 body-font"
+                  className="inline-flex items-center px-8 py-4 bg-white hover:bg-gray-50 text-gray-800 rounded-xl transition-all duration-200 border-2 border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md body-font font-medium"
                 >
-                  <Eye className="h-4 w-4 mr-2" />
+                  <Eye className="h-5 w-5 mr-3 text-gray-600" />
                   Preview Landing Page
                 </button>
-                <p className="text-sm text-gray-500 mt-2 body-font">
+                <p className="text-sm text-gray-500 mt-3 body-font">
                   See how your professional landing page looks to customers
                 </p>
               </div>
@@ -555,23 +555,26 @@ export default function ProfessionalSetupPage() {
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
             <h3 className="text-xl font-bold mb-4 header-font">Preview Landing Page</h3>
             <p className="text-gray-600 mb-4 body-font">
-              Enter your Professional ID to preview how your landing page appears to customers.
+              Enter your unique URL to preview how your landing page appears to customers.
             </p>
 
             <div className="mb-4">
-              <Label htmlFor="previewProfId" className="body-font">
-                Professional ID *
+              <Label htmlFor="previewUniqueUrl" className="body-font">
+                Unique URL *
               </Label>
-              <Input
-                id="previewProfId"
-                value={previewProfessionalId}
-                onChange={(e) => setPreviewProfessionalId(e.target.value)}
-                placeholder="e.g., 22, 151, etc."
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 body-font"
-              />
+              <div className="flex items-center mt-1">
+                <span className="text-sm text-gray-500 body-font mr-2">booking.critter.pet/</span>
+                <Input
+                  id="previewUniqueUrl"
+                  value={previewUniqueUrl}
+                  onChange={(e) => setPreviewUniqueUrl(e.target.value)}
+                  placeholder="sally-grooming"
+                  className="flex-1"
+                />
+              </div>
               {previewError && <p className="mt-2 text-sm text-red-600 body-font">{previewError}</p>}
               <p className="text-xs text-gray-500 mt-2 body-font">
-                This will open your professional landing page where customers can book appointments and chat with you.
+                Enter just the URL portion after the slash (e.g., "sally-grooming" or "151")
               </p>
             </div>
 
@@ -584,8 +587,8 @@ export default function ProfessionalSetupPage() {
               </button>
               <button
                 onClick={handlePreviewSubmit}
-                disabled={!previewProfessionalId.trim()}
-                className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors body-font flex items-center disabled:opacity-50"
+                disabled={!previewUniqueUrl.trim()}
+                className="px-6 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#d04e30] transition-colors body-font flex items-center disabled:opacity-50"
               >
                 <Eye className="h-4 w-4 mr-2" />
                 Preview Page
