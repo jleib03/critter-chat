@@ -121,12 +121,16 @@ function getServiceTypeDisplayName(serviceType: string): string {
       return "Specialty Services"
     case "consultation":
       return "Consultations"
+    case "drop-in":
+      return "Drop-In"
+    case "other":
+      return "Other"
     default:
       return serviceType
   }
 }
 
-// Helper function to parse location from service areas and business info
+// Helper function to parse location from service areas - show exactly what comes from Critter
 function parseLocationInfo(businessData: any): { address: string; city: string; state: string; zip: string } {
   console.log("🗺️ Parsing location info:", {
     business_name: businessData.business?.business_name,
@@ -135,73 +139,59 @@ function parseLocationInfo(businessData: any): { address: string; city: string; 
   })
 
   let address = ""
-  let city = "Local Area"
+  let city = ""
   let state = ""
   let zip = ""
 
-  // Check service areas for zip codes
+  // Check service areas - show exactly what comes from Critter
   if (businessData.service_areas && businessData.service_areas.length > 0) {
     const serviceAreas = businessData.service_areas
     console.log("📮 Found service areas:", serviceAreas)
 
-    // If we have multiple service areas, join them
+    // If we have multiple service areas, join them with commas
     if (serviceAreas.length > 1) {
-      address = `Service Areas: ${serviceAreas.join(", ")}`
-      zip = serviceAreas[0] // Use first zip as primary
+      address = serviceAreas.join(", ")
+      zip = serviceAreas[0] // Use first as primary
     } else {
-      const firstServiceArea = serviceAreas[0]
+      // Single service area - show exactly as it comes from Critter
+      address = serviceAreas[0]
 
-      // If it's a 5-digit zip code, show it as service area
-      if (/^\d{5}$/.test(firstServiceArea)) {
-        address = `Service Area: ${firstServiceArea}`
-        zip = firstServiceArea
-        city = firstServiceArea // Use zip as city for display
-      } else {
-        // If it's a description, use it as the address
-        address = firstServiceArea
+      // If it's a 5-digit zip code, also set it as zip
+      if (/^\d{5}$/.test(serviceAreas[0])) {
+        zip = serviceAreas[0]
+        city = serviceAreas[0] // Use zip as city for consistency
       }
     }
 
     console.log("📍 Set address from service areas:", address)
   }
 
-  // Try to extract location info from business name for city/state context
+  // Try to extract state context from business name/tagline (but don't change the address)
   if (businessData.business?.business_name) {
     const businessName = businessData.business.business_name.toLowerCase()
-    console.log("🏢 Checking business name for location context:", businessName)
-
     if (businessName.includes("chicago")) {
       state = "IL"
-      console.log("🏢 Inferred state from business name - IL")
     } else if (businessName.includes("summerton")) {
       state = "SC"
-      console.log("🏢 Inferred state from business name - SC")
     } else if (businessName.includes("dayton")) {
       state = "OH"
-      console.log("🏢 Inferred state from business name - OH")
     }
   }
 
-  // Try to extract location info from tagline for city/state context
   if (businessData.business?.tagline) {
     const tagline = businessData.business.tagline.toLowerCase()
-    console.log("🏷️ Checking tagline for location context:", tagline)
-
     if (tagline.includes("chicago")) {
       state = "IL"
-      console.log("🏷️ Inferred state from tagline - IL")
     } else if (tagline.includes("summerton")) {
       state = "SC"
-      console.log("🏷️ Inferred state from tagline - SC")
     } else if (tagline.includes("dayton")) {
       state = "OH"
-      console.log("🏷️ Inferred state from tagline - OH")
     }
   }
 
   // Set default address if we don't have one
   if (!address) {
-    address = "Service Area"
+    address = "Local Area"
   }
 
   const result = { address, city, state, zip }
@@ -348,8 +338,10 @@ export async function loadProfessionalLandingData(
         },
       }
 
-      // Create specialties from service types and business context
+      // Create specialties from service types - show exactly what comes from Critter
       const specialties = Array.from(serviceTypes).map((type) => getServiceTypeDisplayName(type))
+
+      // Add context-based specialties only if they're in the business info
       if (business?.tagline && business.tagline.toLowerCase().includes("chicago")) {
         specialties.push("Chicago Area Service")
       }
@@ -417,7 +409,7 @@ export function getDefaultProfessionalData(professionalId: string): Professional
     tagline: "Quality pet care services",
     description: "Professional pet care services with experienced and caring staff dedicated to your pet's wellbeing.",
     location: {
-      address: "Service Area: Local",
+      address: "Local Area",
       city: "Your City",
       state: "State",
       zip: "12345",
