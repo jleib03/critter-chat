@@ -126,12 +126,12 @@ function getServiceTypeDisplayName(serviceType: string): string {
   }
 }
 
-// Helper function to parse location from address and service area
-function parseLocationInfo(businessInfo: any): { address: string; city: string; state: string; zip: string } {
+// Helper function to parse location from service areas and business info
+function parseLocationInfo(businessData: any): { address: string; city: string; state: string; zip: string } {
   console.log("🗺️ Parsing location info:", {
-    address: businessInfo.address,
-    service_area_zip_code: businessInfo.service_area_zip_code,
-    business_name: businessInfo.business_name,
+    business_name: businessData.business?.business_name,
+    tagline: businessData.business?.tagline,
+    service_areas: businessData.service_areas,
   })
 
   let address = ""
@@ -139,37 +139,62 @@ function parseLocationInfo(businessInfo: any): { address: string; city: string; 
   let state = ""
   let zip = ""
 
-  // Parse address if available
-  if (businessInfo.address && businessInfo.address.trim()) {
-    const addressLines = businessInfo.address.split("\n")
-    address = addressLines[0] || ""
-    console.log("📍 Address lines:", addressLines)
+  // Check service areas for zip codes
+  if (businessData.service_areas && businessData.service_areas.length > 0) {
+    const firstServiceArea = businessData.service_areas[0]
+    console.log("📮 Found service area:", firstServiceArea)
 
-    // Try to parse city, state from second line (e.g., "Summerton, SC 29148")
-    if (addressLines.length > 1) {
-      const locationLine = addressLines[1].trim()
-      console.log("🏙️ Location line:", locationLine)
-      const parts = locationLine.split(",")
+    // If it's a 5-digit zip code
+    if (/^\d{5}$/.test(firstServiceArea)) {
+      zip = firstServiceArea
 
-      if (parts.length >= 2) {
-        city = parts[0].trim()
-        const stateZipPart = parts[1].trim()
-        const stateZipMatch = stateZipPart.match(/^([A-Z]{2})\s*(\d{5})?/)
-
-        if (stateZipMatch) {
-          state = stateZipMatch[1]
-          zip = stateZipMatch[2] || ""
-        }
-        console.log("🎯 Parsed from address - City:", city, "State:", state, "Zip:", zip)
+      // Map common zip codes to cities
+      const zipToCityMap: { [key: string]: { city: string; state: string } } = {
+        "60611": { city: "Chicago", state: "IL" },
+        "60601": { city: "Chicago", state: "IL" },
+        "60602": { city: "Chicago", state: "IL" },
+        "60603": { city: "Chicago", state: "IL" },
+        "60604": { city: "Chicago", state: "IL" },
+        "60605": { city: "Chicago", state: "IL" },
+        "60606": { city: "Chicago", state: "IL" },
+        "60607": { city: "Chicago", state: "IL" },
+        "60608": { city: "Chicago", state: "IL" },
+        "60609": { city: "Chicago", state: "IL" },
+        "60610": { city: "Chicago", state: "IL" },
+        "60612": { city: "Chicago", state: "IL" },
+        "60613": { city: "Chicago", state: "IL" },
+        "60614": { city: "Chicago", state: "IL" },
+        "60615": { city: "Chicago", state: "IL" },
+        "60616": { city: "Chicago", state: "IL" },
+        "60617": { city: "Chicago", state: "IL" },
+        "60618": { city: "Chicago", state: "IL" },
+        "60619": { city: "Chicago", state: "IL" },
+        "60620": { city: "Chicago", state: "IL" },
+        "29148": { city: "Summerton", state: "SC" },
+        "45401": { city: "Dayton", state: "OH" },
+        "45402": { city: "Dayton", state: "OH" },
+        "45403": { city: "Dayton", state: "OH" },
+        "45404": { city: "Dayton", state: "OH" },
+        "45405": { city: "Dayton", state: "OH" },
       }
+
+      if (zipToCityMap[zip]) {
+        city = zipToCityMap[zip].city
+        state = zipToCityMap[zip].state
+        console.log("🎯 Mapped zip to location:", city, state)
+      }
+    } else {
+      // If it's a description, use it as the address
+      address = firstServiceArea
+      console.log("📝 Using service area as address:", address)
     }
   }
 
-  // If no proper address, try to extract location from business name or other fields
-  if (city === "Local Area" && businessInfo.business_name) {
-    const businessName = businessInfo.business_name.toLowerCase()
+  // Try to extract location from business name
+  if (city === "Local Area" && businessData.business?.business_name) {
+    const businessName = businessData.business.business_name.toLowerCase()
+    console.log("🏢 Checking business name for location:", businessName)
 
-    // Check for city names in business name
     if (businessName.includes("chicago")) {
       city = "Chicago"
       state = "IL"
@@ -185,82 +210,27 @@ function parseLocationInfo(businessInfo: any): { address: string; city: string; 
     }
   }
 
-  // Use service area zip code if available and no zip found
-  if (!zip && businessInfo.service_area_zip_code) {
-    // Check if service_area_zip_code is actually a zip code (5 digits) or a description
-    const zipMatch = businessInfo.service_area_zip_code.match(/\d{5}/)
-    if (zipMatch) {
-      zip = zipMatch[0]
-      console.log("📮 Found zip in service area:", zip)
-    } else {
-      // If it's a description like "Summerton and Surrounding Areas", use it as address context
-      if (!businessInfo.address || businessInfo.address.trim() === "") {
-        address = businessInfo.service_area_zip_code
-      }
-      console.log("📝 Service area description:", businessInfo.service_area_zip_code)
-    }
-  }
+  // Try to extract location from tagline
+  if (city === "Local Area" && businessData.business?.tagline) {
+    const tagline = businessData.business.tagline.toLowerCase()
+    console.log("🏷️ Checking tagline for location:", tagline)
 
-  // If we still don't have city/state, try to infer from service area
-  if (city === "Local Area" && businessInfo.service_area_zip_code) {
-    const serviceArea = businessInfo.service_area_zip_code.toLowerCase()
-
-    // Look for city names in service area description
-    if (serviceArea.includes("summerton")) {
-      city = "Summerton"
-      state = state || "SC"
-      console.log("🔍 Inferred from service area - Summerton, SC")
-    } else if (serviceArea.includes("chicago")) {
+    if (tagline.includes("chicago")) {
       city = "Chicago"
-      state = state || "IL"
-      console.log("🔍 Inferred from service area - Chicago, IL")
-    } else if (serviceArea.includes("dayton")) {
-      city = "Dayton"
-      state = state || "OH"
-      console.log("🔍 Inferred from service area - Dayton, OH")
-    }
-  }
-
-  // If we still don't have city/state, try to extract from business description
-  if (city === "Local Area" && businessInfo.business_description) {
-    const description = businessInfo.business_description.toLowerCase()
-    console.log("🔍 Checking business description for location:", description.substring(0, 100) + "...")
-
-    // Look for common location patterns in description
-    if (description.includes("dayton ohio") || description.includes("dayton, ohio")) {
+      state = "IL"
+      console.log("🏷️ Inferred from tagline - Chicago, IL")
+    } else if (tagline.includes("summerton")) {
+      city = "Summerton"
+      state = "SC"
+      console.log("🏷️ Inferred from tagline - Summerton, SC")
+    } else if (tagline.includes("dayton")) {
       city = "Dayton"
       state = "OH"
-      console.log("🎯 Found location in description - Dayton, OH")
-    } else if (description.includes("chicago illinois") || description.includes("chicago, illinois")) {
-      city = "Chicago"
-      state = "IL"
-      console.log("🎯 Found location in description - Chicago, IL")
-    } else if (description.includes("summerton south carolina") || description.includes("summerton, south carolina")) {
-      city = "Summerton"
-      state = "SC"
-      console.log("🎯 Found location in description - Summerton, SC")
-    }
-    // Add more location patterns as needed
-  }
-
-  // Final fallback - if we have contact info, try to infer location
-  if (city === "Local Area" && businessInfo.primary_phone_number) {
-    const phone = businessInfo.primary_phone_number
-    // Chicago area codes: 312, 773, 847, 872
-    if (phone.includes("312") || phone.includes("773") || phone.includes("847") || phone.includes("872")) {
-      city = "Chicago"
-      state = "IL"
-      console.log("📞 Inferred from phone area code - Chicago, IL")
-    }
-    // South Carolina area codes: 803, 843, 854
-    else if (phone.includes("803") || phone.includes("843") || phone.includes("854")) {
-      city = "South Carolina"
-      state = "SC"
-      console.log("📞 Inferred from phone area code - South Carolina")
+      console.log("🏷️ Inferred from tagline - Dayton, OH")
     }
   }
 
-  // When we don't have a specific address, just show the city/state without "Service Area" prefix
+  // Set address if we don't have one
   if (!address && city !== "Local Area" && state) {
     address = `${city}, ${state}`
   } else if (!address && city !== "Local Area") {
@@ -312,68 +282,56 @@ export async function loadProfessionalLandingData(
     const data = await response.json()
     console.log("📥 Raw professional landing response:", JSON.stringify(data, null, 2))
 
-    // Parse the response - expecting array format with multiple service records
+    // Parse the new simplified response format
     if (Array.isArray(data) && data.length > 0) {
       const firstRecord = data[0]
       console.log("🔍 Parsing professional data from first record:", firstRecord)
 
-      // Extract business information from the first record (all records have same business info)
-      const businessInfo = {
-        business_id: firstRecord.business_id,
-        business_name: firstRecord.business_name,
-        tagline: firstRecord.tagline,
-        business_description: firstRecord.business_description,
-        primary_email: firstRecord.primary_email,
-        primary_phone_number: firstRecord.primary_phone_number,
-        address: firstRecord.address,
-        website: firstRecord.website,
-        service_area_zip_code: firstRecord.service_area_zip_code,
-        // Working hours
-        monday_start: firstRecord.monday_start,
-        monday_end: firstRecord.monday_end,
-        tuesday_start: firstRecord.tuesday_start,
-        tuesday_end: firstRecord.tuesday_end,
-        wednesday_start: firstRecord.wednesday_start,
-        wednesday_end: firstRecord.wednesday_end,
-        thursday_start: firstRecord.thursday_start,
-        thursday_end: firstRecord.thursday_end,
-        friday_start: firstRecord.friday_start,
-        friday_end: firstRecord.friday_end,
-        saturday_start: firstRecord.saturday_start,
-        saturday_end: firstRecord.saturday_end,
-        sunday_start: firstRecord.sunday_start,
-        sunday_end: firstRecord.sunday_end,
+      const businessData = firstRecord.business_data
+      if (!businessData) {
+        console.error("❌ No business_data found in response")
+        return null
       }
 
-      // Extract all services from all records with detailed information
-      const services: ServiceItem[] = []
+      const business = businessData.business
+      const schedule = businessData.schedule
+      const services = businessData.services || []
+      const serviceAreas = businessData.service_areas || []
+
+      console.log("🏢 Business info:", business)
+      console.log("📅 Schedule info:", schedule)
+      console.log("🛠️ Services info:", services)
+      console.log("📍 Service areas:", serviceAreas)
+
+      // Extract and format services
+      const formattedServices: ServiceItem[] = []
       const serviceTypes = new Set<string>()
 
-      data.forEach((record: any) => {
-        if (record.service_name && record.available_to_customer) {
+      services.forEach((service: any) => {
+        if (service.service_name && service.available_to_customer) {
           const serviceItem: ServiceItem = {
-            id: record.service_id,
-            name: record.service_name,
-            description: record.service_description || "",
-            duration: formatDuration(record.duration_number, record.duration_unit),
-            cost: record.customer_cost ? `$${record.customer_cost}` : "",
-            type: record.service_type_name || "General",
-            type_display: getServiceTypeDisplayName(record.service_type_name || "General"),
-            sort_order: record.service_sort_order || 999,
+            id: service.service_id.toString(),
+            name: service.service_name,
+            description: service.service_description || "",
+            duration: formatDuration(service.duration_number, service.duration_unit),
+            cost: service.customer_cost ? `$${service.customer_cost}` : "",
+            type: service.service_type_name || "General",
+            type_display: getServiceTypeDisplayName(service.service_type_name || "General"),
+            sort_order: service.service_sort_order || 999,
           }
 
-          services.push(serviceItem)
-          serviceTypes.add(record.service_type_name || "General")
+          formattedServices.push(serviceItem)
+          serviceTypes.add(service.service_type_name || "General")
         }
       })
 
       // Sort services by sort_order
-      services.sort((a, b) => a.sort_order - b.sort_order)
+      formattedServices.sort((a, b) => a.sort_order - b.sort_order)
 
       // Group services by type
       const serviceGroups: ServiceGroup[] = []
       serviceTypes.forEach((type) => {
-        const typeServices = services.filter((service) => service.type === type)
+        const typeServices = formattedServices.filter((service) => service.type === type)
         if (typeServices.length > 0) {
           serviceGroups.push({
             type: type,
@@ -383,84 +341,84 @@ export async function loadProfessionalLandingData(
         }
       })
 
-      console.log("📋 Extracted services:", services)
+      console.log("📋 Extracted services:", formattedServices)
       console.log("🏷️ Service groups:", serviceGroups)
 
-      // Build working hours object
+      // Build working hours object from schedule
       const workingHours = {
         monday: {
-          open: formatTime(businessInfo.monday_start),
-          close: formatTime(businessInfo.monday_end),
-          isOpen: !!(businessInfo.monday_start && businessInfo.monday_end),
+          open: formatTime(schedule?.monday_start),
+          close: formatTime(schedule?.monday_end),
+          isOpen: !!(schedule?.monday_start && schedule?.monday_end),
         },
         tuesday: {
-          open: formatTime(businessInfo.tuesday_start),
-          close: formatTime(businessInfo.tuesday_end),
-          isOpen: !!(businessInfo.tuesday_start && businessInfo.tuesday_end),
+          open: formatTime(schedule?.tuesday_start),
+          close: formatTime(schedule?.tuesday_end),
+          isOpen: !!(schedule?.tuesday_start && schedule?.tuesday_end),
         },
         wednesday: {
-          open: formatTime(businessInfo.wednesday_start),
-          close: formatTime(businessInfo.wednesday_end),
-          isOpen: !!(businessInfo.wednesday_start && businessInfo.wednesday_end),
+          open: formatTime(schedule?.wednesday_start),
+          close: formatTime(schedule?.wednesday_end),
+          isOpen: !!(schedule?.wednesday_start && schedule?.wednesday_end),
         },
         thursday: {
-          open: formatTime(businessInfo.thursday_start),
-          close: formatTime(businessInfo.thursday_end),
-          isOpen: !!(businessInfo.thursday_start && businessInfo.thursday_end),
+          open: formatTime(schedule?.thursday_start),
+          close: formatTime(schedule?.thursday_end),
+          isOpen: !!(schedule?.thursday_start && schedule?.thursday_end),
         },
         friday: {
-          open: formatTime(businessInfo.friday_start),
-          close: formatTime(businessInfo.friday_end),
-          isOpen: !!(businessInfo.friday_start && businessInfo.friday_end),
+          open: formatTime(schedule?.friday_start),
+          close: formatTime(schedule?.friday_end),
+          isOpen: !!(schedule?.friday_start && schedule?.friday_end),
         },
         saturday: {
-          open: formatTime(businessInfo.saturday_start),
-          close: formatTime(businessInfo.saturday_end),
-          isOpen: !!(businessInfo.saturday_start && businessInfo.saturday_end),
+          open: formatTime(schedule?.saturday_start),
+          close: formatTime(schedule?.saturday_end),
+          isOpen: !!(schedule?.saturday_start && schedule?.saturday_end),
         },
         sunday: {
-          open: formatTime(businessInfo.sunday_start),
-          close: formatTime(businessInfo.sunday_end),
-          isOpen: !!(businessInfo.sunday_start && businessInfo.sunday_end),
+          open: formatTime(schedule?.sunday_start),
+          close: formatTime(schedule?.sunday_end),
+          isOpen: !!(schedule?.sunday_start && schedule?.sunday_end),
         },
       }
 
       // Create specialties from service types and business context
       const specialties = Array.from(serviceTypes).map((type) => getServiceTypeDisplayName(type))
-      if (businessInfo.tagline && businessInfo.tagline.includes("Chicago")) {
+      if (business?.tagline && business.tagline.toLowerCase().includes("chicago")) {
         specialties.push("Chicago Area Service")
       }
-      if (services.some((s) => s.name.toLowerCase().includes("small"))) {
+      if (formattedServices.some((s) => s.name.toLowerCase().includes("small"))) {
         specialties.push("Small Dog Specialist")
       }
-      if (services.some((s) => s.name.toLowerCase().includes("large"))) {
+      if (formattedServices.some((s) => s.name.toLowerCase().includes("large"))) {
         specialties.push("Large Dog Care")
       }
 
-      // Parse location information dynamically
-      const locationInfo = parseLocationInfo(businessInfo)
+      // Parse location information
+      const locationInfo = parseLocationInfo({ business, service_areas: serviceAreas })
 
       const landingData: ProfessionalLandingData = {
-        professional_id: businessInfo.business_id || professionalId,
-        name: businessInfo.business_name || "Professional Pet Services",
-        tagline: businessInfo.tagline || "Quality pet care services",
+        professional_id: business?.business_id?.toString() || professionalId,
+        name: business?.business_name || "Professional Pet Services",
+        tagline: business?.tagline || "Quality pet care services",
         description:
-          businessInfo.business_description ||
+          business?.business_description ||
           `Professional ${Array.from(serviceTypes)
             .map((type) => getServiceTypeDisplayName(type))
             .join(" and ")
-            .toLowerCase()} services with experienced staff. We offer a full range of services including ${services
+            .toLowerCase()} services with experienced staff. We offer a full range of services including ${formattedServices
             .slice(0, 3)
             .map((s) => s.name)
             .join(", ")} and more.`,
         location: locationInfo,
         contact: {
-          phone: formatPhoneNumber(businessInfo.primary_phone_number),
-          email: businessInfo.primary_email || "info@business.com",
-          website: businessInfo.website || undefined,
+          phone: formatPhoneNumber(business?.primary_phone_number),
+          email: business?.primary_email || "info@business.com",
+          website: business?.website || undefined,
         },
         working_hours: workingHours,
-        services: services,
+        services: formattedServices,
         service_groups: serviceGroups,
         specialties: specialties,
         rating: 4.9, // Default - could be calculated from reviews if available
