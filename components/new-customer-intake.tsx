@@ -183,7 +183,7 @@ export default function NewCustomerIntake({
           selectedAction: "new_customer_intake",
         },
         formData: combinedData,
-        professionalID: initialProfessionalId, // Use the actual professional ID
+        professionalID: initialProfessionalId, // Use the actual professional_id from the lookup
         type: "new_customer_get_services",
         source: "critter_booking_site",
       },
@@ -350,7 +350,7 @@ export default function NewCustomerIntake({
             },
         formData: formData,
         serviceData: serviceSelectionData,
-        professionalID: initialProfessionalId, // Use the actual professional ID
+        professionalID: initialProfessionalId, // Use the actual professional_id from the lookup
         type: "new_customer_final_intake_submission",
         source: "critter_booking_site",
       },
@@ -394,7 +394,7 @@ export default function NewCustomerIntake({
         },
         body: JSON.stringify({
           action: "new_customer_onboarding",
-          professionalId: initialProfessionalId || null,
+          professionalId: initialProfessionalId, // Use the actual professional_id from the lookup
           formData: dataToSubmit,
         }),
       })
