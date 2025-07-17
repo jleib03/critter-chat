@@ -1,141 +1,148 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
-interface Location {
-  city: string
-  state: string
-}
-
-interface Contact {
-  phone: string
+type UserInfo = {
   email: string
-  website: string
-}
-
-interface ProfessionalData {
-  id: string
-  name: string
-  tagline: string
-  location: Location
-  contact: Contact
-  specialties: string[]
-  // Add other fields as needed
-}
-
-// Placeholder function for loading professional data (replace with your actual implementation)
-const loadProfessionalLandingData = async (
-  professionalId: string,
-  forceRefresh: boolean,
-): Promise<ProfessionalData | null> => {
-  return new Promise<ProfessionalData | null>((resolve, reject) => {
-    setTimeout(() => {
-      // Simulate an API call with forceRefresh just for parity
-      if (professionalId === "valid-id") {
-        resolve({
-          id: "valid-id",
-          name: "Example Professional",
-          tagline: "Your trusted expert",
-          location: { city: "Anytown", state: "CA" },
-          contact: {
-            phone: "555-123-4567",
-            email: "info@example.com",
-            website: "example.com",
-          },
-          specialties: ["Expertise 1", "Expertise 2"],
-        })
-      } else if (professionalId === "empty-id" || !professionalId) {
-        // Treat missing or explicitly empty IDs as “no data”
-        resolve(null)
-      } else {
-        // Use reject so the caller’s try/catch can handle the failure
-        reject(new Error("Failed to load data"))
-      }
-    }, 500)
-  })
-}
-
-const getDefaultProfessionalData = (professionalId: string): ProfessionalData => {
-  return {
-    id: professionalId,
-    name: "Default Professional",
-    tagline: "General Services",
-    location: { city: "Unknown", state: "Unknown" },
-    contact: { phone: "N/A", email: "N/A", website: "N/A" },
-    specialties: ["General Service"],
-  }
+  firstName: string
+  lastName: string
 }
 
 interface LandingPageProps {
-  professionalId: string
-  forceRefresh?: boolean
+  webhookUrl: string
+  onExistingCustomer: (userData: UserInfo) => void
+  onNewCustomer: () => void
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ professionalId, forceRefresh = false }) => {
-  const [professionalData, setProfessionalData] = useState<ProfessionalData | null>(null)
+const LandingPage: React.FC<LandingPageProps> = ({ webhookUrl, onExistingCustomer, onNewCustomer }) => {
+  const [email, setEmail] = useState("")
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
-  useEffect(() => {
-    const loadData = async () => {
-      console.log("🔄 Loading professional data for ID:", professionalId)
+  const handleExistingCustomerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email || !firstName || !lastName) return
 
-      try {
-        const data = await loadProfessionalLandingData(professionalId, forceRefresh)
+    setIsLoading(true)
 
-        if (data) {
-          console.log("✅ Successfully loaded professional data:", data.name)
-          setProfessionalData(data)
-        } else {
-          console.log("⚠️ No data returned from webhook, using fallback data")
-          const fallbackData = getDefaultProfessionalData(professionalId)
+    // Simulate validation/lookup (you can add real validation here)
+    setTimeout(() => {
+      onExistingCustomer({
+        email,
+        firstName,
+        lastName,
+      })
+      setIsLoading(false)
+    }, 1000)
+  }
 
-          // Try to preserve any known information about this professional
-          if (professionalId === "sally-grooming" || professionalId.includes("sally")) {
-            fallbackData.name = "Sally Grooming"
-            fallbackData.tagline = "Professional Pet Grooming Services"
-            fallbackData.location.city = "Chicago"
-            fallbackData.location.state = "IL"
-            fallbackData.contact.phone = "(847) 707-5040"
-            fallbackData.contact.email = "critterdoggroomer@gmail.com"
-            fallbackData.contact.website = "critter.pet"
-            fallbackData.specialties = [
-              "Grooming Services",
-              "Chicago Area Service",
-              "Small Dog Specialist",
-              "Large Dog Care",
-            ]
-          }
-
-          setProfessionalData(fallbackData)
-        }
-      } catch (error) {
-        console.error("💥 Error loading professional data:", error)
-        setProfessionalData(getDefaultProfessionalData(professionalId))
-      }
-    }
-
-    loadData()
-  }, [professionalId, forceRefresh])
-
-  if (!professionalData) {
-    return <div>Loading...</div>
+  const handleNewCustomerClick = () => {
+    onNewCustomer()
   }
 
   return (
-    <div>
-      <h1>{professionalData.name}</h1>
-      <p>{professionalData.tagline}</p>
-      <p>
-        Location: {professionalData.location.city}, {professionalData.location.state}
-      </p>
-      <p>
-        Contact: {professionalData.contact.phone}, {professionalData.contact.email}, {professionalData.contact.website}
-      </p>
-      <ul>
-        {professionalData.specialties.map((specialty, index) => (
-          <li key={index}>{specialty}</li>
-        ))}
-      </ul>
+    <div className="min-h-screen bg-[#FBF8F3] flex flex-col items-center justify-center p-4">
+      <div className="max-w-4xl mx-auto text-center mb-12">
+        <h1 className="text-5xl font-bold mb-6 text-gray-900 font-sangbleu">Welcome to Critter</h1>
+        <p className="text-xl text-gray-700 mb-8 max-w-2xl mx-auto body-font">
+          Your trusted platform for connecting with professional pet care services. Book grooming, sitting, walking, and
+          more with verified local professionals.
+        </p>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto w-full">
+        {/* Existing Customer Card */}
+        <Card className="bg-white shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-2xl font-sangbleu">Existing Customer</CardTitle>
+            <CardDescription>
+              Welcome back! Enter your details to continue with your Critter experience.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleExistingCustomerSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="firstName">First Name</Label>
+                <Input
+                  id="firstName"
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  required
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="mt-1"
+                />
+              </div>
+              <Button type="submit" className="w-full bg-[#E75837] hover:bg-[#d14d2a] text-white" disabled={isLoading}>
+                {isLoading ? "Loading..." : "Continue"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* New Customer Card */}
+        <Card className="bg-white shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-2xl font-sangbleu">New Customer</CardTitle>
+            <CardDescription>
+              New to Critter? Let's get you set up with a professional pet care provider.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col justify-center h-full">
+            <div className="space-y-4 text-center">
+              <p className="text-gray-600">Join thousands of pet parents who trust Critter for their pet care needs.</p>
+              <ul className="text-left space-y-2 text-sm text-gray-600">
+                <li>• Connect with verified professionals</li>
+                <li>• Easy online booking and scheduling</li>
+                <li>• Secure payments and communication</li>
+                <li>• 24/7 customer support</li>
+              </ul>
+              <Button
+                onClick={handleNewCustomerClick}
+                className="w-full bg-[#E75837] hover:bg-[#d14d2a] text-white mt-6"
+              >
+                Get Started
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="mt-12 text-center">
+        <p className="text-gray-500 text-sm">
+          Questions? Contact us at{" "}
+          <a href="mailto:support@critter.pet" className="text-[#E75837] hover:underline">
+            support@critter.pet
+          </a>
+        </p>
+      </div>
     </div>
   )
 }
