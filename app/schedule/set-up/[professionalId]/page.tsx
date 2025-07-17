@@ -11,7 +11,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useToast } from "@/hooks/use-toast"
 import {
   Loader2,
@@ -724,106 +723,135 @@ export default function ProfessionalSetupPage() {
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <RadioGroup
-                    value={bookingPreferences.booking_system}
-                    onValueChange={(value) => {
-                      const bookingSystem = value as "direct_booking" | "request_to_book" | "no_online_booking"
-                      updateBookingPreferences({
-                        booking_system: bookingSystem,
-                        allow_direct_booking: bookingSystem === "direct_booking",
-                        require_approval: bookingSystem === "request_to_book",
-                        online_booking_enabled: bookingSystem !== "no_online_booking",
-                      })
-                    }}
-                    className="space-y-4"
-                  >
-                    <div
-                      className={`flex items-start space-x-3 p-4 border rounded-lg transition-colors ${
-                        bookingPreferences.booking_system === "direct_booking"
-                          ? "border-green-500 bg-green-50 ring-2 ring-green-200"
-                          : "border-gray-200 hover:bg-gray-50"
-                      }`}
-                    >
-                      <RadioGroupItem value="direct_booking" id="direct_booking" className="mt-1" />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <CheckCircle className="w-5 h-5 text-green-500" />
-                          <Label htmlFor="direct_booking" className="text-lg font-semibold header-font">
-                            Direct Booking
-                          </Label>
-                          <Badge variant="secondary" className="text-xs">
-                            Recommended
-                          </Badge>
-                          {bookingPreferences.booking_system === "direct_booking" && (
-                            <Badge className="text-xs bg-green-500 text-white">Currently Selected</Badge>
-                          )}
-                        </div>
-                        <p className="text-gray-600 body-font text-sm">
-                          Allow existing customers to create bookings without the need for you to review and approve.
-                          Bookings are automatically confirmed and added to your schedule.
-                        </p>
-                        <div className="mt-2 text-xs text-gray-500 body-font">
-                          ✓ Instant confirmation • ✓ Automated scheduling • ✓ Best customer experience
-                        </div>
-                      </div>
-                    </div>
+                  <div className="space-y-4">
+                    {[
+                      {
+                        value: "direct_booking",
+                        icon: CheckCircle,
+                        title: "Direct Booking",
+                        subtitle: "Instant confirmation for existing customers",
+                        description:
+                          "Customers can book appointments instantly without waiting for approval. Perfect for established client relationships.",
+                        features: ["Instant confirmation", "Automated scheduling", "Best customer experience"],
+                        recommended: true,
+                        color: "emerald",
+                      },
+                      {
+                        value: "request_to_book",
+                        icon: Clock,
+                        title: "Request to Book",
+                        subtitle: "Manual approval for each booking",
+                        description:
+                          "Customers submit booking requests that you review and approve. Gives you full control over your schedule.",
+                        features: ["Manual approval", "Full control", "Review before confirmation"],
+                        recommended: false,
+                        color: "amber",
+                      },
+                      {
+                        value: "no_online_booking",
+                        icon: Smartphone,
+                        title: "No Online Booking",
+                        subtitle: "App-only booking system",
+                        description:
+                          "Customers must use the Critter app to request appointments. No public booking page available.",
+                        features: ["App-only booking", "Maximum privacy", "Existing customer relationships"],
+                        recommended: false,
+                        color: "blue",
+                      },
+                    ].map((option) => {
+                      const Icon = option.icon
+                      const isSelected = bookingPreferences.booking_system === option.value
 
-                    <div
-                      className={`flex items-start space-x-3 p-4 border rounded-lg transition-colors ${
-                        bookingPreferences.booking_system === "request_to_book"
-                          ? "border-orange-500 bg-orange-50 ring-2 ring-orange-200"
-                          : "border-gray-200 hover:bg-gray-50"
-                      }`}
-                    >
-                      <RadioGroupItem value="request_to_book" id="request_to_book" className="mt-1" />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Clock className="w-5 h-5 text-orange-500" />
-                          <Label htmlFor="request_to_book" className="text-lg font-semibold header-font">
-                            Request to Book
-                          </Label>
-                          {bookingPreferences.booking_system === "request_to_book" && (
-                            <Badge className="text-xs bg-orange-500 text-white">Currently Selected</Badge>
-                          )}
-                        </div>
-                        <p className="text-gray-600 body-font text-sm">
-                          Allow customers to create booking requests that will land in your Critter profile for review.
-                          You can approve or decline each request before it becomes a confirmed booking.
-                        </p>
-                        <div className="mt-2 text-xs text-gray-500 body-font">
-                          ✓ Manual approval • ✓ Full control • ✓ Review before confirmation
-                        </div>
-                      </div>
-                    </div>
+                      return (
+                        <div
+                          key={option.value}
+                          className={`relative cursor-pointer transition-all duration-200 ${
+                            isSelected ? "ring-2 ring-[#E75837] ring-offset-2" : "hover:shadow-md"
+                          }`}
+                          onClick={() => {
+                            const bookingSystem = option.value as
+                              | "direct_booking"
+                              | "request_to_book"
+                              | "no_online_booking"
+                            updateBookingPreferences({
+                              booking_system: bookingSystem,
+                              allow_direct_booking: bookingSystem === "direct_booking",
+                              require_approval: bookingSystem === "request_to_book",
+                              online_booking_enabled: bookingSystem !== "no_online_booking",
+                            })
+                          }}
+                        >
+                          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                            {/* Header */}
+                            <div className="flex items-start justify-between mb-4">
+                              <div className="flex items-center gap-4">
+                                <div
+                                  className={`p-3 rounded-lg ${
+                                    option.color === "emerald"
+                                      ? "bg-emerald-100"
+                                      : option.color === "amber"
+                                        ? "bg-amber-100"
+                                        : "bg-blue-100"
+                                  }}`}
+                                >
+                                  <Icon
+                                    className={`w-6 h-6 ${
+                                      option.color === "emerald"
+                                        ? "text-emerald-600"
+                                        : option.color === "amber"
+                                          ? "text-amber-600"
+                                          : "text-blue-600"
+                                    }`}
+                                  />
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-3 mb-1">
+                                    <h3 className="text-xl font-semibold text-gray-900 header-font">{option.title}</h3>
+                                    {option.recommended && (
+                                      <span className="px-2 py-1 text-xs font-medium bg-[#E75837] text-white rounded-full">
+                                        Recommended
+                                      </span>
+                                    )}
+                                    {isSelected && (
+                                      <span className="px-2 py-1 text-xs font-medium bg-gray-900 text-white rounded-full">
+                                        Currently Selected
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-gray-600 body-font text-sm">{option.subtitle}</p>
+                                </div>
+                              </div>
 
-                    <div
-                      className={`flex items-start space-x-3 p-4 border rounded-lg transition-colors ${
-                        bookingPreferences.booking_system === "no_online_booking"
-                          ? "border-blue-500 bg-blue-50 ring-2 ring-blue-200"
-                          : "border-gray-200 hover:bg-gray-50"
-                      }`}
-                    >
-                      <RadioGroupItem value="no_online_booking" id="no_online_booking" className="mt-1" />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Smartphone className="w-5 h-5 text-blue-500" />
-                          <Label htmlFor="no_online_booking" className="text-lg font-semibold header-font">
-                            No Online Booking
-                          </Label>
-                          {bookingPreferences.booking_system === "no_online_booking" && (
-                            <Badge className="text-xs bg-blue-500 text-white">Currently Selected</Badge>
-                          )}
+                              {/* Radio Button */}
+                              <div
+                                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                  isSelected ? "border-[#E75837] bg-[#E75837]" : "border-gray-300"
+                                }`}
+                              >
+                                {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
+                              </div>
+                            </div>
+
+                            {/* Description */}
+                            <p className="text-gray-700 body-font mb-4 leading-relaxed">{option.description}</p>
+
+                            {/* Features */}
+                            <div className="flex flex-wrap gap-2">
+                              {option.features.map((feature, index) => (
+                                <span
+                                  key={index}
+                                  className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full body-font"
+                                >
+                                  <CheckCircle className="w-3 h-3 text-green-500" />
+                                  {feature}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
                         </div>
-                        <p className="text-gray-600 body-font text-sm">
-                          Require customers to login to the Critter app and request bookings directly within the
-                          application. No public booking page will be available.
-                        </p>
-                        <div className="mt-2 text-xs text-gray-500 body-font">
-                          ✓ App-only booking • ✓ Maximum privacy • ✓ Existing customer relationships
-                        </div>
-                      </div>
-                    </div>
-                  </RadioGroup>
+                      )
+                    })}
+                  </div>
 
                   <div>
                     <Label htmlFor="customInstructions" className="body-font">
