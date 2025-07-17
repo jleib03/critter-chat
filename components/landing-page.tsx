@@ -192,7 +192,7 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
       {/* App Store Buttons */}
       <div className="flex justify-center space-x-4 pb-16">
         <a
-          href="https://apps.apple.com/us/app/critter-pet-services/id1234567890"
+          href="https://apps.apple.com/us/app/critter-pet-owners-pros/id1630023733"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-block"
@@ -208,7 +208,7 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
           </div>
         </a>
         <a
-          href="https://play.google.com/store/apps/details?id=com.critter.petservices"
+          href="https://play.google.com/store/apps/details?id=com.critterclient&pli=1"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-block"
