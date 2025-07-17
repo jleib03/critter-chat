@@ -324,6 +324,28 @@ function parseLocationInfo(businessInfo: any): { address: string; city: string; 
     }
   }
 
+  // If we still don't have city/state, try to extract from business description
+  if (city === "Local Area" && businessInfo.business_description) {
+    const description = businessInfo.business_description.toLowerCase()
+    console.log("🔍 Checking business description for location:", description.substring(0, 100) + "...")
+
+    // Look for common location patterns in description
+    if (description.includes("dayton ohio") || description.includes("dayton, ohio")) {
+      city = "Dayton"
+      state = "OH"
+      console.log("🎯 Found location in description - Dayton, OH")
+    } else if (description.includes("chicago illinois") || description.includes("chicago, illinois")) {
+      city = "Chicago"
+      state = "IL"
+      console.log("🎯 Found location in description - Chicago, IL")
+    } else if (description.includes("summerton south carolina") || description.includes("summerton, south carolina")) {
+      city = "Summerton"
+      state = "SC"
+      console.log("🎯 Found location in description - Summerton, SC")
+    }
+    // Add more location patterns as needed
+  }
+
   // Final fallback - if we have contact info, try to infer location
   if (city === "Local Area" && businessInfo.primary_phone_number) {
     const phone = businessInfo.primary_phone_number
