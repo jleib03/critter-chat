@@ -185,10 +185,7 @@ export default function ProfessionalLandingPage() {
                   <div className="flex items-center gap-3 text-gray-600">
                     <MapPin className="w-5 h-5 text-[#E75837]" />
                     <div>
-                      <p className="font-medium body-font">
-                        {professionalData.location.city}, {professionalData.location.state}
-                      </p>
-                      <p className="text-sm body-font">{professionalData.location.address}</p>
+                      <p className="font-medium body-font">{professionalData.location.address}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 text-gray-600">
