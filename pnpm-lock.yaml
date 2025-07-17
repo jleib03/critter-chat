@@ -9,7 +9,7 @@ importers:
   .:
     dependencies:
       '@hookform/resolvers':
-        specifier: 3.9.1
+        specifier: ^3.9.1
         version: 3.9.1(react-hook-form@7.60.0(react@19.0.0))
       '@radix-ui/react-accordion':
         specifier: latest
