@@ -242,6 +242,34 @@ export default function ProfessionalSetupPage() {
     ]
   }
 
+  // Helper function to normalize working days format from webhook
+  const normalizeWorkingDays = (workingDays: any[]) => {
+    const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
+    // Ensure all days are present
+    const normalizedDays = dayOrder.map((dayName) => {
+      const existingDay = workingDays.find((wd) => wd.day === dayName)
+      if (existingDay) {
+        return {
+          day: dayName,
+          start_time: existingDay.start_time ? existingDay.start_time.substring(0, 5) : "09:00",
+          end_time: existingDay.end_time ? existingDay.end_time.substring(0, 5) : "17:00",
+          is_working: existingDay.is_working ?? false,
+        }
+      } else {
+        // Default for missing days
+        return {
+          day: dayName,
+          start_time: "09:00",
+          end_time: "17:00",
+          is_working: false,
+        }
+      }
+    })
+
+    return normalizedDays
+  }
+
   // Load configuration
   const loadConfiguration = async () => {
     try {
@@ -310,51 +338,72 @@ export default function ProfessionalSetupPage() {
             }))
           }
 
-          // Timestamp
-          setLastUpdated(config.last_updated || new Date().toISOString())
-        }
+          // EMPLOYEES - Handle both scenarios
+          if (Array.isArray(config.employees) && config.employees.length > 0) {
+            // SCENARIO 2: Employees already exist in config_data with their working days
+            console.log(`Found ${config.employees.length} employees in config_data (previously edited)`)
 
-        // Find separate employee data in the array
-        const employeeData: any[] = []
-        data.forEach((item) => {
-          // Check if this is employee data (has first_name, last_name, email)
-          if (item.first_name && item.last_name && item.email) {
-            console.log(`Found employee: ${item.first_name} ${item.last_name}`)
-            employeeData.push(item)
-          }
-          // Check if this is schedule data
-          else if (item.professional_id && item.monday_start) {
-            console.log(`Found schedule data for professional: ${item.professional_id}`)
-            scheduleData = item
-          }
-        })
-
-        // Process employees if we found any
-        if (employeeData.length > 0) {
-          console.log(`Processing ${employeeData.length} employees`)
-
-          // Convert schedule data to working days format
-          const defaultWorkingDays = convertScheduleToWorkingDays(scheduleData)
-
-          // Process employees for frontend
-          employeesLocal = employeeData.map((emp, index) => {
-            const employeeId = `emp_${professionalId}_${Date.now()}_${index + 1}`
-            const fullName = `${emp.first_name || ""} ${emp.last_name || ""}`.trim()
-
-            console.log(`Processing employee ${index + 1}: ${fullName}`)
-
-            return {
-              employee_id: employeeId,
-              name: fullName,
+            employeesLocal = config.employees.map((emp: any) => ({
+              employee_id: emp.employee_id,
+              name: emp.name,
               role: emp.role || "Staff Member",
               email: emp.email || "",
-              is_active: true,
-              working_days: [...defaultWorkingDays], // Copy the business schedule
+              is_active: emp.is_active ?? true,
+              working_days: normalizeWorkingDays(emp.working_days || []),
               services: emp.services || [],
-            }
-          })
+            }))
 
-          console.log("Processed employees:", employeesLocal)
+            console.log("Processed employees from config_data:", employeesLocal)
+          } else {
+            // SCENARIO 1: No employees in config_data, need to look for separate employee objects
+            console.log("No employees in config_data, looking for separate employee objects...")
+
+            // Find separate employee data and schedule data in the array
+            const employeeData: any[] = []
+            data.forEach((item) => {
+              // Check if this is employee data (has first_name, last_name, email)
+              if (item.first_name && item.last_name && item.email) {
+                console.log(`Found employee: ${item.first_name} ${item.last_name}`)
+                employeeData.push(item)
+              }
+              // Check if this is schedule data
+              else if (item.professional_id && item.monday_start) {
+                console.log(`Found schedule data for professional: ${item.professional_id}`)
+                scheduleData = item
+              }
+            })
+
+            // Process employees if we found any
+            if (employeeData.length > 0) {
+              console.log(`Processing ${employeeData.length} employees from separate objects`)
+
+              // Convert schedule data to working days format
+              const defaultWorkingDays = convertScheduleToWorkingDays(scheduleData)
+
+              // Process employees for frontend
+              employeesLocal = employeeData.map((emp, index) => {
+                const employeeId = `emp_${professionalId}_${Date.now()}_${index + 1}`
+                const fullName = `${emp.first_name || ""} ${emp.last_name || ""}`.trim()
+
+                console.log(`Processing employee ${index + 1}: ${fullName}`)
+
+                return {
+                  employee_id: employeeId,
+                  name: fullName,
+                  role: emp.role || "Staff Member",
+                  email: emp.email || "",
+                  is_active: true,
+                  working_days: [...defaultWorkingDays], // Copy the business schedule
+                  services: emp.services || [],
+                }
+              })
+
+              console.log("Processed employees from separate objects:", employeesLocal)
+            }
+          }
+
+          // Timestamp
+          setLastUpdated(config.last_updated || new Date().toISOString())
         }
       }
 
