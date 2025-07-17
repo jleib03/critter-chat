@@ -130,18 +130,18 @@ function getServiceTypeDisplayName(serviceType: string): string {
   }
 }
 
-// Helper function to parse location from service areas - show with Service Area prefix
+// Helper function to parse location from service areas - show only one clean line
 function parseLocationInfo(businessData: any): { address: string; city: string; state: string; zip: string } {
   console.log("🗺️ Parsing location info:", {
     service_areas: businessData.service_areas,
   })
 
   let address = ""
-  let city = ""
+  const city = ""
   const state = ""
-  let zip = ""
+  const zip = ""
 
-  // Check service areas - show with "Service Area:" prefix
+  // Check service areas - show only one clean line
   if (businessData.service_areas && businessData.service_areas.length > 0) {
     const serviceAreas = businessData.service_areas
     console.log("📮 Found service areas:", serviceAreas)
@@ -149,15 +149,12 @@ function parseLocationInfo(businessData: any): { address: string; city: string; 
     // If we have multiple service areas, join them
     if (serviceAreas.length > 1) {
       address = `Service Areas: ${serviceAreas.join(", ")}`
-      zip = serviceAreas[0] // Use first as primary
     } else {
       const firstServiceArea = serviceAreas[0]
 
       // If it's a 5-digit zip code, show with Service Area prefix
       if (/^\d{5}$/.test(firstServiceArea)) {
         address = `Service Area: ${firstServiceArea}`
-        zip = firstServiceArea
-        city = firstServiceArea // Use zip as city for consistency
       } else {
         // If it's a description, use it as-is
         address = firstServiceArea
@@ -172,6 +169,7 @@ function parseLocationInfo(businessData: any): { address: string; city: string; 
     address = "Service Area"
   }
 
+  // Return only the address field populated, others empty to avoid duplication
   const result = { address, city, state, zip }
   console.log("📍 Final parsed location:", result)
   return result
@@ -378,7 +376,7 @@ export function getDefaultProfessionalData(professionalId: string): Professional
     description: "Professional pet care services with experienced and caring staff dedicated to your pet's wellbeing.",
     location: {
       address: "Service Area",
-      city: "Local Area",
+      city: "",
       state: "",
       zip: "",
     },
