@@ -30,6 +30,7 @@ export default function ProfessionalSetupPage() {
   const [urlSuccess, setUrlSuccess] = useState("")
 
   const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
+  const CUSTOM_URL_WEBHOOK = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
   const router = useRouter()
 
   // If not authenticated, show password protection
@@ -144,7 +145,7 @@ export default function ProfessionalSetupPage() {
 
       console.log("Sending request to create custom URL:", payload)
 
-      const response = await fetch(WEBHOOK_URL, {
+      const response = await fetch(CUSTOM_URL_WEBHOOK, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
