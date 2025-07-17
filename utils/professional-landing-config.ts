@@ -1,3 +1,5 @@
+import { getCacheKey } from "./cache-utils" // Assuming getCacheKey is declared in another file
+
 export async function getProfessionalLandingConfig(professionalId: string) {
   // Force fresh data fetch and clear any cache
   const timestamp = Date.now()
@@ -25,7 +27,7 @@ export async function getProfessionalLandingConfig(professionalId: string) {
     console.log(`[${timestamp}] Raw webhook response:`, JSON.stringify(data, null, 2))
 
     // Parse location information from the data
-    const locationInfo = parseLocationFromWebhookData(data)
+    const locationInfo = parseLocationInfo(data)
     console.log(`[${timestamp}] Parsed location info:`, locationInfo)
 
     return {
@@ -45,6 +47,70 @@ export async function getProfessionalLandingConfig(professionalId: string) {
     console.error(`[${timestamp}] Error fetching professional config:`, error)
     throw error
   }
+}
+
+// Helper function to clear cache for a specific professional
+export function clearProfessionalCache(professionalId: string): void {
+  try {
+    const cacheKey = getCacheKey(professionalId)
+    localStorage.removeItem(cacheKey)
+    console.log("🗑️ Cleared cache for professional:", professionalId)
+  } catch (error) {
+    console.error("💥 Error clearing cache:", error)
+  }
+}
+
+// Helper function to parse location from address and service area
+function parseLocationInfo(businessInfo: any): { address: string; city: string; state: string; zip: string } {
+  console.log("🗺️ Parsing location info:", {
+    address: businessInfo.address,
+    service_area_zip_code: businessInfo.service_area_zip_code,
+    business_name: businessInfo.business_name,
+  })
+
+  let address = ""
+  let city = "Local Area"
+  let state = ""
+  let zip = ""
+
+  // Parse address if available
+  if (businessInfo.address && businessInfo.address.trim()) {
+    const addressLines = businessInfo.address.split("\n")
+    address = addressLines[0] || ""
+    console.log("📍 Address lines:", addressLines)
+
+    // Try to parse city, state from second line (e.g., "Summerton, SC 29148")
+    if (addressLines.length > 1) {
+      const locationLine = addressLines[1].trim()
+      console.log("🏙️ Location line:", locationLine)
+      const parts = locationLine.split(",")
+
+      if (parts.length >= 2) {
+        city = parts[0].trim()
+        const stateZipPart = parts[1].trim()
+        const stateZipMatch = stateZipPart.match(/^([A-Z]{2})\s*(\d{5})?/)
+
+        if (stateZipMatch) {
+          state = stateZipMatch[1]
+          zip = stateZipMatch[2] || ""
+        }
+        console.log("🎯 Parsed from address - City:", city, "State:", state, "Zip:", zip)
+      }
+    }
+  }
+
+  // If no specific address, don't show "Service Area" - just show the parsed city/state
+  if (!address && city !== "Local Area" && state) {
+    address = `${city}, ${state}`
+  } else if (!address && city !== "Local Area") {
+    address = city
+  } else if (!address) {
+    address = "Service Area"
+  }
+
+  const result = { address, city, state, zip }
+  console.log("📍 Final parsed location:", result)
+  return result
 }
 
 function parseLocationFromWebhookData(data: any): string {
