@@ -1,6 +1,6 @@
 "use client"
 import { useState } from "react"
-import { Loader2, Copy, Check, Settings, Users, MessageSquare, Calendar, ArrowRight, Eye } from "lucide-react"
+import { Loader2, Copy, Check, Settings, MessageSquare, Calendar, ArrowRight, Eye, Globe, LinkIcon } from "lucide-react"
 import Header from "../../../components/header"
 import PasswordProtection from "../../../components/password-protection"
 import { useRouter } from "next/navigation"
@@ -22,6 +22,12 @@ export default function ProfessionalSetupPage() {
   const [showPreviewModal, setShowPreviewModal] = useState(false)
   const [previewProfessionalId, setPreviewProfessionalId] = useState("")
   const [previewError, setPreviewError] = useState("")
+
+  // Custom URL states
+  const [customUrl, setCustomUrl] = useState("")
+  const [isCreatingUrl, setIsCreatingUrl] = useState(false)
+  const [urlError, setUrlError] = useState("")
+  const [urlSuccess, setUrlSuccess] = useState("")
 
   const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
   const router = useRouter()
@@ -110,6 +116,65 @@ export default function ProfessionalSetupPage() {
     }
   }
 
+  const handleCreateCustomUrl = async () => {
+    if (!customUrl.trim()) {
+      setUrlError("Please enter a custom URL")
+      return
+    }
+
+    // Basic URL validation
+    const urlPattern = /^[a-zA-Z0-9-_]+$/
+    if (!urlPattern.test(customUrl.trim())) {
+      setUrlError("URL can only contain letters, numbers, hyphens, and underscores")
+      return
+    }
+
+    setIsCreatingUrl(true)
+    setUrlError("")
+    setUrlSuccess("")
+
+    try {
+      const payload = {
+        action: "create-url",
+        professionalId: professionalId,
+        customUrl: customUrl.trim(),
+        timestamp: new Date().toISOString(),
+        source: "professional_setup_page",
+      }
+
+      console.log("Sending request to create custom URL:", payload)
+
+      const response = await fetch(WEBHOOK_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log("Received response:", data)
+
+      if (data.success) {
+        setUrlSuccess(
+          `Custom URL created successfully! Your page is now available at: booking.critter.pet/${customUrl.trim()}`,
+        )
+        setCustomUrl("")
+      } else {
+        setUrlError(data.message || "Failed to create custom URL. It may already be taken.")
+      }
+    } catch (error) {
+      console.error("Error creating custom URL:", error)
+      setUrlError("There was an error creating your custom URL. Please try again.")
+    } finally {
+      setIsCreatingUrl(false)
+    }
+  }
+
   const copyToClipboard = async (text: string, key: string) => {
     try {
       await navigator.clipboard.writeText(text)
@@ -122,12 +187,7 @@ export default function ProfessionalSetupPage() {
     }
   }
 
-  const intakeUrl = `https://booking.critter.pet/newcustomer/${professionalId}`
-
-  const buttonHtml = `<a href="${intakeUrl}" target="_blank" style="display: inline-block; background-color: #E75837; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-family: Arial, sans-serif; font-weight: bold; font-size: 16px; transition: background-color 0.3s;">Start Your Critter Intake</a>`
-
-  const buttonCode = `<!-- Critter Customer Intake Button -->
-${buttonHtml}`
+  const landingUrl = `https://booking.critter.pet/${professionalId}`
 
   const handleScheduleSetupClick = () => {
     setShowScheduleModal(true)
@@ -194,17 +254,18 @@ ${buttonHtml}`
 
               {/* Feature Tiles Section */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-                {/* Customer Intake Tile - Clickable */}
+                {/* Critter Landing Page Setup Tile - Clickable */}
                 <div
                   onClick={handleSetupClick}
                   className="bg-white rounded-xl shadow-md p-6 text-center transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer border border-transparent hover:border-[#E75837]/20"
                 >
                   <div className="w-12 h-12 bg-[#fff8f6] rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Users className="h-6 w-6 text-[#E75837]" />
+                    <Globe className="h-6 w-6 text-[#E75837]" />
                   </div>
-                  <h3 className="text-lg font-bold mb-2 header-font">Customer Intake</h3>
+                  <h3 className="text-lg font-bold mb-2 header-font">Critter Landing Page Set-Up</h3>
                   <p className="text-gray-600 body-font mb-4">
-                    Generate a custom intake link and button for your website to streamline new customer onboarding.
+                    Generate a custom link for your Critter landing page to share with customers and showcase your
+                    services.
                   </p>
                   <span className="inline-flex items-center text-[#E75837] text-sm font-medium">
                     Set up now <ArrowRight className="ml-1 h-4 w-4" />
@@ -270,7 +331,7 @@ ${buttonHtml}`
                 </div>
                 <h1 className="text-4xl title-font mb-4">Setup Complete!</h1>
                 <p className="text-xl text-gray-700 body-font">
-                  Your custom customer intake link is ready. Follow the instructions below to add it to your website.
+                  Your Critter landing page is ready. You can now share your professional page with customers.
                 </p>
               </div>
 
@@ -295,16 +356,16 @@ ${buttonHtml}`
                 </p>
               </div>
 
-              {/* Direct Link */}
+              {/* Default Landing Page Link */}
               <div className="bg-white rounded-xl shadow-md p-6">
-                <h2 className="text-xl font-bold mb-4 header-font">Your Customer Intake Link</h2>
+                <h2 className="text-xl font-bold mb-4 header-font">Your Landing Page Link</h2>
                 <div className="bg-gray-50 rounded-lg p-4 flex items-center justify-between mb-4">
-                  <code className="text-sm font-mono text-[#E75837] break-all">{intakeUrl}</code>
+                  <code className="text-sm font-mono text-[#E75837] break-all">{landingUrl}</code>
                   <button
-                    onClick={() => copyToClipboard(intakeUrl, "intakeUrl")}
+                    onClick={() => copyToClipboard(landingUrl, "landingUrl")}
                     className="flex items-center px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors ml-2"
                   >
-                    {copiedStates.intakeUrl ? (
+                    {copiedStates.landingUrl ? (
                       <Check className="h-4 w-4 text-green-600" />
                     ) : (
                       <Copy className="h-4 w-4" />
@@ -312,106 +373,64 @@ ${buttonHtml}`
                   </button>
                 </div>
                 <p className="text-sm text-gray-600 body-font">
-                  Share this link directly with customers or use the button code below to embed it on your website.
+                  This is your default landing page URL that customers can use to view your services and book
+                  appointments.
                 </p>
               </div>
 
-              {/* Button Preview */}
+              {/* Custom URL Creation Section */}
               <div className="bg-white rounded-xl shadow-md p-6">
-                <h2 className="text-xl font-bold mb-4 header-font">Button Preview</h2>
-                <div className="bg-gray-50 rounded-lg p-6 text-center mb-4">
-                  <div dangerouslySetInnerHTML={{ __html: buttonHtml }} />
-                </div>
-                <p className="text-sm text-gray-600 body-font">
-                  This is how the button will appear on your website. You can customize the styling to match your brand.
+                <h2 className="text-xl font-bold mb-4 header-font flex items-center">
+                  <LinkIcon className="h-5 w-5 mr-2" />
+                  Create Custom URL
+                </h2>
+                <p className="text-gray-600 mb-4 body-font">
+                  Create a personalized URL for your landing page that's easier to remember and share.
                 </p>
-              </div>
 
-              {/* Button Code */}
-              <div className="bg-white rounded-xl shadow-md p-6">
-                <h2 className="text-xl font-bold mb-4 header-font">Button Code</h2>
-                <div className="bg-gray-900 rounded-lg p-4 mb-4">
-                  <pre className="text-green-400 text-sm overflow-x-auto">
-                    <code>{buttonCode}</code>
-                  </pre>
-                </div>
-                <button
-                  onClick={() => copyToClipboard(buttonCode, "buttonCode")}
-                  className="flex items-center px-4 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#d04e30] transition-colors"
-                >
-                  {copiedStates.buttonCode ? (
-                    <>
-                      <Check className="h-4 w-4 mr-2" />
-                      Copied!
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4 mr-2" />
-                      Copy Button Code
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Platform Instructions */}
-              <div className="bg-white rounded-xl shadow-md p-6">
-                <h2 className="text-xl font-bold mb-6 header-font">Platform-Specific Instructions</h2>
-
-                <div className="space-y-6">
-                  {/* Squarespace */}
-                  <div className="border-l-4 border-[#E75837] pl-4">
-                    <h3 className="text-lg font-bold mb-2 header-font">Squarespace</h3>
-                    <ol className="list-decimal list-inside space-y-1 text-sm body-font">
-                      <li>Go to your Squarespace editor</li>
-                      <li>Add a "Code Block" where you want the button</li>
-                      <li>Paste the button code above into the code block</li>
-                      <li>Save and publish your changes</li>
-                    </ol>
-                  </div>
-
-                  {/* Wix */}
-                  <div className="border-l-4 border-[#745E25] pl-4">
-                    <h3 className="text-lg font-bold mb-2 header-font">Wix</h3>
-                    <ol className="list-decimal list-inside space-y-1 text-sm body-font">
-                      <li>Open your Wix editor</li>
-                      <li>Click the "+" button to add an element</li>
-                      <li>Select "Embed Code" → "HTML iframe"</li>
-                      <li>Paste the button code and click "Apply"</li>
-                      <li>Position the button where you want it and publish</li>
-                    </ol>
-                  </div>
-
-                  {/* WordPress */}
-                  <div className="border-l-4 border-[#94ABD6] pl-4">
-                    <h3 className="text-lg font-bold mb-2 header-font">WordPress</h3>
-                    <ol className="list-decimal list-inside space-y-1 text-sm body-font">
-                      <li>Edit the page or post where you want the button</li>
-                      <li>Add a "Custom HTML" block</li>
-                      <li>Paste the button code into the HTML block</li>
-                      <li>Update/publish your page</li>
-                    </ol>
-                  </div>
-
-                  {/* Generic HTML */}
-                  <div className="border-l-4 border-gray-400 pl-4">
-                    <h3 className="text-lg font-bold mb-2 header-font">Other Websites</h3>
-                    <p className="text-sm body-font">
-                      For any website that allows custom HTML, simply paste the button code wherever you want the button
-                      to appear. If you need help with implementation, contact your web developer or platform support.
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="customUrl" className="body-font">
+                      Custom URL *
+                    </Label>
+                    <div className="flex items-center mt-1">
+                      <span className="text-sm text-gray-500 body-font mr-2">booking.critter.pet/</span>
+                      <Input
+                        id="customUrl"
+                        value={customUrl}
+                        onChange={(e) => setCustomUrl(e.target.value)}
+                        placeholder="your-business-name"
+                        className="flex-1"
+                        disabled={isCreatingUrl}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1 body-font">
+                      Use letters, numbers, hyphens, and underscores only. Example: "sally-grooming" or "best_pet_care"
                     </p>
                   </div>
-                </div>
-              </div>
 
-              {/* Additional Tips */}
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-                <h2 className="text-lg font-bold mb-4 text-blue-800 header-font">💡 Pro Tips</h2>
-                <ul className="space-y-2 text-sm text-blue-700 body-font">
-                  <li>• Place the button prominently on your homepage or services page</li>
-                  <li>• Consider adding text like "New customers start here" above the button</li>
-                  <li>• You can customize the button colors by editing the CSS in the code</li>
-                  <li>• Test the button after adding it to make sure it works correctly</li>
-                </ul>
+                  {urlError && <div className="text-sm text-red-600 body-font">{urlError}</div>}
+
+                  {urlSuccess && <div className="text-sm text-green-600 body-font">{urlSuccess}</div>}
+
+                  <button
+                    onClick={handleCreateCustomUrl}
+                    disabled={isCreatingUrl || !customUrl.trim()}
+                    className="w-full bg-[#E75837] text-white px-4 py-3 rounded-lg hover:bg-[#d04e30] transition-colors body-font flex items-center justify-center disabled:opacity-50"
+                  >
+                    {isCreatingUrl ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Creating URL...
+                      </>
+                    ) : (
+                      <>
+                        <LinkIcon className="h-4 w-4 mr-2" />
+                        Create Custom URL
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
 
               {/* Reset Button */}
@@ -421,6 +440,9 @@ ${buttonHtml}`
                     setShowResults(false)
                     setProfessionalId("")
                     setCopiedStates({})
+                    setCustomUrl("")
+                    setUrlError("")
+                    setUrlSuccess("")
                   }}
                   className="text-gray-600 hover:text-gray-800 underline body-font"
                 >
@@ -432,7 +454,7 @@ ${buttonHtml}`
         </div>
       </main>
 
-      {/* Customer Intake Modal */}
+      {/* Landing Page Setup Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
@@ -503,7 +525,7 @@ ${buttonHtml}`
               />
               {scheduleError && <p className="mt-2 text-sm text-red-600 body-font">{scheduleError}</p>}
               <p className="text-xs text-gray-500 mt-2 body-font">
-                Your Professional ID can be found in your Critter account or from your customer intake setup above.
+                Your Professional ID can be found in your Critter account or from your landing page setup above.
               </p>
             </div>
 
