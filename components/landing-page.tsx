@@ -29,23 +29,28 @@ const loadProfessionalLandingData = async (
   professionalId: string,
   forceRefresh: boolean,
 ): Promise<ProfessionalData | null> => {
-  // Simulate an API call
-  return new Promise((resolve) => {
+  return new Promise<ProfessionalData | null>((resolve, reject) => {
     setTimeout(() => {
-      // Simulate different scenarios based on professionalId
+      // Simulate an API call with forceRefresh just for parity
       if (professionalId === "valid-id") {
         resolve({
           id: "valid-id",
           name: "Example Professional",
           tagline: "Your trusted expert",
           location: { city: "Anytown", state: "CA" },
-          contact: { phone: "555-123-4567", email: "info@example.com", website: "example.com" },
+          contact: {
+            phone: "555-123-4567",
+            email: "info@example.com",
+            website: "example.com",
+          },
           specialties: ["Expertise 1", "Expertise 2"],
         })
-      } else if (professionalId === "empty-id") {
-        resolve(null) // Simulate no data returned
+      } else if (professionalId === "empty-id" || !professionalId) {
+        // Treat missing or explicitly empty IDs as “no data”
+        resolve(null)
       } else {
-        throw new Error("Failed to load data") // Simulate an error
+        // Use reject so the caller’s try/catch can handle the failure
+        reject(new Error("Failed to load data"))
       }
     }, 500)
   })
