@@ -250,7 +250,7 @@ export default function ProfessionalLandingPage() {
                   <h3 className="text-xl font-bold mb-2 header-font">Book an Appointment</h3>
                   <p className="text-white/90 mb-4 body-font">Schedule your pet's service online</p>
                   <Link
-                    href={`/schedule/${professionalData.professional_id}`}
+                    href={`/schedule/${uniqueUrl}`}
                     className="inline-flex items-center gap-2 bg-white text-[#E75837] px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors body-font"
                   >
                     <Calendar className="w-4 h-4" />
@@ -263,7 +263,7 @@ export default function ProfessionalLandingPage() {
                   <h3 className="text-xl font-bold mb-2 header-font">New Customer?</h3>
                   <p className="text-white/90 mb-4 body-font">Complete our quick intake process</p>
                   <Link
-                    href={`/newcustomer/${professionalData.professional_id}`}
+                    href={`/newcustomer/${uniqueUrl}`}
                     className="inline-flex items-center gap-2 bg-white text-[#745E25] px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors body-font"
                   >
                     <UserPlus className="w-4 h-4" />
@@ -374,14 +374,14 @@ export default function ProfessionalLandingPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
-                href={`/schedule/${professionalData.professional_id}`}
+                href={`/schedule/${uniqueUrl}`}
                 className="inline-flex items-center gap-2 bg-[#E75837] text-white px-8 py-3 rounded-lg font-medium hover:bg-[#d04e30] transition-colors text-lg header-font"
               >
                 <Calendar className="w-5 h-5" />
                 Schedule Appointment
               </Link>
               <Link
-                href={`/newcustomer/${professionalData.professional_id}`}
+                href={`/newcustomer/${uniqueUrl}`}
                 className="inline-flex items-center gap-2 bg-white text-[#E75837] border-2 border-[#E75837] px-8 py-3 rounded-lg font-medium hover:bg-[#E75837] hover:text-white transition-colors text-lg header-font"
               >
                 <UserPlus className="w-5 h-5" />
