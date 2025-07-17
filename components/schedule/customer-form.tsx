@@ -3,303 +3,452 @@
 import type React from "react"
 
 import { useState } from "react"
-import { User, Mail, Phone, MapPin } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Loader2, ArrowLeft, User, Calendar, Clock, DollarSign } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { toast } from "@/hooks/use-toast"
+import type { Service, SelectedTimeSlot, CustomerInfo, PetResponse } from "@/types/schedule"
+import type { BookingType, RecurringConfig } from "./booking-type-selection"
 
-interface CustomerInfo {
+interface CustomerData {
   firstName: string
   lastName: string
   email: string
   phone: string
-  address: string
-  city: string
-  state: string
-  zipCode: string
+  notes: string
 }
 
 interface CustomerFormProps {
-  onSubmit: (customerInfo: CustomerInfo) => void
+  selectedServices: Service[]
+  selectedTimeSlot: SelectedTimeSlot
+  professionalId: string
+  professionalName: string
+  sessionId: string
+  bookingType: BookingType | null
+  recurringConfig: RecurringConfig | null
+  onPetsReceived: (customerInfo: CustomerInfo, petResponse: PetResponse) => void
   onBack: () => void
-  isSubmitting?: boolean
 }
 
-export function CustomerForm({ onSubmit, onBack, isSubmitting = false }: CustomerFormProps) {
-  const [formData, setFormData] = useState<CustomerInfo>({
+export function CustomerForm({
+  selectedServices,
+  selectedTimeSlot,
+  professionalId,
+  professionalName,
+  sessionId,
+  bookingType,
+  recurringConfig,
+  onPetsReceived,
+  onBack,
+}: CustomerFormProps) {
+  const [customerData, setCustomerData] = useState<CustomerData>({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
-    address: "",
-    city: "",
-    state: "",
-    zipCode: "",
+    notes: "",
   })
 
-  const [errors, setErrors] = useState<Partial<CustomerInfo>>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errors, setErrors] = useState<Partial<CustomerData>>({})
 
-  const validateForm = (): boolean => {
-    const newErrors: Partial<CustomerInfo> = {}
+  // Calculate totals
+  const totalCost = selectedServices.reduce((sum, service) => {
+    return sum + Number.parseFloat(service.customer_cost.toString())
+  }, 0)
 
-    if (!formData.firstName.trim()) {
+  const totalDuration = selectedServices.reduce((sum, service) => {
+    let durationInMinutes = service.duration_number
+    if (service.duration_unit === "Hours") {
+      durationInMinutes = service.duration_number * 60
+    } else if (service.duration_unit === "Days") {
+      durationInMinutes = service.duration_number * 24 * 60
+    }
+    return sum + durationInMinutes
+  }, 0)
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(amount)
+  }
+
+  const formatDuration = (minutes: number) => {
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    if (hours > 0 && mins > 0) {
+      return `${hours}h ${mins}m`
+    } else if (hours > 0) {
+      return `${hours}h`
+    } else {
+      return `${mins}m`
+    }
+  }
+
+  const formatDate = (dateStr: string) => {
+    const [year, month, day] = dateStr.split("-").map(Number)
+    const date = new Date(year, month - 1, day)
+    return date.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    })
+  }
+
+  const validateForm = () => {
+    const newErrors: Partial<CustomerData> = {}
+
+    if (!customerData.firstName.trim()) {
       newErrors.firstName = "First name is required"
     }
-
-    if (!formData.lastName.trim()) {
+    if (!customerData.lastName.trim()) {
       newErrors.lastName = "Last name is required"
     }
-
-    if (!formData.email.trim()) {
+    if (!customerData.email.trim()) {
       newErrors.email = "Email is required"
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    } else if (!/\S+@\S+\.\S+/.test(customerData.email)) {
       newErrors.email = "Please enter a valid email address"
-    }
-
-    if (!formData.phone.trim()) {
-      newErrors.phone = "Phone number is required"
-    } else if (!/^$$?([0-9]{3})$$?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$/.test(formData.phone)) {
-      newErrors.phone = "Please enter a valid phone number"
-    }
-
-    if (!formData.address.trim()) {
-      newErrors.address = "Address is required"
-    }
-
-    if (!formData.city.trim()) {
-      newErrors.city = "City is required"
-    }
-
-    if (!formData.state.trim()) {
-      newErrors.state = "State is required"
-    }
-
-    if (!formData.zipCode.trim()) {
-      newErrors.zipCode = "Zip code is required"
-    } else if (!/^\d{5}(-\d{4})?$/.test(formData.zipCode)) {
-      newErrors.zipCode = "Please enter a valid zip code"
     }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (validateForm()) {
-      onSubmit(formData)
-    }
-  }
-
-  const handleInputChange = (field: keyof CustomerInfo, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+  const handleInputChange = (field: keyof CustomerData, value: string) => {
+    setCustomerData((prev) => ({ ...prev, [field]: value }))
+    // Clear error when user starts typing
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }))
     }
   }
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!validateForm()) {
+      toast({
+        title: "Please fill in all required fields",
+        description: "First name, last name, and email are required.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
+
+      console.log("Sending webhook to:", webhookUrl)
+
+      const payload = {
+        professional_id: professionalId,
+        action: "get_customer_pets",
+        session_id: sessionId,
+        timestamp: new Date().toISOString(),
+        customer_info: {
+          first_name: customerData.firstName.trim(),
+          last_name: customerData.lastName.trim(),
+          email: customerData.email.trim().toLowerCase(),
+          phone: customerData.phone.trim(),
+          notes: customerData.notes.trim(),
+        },
+        booking_context: {
+          selected_services: selectedServices.map((service) => service.name),
+          selected_date: selectedTimeSlot.date,
+          selected_time: selectedTimeSlot.startTime,
+          booking_type: bookingType,
+          recurring_config: recurringConfig,
+        },
+      }
+
+      console.log("Sending customer pets webhook with payload:", payload)
+
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      console.log("Pets webhook response received:", result)
+
+      // Parse the response correctly - it's an array with nested pets
+      let pets: any[] = []
+
+      if (Array.isArray(result)) {
+        // Handle array response format: [{"pets":[...]}]
+        const firstItem = result[0]
+        if (firstItem && firstItem.pets && Array.isArray(firstItem.pets)) {
+          pets = firstItem.pets
+        }
+      } else if (result && result.pets && Array.isArray(result.pets)) {
+        // Handle direct object format: {"pets":[...]}
+        pets = result.pets
+      }
+
+      console.log("Parsed pets:", pets)
+
+      const customerInfo: CustomerInfo = {
+        firstName: customerData.firstName.trim(),
+        lastName: customerData.lastName.trim(),
+        email: customerData.email.trim().toLowerCase(),
+      }
+
+      const petResponse: PetResponse = {
+        pets: pets.map((pet: any) => ({
+          pet_id: pet.pet_id || pet.id || "",
+          pet_name: pet.pet_name || pet.name || "",
+          pet_type: pet.pet_type || pet.type || "",
+          breed: pet.breed || "",
+          age: pet.age || "",
+          weight: pet.weight || "",
+          special_notes: pet.special_notes || pet.notes || "",
+        })),
+      }
+
+      console.log("Final pet response:", petResponse)
+
+      toast({
+        title: "Customer information saved",
+        description: `Found ${petResponse.pets.length} pet${petResponse.pets.length !== 1 ? "s" : ""} for your account.`,
+      })
+
+      onPetsReceived(customerInfo, petResponse)
+    } catch (error) {
+      console.error("Error getting customer pets:", error)
+      toast({
+        title: "Error",
+        description: "Failed to get pet information. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="bg-white rounded-xl shadow-lg p-8">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-[#E75837] rounded-full flex items-center justify-center">
-            <User className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 header-font">Customer Information</h2>
-            <p className="text-gray-600 body-font">Please provide your contact details</p>
-          </div>
-        </div>
+    <div className="max-w-6xl mx-auto space-y-6">
+      {/* Back Button */}
+      <Button variant="ghost" onClick={onBack} className="text-gray-600 hover:text-gray-900 body-font">
+        <ArrowLeft className="w-4 h-4 mr-2" />
+        Back to Schedule
+      </Button>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Name Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2 body-font">
-                First Name *
-              </label>
-              <input
-                type="text"
-                id="firstName"
-                value={formData.firstName}
-                onChange={(e) => handleInputChange("firstName", e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font ${
-                  errors.firstName ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Enter your first name"
-                disabled={isSubmitting}
-              />
-              {errors.firstName && <p className="mt-1 text-sm text-red-500 body-font">{errors.firstName}</p>}
-            </div>
-
-            <div>
-              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2 body-font">
-                Last Name *
-              </label>
-              <input
-                type="text"
-                id="lastName"
-                value={formData.lastName}
-                onChange={(e) => handleInputChange("lastName", e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font ${
-                  errors.lastName ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Enter your last name"
-                disabled={isSubmitting}
-              />
-              {errors.lastName && <p className="mt-1 text-sm text-red-500 body-font">{errors.lastName}</p>}
-            </div>
-          </div>
-
-          {/* Contact Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2 body-font">
-                Email Address *
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-4 w-4 text-gray-400" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Contact Information Form */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl header-font text-[#E75837] flex items-center gap-2">
+              <User className="w-5 h-5" />
+              Contact Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Name Fields */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="firstName" className="body-font">
+                    First Name *
+                  </Label>
+                  <Input
+                    id="firstName"
+                    type="text"
+                    value={customerData.firstName}
+                    onChange={(e) => handleInputChange("firstName", e.target.value)}
+                    className={`body-font ${errors.firstName ? "border-red-500" : ""}`}
+                    placeholder="First Name"
+                    required
+                  />
+                  {errors.firstName && <p className="text-sm text-red-500 mt-1 body-font">{errors.firstName}</p>}
                 </div>
-                <input
-                  type="email"
-                  id="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange("email", e.target.value)}
-                  className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font ${
-                    errors.email ? "border-red-500" : "border-gray-300"
-                  }`}
-                  placeholder="your.email@example.com"
-                  disabled={isSubmitting}
+                <div>
+                  <Label htmlFor="lastName" className="body-font">
+                    Last Name *
+                  </Label>
+                  <Input
+                    id="lastName"
+                    type="text"
+                    value={customerData.lastName}
+                    onChange={(e) => handleInputChange("lastName", e.target.value)}
+                    className={`body-font ${errors.lastName ? "border-red-500" : ""}`}
+                    placeholder="Last Name"
+                    required
+                  />
+                  {errors.lastName && <p className="text-sm text-red-500 mt-1 body-font">{errors.lastName}</p>}
+                </div>
+              </div>
+
+              {/* Email and Phone */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="email" className="body-font">
+                    Email Address *
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={customerData.email}
+                    onChange={(e) => handleInputChange("email", e.target.value)}
+                    className={`body-font ${errors.email ? "border-red-500" : ""}`}
+                    placeholder="your@email.com"
+                    required
+                  />
+                  {errors.email && <p className="text-sm text-red-500 mt-1 body-font">{errors.email}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="phone" className="body-font">
+                    Phone Number
+                  </Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={customerData.phone}
+                    onChange={(e) => handleInputChange("phone", e.target.value)}
+                    className="body-font"
+                    placeholder="(555) 123-4567"
+                  />
+                </div>
+              </div>
+
+              {/* Special Instructions */}
+              <div>
+                <Label htmlFor="notes" className="body-font">
+                  Special Instructions or Notes
+                </Label>
+                <Textarea
+                  id="notes"
+                  value={customerData.notes}
+                  onChange={(e) => handleInputChange("notes", e.target.value)}
+                  className="body-font min-h-[100px]"
+                  placeholder="Any special requests or information we should know..."
                 />
               </div>
-              {errors.email && <p className="mt-1 text-sm text-red-500 body-font">{errors.email}</p>}
+
+              {/* Submit Button */}
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-[#E75837] hover:bg-[#d14a2a] text-white body-font"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Getting Pet Information...
+                  </>
+                ) : (
+                  <>Continue to Pet Selection</>
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* Booking Summary */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl header-font text-[#E75837]">Booking Summary</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Date & Time */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <h3 className="font-medium text-gray-900 body-font">Date & Time</h3>
+              </div>
+              <p className="text-gray-700 body-font">{formatDate(selectedTimeSlot.date)}</p>
+              <div className="flex items-center gap-1 mt-1">
+                <Clock className="w-4 h-4 text-gray-500" />
+                <p className="text-gray-700 body-font">{selectedTimeSlot.startTime}</p>
+              </div>
             </div>
 
+            {/* Services */}
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2 body-font">
-                Phone Number *
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Phone className="h-4 w-4 text-gray-400" />
-                </div>
-                <input
-                  type="tel"
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange("phone", e.target.value)}
-                  className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font ${
-                    errors.phone ? "border-red-500" : "border-gray-300"
+              <div className="flex items-center gap-2 mb-3">
+                <DollarSign className="w-4 h-4 text-gray-500" />
+                <h3 className="font-medium text-gray-900 body-font">Services</h3>
+              </div>
+              <div className="space-y-3">
+                {selectedServices.map((service, index) => (
+                  <div key={index} className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900 body-font">{service.name}</p>
+                      <p className="text-sm text-gray-600 body-font">
+                        {service.duration_number}{" "}
+                        {service.duration_unit === "Minutes"
+                          ? service.duration_number === 1
+                            ? "minute"
+                            : "minutes"
+                          : service.duration_unit.toLowerCase()}
+                      </p>
+                    </div>
+                    <p className="font-medium text-gray-900 body-font">
+                      {formatCurrency(Number.parseFloat(service.customer_cost.toString()))}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Total */}
+            <div className="border-t pt-4">
+              <div className="flex justify-between items-center mb-2">
+                <p className="font-semibold text-gray-900 body-font">Total</p>
+                <p className="font-semibold text-gray-900 body-font text-lg">{formatCurrency(totalCost)}</p>
+              </div>
+              <div className="flex justify-between items-center">
+                <p className="text-sm text-gray-600 body-font">Duration</p>
+                <p className="text-sm text-gray-600 body-font">{formatDuration(totalDuration)}</p>
+              </div>
+            </div>
+
+            {/* Booking Type */}
+            {bookingType && (
+              <div className="pt-4 border-t">
+                <Badge
+                  className={`body-font ${
+                    bookingType === "one-time"
+                      ? "bg-[#E75837] hover:bg-[#d14a2a] text-white"
+                      : "bg-gray-100 text-gray-800 hover:bg-gray-200"
                   }`}
-                  placeholder="(555) 123-4567"
-                  disabled={isSubmitting}
-                />
+                >
+                  {bookingType === "one-time" ? "One-time Booking" : "Recurring Booking"}
+                </Badge>
+                {recurringConfig && bookingType === "recurring" && (
+                  <p className="text-sm text-gray-600 mt-2 body-font">
+                    Every {recurringConfig.frequency} {recurringConfig.unit}
+                    {recurringConfig.frequency > 1 ? "s" : ""} until {recurringConfig.endDate}
+                  </p>
+                )}
               </div>
-              {errors.phone && <p className="mt-1 text-sm text-red-500 body-font">{errors.phone}</p>}
-            </div>
-          </div>
+            )}
 
-          {/* Address Fields */}
-          <div>
-            <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2 body-font">
-              Street Address *
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <MapPin className="h-4 w-4 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                id="address"
-                value={formData.address}
-                onChange={(e) => handleInputChange("address", e.target.value)}
-                className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font ${
-                  errors.address ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="123 Main Street"
-                disabled={isSubmitting}
-              />
+            {/* Professional Info */}
+            <div className="pt-4 border-t">
+              <p className="text-sm text-gray-600 body-font">
+                <span className="font-medium">with</span> {professionalName}
+              </p>
             </div>
-            {errors.address && <p className="mt-1 text-sm text-red-500 body-font">{errors.address}</p>}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2 body-font">
-                City *
-              </label>
-              <input
-                type="text"
-                id="city"
-                value={formData.city}
-                onChange={(e) => handleInputChange("city", e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font ${
-                  errors.city ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="City"
-                disabled={isSubmitting}
-              />
-              {errors.city && <p className="mt-1 text-sm text-red-500 body-font">{errors.city}</p>}
-            </div>
-
-            <div>
-              <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-2 body-font">
-                State *
-              </label>
-              <input
-                type="text"
-                id="state"
-                value={formData.state}
-                onChange={(e) => handleInputChange("state", e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font ${
-                  errors.state ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="State"
-                disabled={isSubmitting}
-              />
-              {errors.state && <p className="mt-1 text-sm text-red-500 body-font">{errors.state}</p>}
-            </div>
-
-            <div>
-              <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700 mb-2 body-font">
-                Zip Code *
-              </label>
-              <input
-                type="text"
-                id="zipCode"
-                value={formData.zipCode}
-                onChange={(e) => handleInputChange("zipCode", e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font ${
-                  errors.zipCode ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="12345"
-                disabled={isSubmitting}
-              />
-              {errors.zipCode && <p className="mt-1 text-sm text-red-500 body-font">{errors.zipCode}</p>}
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-4 pt-6">
-            <button
-              type="button"
-              onClick={onBack}
-              disabled={isSubmitting}
-              className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 body-font"
-            >
-              Back
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex-1 px-6 py-3 bg-[#E75837] text-white rounded-lg hover:bg-[#d04e30] transition-colors disabled:opacity-50 body-font"
-            >
-              {isSubmitting ? "Processing..." : "Continue"}
-            </button>
-          </div>
-        </form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
 }
 
-// Export as both named and default export
+// Export both named and default
 export default CustomerForm

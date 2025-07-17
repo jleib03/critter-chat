@@ -1,8 +1,7 @@
 "use client"
 
-import { useParams, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
-import { CheckCircle, AlertCircle, Loader2, Calendar, Users } from "lucide-react"
+import { useParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,6 +11,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
+import {
+  Loader2,
+  Trash2,
+  Plus,
+  Users,
+  Clock,
+  Shield,
+  Calendar,
+  ExternalLink,
+  AlertCircle,
+  CheckCircle,
+  Smartphone,
+} from "lucide-react"
 import type {
   GetConfigWebhookPayload,
   SaveConfigWebhookPayload,
@@ -19,7 +31,6 @@ import type {
   WebhookBlockedTime,
   WebhookCapacityRules,
 } from "@/types/webhook-config"
-import { Trash2, Plus, Clock, Shield, ExternalLink, Smartphone } from "lucide-react"
 
 const DEFAULT_WORKING_DAYS = [
   { day: "Monday", start_time: "09:00", end_time: "17:00", is_working: true },
@@ -49,7 +60,6 @@ const DEFAULT_BOOKING_PREFERENCES = {
 
 export default function ProfessionalSetupPage() {
   const params = useParams()
-  const router = useRouter()
   const professionalId = params.professionalId as string
   const { toast } = useToast()
 
@@ -606,32 +616,6 @@ export default function ProfessionalSetupPage() {
 
   const updateBookingPreferences = (updates: Partial<typeof DEFAULT_BOOKING_PREFERENCES>) => {
     setBookingPreferences((prev) => ({ ...prev, ...updates }))
-  }
-
-  const handleContinueToPetSelection = () => {
-    // Send webhook when continuing to pet selection
-    const webhookPayload = {
-      action: "continue_to_pet_selection",
-      professionalId: professionalId,
-      timestamp: new Date().toISOString(),
-      source: "professional_setup",
-    }
-
-    console.log("🚀 Sending webhook for pet selection:", webhookPayload)
-
-    // In a real implementation, you would send this to your webhook endpoint
-    fetch(process.env.NEXT_PUBLIC_WEBHOOK_URL || "", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(webhookPayload),
-    }).catch((err) => {
-      console.error("Failed to send webhook:", err)
-    })
-
-    // Navigate to the next step
-    router.push(`/schedule/${professionalId}`)
   }
 
   if (loading) {

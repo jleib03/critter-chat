@@ -1,9 +1,10 @@
+// Utility for loading professional landing page data with local storage caching
 const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/803d260b-1b17-4abf-8079-2d40225c29b0"
 
 // Cache configuration
 const CACHE_KEY_PREFIX = "critter_professional_data_"
 const CACHE_EXPIRY_HOURS = 24 // Cache for 24 hours
-const CACHE_VERSION = "v2" // Increment this to invalidate all caches
+const CACHE_VERSION = "v1" // Increment this to invalidate all caches
 
 export interface ServiceItem {
   id: string
@@ -146,108 +147,6 @@ export function clearAllProfessionalCaches(): void {
   }
 }
 
-export async function getProfessionalLandingConfig(professionalId: string) {
-  // Force fresh data fetch and clear any cache
-  const timestamp = Date.now()
-  console.log(`[${timestamp}] Fetching fresh data for professional ID: ${professionalId}`)
-
-  try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_WEBHOOK_URL}?professionalId=${professionalId}&t=${timestamp}`,
-      {
-        method: "GET",
-        headers: {
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          Pragma: "no-cache",
-          Expires: "0",
-        },
-      },
-    )
-
-    if (!response.ok) {
-      console.error(`[${timestamp}] HTTP error! status: ${response.status}`)
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const data = await response.json()
-    console.log(`[${timestamp}] Raw webhook response:`, JSON.stringify(data, null, 2))
-
-    // Parse location information from the data
-    const locationInfo = parseLocationFromWebhookData(data)
-    console.log(`[${timestamp}] Parsed location info:`, locationInfo)
-
-    return {
-      professionalName: data.business_name || "Professional",
-      location: locationInfo,
-      services: data.services || [],
-      description: data.business_description || "",
-      phone: data.phone || "",
-      email: data.email || "",
-      website: data.website || "",
-      hours: data.hours || {},
-      pricing: data.pricing || {},
-      policies: data.policies || {},
-      rawData: data,
-    }
-  } catch (error) {
-    console.error(`[${timestamp}] Error fetching professional config:`, error)
-    throw error
-  }
-}
-
-function parseLocationFromWebhookData(data: any): string {
-  console.log("Parsing location from webhook data:", JSON.stringify(data, null, 2))
-
-  // Check if we have a specific address
-  if (data.address && typeof data.address === "string" && data.address.trim()) {
-    console.log("Found specific address:", data.address)
-    return data.address
-  }
-
-  // If no specific address, try to extract city and state from business_description
-  if (data.business_description && typeof data.business_description === "string") {
-    console.log("Checking business_description for location:", data.business_description)
-
-    // Look for patterns like "City, State" or "City, ST"
-    const cityStatePattern = /([A-Za-z\s]+),\s*([A-Z]{2})\b/g
-    const matches = [...data.business_description.matchAll(cityStatePattern)]
-
-    if (matches.length > 0) {
-      const lastMatch = matches[matches.length - 1] // Use the last match as it's likely the most relevant
-      const city = lastMatch[1].trim()
-      const state = lastMatch[2].trim()
-      const location = `${city}, ${state}`
-      console.log("Extracted city and state from business_description:", location)
-      return location
-    }
-
-    // Look for just city names followed by common location indicators
-    const cityPattern = /(?:in|serving|located in|based in)\s+([A-Za-z\s]+?)(?:\s+area|\s+and|\s*,|\s*\.|\s*$)/gi
-    const cityMatches = [...data.business_description.matchAll(cityPattern)]
-
-    if (cityMatches.length > 0) {
-      const city = cityMatches[0][1].trim()
-      console.log("Extracted city from business_description:", city)
-      return city
-    }
-  }
-
-  // Fallback to other location fields
-  if (data.city && data.state) {
-    const location = `${data.city}, ${data.state}`
-    console.log("Using city and state fields:", location)
-    return location
-  }
-
-  if (data.city) {
-    console.log("Using city field only:", data.city)
-    return data.city
-  }
-
-  console.log("No location information found, using default")
-  return "Location not specified"
-}
-
 // Helper function to format time from 24-hour to 12-hour format
 function formatTime(time24: string): string {
   if (!time24) return "9:00 AM"
@@ -267,20 +166,12 @@ function formatPhoneNumber(phone: string): string {
   // Remove all non-digits
   const digits = phone.replace(/\D/g, "")
 
-  // Validate phone number format with corrected regex
-  const phoneRegex = /^([0-9]{3})[-. ]?([0-9]{3})[-. ]?([0-9]{4})$/
-
-  // Format as (XXX) XXX-XXXX if we have 10 digits
+  // Format as (XXX) XXX-XXXX
   if (digits.length === 10) {
     return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
   }
 
-  // If original phone matches expected pattern, return as-is
-  if (phoneRegex.test(phone)) {
-    return phone
-  }
-
-  return phone // Return original if not standard format
+  return phone // Return original if not 10 digits
 }
 
 // Helper function to format duration
@@ -327,12 +218,6 @@ function getServiceTypeDisplayName(serviceType: string): string {
       return "Specialty Services"
     case "consultation":
       return "Consultations"
-    case "drop-in":
-      return "Drop-In"
-    case "other":
-      return "Other"
-    case "farm care":
-      return "Farm Care"
     default:
       return serviceType
   }
@@ -646,7 +531,7 @@ export async function loadProfessionalLandingData(
 
       // Create specialties from service types and business context
       const specialties = Array.from(serviceTypes).map((type) => getServiceTypeDisplayName(type))
-      if (businessInfo.tagline && businessInfo.tagline.toLowerCase().includes("chicago")) {
+      if (businessInfo.tagline && businessInfo.tagline.includes("Chicago")) {
         specialties.push("Chicago Area Service")
       }
       if (services.some((s) => s.name.toLowerCase().includes("small"))) {
@@ -698,21 +583,6 @@ export async function loadProfessionalLandingData(
       saveToCache(professionalId, landingData)
 
       return landingData
-    } else {
-      console.log("⚠️ No valid professional landing data found in response")
-      console.log("📊 Response data:", data)
-
-      // Check if we got an empty array or null response
-      if (Array.isArray(data) && data.length === 0) {
-        console.log("📭 Empty array response - professional may not exist or have no services")
-      } else if (!data) {
-        console.log("🚫 Null/undefined response from webhook")
-      } else {
-        console.log("❓ Unexpected response format:", typeof data)
-      }
-
-      // Return null to trigger fallback data usage
-      return null
     }
 
     console.log("⚠️ No valid professional landing data found in response")
@@ -731,7 +601,7 @@ export function getDefaultProfessionalData(professionalId: string): Professional
     tagline: "Quality pet care services",
     description: "Professional pet care services with experienced and caring staff dedicated to your pet's wellbeing.",
     location: {
-      address: "Service Area",
+      address: "Service Area: Local",
       city: "Your City",
       state: "State",
       zip: "12345",

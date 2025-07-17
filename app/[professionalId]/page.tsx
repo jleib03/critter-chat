@@ -22,7 +22,6 @@ import { loadProfessionalLandingData, getDefaultProfessionalData } from "../../u
 import { getServiceIcon, getServiceColor } from "../../utils/service-icons"
 import type { ChatAgentConfig } from "../../types/chat-config"
 import type { ProfessionalLandingData, ServiceGroup } from "../../utils/professional-landing-config"
-import { clearProfessionalCache } from "../../utils/professional-landing-config"
 
 export default function ProfessionalLandingPage() {
   const params = useParams()
@@ -82,14 +81,8 @@ export default function ProfessionalLandingPage() {
     const loadData = async () => {
       console.log("🔍 Loading data for professional ID:", professionalId)
 
-      // Force clear cache for professionals showing placeholder data
-      if (professionalId === "151" || professionalId === "1138") {
-        console.log("🗑️ Force clearing cache to fetch fresh data for professional:", professionalId)
-        clearProfessionalCache(professionalId)
-      }
-
-      // Load professional landing data (force refresh to get fresh data)
-      await loadProfessionalData(true) // Force refresh to bypass cache
+      // Load professional landing data (with caching)
+      await loadProfessionalData(false)
 
       // Load chat configuration
       setIsChatConfigLoading(true)
