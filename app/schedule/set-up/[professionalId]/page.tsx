@@ -732,8 +732,8 @@ export default function ProfessionalSetupPage() {
                         subtitle: "Instant confirmation for existing customers",
                         description:
                           "Customers can book appointments instantly without waiting for approval. Perfect for established client relationships.",
-                        features: ["Instant confirmation", "Automated scheduling", "Best customer experience"],
-                        recommended: true,
+                        features: ["Streamlined experience", "Instant confirmation", "Reduce admin"],
+                        recommended: false,
                         color: "emerald",
                       },
                       {
@@ -743,7 +743,7 @@ export default function ProfessionalSetupPage() {
                         subtitle: "Manual approval for each booking",
                         description:
                           "Customers submit booking requests that you review and approve. Gives you full control over your schedule.",
-                        features: ["Manual approval", "Full control", "Review before confirmation"],
+                        features: ["Additional control", "Assign employees", "Manage routing"],
                         recommended: false,
                         color: "amber",
                       },
@@ -754,7 +754,7 @@ export default function ProfessionalSetupPage() {
                         subtitle: "App-only booking system",
                         description:
                           "Customers must use the Critter app to request appointments. No public booking page available.",
-                        features: ["App-only booking", "Maximum privacy", "Existing customer relationships"],
+                        features: ["App-only booking", "Simple process", "Remove availability constraints"],
                         recommended: false,
                         color: "blue",
                       },
@@ -807,11 +807,6 @@ export default function ProfessionalSetupPage() {
                                 <div>
                                   <div className="flex items-center gap-3 mb-1">
                                     <h3 className="text-xl font-semibold text-gray-900 header-font">{option.title}</h3>
-                                    {option.recommended && (
-                                      <span className="px-2 py-1 text-xs font-medium bg-[#E75837] text-white rounded-full">
-                                        Recommended
-                                      </span>
-                                    )}
                                     {isSelected && (
                                       <span className="px-2 py-1 text-xs font-medium bg-gray-900 text-white rounded-full">
                                         Currently Selected
@@ -851,22 +846,6 @@ export default function ProfessionalSetupPage() {
                         </div>
                       )
                     })}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="customInstructions" className="body-font">
-                      Custom Instructions (Optional)
-                    </Label>
-                    <Textarea
-                      id="customInstructions"
-                      value={bookingPreferences.custom_instructions}
-                      onChange={(e) => updateBookingPreferences({ custom_instructions: e.target.value })}
-                      placeholder="Add any special instructions for customers when booking..."
-                      className="body-font"
-                    />
-                    <p className="text-xs text-gray-500 mt-1 body-font">
-                      These instructions will be shown to customers during the booking process.
-                    </p>
                   </div>
                 </CardContent>
               </Card>
