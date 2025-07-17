@@ -218,9 +218,86 @@ function getServiceTypeDisplayName(serviceType: string): string {
       return "Specialty Services"
     case "consultation":
       return "Consultations"
+    case "drop-in":
+      return "Drop-In"
+    case "other":
+      return "Other"
+    case "farm care":
+      return "Farm Care"
     default:
       return serviceType
   }
+}
+
+// Helper function to parse location from address and service area
+function parseLocationInfo(businessInfo: any): { address: string; city: string; state: string; zip: string } {
+  console.log("🗺️ Parsing location info:", {
+    address: businessInfo.address,
+    service_area_zip_code: businessInfo.service_area_zip_code,
+  })
+
+  let address = "Service Area"
+  let city = "Local Area"
+  let state = ""
+  let zip = ""
+
+  // Parse address if available
+  if (businessInfo.address) {
+    const addressLines = businessInfo.address.split("\n")
+    address = addressLines[0] || "Service Area"
+
+    // Try to parse city, state from second line (e.g., "Summerton, SC 29148")
+    if (addressLines.length > 1) {
+      const locationLine = addressLines[1].trim()
+      const parts = locationLine.split(",")
+
+      if (parts.length >= 2) {
+        city = parts[0].trim()
+        const stateZipPart = parts[1].trim()
+        const stateZipMatch = stateZipPart.match(/^([A-Z]{2})\s*(\d{5})?/)
+
+        if (stateZipMatch) {
+          state = stateZipMatch[1]
+          zip = stateZipMatch[2] || ""
+        }
+      }
+    }
+  }
+
+  // Use service area zip code if available and no zip found
+  if (!zip && businessInfo.service_area_zip_code) {
+    // Check if service_area_zip_code is actually a zip code (5 digits) or a description
+    const zipMatch = businessInfo.service_area_zip_code.match(/\d{5}/)
+    if (zipMatch) {
+      zip = zipMatch[0]
+    } else {
+      // If it's a description like "Summerton and Surrounding Areas", use it as address context
+      if (!businessInfo.address) {
+        address = `Service Area: ${businessInfo.service_area_zip_code}`
+      }
+    }
+  }
+
+  // If we still don't have city/state, try to infer from service area
+  if ((!city || city === "Local Area") && businessInfo.service_area_zip_code) {
+    const serviceArea = businessInfo.service_area_zip_code
+
+    // Look for city names in service area description
+    if (serviceArea.toLowerCase().includes("summerton")) {
+      city = "Summerton"
+      state = state || "SC"
+    } else if (serviceArea.toLowerCase().includes("chicago")) {
+      city = "Chicago"
+      state = state || "IL"
+    } else if (serviceArea.toLowerCase().includes("dayton")) {
+      city = "Dayton"
+      state = state || "OH"
+    }
+  }
+
+  const result = { address, city, state, zip }
+  console.log("📍 Parsed location:", result)
+  return result
 }
 
 export async function loadProfessionalLandingData(
@@ -383,7 +460,7 @@ export async function loadProfessionalLandingData(
 
       // Create specialties from service types and business context
       const specialties = Array.from(serviceTypes).map((type) => getServiceTypeDisplayName(type))
-      if (businessInfo.tagline && businessInfo.tagline.includes("Chicago")) {
+      if (businessInfo.tagline && businessInfo.tagline.toLowerCase().includes("chicago")) {
         specialties.push("Chicago Area Service")
       }
       if (services.some((s) => s.name.toLowerCase().includes("small"))) {
@@ -393,13 +470,8 @@ export async function loadProfessionalLandingData(
         specialties.push("Large Dog Care")
       }
 
-      // Determine location info
-      let city = "Chicago"
-      let state = "IL"
-      if (businessInfo.service_area_zip_code === "60611") {
-        city = "Chicago"
-        state = "IL"
-      }
+      // Parse location information dynamically
+      const locationInfo = parseLocationInfo(businessInfo)
 
       const landingData: ProfessionalLandingData = {
         professional_id: businessInfo.business_id || professionalId,
@@ -414,12 +486,7 @@ export async function loadProfessionalLandingData(
             .slice(0, 3)
             .map((s) => s.name)
             .join(", ")} and more.`,
-        location: {
-          address: businessInfo.address || `Service Area: ${businessInfo.service_area_zip_code || "Local Area"}`,
-          city: city,
-          state: state,
-          zip: businessInfo.service_area_zip_code || "60611",
-        },
+        location: locationInfo,
         contact: {
           phone: formatPhoneNumber(businessInfo.primary_phone_number),
           email: businessInfo.primary_email || "info@business.com",
