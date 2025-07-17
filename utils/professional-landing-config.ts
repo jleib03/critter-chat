@@ -237,7 +237,7 @@ function parseLocationInfo(businessInfo: any): { address: string; city: string; 
     business_name: businessInfo.business_name,
   })
 
-  let address = "Service Area"
+  let address = ""
   let city = "Local Area"
   let state = ""
   let zip = ""
@@ -298,7 +298,10 @@ function parseLocationInfo(businessInfo: any): { address: string; city: string; 
     } else {
       // If it's a description like "Summerton and Surrounding Areas", use it as address context
       if (!businessInfo.address || businessInfo.address.trim() === "") {
-        address = `Service Area: ${businessInfo.service_area_zip_code}`
+        // Only use service area description if it's not just a zip code
+        if (businessInfo.service_area_zip_code && !businessInfo.service_area_zip_code.match(/^\d{5}$/)) {
+          address = businessInfo.service_area_zip_code
+        }
       }
       console.log("📝 Service area description:", businessInfo.service_area_zip_code)
     }
@@ -361,6 +364,11 @@ function parseLocationInfo(businessInfo: any): { address: string; city: string; 
       state = "SC"
       console.log("📞 Inferred from phone area code - South Carolina")
     }
+  }
+
+  // If we still don't have a proper address, leave it empty to show just city/state
+  if (address === "Service Area" || !address) {
+    address = ""
   }
 
   const result = { address, city, state, zip }
