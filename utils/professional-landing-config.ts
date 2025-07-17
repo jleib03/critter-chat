@@ -141,101 +141,66 @@ function parseLocationInfo(businessData: any): { address: string; city: string; 
 
   // Check service areas for zip codes
   if (businessData.service_areas && businessData.service_areas.length > 0) {
-    const firstServiceArea = businessData.service_areas[0]
-    console.log("📮 Found service area:", firstServiceArea)
+    const serviceAreas = businessData.service_areas
+    console.log("📮 Found service areas:", serviceAreas)
 
-    // If it's a 5-digit zip code
-    if (/^\d{5}$/.test(firstServiceArea)) {
-      zip = firstServiceArea
-
-      // Map common zip codes to cities
-      const zipToCityMap: { [key: string]: { city: string; state: string } } = {
-        "60611": { city: "Chicago", state: "IL" },
-        "60601": { city: "Chicago", state: "IL" },
-        "60602": { city: "Chicago", state: "IL" },
-        "60603": { city: "Chicago", state: "IL" },
-        "60604": { city: "Chicago", state: "IL" },
-        "60605": { city: "Chicago", state: "IL" },
-        "60606": { city: "Chicago", state: "IL" },
-        "60607": { city: "Chicago", state: "IL" },
-        "60608": { city: "Chicago", state: "IL" },
-        "60609": { city: "Chicago", state: "IL" },
-        "60610": { city: "Chicago", state: "IL" },
-        "60612": { city: "Chicago", state: "IL" },
-        "60613": { city: "Chicago", state: "IL" },
-        "60614": { city: "Chicago", state: "IL" },
-        "60615": { city: "Chicago", state: "IL" },
-        "60616": { city: "Chicago", state: "IL" },
-        "60617": { city: "Chicago", state: "IL" },
-        "60618": { city: "Chicago", state: "IL" },
-        "60619": { city: "Chicago", state: "IL" },
-        "60620": { city: "Chicago", state: "IL" },
-        "29148": { city: "Summerton", state: "SC" },
-        "45401": { city: "Dayton", state: "OH" },
-        "45402": { city: "Dayton", state: "OH" },
-        "45403": { city: "Dayton", state: "OH" },
-        "45404": { city: "Dayton", state: "OH" },
-        "45405": { city: "Dayton", state: "OH" },
-      }
-
-      if (zipToCityMap[zip]) {
-        city = zipToCityMap[zip].city
-        state = zipToCityMap[zip].state
-        console.log("🎯 Mapped zip to location:", city, state)
-      }
+    // If we have multiple service areas, join them
+    if (serviceAreas.length > 1) {
+      address = `Service Areas: ${serviceAreas.join(", ")}`
+      zip = serviceAreas[0] // Use first zip as primary
     } else {
-      // If it's a description, use it as the address
-      address = firstServiceArea
-      console.log("📝 Using service area as address:", address)
+      const firstServiceArea = serviceAreas[0]
+
+      // If it's a 5-digit zip code, show it as service area
+      if (/^\d{5}$/.test(firstServiceArea)) {
+        address = `Service Area: ${firstServiceArea}`
+        zip = firstServiceArea
+        city = firstServiceArea // Use zip as city for display
+      } else {
+        // If it's a description, use it as the address
+        address = firstServiceArea
+      }
     }
+
+    console.log("📍 Set address from service areas:", address)
   }
 
-  // Try to extract location from business name
-  if (city === "Local Area" && businessData.business?.business_name) {
+  // Try to extract location info from business name for city/state context
+  if (businessData.business?.business_name) {
     const businessName = businessData.business.business_name.toLowerCase()
-    console.log("🏢 Checking business name for location:", businessName)
+    console.log("🏢 Checking business name for location context:", businessName)
 
     if (businessName.includes("chicago")) {
-      city = "Chicago"
       state = "IL"
-      console.log("🏢 Inferred from business name - Chicago, IL")
+      console.log("🏢 Inferred state from business name - IL")
     } else if (businessName.includes("summerton")) {
-      city = "Summerton"
       state = "SC"
-      console.log("🏢 Inferred from business name - Summerton, SC")
+      console.log("🏢 Inferred state from business name - SC")
     } else if (businessName.includes("dayton")) {
-      city = "Dayton"
       state = "OH"
-      console.log("🏢 Inferred from business name - Dayton, OH")
+      console.log("🏢 Inferred state from business name - OH")
     }
   }
 
-  // Try to extract location from tagline
-  if (city === "Local Area" && businessData.business?.tagline) {
+  // Try to extract location info from tagline for city/state context
+  if (businessData.business?.tagline) {
     const tagline = businessData.business.tagline.toLowerCase()
-    console.log("🏷️ Checking tagline for location:", tagline)
+    console.log("🏷️ Checking tagline for location context:", tagline)
 
     if (tagline.includes("chicago")) {
-      city = "Chicago"
       state = "IL"
-      console.log("🏷️ Inferred from tagline - Chicago, IL")
+      console.log("🏷️ Inferred state from tagline - IL")
     } else if (tagline.includes("summerton")) {
-      city = "Summerton"
       state = "SC"
-      console.log("🏷️ Inferred from tagline - Summerton, SC")
+      console.log("🏷️ Inferred state from tagline - SC")
     } else if (tagline.includes("dayton")) {
-      city = "Dayton"
       state = "OH"
-      console.log("🏷️ Inferred from tagline - Dayton, OH")
+      console.log("🏷️ Inferred state from tagline - OH")
     }
   }
 
-  // Set address if we don't have one
-  if (!address && city !== "Local Area" && state) {
-    address = `${city}, ${state}`
-  } else if (!address && city !== "Local Area") {
-    address = city
-  } else if (!address) {
+  // Set default address if we don't have one
+  if (!address) {
     address = "Service Area"
   }
 
