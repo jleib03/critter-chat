@@ -243,7 +243,7 @@ function parseLocationInfo(businessInfo: any): { address: string; city: string; 
   let zip = ""
 
   // Parse address if available
-  if (businessInfo.address) {
+  if (businessInfo.address && businessInfo.address.trim()) {
     const addressLines = businessInfo.address.split("\n")
     address = addressLines[0] || "Service Area"
     console.log("📍 Address lines:", addressLines)
@@ -268,6 +268,26 @@ function parseLocationInfo(businessInfo: any): { address: string; city: string; 
     }
   }
 
+  // If no proper address, try to extract location from business name or other fields
+  if (city === "Local Area" && businessInfo.business_name) {
+    const businessName = businessInfo.business_name.toLowerCase()
+
+    // Check for city names in business name
+    if (businessName.includes("chicago")) {
+      city = "Chicago"
+      state = "IL"
+      console.log("🏢 Inferred from business name - Chicago, IL")
+    } else if (businessName.includes("summerton")) {
+      city = "Summerton"
+      state = "SC"
+      console.log("🏢 Inferred from business name - Summerton, SC")
+    } else if (businessName.includes("dayton")) {
+      city = "Dayton"
+      state = "OH"
+      console.log("🏢 Inferred from business name - Dayton, OH")
+    }
+  }
+
   // Use service area zip code if available and no zip found
   if (!zip && businessInfo.service_area_zip_code) {
     // Check if service_area_zip_code is actually a zip code (5 digits) or a description
@@ -277,7 +297,7 @@ function parseLocationInfo(businessInfo: any): { address: string; city: string; 
       console.log("📮 Found zip in service area:", zip)
     } else {
       // If it's a description like "Summerton and Surrounding Areas", use it as address context
-      if (!businessInfo.address) {
+      if (!businessInfo.address || businessInfo.address.trim() === "") {
         address = `Service Area: ${businessInfo.service_area_zip_code}`
       }
       console.log("📝 Service area description:", businessInfo.service_area_zip_code)
@@ -285,22 +305,39 @@ function parseLocationInfo(businessInfo: any): { address: string; city: string; 
   }
 
   // If we still don't have city/state, try to infer from service area
-  if ((!city || city === "Local Area") && businessInfo.service_area_zip_code) {
-    const serviceArea = businessInfo.service_area_zip_code
+  if (city === "Local Area" && businessInfo.service_area_zip_code) {
+    const serviceArea = businessInfo.service_area_zip_code.toLowerCase()
 
     // Look for city names in service area description
-    if (serviceArea.toLowerCase().includes("summerton")) {
+    if (serviceArea.includes("summerton")) {
       city = "Summerton"
       state = state || "SC"
       console.log("🔍 Inferred from service area - Summerton, SC")
-    } else if (serviceArea.toLowerCase().includes("chicago")) {
+    } else if (serviceArea.includes("chicago")) {
       city = "Chicago"
       state = state || "IL"
       console.log("🔍 Inferred from service area - Chicago, IL")
-    } else if (serviceArea.toLowerCase().includes("dayton")) {
+    } else if (serviceArea.includes("dayton")) {
       city = "Dayton"
       state = state || "OH"
       console.log("🔍 Inferred from service area - Dayton, OH")
+    }
+  }
+
+  // Final fallback - if we have contact info, try to infer location
+  if (city === "Local Area" && businessInfo.primary_phone_number) {
+    const phone = businessInfo.primary_phone_number
+    // Chicago area codes: 312, 773, 847, 872
+    if (phone.includes("312") || phone.includes("773") || phone.includes("847") || phone.includes("872")) {
+      city = "Chicago"
+      state = "IL"
+      console.log("📞 Inferred from phone area code - Chicago, IL")
+    }
+    // South Carolina area codes: 803, 843, 854
+    else if (phone.includes("803") || phone.includes("843") || phone.includes("854")) {
+      city = "South Carolina"
+      state = "SC"
+      console.log("📞 Inferred from phone area code - South Carolina")
     }
   }
 
@@ -521,6 +558,21 @@ export async function loadProfessionalLandingData(
       saveToCache(professionalId, landingData)
 
       return landingData
+    } else {
+      console.log("⚠️ No valid professional landing data found in response")
+      console.log("📊 Response data:", data)
+
+      // Check if we got an empty array or null response
+      if (Array.isArray(data) && data.length === 0) {
+        console.log("📭 Empty array response - professional may not exist or have no services")
+      } else if (!data) {
+        console.log("🚫 Null/undefined response from webhook")
+      } else {
+        console.log("❓ Unexpected response format:", typeof data)
+      }
+
+      // Return null to trigger fallback data usage
+      return null
     }
 
     console.log("⚠️ No valid professional landing data found in response")
