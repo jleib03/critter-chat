@@ -496,9 +496,10 @@ export default function ProfessionalSetupPage() {
       // If no changes detected, show message and return
       if (changedTabs.length === 0) {
         toast({
-          title: "No Changes Detected",
-          description: "Your configuration is already up to date.",
-          duration: 3000,
+          title: "💡 No Changes to Save",
+          description: "Your configuration is already up to date. Make some changes first, then save.",
+          duration: 4000,
+          className: "bg-blue-50 border-blue-200 text-blue-800",
         })
         return
       }
@@ -560,11 +561,12 @@ export default function ProfessionalSetupPage() {
         setOriginalCapacityRules({ ...capacityRules })
         setOriginalBlockedTimes(JSON.parse(JSON.stringify(blockedTimes)))
 
-        // Show success toast
+        // Show prominent success confirmation
         toast({
-          title: "✅ Configuration Saved",
-          description: `Successfully updated: ${changedTabs.join(", ")}`,
-          duration: 4000,
+          title: "✅ Configuration Saved Successfully!",
+          description: `Your booking configuration has been updated. Changes applied to: ${changedTabs.join(", ")}`,
+          duration: 6000,
+          className: "bg-green-50 border-green-200 text-green-800",
         })
 
         console.log("Configuration saved successfully")
@@ -578,10 +580,10 @@ export default function ProfessionalSetupPage() {
 
       // Show error toast
       toast({
-        title: "❌ Save Failed",
-        description: errorMessage,
+        title: "❌ Configuration Save Failed",
+        description: `Unable to save your changes: ${errorMessage}. Please try again.`,
         variant: "destructive",
-        duration: 5000,
+        duration: 8000,
       })
     } finally {
       setSaving(false)
