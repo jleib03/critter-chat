@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useMemo } from "react"
 import { useParams } from "next/navigation"
-import { Loader2 } from "lucide-react"
+import { Loader2, Clock, Calendar } from "lucide-react"
 import type { WebhookResponse, Service, SelectedTimeSlot, CustomerInfo, Pet, PetResponse } from "@/types/schedule"
 import { ServiceSelectorBar } from "@/components/schedule/service-selector-bar"
 import { WeeklyCalendar } from "@/components/schedule/weekly-calendar"
@@ -704,12 +704,17 @@ export default function SchedulePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-[#E75837]" />
-          <p className="text-gray-600 body-font">
-            {showConfirmation ? "Refreshing schedule..." : "Loading scheduling information..."}
-          </p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 bg-[#E75837] rounded-xl flex items-center justify-center mx-auto">
+            <Loader2 className="w-6 h-6 animate-spin text-white" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 header-font">
+              {showConfirmation ? "Refreshing schedule..." : "Loading booking system..."}
+            </h2>
+            <p className="text-gray-600 body-font mt-1">Please wait a moment</p>
+          </div>
         </div>
       </div>
     )
@@ -717,17 +722,29 @@ export default function SchedulePage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-6">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <h2 className="text-lg font-semibold text-red-800 mb-2 header-font">Error Loading Schedule</h2>
-            <p className="text-red-600 body-font">{error}</p>
-            <button
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="text-center max-w-md mx-auto">
+          <div className="bg-white rounded-2xl shadow-lg border p-8 space-y-4">
+            <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mx-auto">
+              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 header-font">Unable to Load Schedule</h2>
+              <p className="text-gray-600 body-font mt-2">{error}</p>
+            </div>
+            <Button
               onClick={() => initializeSchedule()}
-              className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors body-font"
+              className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-6 py-2 rounded-lg font-medium transition-colors"
             >
               Try Again
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -736,9 +753,15 @@ export default function SchedulePage() {
 
   if (!webhookData) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600 body-font">No scheduling data available.</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center mx-auto">
+            <Calendar className="w-6 h-6 text-gray-500" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-700 header-font">No Schedule Available</h2>
+            <p className="text-gray-500 body-font">Unable to find scheduling data</p>
+          </div>
         </div>
       </div>
     )
@@ -747,77 +770,69 @@ export default function SchedulePage() {
   if (creatingBooking) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-4xl mx-auto p-6">
-          <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-            <h1 className="text-3xl font-bold text-[#E75837] mb-2 header-font">
-              Book with {webhookData.professional_info.professional_name}
-            </h1>
-            <p className="text-gray-600 body-font">
-              {isDirectBooking ? "Creating your booking..." : "Submitting your booking request..."}
-            </p>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border p-8">
-            <div className="text-center">
-              <Loader2 className="w-12 h-12 animate-spin mx-auto mb-6 text-[#E75837]" />
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4 header-font">
-                {isDirectBooking ? "Creating Your Booking" : "Submitting Your Request"}
-              </h2>
-              <p className="text-gray-600 body-font mb-6">
-                Please wait while we {isDirectBooking ? "confirm your appointment" : "submit your booking request"} with{" "}
-                {webhookData.professional_info.professional_name}.
-              </p>
-
-              <div className="bg-gray-50 rounded-lg p-6 max-w-md mx-auto">
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 body-font">Services:</span>
-                    <span className="font-medium body-font">{selectedServices.map((s) => s.name).join(", ")}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 body-font">Date:</span>
-                    <span className="font-medium body-font">
-                      {selectedTimeSlot?.dayOfWeek},{" "}
-                      {new Date(selectedTimeSlot?.date || "").toLocaleDateString("en-US", {
-                        month: "long",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 body-font">Time:</span>
-                    <span className="font-medium body-font">{selectedTimeSlot?.startTime}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 body-font">Pet:</span>
-                    <span className="font-medium body-font">
-                      {selectedPet?.pet_name} ({selectedPet?.pet_type})
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 body-font">Customer:</span>
-                    <span className="font-medium body-font">
-                      {customerInfo.firstName} {customerInfo.lastName}
-                    </span>
-                  </div>
-                  {isDirectBooking && selectedNotifications.length > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 body-font">Notifications:</span>
-                      <span className="font-medium body-font">{selectedNotifications.length} selected</span>
-                    </div>
-                  )}
-                  {!isDirectBooking && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 body-font">Type:</span>
-                      <span className="font-medium body-font text-blue-600">Booking Request</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-6 text-sm text-gray-500 body-font">This should only take a few seconds...</div>
+        <div className="max-w-2xl mx-auto p-6 pt-16">
+          <div className="bg-white rounded-2xl shadow-lg border p-8 text-center space-y-6">
+            <div className="w-16 h-16 bg-[#E75837] rounded-2xl flex items-center justify-center mx-auto">
+              <Loader2 className="w-8 h-8 animate-spin text-white" />
             </div>
+
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 header-font mb-2">
+                {isDirectBooking ? "Confirming Your Booking" : "Submitting Your Request"}
+              </h1>
+              <p className="text-gray-600 body-font">
+                Please wait while we {isDirectBooking ? "confirm your appointment" : "submit your booking request"} with{" "}
+                {webhookData.professional_info.professional_name}
+              </p>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-6 space-y-3 text-left">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Services:</span>
+                <span className="font-medium">{selectedServices.map((s) => s.name).join(", ")}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Date:</span>
+                <span className="font-medium">
+                  {selectedTimeSlot?.dayOfWeek},{" "}
+                  {new Date(selectedTimeSlot?.date || "").toLocaleDateString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Time:</span>
+                <span className="font-medium">{selectedTimeSlot?.startTime}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Pet:</span>
+                <span className="font-medium">
+                  {selectedPet?.pet_name} ({selectedPet?.pet_type})
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Customer:</span>
+                <span className="font-medium">
+                  {customerInfo.firstName} {customerInfo.lastName}
+                </span>
+              </div>
+              {isDirectBooking && selectedNotifications.length > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Notifications:</span>
+                  <span className="font-medium">{selectedNotifications.length} selected</span>
+                </div>
+              )}
+              {!isDirectBooking && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Type:</span>
+                  <span className="font-medium text-blue-600">Booking Request</span>
+                </div>
+              )}
+            </div>
+
+            <p className="text-sm text-gray-500">This should only take a few seconds...</p>
           </div>
         </div>
       </div>
@@ -826,21 +841,21 @@ export default function SchedulePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="bg-white rounded-lg shadow-sm border p-8 mb-6">
+      <div className="max-w-6xl mx-auto p-6 space-y-6">
+        {/* Clean Header */}
+        <div className="bg-white rounded-2xl shadow-lg border p-8">
           <div className="max-w-4xl">
-            <h1 className="text-4xl font-bold text-[#E75837] mb-3 header-font">
+            <h1 className="text-3xl font-bold text-[#E75837] mb-3 header-font">
               Book with {webhookData.professional_info.professional_name}
             </h1>
             <p className="text-lg text-gray-600 body-font mb-4">
-              Select a service and available time slot to{" "}
-              {isDirectBooking ? "book your appointment" : "request an appointment"}.
+              Select your service and preferred time to {isDirectBooking ? "book instantly" : "request an appointment"}
             </p>
 
-            {/* Only show timezone info, no session or debug info */}
+            {/* Simple timezone indicator */}
             {userTimezoneRef.current && (
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full text-sm text-gray-500 body-font">
-                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-lg text-sm text-gray-600 body-font">
+                <Clock className="w-4 h-4" />
                 <span>{JSON.parse(userTimezoneRef.current).timezone}</span>
               </div>
             )}
@@ -848,18 +863,25 @@ export default function SchedulePage() {
         </div>
 
         {showBookingDisabled ? (
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>Online Booking Not Available</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="pb-4">
-                {webhookData?.professional_info.professional_name} has not enabled online booking. Please contact them
-                directly to schedule an appointment.
-              </p>
-              <Button onClick={() => window.open("https://critter.app", "_blank")}>Contact via Critter App</Button>
-            </CardContent>
-          </Card>
+          <div className="max-w-md mx-auto">
+            <Card className="shadow-lg border-0 rounded-2xl">
+              <CardHeader className="text-center pb-4">
+                <CardTitle className="text-xl header-font">Online Booking Unavailable</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center space-y-4">
+                <p className="text-gray-600 body-font">
+                  {webhookData?.professional_info.professional_name} hasn't enabled online booking. Please contact them
+                  directly through the Critter app.
+                </p>
+                <Button
+                  onClick={() => window.open("https://critter.app", "_blank")}
+                  className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                >
+                  Open Critter App
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         ) : showConfirmation ? (
           <BookingConfirmation
             selectedService={selectedServices[0]!}
@@ -904,9 +926,9 @@ export default function SchedulePage() {
         ) : (
           // Main booking interface
           <div className="space-y-6">
-            {/* Service Selection - full interface when no booking type selected */}
+            {/* Service Selection */}
             {!bookingType && (
-              <div className="bg-white rounded-lg shadow-sm border p-6">
+              <div className="bg-white rounded-2xl shadow-lg border p-6">
                 <ServiceSelectorBar
                   servicesByCategory={webhookData.services.services_by_category}
                   selectedServices={selectedServices}
@@ -917,11 +939,11 @@ export default function SchedulePage() {
               </div>
             )}
 
-            {/* Calendar view - only selected services summary + calendar */}
+            {/* Calendar view */}
             {selectedServices.length > 0 && bookingType && (
               <div className="space-y-6">
-                {/* Selected Services Summary Only */}
-                <div className="bg-white rounded-lg shadow-sm border p-6">
+                {/* Selected Services Summary */}
+                <div className="bg-white rounded-2xl shadow-lg border p-6">
                   <ServiceSelectorBar
                     servicesByCategory={webhookData.services.services_by_category}
                     selectedServices={selectedServices}
@@ -931,7 +953,7 @@ export default function SchedulePage() {
                 </div>
 
                 {/* Calendar */}
-                <div className="bg-white rounded-lg shadow-sm border p-6">
+                <div className="bg-white rounded-2xl shadow-lg border p-6">
                   <WeeklyCalendar
                     workingDays={webhookData.schedule.working_days}
                     bookingData={webhookData.bookings.all_booking_data}
@@ -949,13 +971,13 @@ export default function SchedulePage() {
           </div>
         )}
 
-        {/* Booking Disabled Modal */}
+        {/* Clean Booking Disabled Modal */}
         {showBookingDisabledModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-              <div className="text-center">
-                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-orange-100 mb-4">
-                  <svg className="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+              <div className="text-center space-y-4">
+                <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mx-auto">
+                  <svg className="w-6 h-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -964,27 +986,30 @@ export default function SchedulePage() {
                     />
                   </svg>
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2 header-font">Online Booking Not Available</h3>
-                <p className="text-sm text-gray-500 mb-6 body-font">
-                  {webhookData?.professional_info.professional_name} has not enrolled in online booking. Please contact
-                  them directly through the Critter app to schedule your appointment.
-                </p>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 header-font">Online Booking Unavailable</h3>
+                  <p className="text-gray-600 body-font mt-2">
+                    {webhookData?.professional_info.professional_name} hasn't enabled online booking. Please contact
+                    them directly through the Critter app.
+                  </p>
+                </div>
                 <div className="flex gap-3">
-                  <button
+                  <Button
                     onClick={() => setShowBookingDisabledModal(false)}
-                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors body-font"
+                    variant="outline"
+                    className="flex-1 rounded-lg"
                   >
                     Close
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => {
                       window.open("https://critter.app", "_blank")
                       setShowBookingDisabledModal(false)
                     }}
-                    className="flex-1 bg-[#E75837] hover:bg-[#d14a2e] text-white font-medium py-2 px-4 rounded-lg transition-colors body-font"
+                    className="flex-1 bg-[#E75837] hover:bg-[#d14a2a] text-white rounded-lg font-medium transition-colors"
                   >
                     Open Critter App
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
