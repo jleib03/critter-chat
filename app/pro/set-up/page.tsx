@@ -1,9 +1,9 @@
 "use client"
 import { useState } from "react"
-import { Loader2, Copy, Check, Settings, Users, MessageSquare, Calendar, ArrowRight, Eye } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { ArrowRight, Building2, User, CheckCircle, Loader2 } from "lucide-react"
 import Header from "../../../components/header"
 import PasswordProtection from "../../../components/password-protection"
-import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
@@ -184,7 +184,7 @@ ${buttonHtml}`
               {/* Hero Section */}
               <div className="text-center mb-12">
                 <div className="w-16 h-16 bg-[#E75837] rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Settings className="h-8 w-8 text-white" />
+                  <User className="h-8 w-8 text-white" />
                 </div>
                 <h1 className="text-4xl md:text-5xl title-font mb-4">Professional Setup</h1>
                 <p className="text-xl text-gray-700 max-w-3xl mx-auto body-font">
@@ -200,7 +200,7 @@ ${buttonHtml}`
                   className="bg-white rounded-xl shadow-md p-6 text-center transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer border border-transparent hover:border-[#E75837]/20"
                 >
                   <div className="w-12 h-12 bg-[#fff8f6] rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Users className="h-6 w-6 text-[#E75837]" />
+                    <Building2 className="h-6 w-6 text-[#E75837]" />
                   </div>
                   <h3 className="text-lg font-bold mb-2 header-font">Customer Intake</h3>
                   <p className="text-gray-600 body-font mb-4">
@@ -217,7 +217,7 @@ ${buttonHtml}`
                   className="bg-white rounded-xl shadow-md p-6 text-center transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer border border-transparent hover:border-[#94ABD6]/20"
                 >
                   <div className="w-12 h-12 bg-[#f5f8fd] rounded-full flex items-center justify-center mx-auto mb-4">
-                    <MessageSquare className="h-6 w-6 text-[#94ABD6]" />
+                    <User className="h-6 w-6 text-[#94ABD6]" />
                   </div>
                   <h3 className="text-lg font-bold mb-2 header-font">Custom Support Agent</h3>
                   <p className="text-gray-600 body-font mb-4">
@@ -234,7 +234,7 @@ ${buttonHtml}`
                   className="bg-white rounded-xl shadow-md p-6 text-center transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer border border-transparent hover:border-[#745E25]/20"
                 >
                   <div className="w-12 h-12 bg-[#f9f7f2] rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Calendar className="h-6 w-6 text-[#745E25]" />
+                    <User className="h-6 w-6 text-[#745E25]" />
                   </div>
                   <h3 className="text-lg font-bold mb-2 header-font">Schedule Setup</h3>
                   <p className="text-gray-600 body-font mb-4">
@@ -252,7 +252,7 @@ ${buttonHtml}`
                   onClick={handlePreviewClick}
                   className="inline-flex items-center px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors border border-gray-300 hover:border-gray-400 body-font"
                 >
-                  <Eye className="h-4 w-4 mr-2" />
+                  <User className="h-4 w-4 mr-2" />
                   Preview Landing Page
                 </button>
                 <p className="text-sm text-gray-500 mt-2 body-font">
@@ -266,7 +266,7 @@ ${buttonHtml}`
               {/* Success Header */}
               <div className="text-center">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Check className="h-8 w-8 text-green-600" />
+                  <CheckCircle className="h-8 w-8 text-green-600" />
                 </div>
                 <h1 className="text-4xl title-font mb-4">Setup Complete!</h1>
                 <p className="text-xl text-gray-700 body-font">
@@ -284,9 +284,9 @@ ${buttonHtml}`
                     className="flex items-center px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
                   >
                     {copiedStates.professionalId ? (
-                      <Check className="h-4 w-4 text-green-600" />
+                      <CheckCircle className="h-4 w-4 text-green-600" />
                     ) : (
-                      <Copy className="h-4 w-4" />
+                      <User className="h-4 w-4" />
                     )}
                   </button>
                 </div>
@@ -305,13 +305,13 @@ ${buttonHtml}`
                     className="flex items-center px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors ml-2"
                   >
                     {copiedStates.intakeUrl ? (
-                      <Check className="h-4 w-4 text-green-600" />
+                      <CheckCircle className="h-4 w-4 text-green-600" />
                     ) : (
-                      <Copy className="h-4 w-4" />
+                      <User className="h-4 w-4" />
                     )}
                   </button>
                 </div>
-                <p className="text-sm text-gray-600 body-font">
+                <p className="text-sm text-gray-600 mt-2 body-font">
                   Share this link directly with customers or use the button code below to embed it on your website.
                 </p>
               </div>
@@ -322,7 +322,7 @@ ${buttonHtml}`
                 <div className="bg-gray-50 rounded-lg p-6 text-center mb-4">
                   <div dangerouslySetInnerHTML={{ __html: buttonHtml }} />
                 </div>
-                <p className="text-sm text-gray-600 body-font">
+                <p className="text-sm text-gray-600 mt-2 body-font">
                   This is how the button will appear on your website. You can customize the styling to match your brand.
                 </p>
               </div>
@@ -337,16 +337,16 @@ ${buttonHtml}`
                 </div>
                 <button
                   onClick={() => copyToClipboard(buttonCode, "buttonCode")}
-                  className="flex items-center px-4 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#d04e30] transition-colors"
+                  className="flex items-center px-4 py-2 bg-[#E75837] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#d04e30] transition-colors disabled:opacity-50 disabled:cursor-not-allowed body-font"
                 >
                   {copiedStates.buttonCode ? (
                     <>
-                      <Check className="h-4 w-4 mr-2" />
+                      <CheckCircle className="w-5 h-5 mr-2" />
                       Copied!
                     </>
                   ) : (
                     <>
-                      <Copy className="h-4 w-4 mr-2" />
+                      <User className="w-5 h-5 mr-2" />
                       Copy Button Code
                     </>
                   )}
@@ -404,13 +404,14 @@ ${buttonHtml}`
               </div>
 
               {/* Additional Tips */}
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-                <h2 className="text-lg font-bold mb-4 text-blue-800 header-font">💡 Pro Tips</h2>
-                <ul className="space-y-2 text-sm text-blue-700 body-font">
-                  <li>• Place the button prominently on your homepage or services page</li>
-                  <li>• Consider adding text like "New customers start here" above the button</li>
-                  <li>• You can customize the button colors by editing the CSS in the code</li>
-                  <li>• Test the button after adding it to make sure it works correctly</li>
+              <div className="mt-8 p-4 bg-blue-50 rounded-lg">
+                <h3 className="text-sm font-medium text-blue-900 mb-2 header-font">
+                  Need help finding your Professional ID?
+                </h3>
+                <ul className="text-sm text-blue-800 space-y-1 body-font">
+                  <li>• Check your Critter professional dashboard</li>
+                  <li>• Look in your welcome email from Critter</li>
+                  <li>• Contact Critter support if you can't locate it</li>
                 </ul>
               </div>
 
@@ -564,7 +565,7 @@ ${buttonHtml}`
                 disabled={!previewProfessionalId.trim()}
                 className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors body-font flex items-center disabled:opacity-50"
               >
-                <Eye className="h-4 w-4 mr-2" />
+                <User className="h-4 w-4 mr-2" />
                 Preview Page
               </button>
             </div>
