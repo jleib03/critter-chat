@@ -19,8 +19,7 @@ export default function CustomAgentSetupPage() {
   const [currentStep, setCurrentStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [professionalName, setProfessionalName] = useState("")
-  const [professionalId, setProfessionalId] = useState<string | null>(null)
+  const [professionalId, setProfessionalId] = useState("")
   const [isEnrolled, setIsEnrolled] = useState<boolean | null>(null)
   const [configurationSkipped, setConfigurationSkipped] = useState(false)
   const [hasExistingCustomization, setHasExistingCustomization] = useState(false)
@@ -198,7 +197,7 @@ export default function CustomAgentSetupPage() {
   }
 
   // Function to check enrollment status
-  const checkEnrollmentStatus = async (name: string) => {
+  const checkEnrollmentStatus = async (id: string) => {
     setIsLoading(true)
     setError(null)
 
@@ -210,7 +209,7 @@ export default function CustomAgentSetupPage() {
         },
         body: JSON.stringify({
           action: "check_enrollment",
-          professionalName: name,
+          professionalId: id,
         }),
       })
 
@@ -226,9 +225,6 @@ export default function CustomAgentSetupPage() {
         const professional = data[0]
 
         if (professional) {
-          const profId = professional.professional_id || null
-          setProfessionalId(profId)
-
           // Use the new enrollment status values and the is_enrolled_and_active boolean
           setIsEnrolled(
             professional.is_enrolled_and_active === true ||
@@ -242,7 +238,7 @@ export default function CustomAgentSetupPage() {
           return false
         }
       } else {
-        setError("Failed to verify professional name")
+        setError("Failed to verify professional ID")
         return false
       }
     } catch (err) {
@@ -256,7 +252,7 @@ export default function CustomAgentSetupPage() {
 
   // Function to toggle enrollment
   const toggleEnrollment = async (enroll: boolean) => {
-    if (!professionalName || !professionalId) return
+    if (!professionalId) return
 
     setIsLoading(true)
     setError(null)
@@ -270,7 +266,6 @@ export default function CustomAgentSetupPage() {
         body: JSON.stringify({
           action: "toggle_enrollment",
           professionalId: professionalId,
-          professionalName: professionalName,
           enroll: enroll,
         }),
       })
@@ -331,7 +326,6 @@ export default function CustomAgentSetupPage() {
         body: JSON.stringify({
           action: "save_agent_config",
           professionalId: professionalId,
-          professionalName: professionalName,
           config: agentConfig,
         }),
       })
@@ -442,7 +436,7 @@ export default function CustomAgentSetupPage() {
     if (currentStep === 1) {
       // If we're on the enrollment step and haven't checked enrollment yet
       if (isEnrolled === null) {
-        await checkEnrollmentStatus(professionalName)
+        await checkEnrollmentStatus(professionalId)
         return // Don't advance to next step yet, just show the status
       }
 
@@ -641,8 +635,8 @@ export default function CustomAgentSetupPage() {
           <div className="bg-white rounded-xl shadow-md p-6 mb-8">
             {currentStep === 1 && (
               <EnrollmentStep
-                professionalName={professionalName}
-                setProfessionalName={setProfessionalName}
+                professionalId={professionalId}
+                setProfessionalId={setProfessionalId}
                 isEnrolled={isEnrolled}
                 toggleEnrollment={toggleEnrollment}
                 onNext={handleNextStep}
@@ -684,7 +678,7 @@ export default function CustomAgentSetupPage() {
 
             {currentStep === 5 && (
               <SuccessStep
-                professionalName={professionalName}
+                professionalName={professionalId}
                 professionalId={professionalId || ""}
                 agentConfig={agentConfig}
               />
