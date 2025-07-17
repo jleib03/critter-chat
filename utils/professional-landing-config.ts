@@ -283,7 +283,7 @@ function parseLocationInfo(businessInfo: any): { address: string; city: string; 
     } else {
       // If it's a description like "Summerton and Surrounding Areas", use it as address context
       if (!businessInfo.address || businessInfo.address.trim() === "") {
-        address = `Service Area: ${businessInfo.service_area_zip_code}`
+        address = businessInfo.service_area_zip_code
       }
       console.log("📝 Service area description:", businessInfo.service_area_zip_code)
     }
@@ -348,7 +348,7 @@ function parseLocationInfo(businessInfo: any): { address: string; city: string; 
     }
   }
 
-  // When we don't have a specific address, just show the city and state (not "Service Area")
+  // When we don't have a specific address, just show the city/state without "Service Area" prefix
   if (!address && city !== "Local Area" && state) {
     address = `${city}, ${state}`
   } else if (!address && city !== "Local Area") {
@@ -607,7 +607,7 @@ export function getDefaultProfessionalData(professionalId: string): Professional
     tagline: "Quality pet care services",
     description: "Professional pet care services with experienced and caring staff dedicated to your pet's wellbeing.",
     location: {
-      address: "Local Area",
+      address: "Service Area: Local",
       city: "Your City",
       state: "State",
       zip: "12345",
