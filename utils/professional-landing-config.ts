@@ -4,7 +4,7 @@ const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/803d260b-1b17-4abf-80
 // Cache configuration
 const CACHE_KEY_PREFIX = "critter_professional_data_"
 const CACHE_EXPIRY_HOURS = 24 // Cache for 24 hours
-const CACHE_VERSION = "v1" // Increment this to invalidate all caches
+const CACHE_VERSION = "v2" // Increment this to invalidate all caches
 
 export interface ServiceItem {
   id: string
@@ -234,6 +234,7 @@ function parseLocationInfo(businessInfo: any): { address: string; city: string; 
   console.log("🗺️ Parsing location info:", {
     address: businessInfo.address,
     service_area_zip_code: businessInfo.service_area_zip_code,
+    business_name: businessInfo.business_name,
   })
 
   let address = "Service Area"
@@ -245,10 +246,12 @@ function parseLocationInfo(businessInfo: any): { address: string; city: string; 
   if (businessInfo.address) {
     const addressLines = businessInfo.address.split("\n")
     address = addressLines[0] || "Service Area"
+    console.log("📍 Address lines:", addressLines)
 
     // Try to parse city, state from second line (e.g., "Summerton, SC 29148")
     if (addressLines.length > 1) {
       const locationLine = addressLines[1].trim()
+      console.log("🏙️ Location line:", locationLine)
       const parts = locationLine.split(",")
 
       if (parts.length >= 2) {
@@ -260,6 +263,7 @@ function parseLocationInfo(businessInfo: any): { address: string; city: string; 
           state = stateZipMatch[1]
           zip = stateZipMatch[2] || ""
         }
+        console.log("🎯 Parsed from address - City:", city, "State:", state, "Zip:", zip)
       }
     }
   }
@@ -270,11 +274,13 @@ function parseLocationInfo(businessInfo: any): { address: string; city: string; 
     const zipMatch = businessInfo.service_area_zip_code.match(/\d{5}/)
     if (zipMatch) {
       zip = zipMatch[0]
+      console.log("📮 Found zip in service area:", zip)
     } else {
       // If it's a description like "Summerton and Surrounding Areas", use it as address context
       if (!businessInfo.address) {
         address = `Service Area: ${businessInfo.service_area_zip_code}`
       }
+      console.log("📝 Service area description:", businessInfo.service_area_zip_code)
     }
   }
 
@@ -286,17 +292,20 @@ function parseLocationInfo(businessInfo: any): { address: string; city: string; 
     if (serviceArea.toLowerCase().includes("summerton")) {
       city = "Summerton"
       state = state || "SC"
+      console.log("🔍 Inferred from service area - Summerton, SC")
     } else if (serviceArea.toLowerCase().includes("chicago")) {
       city = "Chicago"
       state = state || "IL"
+      console.log("🔍 Inferred from service area - Chicago, IL")
     } else if (serviceArea.toLowerCase().includes("dayton")) {
       city = "Dayton"
       state = state || "OH"
+      console.log("🔍 Inferred from service area - Dayton, OH")
     }
   }
 
   const result = { address, city, state, zip }
-  console.log("📍 Parsed location:", result)
+  console.log("📍 Final parsed location:", result)
   return result
 }
 

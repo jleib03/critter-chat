@@ -22,6 +22,7 @@ import { loadProfessionalLandingData, getDefaultProfessionalData } from "../../u
 import { getServiceIcon, getServiceColor } from "../../utils/service-icons"
 import type { ChatAgentConfig } from "../../types/chat-config"
 import type { ProfessionalLandingData, ServiceGroup } from "../../utils/professional-landing-config"
+import { clearProfessionalCache } from "../../utils/professional-landing-config"
 
 export default function ProfessionalLandingPage() {
   const params = useParams()
@@ -80,6 +81,12 @@ export default function ProfessionalLandingPage() {
   useEffect(() => {
     const loadData = async () => {
       console.log("🔍 Loading data for professional ID:", professionalId)
+
+      // Force clear cache for debugging if needed
+      if (professionalId === "1138") {
+        console.log("🗑️ Force clearing cache for Fluff N' Stuff to test new parsing")
+        clearProfessionalCache(professionalId)
+      }
 
       // Load professional landing data (with caching)
       await loadProfessionalData(false)
