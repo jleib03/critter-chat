@@ -130,6 +130,20 @@ function getServiceTypeDisplayName(serviceType: string): string {
   }
 }
 
+// Helper function to generate description based on services
+function generateDescription(serviceTypes: Set<string>, formattedServices: ServiceItem[]): string {
+  const serviceTypeDisplayNames = Array.from(serviceTypes).map((type) => getServiceTypeDisplayName(type))
+
+  let description = `Professional ${serviceTypeDisplayNames.join(" and ").toLowerCase()} services with experienced staff. `
+
+  if (formattedServices.length > 0) {
+    const topServices = formattedServices.slice(0, 3).map((s) => s.name)
+    description += `We offer a full range of services including ${topServices.join(", ")} and more.`
+  }
+
+  return description
+}
+
 // Helper function to parse location from service areas - show only one clean line
 function parseLocationInfo(businessData: any): { address: string; city: string; state: string; zip: string } {
   console.log("🗺️ Parsing location info:", {
@@ -137,9 +151,6 @@ function parseLocationInfo(businessData: any): { address: string; city: string; 
   })
 
   let address = ""
-  const city = ""
-  const state = ""
-  const zip = ""
 
   // Check service areas - show only one clean line
   if (businessData.service_areas && businessData.service_areas.length > 0) {
@@ -169,8 +180,8 @@ function parseLocationInfo(businessData: any): { address: string; city: string; 
     address = "Service Area"
   }
 
-  // Return only the address field populated, others empty to avoid duplication
-  const result = { address, city, state, zip }
+  // Return only the address field populated, others empty to avoid duplication and commas
+  const result = { address, city: "", state: "", zip: "" }
   console.log("📍 Final parsed location:", result)
   return result
 }
@@ -328,12 +339,14 @@ export async function loadProfessionalLandingData(
       // Parse location information
       const locationInfo = parseLocationInfo({ service_areas: serviceAreas })
 
+      // Generate description - use business description if available, otherwise auto-generate
+      const description = business?.business_description || generateDescription(serviceTypes, formattedServices)
+
       const landingData: ProfessionalLandingData = {
         professional_id: business?.business_id?.toString() || professionalId,
         name: business?.business_name || "Professional Pet Services",
         tagline: business?.tagline || "Quality pet care services",
-        // Use business description directly from Critter, no generated summary
-        description: business?.business_description || "",
+        description: description,
         location: locationInfo,
         contact: {
           phone: formatPhoneNumber(business?.primary_phone_number),
