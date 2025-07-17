@@ -82,14 +82,14 @@ export default function ProfessionalLandingPage() {
     const loadData = async () => {
       console.log("🔍 Loading data for professional ID:", professionalId)
 
-      // Force clear cache for debugging if needed
-      if (professionalId === "1138") {
-        console.log("🗑️ Force clearing cache for Fluff N' Stuff to test new parsing")
+      // Force clear cache for professionals showing placeholder data
+      if (professionalId === "151" || professionalId === "1138") {
+        console.log("🗑️ Force clearing cache to fetch fresh data for professional:", professionalId)
         clearProfessionalCache(professionalId)
       }
 
-      // Load professional landing data (with caching)
-      await loadProfessionalData(false)
+      // Load professional landing data (force refresh to get fresh data)
+      await loadProfessionalData(true) // Force refresh to bypass cache
 
       // Load chat configuration
       setIsChatConfigLoading(true)
