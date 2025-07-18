@@ -1,15 +1,15 @@
 const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/803d260b-1b17-4abf-8079-2d40225c29b0"
 
-export interface ChatConfig {
-  isEnabled: boolean
-  chatName: string
-  welcomeMessage: string
-  primaryColor: string
-  position: "bottom-left" | "bottom-right"
-  size: "small" | "medium" | "large"
+export interface ChatAgentConfig {
+  professional_id: string
+  chat_name: string
+  chat_welcome_message: string
+  widget_primary_color: string
+  widget_position: "bottom-left" | "bottom-right"
+  widget_size: "small" | "medium" | "large"
 }
 
-export async function loadChatConfig(uniqueUrl: string): Promise<ChatConfig | null> {
+export async function loadChatConfig(uniqueUrl: string): Promise<ChatAgentConfig | null> {
   try {
     console.log(`🚀 Loading chat configuration for URL: ${uniqueUrl}`)
     console.log(`🔗 Using webhook URL: ${WEBHOOK_URL}`)
@@ -52,14 +52,14 @@ export async function loadChatConfig(uniqueUrl: string): Promise<ChatConfig | nu
       ) {
         console.log(`✅ Valid chat configuration found`)
         return {
-          isEnabled: true,
-          chatName: firstRecord.chat_name || "Critter Support",
-          welcomeMessage:
+          professional_id: firstRecord.professional_id || "unknown",
+          chat_name: firstRecord.chat_name || "Critter Support",
+          chat_welcome_message:
             firstRecord.chat_welcome_message ||
             "Hello! I'm your Critter professional's virtual assistant. How can I help you today?",
-          primaryColor: firstRecord.widget_primary_color || "#94ABD6",
-          position: (firstRecord.widget_position as "bottom-left" | "bottom-right") || "bottom-right",
-          size: (firstRecord.widget_size as "small" | "medium" | "large") || "medium",
+          widget_primary_color: firstRecord.widget_primary_color || "#94ABD6",
+          widget_position: (firstRecord.widget_position as "bottom-left" | "bottom-right") || "bottom-right",
+          widget_size: (firstRecord.widget_size as "small" | "medium" | "large") || "medium",
         }
       }
     }
@@ -72,13 +72,13 @@ export async function loadChatConfig(uniqueUrl: string): Promise<ChatConfig | nu
   }
 }
 
-export function getDefaultChatConfig(): ChatConfig {
+export function getDefaultChatConfig(): ChatAgentConfig {
   return {
-    isEnabled: false,
-    chatName: "Critter Support",
-    welcomeMessage: "Hello! I'm your Critter professional's virtual assistant. How can I help you today?",
-    primaryColor: "#94ABD6",
-    position: "bottom-right",
-    size: "medium",
+    professional_id: "unknown",
+    chat_name: "Critter Support",
+    chat_welcome_message: "Hello! I'm your Critter professional's virtual assistant. How can I help you today?",
+    widget_primary_color: "#94ABD6",
+    widget_position: "bottom-right",
+    widget_size: "medium",
   }
 }
