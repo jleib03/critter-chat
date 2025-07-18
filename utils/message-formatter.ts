@@ -261,7 +261,7 @@ function formatSimpleBookingList(message: string, cleanText: string): { text: st
 
     // Extract the footer text (everything after the last booking)
     const footerMatch = message.match(/\n\n(If you need.*?)$/s)
-    const footerText = footerMatch ? footerText[1].trim() : ""
+    const footerText = footerMatch ? footerMatch[1].trim() : ""
 
     // Extract all booking entries using regex
     const bookingRegex = /\d+\. \*\*(.*?)\*\*: (.*?)(?=\n|$)/g
@@ -333,7 +333,7 @@ function formatDetailedBookingList(message: string, cleanText: string): { text: 
 
     // Extract the footer text (everything after the last booking)
     const footerMatch = message.match(/\n\n(Is there anything else.*?)$/s)
-    const footerText = footerMatch ? footerText[1].trim() : ""
+    const footerText = footerMatch ? footerMatch[1].trim() : ""
 
     // Split the message into sections by double newlines
     const sections = message.split("\n\n")
@@ -516,7 +516,7 @@ function formatInvoiceList(message: string, cleanText: string): { text: string; 
 
     // Extract the footer text (everything after the last invoice item)
     const footerMatch = message.match(/\n\n(Is there anything else.*?)$/s)
-    const footerText = footerMatch ? footerText[1].trim() : ""
+    const footerText = footerMatch ? footerMatch[1].trim() : ""
 
     // Build HTML output
     let htmlOutput = `<div class="body-font">${markdownToHtml(introText)}</div><br>`

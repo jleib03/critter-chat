@@ -3,10 +3,12 @@ import { useRef, useEffect, useState } from "react"
 import type React from "react"
 import { Send, Loader2, X, MessageCircle } from "lucide-react"
 import type { ChatAgentConfig } from "../types/chat-config"
+import { formatMessage } from "../utils/message-formatter"
 
 interface ChatMessage {
   id: string
   text: string
+  html?: string
   sender: "user" | "agent"
   timestamp: Date
 }
@@ -48,10 +50,14 @@ export default function LiveChatWidget({
       const welcomeMessage =
         chatConfig.chat_welcome_message || `Hello! How can I help you with ${professionalName}'s services today?`
 
+      // Format the welcome message
+      const formatted = formatMessage(welcomeMessage)
+
       setMessages([
         {
           id: `welcome_${Date.now()}`,
-          text: welcomeMessage,
+          text: formatted.text,
+          html: formatted.html,
           sender: "agent",
           timestamp: new Date(),
         },
@@ -151,12 +157,16 @@ export default function LiveChatWidget({
         responseText = data.content
       }
 
+      // Format the response message using the message formatter
+      const formatted = formatMessage(responseText)
+
       // Add agent response to chat
       setMessages((prev) => [
         ...prev,
         {
           id: `agent_${Date.now()}`,
-          text: responseText,
+          text: formatted.text,
+          html: formatted.html,
           sender: "agent",
           timestamp: new Date(),
         },
@@ -244,7 +254,11 @@ export default function LiveChatWidget({
                       : "bg-gray-100 text-gray-800 rounded-tl-none"
                   } body-font`}
                 >
-                  {msg.text}
+                  {msg.sender === "agent" && msg.html ? (
+                    <div className="formatted-message" dangerouslySetInnerHTML={{ __html: msg.html }} />
+                  ) : (
+                    msg.text
+                  )}
                 </div>
               </div>
             ))}
@@ -300,6 +314,108 @@ export default function LiveChatWidget({
           </div>
         </div>
       )}
+
+      {/* Chat-specific styles */}
+      <style jsx>{`
+        .formatted-message .bullet-list {
+          list-style-type: disc;
+          margin-left: 1rem;
+          margin-top: 0.5rem;
+          margin-bottom: 0.5rem;
+        }
+        
+        .formatted-message .numbered-list {
+          list-style-type: decimal;
+          margin-left: 1rem;
+          margin-top: 0.5rem;
+          margin-bottom: 0.5rem;
+        }
+        
+        .formatted-message .general-list {
+          list-style-type: disc;
+          margin-left: 1rem;
+          margin-top: 0.5rem;
+          margin-bottom: 0.5rem;
+        }
+        
+        .formatted-message .professionals-list,
+        .formatted-message .services-list,
+        .formatted-message .pets-list {
+          list-style-type: disc;
+          margin-left: 0.5rem;
+          margin-top: 0.5rem;
+          margin-bottom: 0.5rem;
+        }
+        
+        .formatted-message .list-item,
+        .formatted-message .professional-item,
+        .formatted-message .service-item,
+        .formatted-message .pet-item {
+          margin-bottom: 0.25rem;
+          line-height: 1.4;
+        }
+        
+        .formatted-message .professional-listing,
+        .formatted-message .service-listing {
+          margin-bottom: 1rem;
+          padding: 0.5rem;
+          background-color: rgba(0, 0, 0, 0.02);
+          border-radius: 0.375rem;
+        }
+        
+        .formatted-message .service-category {
+          font-weight: 600;
+          margin-top: 1rem;
+          margin-bottom: 0.5rem;
+          color: #374151;
+        }
+        
+        .formatted-message .bookings-list,
+        .formatted-message .invoices-list {
+          margin-top: 0.75rem;
+          margin-bottom: 0.75rem;
+        }
+        
+        .formatted-message .booking-item,
+        .formatted-message .invoice-item {
+          margin-bottom: 0.75rem;
+          padding: 0.5rem;
+          background-color: rgba(0, 0, 0, 0.02);
+          border-radius: 0.25rem;
+        }
+        
+        .formatted-message .booking-details,
+        .formatted-message .invoice-details {
+          margin-top: 0.5rem;
+          margin-left: 1rem;
+        }
+        
+        .formatted-message .month-summary {
+          margin-top: 0.75rem;
+        }
+        
+        .formatted-message .message-intro,
+        .formatted-message .message-footer {
+          margin-bottom: 0.5rem;
+        }
+        
+        .formatted-message .professional-email,
+        .formatted-message .professional-description,
+        .formatted-message .service-details,
+        .formatted-message .service-description {
+          margin-left: 0.5rem;
+          margin-top: 0.25rem;
+        }
+        
+        .formatted-message strong {
+          font-weight: 600;
+          color: #374151;
+        }
+        
+        .formatted-message br {
+          line-height: 1.6;
+        }
+      `}</style>
     </>
   )
 }
