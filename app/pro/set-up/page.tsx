@@ -339,12 +339,12 @@ export default function ProfessionalSetupPage() {
             <div className="space-y-8">
               {/* Success Header */}
               <div className="text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Check className="h-8 w-8 text-green-600" />
+                <div className="w-16 h-16 bg-[#E75837] rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Settings className="h-8 w-8 text-white" />
                 </div>
-                <h1 className="text-4xl title-font mb-4">Setup Complete!</h1>
+                <h1 className="text-4xl title-font mb-4">Set Up Your Landing Page</h1>
                 <p className="text-xl text-gray-700 body-font">
-                  Your Critter landing page is ready. You can now share your professional page with customers.
+                  Your Professional ID has been found. Now create your custom landing page URL.
                 </p>
               </div>
 
@@ -366,28 +366,6 @@ export default function ProfessionalSetupPage() {
                 </div>
                 <p className="text-sm text-gray-600 mt-2 body-font">
                   This is your unique identifier that connects customers to your Critter account.
-                </p>
-              </div>
-
-              {/* Default Landing Page Link */}
-              <div className="bg-white rounded-xl shadow-md p-6">
-                <h2 className="text-xl font-bold mb-4 header-font">Your Landing Page Link</h2>
-                <div className="bg-gray-50 rounded-lg p-4 flex items-center justify-between mb-4">
-                  <code className="text-sm font-mono text-[#E75837] break-all">{landingUrl}</code>
-                  <button
-                    onClick={() => copyToClipboard(landingUrl, "landingUrl")}
-                    className="flex items-center px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors ml-2"
-                  >
-                    {copiedStates.landingUrl ? (
-                      <Check className="h-4 w-4 text-green-600" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
-                <p className="text-sm text-gray-600 body-font">
-                  This is your default landing page URL that customers can use to view your services and book
-                  appointments.
                 </p>
               </div>
 
@@ -424,7 +402,38 @@ export default function ProfessionalSetupPage() {
 
                   {urlError && <div className="text-sm text-red-600 body-font">{urlError}</div>}
 
-                  {urlSuccess && <div className="text-sm text-green-600 body-font">{urlSuccess}</div>}
+                  {urlSuccess && (
+                    <>
+                      <div className="text-sm text-green-600 body-font">{urlSuccess}</div>
+
+                      {/* Show the landing page link after successful custom URL creation */}
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
+                        <h3 className="text-lg font-bold mb-2 text-green-800 header-font">
+                          Your Landing Page is Ready!
+                        </h3>
+                        <div className="bg-white rounded-lg p-3 flex items-center justify-between">
+                          <code className="text-sm font-mono text-[#E75837] break-all">
+                            https://booking.critter.pet/{customUrl || "your-custom-url"}
+                          </code>
+                          <button
+                            onClick={() =>
+                              copyToClipboard(`https://booking.critter.pet/${customUrl}`, "customLandingUrl")
+                            }
+                            className="flex items-center px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors ml-2"
+                          >
+                            {copiedStates.customLandingUrl ? (
+                              <Check className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                        <p className="text-sm text-green-700 mt-2 body-font">
+                          Share this link with customers to showcase your services and accept bookings.
+                        </p>
+                      </div>
+                    </>
+                  )}
 
                   <button
                     onClick={handleCreateCustomUrl}
