@@ -12,6 +12,7 @@ interface ChatMessage {
 }
 
 interface LiveChatWidgetProps {
+  uniqueUrl: string
   professionalId: string
   professionalName: string
   chatConfig: ChatAgentConfig
@@ -21,6 +22,7 @@ interface LiveChatWidgetProps {
 const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/803d260b-1b17-4abf-8079-2d40225c29b0"
 
 export default function LiveChatWidget({
+  uniqueUrl,
   professionalId,
   professionalName,
   chatConfig,
@@ -85,9 +87,11 @@ export default function LiveChatWidget({
 
     try {
       // Send message to webhook - ALWAYS use "support_conversation" action
+      // Send both uniqueUrl and professionalId correctly
       const payload = {
         action: "support_conversation",
-        uniqueUrl: professionalId,
+        uniqueUrl: uniqueUrl, // This should be the actual unique URL like "sally-grooming-care"
+        professionalId: professionalId, // This should be the professional ID like "151"
         session_id: sessionId,
         message: message.trim(),
         timestamp: new Date().toISOString(),
