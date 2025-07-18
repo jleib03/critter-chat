@@ -231,7 +231,7 @@ export default function ProfessionalSetupPage() {
     }
 
     // Navigate directly to the professional landing page using unique URL
-    router.push(`/${previewUniqueUrl.trim()}`)
+    window.open(`https://booking.critter.pet/${previewUniqueUrl.trim()}`, "_blank")
   }
 
   return (
