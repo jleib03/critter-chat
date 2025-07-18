@@ -17,7 +17,7 @@ export default function ProfessionalSetupPage() {
   const [showResults, setShowResults] = useState(false)
   const [copiedStates, setCopiedStates] = useState<{ [key: string]: boolean }>({})
   const [showScheduleModal, setShowScheduleModal] = useState(false)
-  const [scheduleUniqueUrl, setScheduleUniqueUrl] = useState("")
+  const [scheduleProfessionalId, setScheduleProfessionalId] = useState("")
   const [scheduleError, setScheduleError] = useState("")
   const [showPreviewModal, setShowPreviewModal] = useState(false)
   const [previewUniqueUrl, setPreviewUniqueUrl] = useState("")
@@ -29,6 +29,9 @@ export default function ProfessionalSetupPage() {
   const [urlError, setUrlError] = useState("")
   const [urlSuccess, setUrlSuccess] = useState("")
   const [createdCustomUrl, setCreatedCustomUrl] = useState("")
+
+  // Schedule setup states
+  const [scheduleUniqueUrl, setScheduleUniqueUrl] = useState("")
 
   const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
   const CUSTOM_URL_WEBHOOK = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
@@ -273,7 +276,7 @@ export default function ProfessionalSetupPage() {
                   <Settings className="h-8 w-8 text-white" />
                 </div>
                 <h1 className="text-4xl md:text-5xl title-font mb-4">Professional Setup</h1>
-                <p className="text-xl text-gray-700 max-w-3xl mx-auto body-font">
+                <p className="text-xl text-gray-700 max-w3xl mx-auto body-font">
                   Tools and resources to enhance your Critter professional experience
                 </p>
                 {/* Add this new callout */}
@@ -564,20 +567,16 @@ export default function ProfessionalSetupPage() {
               <Label htmlFor="scheduleUniqueUrl" className="body-font">
                 Unique URL *
               </Label>
-              <div className="flex items-center mt-1">
-                <span className="text-sm text-gray-500 body-font mr-2">booking.critter.pet/</span>
-                <Input
-                  id="scheduleUniqueUrl"
-                  value={scheduleUniqueUrl}
-                  onChange={(e) => setScheduleUniqueUrl(e.target.value)}
-                  placeholder="sally-grooming"
-                  className="flex-1"
-                />
-              </div>
+              <Input
+                id="scheduleUniqueUrl"
+                value={scheduleUniqueUrl}
+                onChange={(e) => setScheduleUniqueUrl(e.target.value)}
+                placeholder="sally-grooming"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#745E25] body-font"
+              />
               {scheduleError && <p className="mt-2 text-sm text-red-600 body-font">{scheduleError}</p>}
               <p className="text-xs text-gray-500 mt-2 body-font">
-                Enter your custom URL that you created above, or your professional ID if you haven't created a custom
-                URL yet.
+                Your unique URL can be found in your Critter account or from your landing page setup above.
               </p>
             </div>
 
