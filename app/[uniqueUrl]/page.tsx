@@ -394,6 +394,7 @@ export default function ProfessionalLandingPage() {
         {/* Live Chat Widget - Only render if chat is enabled */}
         {isChatEnabled && chatConfig && (
           <LiveChatWidget
+            uniqueUrl={uniqueUrl}
             professionalId={professionalData.professional_id}
             professionalName={professionalData.name}
             chatConfig={chatConfig}
