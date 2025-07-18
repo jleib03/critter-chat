@@ -30,9 +30,6 @@ export default function ProfessionalSetupPage() {
   const [urlSuccess, setUrlSuccess] = useState("")
   const [createdCustomUrl, setCreatedCustomUrl] = useState("")
 
-  // Schedule setup states
-  const [scheduleUniqueUrl, setScheduleUniqueUrl] = useState("")
-
   const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
   const CUSTOM_URL_WEBHOOK = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
   const router = useRouter()
@@ -221,23 +218,23 @@ export default function ProfessionalSetupPage() {
   const handleScheduleSetupClick = () => {
     setShowScheduleModal(true)
     setScheduleError("")
-    setScheduleUniqueUrl("")
+    setScheduleProfessionalId("")
   }
 
   const handleCloseScheduleModal = () => {
     setShowScheduleModal(false)
     setScheduleError("")
-    setScheduleUniqueUrl("")
+    setScheduleProfessionalId("")
   }
 
   const handleScheduleSubmit = () => {
-    if (!scheduleUniqueUrl.trim()) {
-      setScheduleError("Please enter your unique URL")
+    if (!scheduleProfessionalId.trim()) {
+      setScheduleError("Please enter your Professional ID")
       return
     }
 
-    // Navigate directly to schedule setup page using unique URL
-    router.push(`/schedule/set-up/${scheduleUniqueUrl.trim()}`)
+    // Navigate directly to schedule setup page
+    router.push(`/schedule/set-up/${scheduleProfessionalId.trim()}`)
   }
 
   const handlePreviewClick = () => {
@@ -276,7 +273,7 @@ export default function ProfessionalSetupPage() {
                   <Settings className="h-8 w-8 text-white" />
                 </div>
                 <h1 className="text-4xl md:text-5xl title-font mb-4">Professional Setup</h1>
-                <p className="text-xl text-gray-700 max-w3xl mx-auto body-font">
+                <p className="text-xl text-gray-700 max-w-3xl mx-auto body-font">
                   Tools and resources to enhance your Critter professional experience
                 </p>
                 {/* Add this new callout */}
@@ -559,24 +556,24 @@ export default function ProfessionalSetupPage() {
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
             <h3 className="text-xl font-bold mb-4 header-font">Schedule Setup</h3>
             <p className="text-gray-600 mb-4 body-font">
-              Enter your unique URL to access your schedule configuration. This will set up your team, working hours,
-              and booking capacity.
+              Enter your Professional ID to access your schedule configuration. This will set up your team, working
+              hours, and booking capacity.
             </p>
 
             <div className="mb-4">
-              <Label htmlFor="scheduleUniqueUrl" className="body-font">
-                Unique URL *
+              <Label htmlFor="scheduleProfId" className="body-font">
+                Professional ID *
               </Label>
               <Input
-                id="scheduleUniqueUrl"
-                value={scheduleUniqueUrl}
-                onChange={(e) => setScheduleUniqueUrl(e.target.value)}
-                placeholder="sally-grooming"
+                id="scheduleProfId"
+                value={scheduleProfessionalId}
+                onChange={(e) => setScheduleProfessionalId(e.target.value)}
+                placeholder="e.g., 22, 151, etc."
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#745E25] body-font"
               />
               {scheduleError && <p className="mt-2 text-sm text-red-600 body-font">{scheduleError}</p>}
               <p className="text-xs text-gray-500 mt-2 body-font">
-                Your unique URL can be found in your Critter account or from your landing page setup above.
+                Your Professional ID can be found in your Critter account or from your landing page setup above.
               </p>
             </div>
 
@@ -589,7 +586,7 @@ export default function ProfessionalSetupPage() {
               </button>
               <button
                 onClick={handleScheduleSubmit}
-                disabled={!scheduleUniqueUrl.trim()}
+                disabled={!scheduleProfessionalId.trim()}
                 className="px-6 py-2 bg-[#745E25] text-white rounded-lg hover:bg-[#5d4a1e] transition-colors body-font flex items-center disabled:opacity-50"
               >
                 Access Schedule Setup

@@ -60,7 +60,7 @@ const DEFAULT_BOOKING_PREFERENCES = {
 
 export default function ProfessionalSetupPage() {
   const params = useParams()
-  const uniqueUrl = params.uniqueUrl as string
+  const professionalId = params.professionalId as string
   const { toast } = useToast()
 
   // State management
@@ -287,7 +287,7 @@ export default function ProfessionalSetupPage() {
 
       const payload: GetConfigWebhookPayload = {
         action: "get_professional_config",
-        uniqueUrl: uniqueUrl,
+        professional_id: professionalId,
         session_id: generateSessionId(),
         timestamp: new Date().toISOString(),
       }
@@ -389,7 +389,7 @@ export default function ProfessionalSetupPage() {
 
               // Process employees for frontend
               employeesLocal = employeeData.map((emp, index) => {
-                const employeeId = `emp_${uniqueUrl}_${Date.now()}_${index + 1}`
+                const employeeId = `emp_${professionalId}_${Date.now()}_${index + 1}`
                 const fullName = `${emp.first_name || ""} ${emp.last_name || ""}`.trim()
 
                 console.log(`Processing employee ${index + 1}: ${fullName}`)
@@ -503,7 +503,7 @@ export default function ProfessionalSetupPage() {
 
       const payload: SaveConfigWebhookPayload = {
         action: "save_professional_config",
-        uniqueUrl: uniqueUrl,
+        professional_id: professionalId,
         session_id: generateSessionId(),
         timestamp: new Date().toISOString(),
         config_data: changes,
@@ -557,10 +557,10 @@ export default function ProfessionalSetupPage() {
   }
 
   useEffect(() => {
-    if (uniqueUrl) {
+    if (professionalId) {
       loadConfiguration()
     }
-  }, [uniqueUrl])
+  }, [professionalId])
 
   const removeEmployee = (employeeId: string) => {
     setEmployees((prev) => prev.filter((emp) => emp.employee_id !== employeeId))
@@ -675,7 +675,7 @@ export default function ProfessionalSetupPage() {
             </div>
             <div className="flex gap-3">
               <a
-                href={`/schedule/${uniqueUrl}`}
+                href={`/schedule/${professionalId}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors body-font"
