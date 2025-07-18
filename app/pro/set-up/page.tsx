@@ -253,10 +253,10 @@ export default function ProfessionalSetupPage() {
                 </p>
                 {/* Add this new callout */}
                 <div className="mt-6 max-w-2xl mx-auto">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <p className="text-blue-800 body-font text-center">
+                  <div className="bg-[#E75837]/10 border border-[#E75837]/30 rounded-lg p-4">
+                    <p className="text-[#E75837] body-font text-center">
                       <strong>First time here?</strong> Check out our{" "}
-                      <a href="/pro/how-to-use" className="text-blue-600 hover:text-blue-800 underline font-medium">
+                      <a href="/pro/how-to-use" className="text-[#E75837] hover:text-[#d04e30] underline font-medium">
                         step-by-step help guide
                       </a>{" "}
                       to walk you through setting up all your professional tools.
