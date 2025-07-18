@@ -667,6 +667,75 @@ export default function SchedulePage() {
       console.log("Booking created:", result)
 
       if (result && result[0] && result[0].output === "Booking Successfully Created") {
+        // Send confirmation email webhook
+        try {
+          const confirmationWebhookData = {
+            uniqueUrl: uniqueUrl,
+            professional_id: professionalId,
+            action: "send_confirmation_emails",
+            session_id: sessionIdRef.current,
+            timestamp: new Date().toISOString(),
+            customer_info: {
+              first_name: customerInfo.firstName.trim(),
+              last_name: customerInfo.lastName.trim(),
+              email: customerInfo.email.trim().toLowerCase(),
+            },
+            services_selected: selectedServices.map((service) => ({
+              name: service.name,
+              description: service.description,
+              duration_number: service.duration_number,
+              duration_unit: service.duration_unit,
+              customer_cost: service.customer_cost,
+              customer_cost_currency: service.customer_cost_currency,
+            })),
+            booking_details: {
+              date: selectedTimeSlot!.date,
+              start_time: selectedTimeSlot!.startTime,
+              end_time: endTimeLocal,
+              day_of_week: selectedTimeSlot!.dayOfWeek,
+              timezone: userTimezoneData.timezone,
+              timezone_offset: userTimezoneData.offset,
+            },
+            pet_info: {
+              pet_id: pet.pet_id,
+              pet_name: pet.pet_name,
+              pet_type: pet.pet_type,
+              breed: pet.breed,
+              age: pet.age,
+              weight: pet.weight,
+              special_notes: pet.special_notes,
+            },
+            is_recurring: bookingType === "recurring",
+            ...(bookingType === "recurring" &&
+              recurringConfig && {
+                recurring_details: {
+                  frequency: recurringConfig.frequency,
+                  unit: recurringConfig.unit,
+                  end_date: recurringConfig.endDate,
+                },
+              }),
+          }
+
+          console.log("Sending confirmation email webhook:", confirmationWebhookData)
+
+          const confirmationResponse = await fetch(webhookUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(confirmationWebhookData),
+          })
+
+          if (confirmationResponse.ok) {
+            console.log("Confirmation email webhook sent successfully")
+          } else {
+            console.warn("Confirmation email webhook failed, but continuing with booking confirmation")
+          }
+        } catch (confirmationError) {
+          console.warn("Error sending confirmation email webhook:", confirmationError)
+          // Continue with showing confirmation even if email webhook fails
+        }
+
         setShowPetSelection(false)
         setCreatingBooking(false)
         setShowConfirmation(true)
