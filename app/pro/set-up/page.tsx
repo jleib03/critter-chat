@@ -17,7 +17,7 @@ export default function ProfessionalSetupPage() {
   const [showResults, setShowResults] = useState(false)
   const [copiedStates, setCopiedStates] = useState<{ [key: string]: boolean }>({})
   const [showScheduleModal, setShowScheduleModal] = useState(false)
-  const [scheduleProfessionalId, setScheduleProfessionalId] = useState("")
+  const [scheduleUniqueUrl, setScheduleUniqueUrl] = useState("")
   const [scheduleError, setScheduleError] = useState("")
   const [showPreviewModal, setShowPreviewModal] = useState(false)
   const [previewUniqueUrl, setPreviewUniqueUrl] = useState("")
@@ -218,23 +218,23 @@ export default function ProfessionalSetupPage() {
   const handleScheduleSetupClick = () => {
     setShowScheduleModal(true)
     setScheduleError("")
-    setScheduleProfessionalId("")
+    setScheduleUniqueUrl("")
   }
 
   const handleCloseScheduleModal = () => {
     setShowScheduleModal(false)
     setScheduleError("")
-    setScheduleProfessionalId("")
+    setScheduleUniqueUrl("")
   }
 
   const handleScheduleSubmit = () => {
-    if (!scheduleProfessionalId.trim()) {
-      setScheduleError("Please enter your Professional ID")
+    if (!scheduleUniqueUrl.trim()) {
+      setScheduleError("Please enter your unique URL")
       return
     }
 
-    // Navigate directly to schedule setup page
-    router.push(`/schedule/set-up/${scheduleProfessionalId.trim()}`)
+    // Navigate directly to schedule setup page using unique URL
+    router.push(`/schedule/set-up/${scheduleUniqueUrl.trim()}`)
   }
 
   const handlePreviewClick = () => {
@@ -556,24 +556,28 @@ export default function ProfessionalSetupPage() {
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
             <h3 className="text-xl font-bold mb-4 header-font">Schedule Setup</h3>
             <p className="text-gray-600 mb-4 body-font">
-              Enter your Professional ID to access your schedule configuration. This will set up your team, working
-              hours, and booking capacity.
+              Enter your unique URL to access your schedule configuration. This will set up your team, working hours,
+              and booking capacity.
             </p>
 
             <div className="mb-4">
-              <Label htmlFor="scheduleProfId" className="body-font">
-                Professional ID *
+              <Label htmlFor="scheduleUniqueUrl" className="body-font">
+                Unique URL *
               </Label>
-              <Input
-                id="scheduleProfId"
-                value={scheduleProfessionalId}
-                onChange={(e) => setScheduleProfessionalId(e.target.value)}
-                placeholder="e.g., 22, 151, etc."
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#745E25] body-font"
-              />
+              <div className="flex items-center mt-1">
+                <span className="text-sm text-gray-500 body-font mr-2">booking.critter.pet/</span>
+                <Input
+                  id="scheduleUniqueUrl"
+                  value={scheduleUniqueUrl}
+                  onChange={(e) => setScheduleUniqueUrl(e.target.value)}
+                  placeholder="sally-grooming"
+                  className="flex-1"
+                />
+              </div>
               {scheduleError && <p className="mt-2 text-sm text-red-600 body-font">{scheduleError}</p>}
               <p className="text-xs text-gray-500 mt-2 body-font">
-                Your Professional ID can be found in your Critter account or from your landing page setup above.
+                Enter your custom URL that you created above, or your professional ID if you haven't created a custom
+                URL yet.
               </p>
             </div>
 
@@ -586,7 +590,7 @@ export default function ProfessionalSetupPage() {
               </button>
               <button
                 onClick={handleScheduleSubmit}
-                disabled={!scheduleProfessionalId.trim()}
+                disabled={!scheduleUniqueUrl.trim()}
                 className="px-6 py-2 bg-[#745E25] text-white rounded-lg hover:bg-[#5d4a1e] transition-colors body-font flex items-center disabled:opacity-50"
               >
                 Access Schedule Setup
