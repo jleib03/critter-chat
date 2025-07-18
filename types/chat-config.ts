@@ -1,8 +1,23 @@
 export interface ChatAgentConfig {
-  professional_id: string
   chat_name: string
-  chat_welcome_message: string
-  widget_primary_color: string
-  widget_position: "bottom-left" | "bottom-right"
-  widget_size: "small" | "medium" | "large"
+  welcome_message: string
+  instructions: string
+  widget_config: {
+    primary_color: string
+    position: string
+    size: string
+  }
+  agent_behavior: {
+    response_tone: string
+    max_response_length: number
+    include_booking_links: boolean
+  }
+  business_context?: {
+    cancellation_policy?: string
+    new_customer_process?: string
+    animal_restrictions?: string
+    service_details?: string
+    additional_info?: string
+  }
+  custom_responses?: Record<string, string>
 }

@@ -12,7 +12,6 @@ interface ChatMessage {
 }
 
 interface LiveChatWidgetProps {
-  uniqueUrl: string
   professionalId: string
   professionalName: string
   chatConfig: ChatAgentConfig
@@ -22,7 +21,6 @@ interface LiveChatWidgetProps {
 const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/803d260b-1b17-4abf-8079-2d40225c29b0"
 
 export default function LiveChatWidget({
-  uniqueUrl,
   professionalId,
   professionalName,
   chatConfig,
@@ -44,9 +42,9 @@ export default function LiveChatWidget({
 
   // Add welcome message when chat is opened for the first time
   useEffect(() => {
-    if (isOpen && messages.length === 0 && !isConfigLoading && chatConfig) {
+    if (isOpen && messages.length === 0 && !isConfigLoading) {
       const welcomeMessage =
-        chatConfig.chat_welcome_message || `Hello! How can I help you with ${professionalName}'s services today?`
+        chatConfig.welcome_message || `Hello! How can I help you with ${professionalName}'s services today?`
 
       setMessages([
         {
@@ -86,12 +84,11 @@ export default function LiveChatWidget({
     setIsTyping(true)
 
     try {
-      // Send message to webhook - ALWAYS use "support_conversation" action
-      // Send both uniqueUrl and professionalId correctly
+      // Send message to webhook
+
       const payload = {
-        action: "support_conversation",
-        uniqueUrl: uniqueUrl, // This should be the actual unique URL like "sally-grooming-care"
-        professionalId: professionalId, // This should be the professional ID like "151"
+        action: "chat_message",
+        uniqueUrl: professionalId,
         session_id: sessionId,
         message: message.trim(),
         timestamp: new Date().toISOString(),
@@ -119,15 +116,12 @@ export default function LiveChatWidget({
       const data = await response.json()
       console.log("Received chat response:", data)
 
-      // Extract the response message - Updated to handle "output" field
+      // Extract the response message
       let responseText = "I'm sorry, I couldn't process your request at the moment."
 
       if (Array.isArray(data) && data.length > 0) {
         const firstItem = data[0]
-        // Check for "output" field first (your webhook's format)
-        if (firstItem.output) {
-          responseText = firstItem.output
-        } else if (firstItem.response) {
+        if (firstItem.response) {
           responseText = firstItem.response
         } else if (firstItem.message) {
           responseText = firstItem.message
@@ -140,8 +134,6 @@ export default function LiveChatWidget({
         }
       } else if (typeof data === "string") {
         responseText = data
-      } else if (data.output) {
-        responseText = data.output
       } else if (data.response) {
         responseText = data.response
       } else if (data.message) {
@@ -187,40 +179,12 @@ export default function LiveChatWidget({
     }
   }
 
-  // Use the loaded chat config colors and settings
-  const primaryColor = chatConfig?.widget_primary_color || "#94ABD6"
-  const chatName = chatConfig?.chat_name || professionalName
-
-  // Helper function to get hover color (slightly darker)
-  const getHoverColor = (color: string) => {
-    // Simple darkening - you could use a more sophisticated color library
-    if (color === "#94ABD6") return "#7a90ba"
-    if (color === "#94d6b1") return "#7bc49a"
-    // For other colors, try to darken by reducing the hex values
-    const hex = color.replace("#", "")
-    const r = Math.max(0, Number.parseInt(hex.substr(0, 2), 16) - 20)
-    const g = Math.max(0, Number.parseInt(hex.substr(2, 2), 16) - 20)
-    const b = Math.max(0, Number.parseInt(hex.substr(4, 2), 16) - 20)
-    return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`
-  }
-
-  const hoverColor = getHoverColor(primaryColor)
-
   return (
     <>
       {/* Chat Button */}
       <button
         onClick={toggleChat}
-        className="fixed bottom-6 right-6 text-white p-4 rounded-full shadow-lg transition-colors z-40"
-        style={{
-          backgroundColor: primaryColor,
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = hoverColor
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = primaryColor
-        }}
+        className="fixed bottom-6 right-6 bg-[#94ABD6] text-white p-4 rounded-full shadow-lg hover:bg-[#7a90ba] transition-colors z-40"
         aria-label="Chat with us"
       >
         {isOpen ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
@@ -230,8 +194,8 @@ export default function LiveChatWidget({
       {isOpen && (
         <div className="fixed bottom-24 right-6 w-80 sm:w-96 bg-white rounded-xl shadow-xl z-40 flex flex-col max-h-[70vh] border border-gray-200">
           {/* Chat Header */}
-          <div className="text-white p-4 rounded-t-xl" style={{ backgroundColor: primaryColor }}>
-            <h3 className="font-bold header-font">Chat with {chatName}</h3>
+          <div className="bg-[#94ABD6] text-white p-4 rounded-t-xl">
+            <h3 className="font-bold header-font">Chat with {professionalName}</h3>
             <p className="text-sm text-white/80 body-font">Ask questions about services and booking</p>
           </div>
 
@@ -269,31 +233,14 @@ export default function LiveChatWidget({
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Type your message..."
-                className="flex-1 border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 resize-none body-font"
-                style={
-                  {
-                    focusRingColor: primaryColor,
-                    "--tw-ring-color": primaryColor,
-                  } as React.CSSProperties
-                }
+                className="flex-1 border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-[#94ABD6] resize-none body-font"
                 rows={2}
                 disabled={isTyping}
               />
               <button
                 onClick={handleSendMessage}
                 disabled={!message.trim() || isTyping}
-                className="ml-2 text-white p-2 rounded-lg transition-colors disabled:opacity-50"
-                style={{ backgroundColor: primaryColor }}
-                onMouseEnter={(e) => {
-                  if (!e.currentTarget.disabled) {
-                    e.currentTarget.style.backgroundColor = hoverColor
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!e.currentTarget.disabled) {
-                    e.currentTarget.style.backgroundColor = primaryColor
-                  }
-                }}
+                className="ml-2 bg-[#94ABD6] text-white p-2 rounded-lg hover:bg-[#7a90ba] transition-colors disabled:opacity-50"
               >
                 <Send className="h-5 w-5" />
               </button>
