@@ -1,18 +1,11 @@
-const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/803d260b-1b17-4abf-8079-2d40225c29b0"
+import type { ChatAgentConfig } from "../types/chat-config"
 
-export interface ChatAgentConfig {
-  professional_id: string
-  chat_name: string
-  chat_welcome_message: string
-  widget_primary_color: string
-  widget_position: "bottom-left" | "bottom-right"
-  widget_size: "small" | "medium" | "large"
-}
+const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/803d260b-1b17-4abf-8079-2d40225c29b0"
 
 export async function loadChatConfig(uniqueUrl: string): Promise<ChatAgentConfig | null> {
   try {
-    console.log(`🚀 Loading chat configuration for URL: ${uniqueUrl}`)
-    console.log(`🔗 Using webhook URL: ${WEBHOOK_URL}`)
+    console.log("🚀 Loading chat configuration for URL:", uniqueUrl)
+    console.log("🔗 Using webhook URL:", WEBHOOK_URL)
 
     const payload = {
       action: "get_chat_config",
@@ -20,7 +13,7 @@ export async function loadChatConfig(uniqueUrl: string): Promise<ChatAgentConfig
       timestamp: new Date().toISOString(),
     }
 
-    console.log(`📤 Sending payload:`, JSON.stringify(payload, null, 2))
+    console.log("📤 Sending payload:", JSON.stringify(payload, null, 2))
 
     const response = await fetch(WEBHOOK_URL, {
       method: "POST",
@@ -30,55 +23,55 @@ export async function loadChatConfig(uniqueUrl: string): Promise<ChatAgentConfig
       body: JSON.stringify(payload),
     })
 
-    console.log(`📡 Response status: ${response.status}`)
+    console.log("📡 Response status:", response.status)
 
     if (!response.ok) {
-      console.error(`❌ HTTP error! status: ${response.status}`)
-      return null
+      throw new Error(`HTTP error! status: ${response.status}`)
     }
 
     const data = await response.json()
-    console.log(`📥 Raw chat config response:`, JSON.stringify(data, null, 2))
+    console.log("📥 Raw chat config response:", JSON.stringify(data, null, 2))
 
-    // Parse the response - expecting an array with chat config data
+    // Handle array response (typical webhook format)
     if (Array.isArray(data) && data.length > 0) {
-      const firstRecord = data[0]
-      console.log(`🔍 Parsing chat config from first record:`, JSON.stringify(firstRecord, null, 2))
+      const configData = data[0]
+      console.log("🔍 Parsing chat config from first record:", JSON.stringify(configData, null, 2))
 
-      // Check if the first record has the chat configuration fields directly
-      if (
-        firstRecord &&
-        (firstRecord.chat_name || firstRecord.chat_welcome_message || firstRecord.widget_primary_color)
-      ) {
-        console.log(`✅ Valid chat configuration found`)
-        return {
-          professional_id: firstRecord.professional_id || "unknown",
-          chat_name: firstRecord.chat_name || "Critter Support",
-          chat_welcome_message:
-            firstRecord.chat_welcome_message ||
-            "Hello! I'm your Critter professional's virtual assistant. How can I help you today?",
-          widget_primary_color: firstRecord.widget_primary_color || "#94ABD6",
-          widget_position: (firstRecord.widget_position as "bottom-left" | "bottom-right") || "bottom-right",
-          widget_size: (firstRecord.widget_size as "small" | "medium" | "large") || "medium",
-        }
+      // Map the webhook response to our ChatAgentConfig interface
+      const chatConfig: ChatAgentConfig = {
+        professional_id: configData.professional_id || "",
+        chat_name: configData.chat_name || "",
+        chat_welcome_message: configData.chat_welcome_message || "",
+        widget_primary_color: configData.widget_primary_color || "#94ABD6",
+        widget_position: configData.widget_position || "bottom-right",
+        widget_size: configData.widget_size || "medium",
       }
+
+      console.log("✅ Valid chat configuration found")
+      return chatConfig
     }
 
-    console.log(`⚠️ No valid chat configuration found in response`)
+    // Handle direct object response
+    if (data && typeof data === "object" && !Array.isArray(data)) {
+      console.log("🔍 Parsing chat config from direct object:", JSON.stringify(data, null, 2))
+
+      const chatConfig: ChatAgentConfig = {
+        professional_id: data.professional_id || "",
+        chat_name: data.chat_name || "",
+        chat_welcome_message: data.chat_welcome_message || "",
+        widget_primary_color: data.widget_primary_color || "#94ABD6",
+        widget_position: data.widget_position || "bottom-right",
+        widget_size: data.widget_size || "medium",
+      }
+
+      console.log("✅ Valid chat configuration found")
+      return chatConfig
+    }
+
+    console.log("⚠️ No valid chat configuration found in response")
     return null
   } catch (error) {
-    console.error(`❌ Error loading chat configuration:`, error)
+    console.error("💥 Failed to load chat configuration:", error)
     return null
-  }
-}
-
-export function getDefaultChatConfig(): ChatAgentConfig {
-  return {
-    professional_id: "unknown",
-    chat_name: "Critter Support",
-    chat_welcome_message: "Hello! I'm your Critter professional's virtual assistant. How can I help you today?",
-    widget_primary_color: "#94ABD6",
-    widget_position: "bottom-right",
-    widget_size: "medium",
   }
 }

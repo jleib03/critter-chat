@@ -115,12 +115,15 @@ export default function LiveChatWidget({
       const data = await response.json()
       console.log("Received chat response:", data)
 
-      // Extract the response message
+      // Extract the response message - Updated to handle "output" field
       let responseText = "I'm sorry, I couldn't process your request at the moment."
 
       if (Array.isArray(data) && data.length > 0) {
         const firstItem = data[0]
-        if (firstItem.response) {
+        // Check for "output" field first (your webhook's format)
+        if (firstItem.output) {
+          responseText = firstItem.output
+        } else if (firstItem.response) {
           responseText = firstItem.response
         } else if (firstItem.message) {
           responseText = firstItem.message
@@ -133,6 +136,8 @@ export default function LiveChatWidget({
         }
       } else if (typeof data === "string") {
         responseText = data
+      } else if (data.output) {
+        responseText = data.output
       } else if (data.response) {
         responseText = data.response
       } else if (data.message) {
