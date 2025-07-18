@@ -28,6 +28,7 @@ export default function ProfessionalSetupPage() {
   const [isCreatingUrl, setIsCreatingUrl] = useState(false)
   const [urlError, setUrlError] = useState("")
   const [urlSuccess, setUrlSuccess] = useState("")
+  const [createdCustomUrl, setCreatedCustomUrl] = useState("")
 
   const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
   const CUSTOM_URL_WEBHOOK = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
@@ -160,13 +161,37 @@ export default function ProfessionalSetupPage() {
       const data = await response.json()
       console.log("Received response:", data)
 
-      if (data.success) {
+      // Handle the new response format: [{"status":"success","message":"URL created successfully","url_id":5,"professional_id":"152","unique_url":"sully","date_modified":"2025-07-18T22:09:00.742Z"}]
+      let isSuccess = false
+      let responseMessage = ""
+      let createdUrl = ""
+
+      if (Array.isArray(data) && data.length > 0) {
+        const firstItem = data[0]
+        if (firstItem.status === "success") {
+          isSuccess = true
+          responseMessage = firstItem.message || "URL created successfully"
+          createdUrl = firstItem.unique_url || customUrl.trim()
+        } else {
+          responseMessage = firstItem.message || "Failed to create custom URL"
+        }
+      } else if (data.success) {
+        // Fallback for old response format
+        isSuccess = true
+        responseMessage = data.message || "URL created successfully"
+        createdUrl = customUrl.trim()
+      } else {
+        responseMessage = data.message || "Failed to create custom URL"
+      }
+
+      if (isSuccess) {
+        setCreatedCustomUrl(createdUrl)
         setUrlSuccess(
-          `Custom URL created successfully! Your page is now available at: booking.critter.pet/${customUrl.trim()}`,
+          `Custom URL created successfully! Your page is now available at: booking.critter.pet/${createdUrl}`,
         )
         setCustomUrl("")
       } else {
-        setUrlError(data.message || "Failed to create custom URL. It may already be taken.")
+        setUrlError(responseMessage || "Failed to create custom URL. It may already be taken.")
       }
     } catch (error) {
       console.error("Error creating custom URL:", error)
@@ -413,11 +438,11 @@ export default function ProfessionalSetupPage() {
                         </h3>
                         <div className="bg-white rounded-lg p-3 flex items-center justify-between">
                           <code className="text-sm font-mono text-[#E75837] break-all">
-                            https://booking.critter.pet/{customUrl || "your-custom-url"}
+                            https://booking.critter.pet/{createdCustomUrl}
                           </code>
                           <button
                             onClick={() =>
-                              copyToClipboard(`https://booking.critter.pet/${customUrl}`, "customLandingUrl")
+                              copyToClipboard(`https://booking.critter.pet/${createdCustomUrl}`, "customLandingUrl")
                             }
                             className="flex items-center px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors ml-2"
                           >
@@ -465,6 +490,7 @@ export default function ProfessionalSetupPage() {
                     setCustomUrl("")
                     setUrlError("")
                     setUrlSuccess("")
+                    setCreatedCustomUrl("")
                   }}
                   className="text-gray-600 hover:text-gray-800 underline body-font"
                 >
