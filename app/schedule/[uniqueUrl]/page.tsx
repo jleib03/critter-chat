@@ -223,8 +223,8 @@ export default function SchedulePage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          uniqueUrl: uniqueUrl,
           action: "initialize_schedule",
+          uniqueUrl: uniqueUrl,
           session_id: sessionIdRef.current,
           timestamp: new Date().toISOString(),
           user_timezone: JSON.parse(userTimezoneRef.current),
@@ -567,9 +567,9 @@ export default function SchedulePage() {
       })
 
       const bookingData = {
+        action: "create_booking",
         uniqueUrl: uniqueUrl,
         professional_id: professionalId,
-        action: "create_booking",
         session_id: sessionIdRef.current,
         timestamp: new Date().toISOString(),
         user_timezone: userTimezoneData,
@@ -670,9 +670,9 @@ export default function SchedulePage() {
         // Send confirmation email webhook
         try {
           const confirmationWebhookData = {
+            action: "send_confirmation_emails",
             uniqueUrl: uniqueUrl,
             professional_id: professionalId,
-            action: "send_confirmation_emails",
             session_id: sessionIdRef.current,
             timestamp: new Date().toISOString(),
             customer_info: {
