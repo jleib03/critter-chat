@@ -15,9 +15,7 @@ import {
   ExternalLink,
   Play,
   Clock,
-  Users,
   Mail,
-  Monitor,
 } from "lucide-react"
 
 export default function HowToUsePage() {
@@ -312,126 +310,6 @@ export default function HowToUsePage() {
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
-
-          {/* How It All Works Together */}
-          <div className="bg-gradient-to-br from-orange-50 to-purple-50 rounded-2xl p-8 mb-16">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold header-font mb-4">How Everything Works Together</h2>
-              <p className="text-gray-700 body-font max-w-3xl mx-auto">
-                Your Critter platform is the central hub, and all online tools connect back to it
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Customer Journey */}
-              <div className="bg-white rounded-xl p-6 shadow-sm">
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Users className="h-6 w-6 text-green-600" />
-                </div>
-                <h3 className="font-bold text-center mb-3 header-font">Customer Experience</h3>
-                <ul className="space-y-2 text-sm body-font">
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                    Visits your booking link
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                    Selects services & time
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                    Gets instant confirmation
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                    Chats with AI for questions
-                  </li>
-                </ul>
-              </div>
-
-              {/* Your Workflow */}
-              <div className="bg-white rounded-xl p-6 shadow-sm">
-                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Monitor className="h-6 w-6 text-orange-600" />
-                </div>
-                <h3 className="font-bold text-center mb-3 header-font">Your Workflow</h3>
-                <ul className="space-y-2 text-sm body-font">
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
-                    Receive booking in Critter
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
-                    Approve or modify
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
-                    Customer gets final confirmation
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
-                    Manage in your platform
-                  </li>
-                </ul>
-              </div>
-
-              {/* Behind the Scenes */}
-              <div className="bg-white rounded-xl p-6 shadow-sm">
-                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Database className="h-6 w-6 text-purple-600" />
-                </div>
-                <h3 className="font-bold text-center mb-3 header-font">Behind the Scenes</h3>
-                <ul className="space-y-2 text-sm body-font">
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
-                    All data syncs to Critter
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
-                    Automatic email confirmations
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
-                    AI trained on your data
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
-                    Real-time availability
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Links */}
-          <div className="text-center">
-            <h2 className="text-2xl font-bold header-font mb-6">Quick Access</h2>
-            <div className="flex flex-wrap justify-center gap-4">
-              <a
-                href="/pro/set-up"
-                className="inline-flex items-center px-6 py-3 bg-[#E75837] text-white rounded-lg hover:bg-[#d04e30] transition-colors body-font"
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Professional Setup
-              </a>
-              <a
-                href="https://app.critter.pet"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors body-font"
-              >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Critter Platform
-              </a>
-              <a
-                href="/pro/custom-agent"
-                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors body-font"
-              >
-                <MessageSquare className="h-4 w-4 mr-2" />
-                AI Chatbot Setup
-              </a>
             </div>
           </div>
         </div>
