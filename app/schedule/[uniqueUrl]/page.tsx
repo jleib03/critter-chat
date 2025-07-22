@@ -993,8 +993,12 @@ export default function SchedulePage() {
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Recurring:</span>
                   <span className="font-medium text-blue-600">
-                    Every {recurringConfig.frequency} {recurringConfig.unit}
-                    {recurringConfig.frequency > 1 ? "s" : ""}
+                    Every {recurringConfig.daysOfWeek?.join(", ")} until{" "}
+                    {new Date(recurringConfig.endDate).toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
                   </span>
                 </div>
               )}
@@ -1084,6 +1088,8 @@ export default function SchedulePage() {
             isDirectBooking={isDirectBooking}
             onPetSelect={handlePetSelect}
             onBack={handleBackToCustomerForm}
+            bookingType={bookingType}
+            recurringConfig={recurringConfig}
           />
         ) : showCustomerForm && selectedServices.length > 0 && selectedTimeSlot ? (
           <CustomerForm

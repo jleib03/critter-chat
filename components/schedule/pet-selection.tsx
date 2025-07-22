@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import type { Pet, Service, SelectedTimeSlot, CustomerInfo } from "@/types/schedule"
+import type { Pet, Service, SelectedTimeSlot, CustomerInfo, RecurringConfig } from "@/types/schedule"
+import type { BookingType } from "@/components/schedule/booking-type-selection"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -19,6 +20,8 @@ type PetSelectionProps = {
   isDirectBooking: boolean
   onPetSelect: (pet: Pet, notifications: NotificationPreference[]) => void
   onBack: () => void
+  bookingType: BookingType | null
+  recurringConfig: RecurringConfig | null
 }
 
 export function PetSelection({
@@ -30,6 +33,8 @@ export function PetSelection({
   isDirectBooking,
   onPetSelect,
   onBack,
+  bookingType,
+  recurringConfig,
 }: PetSelectionProps) {
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null)
   const [selectedNotifications, setSelectedNotifications] = useState<NotificationPreference[]>([])
@@ -177,6 +182,23 @@ export function PetSelection({
                 <p className="font-medium body-font">${totalCost.toFixed(2)}</p>
               </div>
             </div>
+
+            {bookingType === "recurring" && recurringConfig && (
+              <div className="flex items-center gap-2 md:col-span-2">
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <div>
+                  <span className="text-gray-500 body-font">Recurring:</span>
+                  <p className="font-medium body-font text-blue-600">
+                    Every {recurringConfig.daysOfWeek?.join(", ")} until{" "}
+                    {new Date(recurringConfig.endDate).toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Services List */}
