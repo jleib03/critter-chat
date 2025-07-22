@@ -310,6 +310,7 @@ export default function ProfessionalSetupPage() {
       let capacityRulesLocal: WebhookCapacityRules = { ...DEFAULT_CAPACITY_RULES }
       let blockedTimesLocal: WebhookBlockedTime[] = []
       let scheduleData: any = null
+      let lastUpdatedLocal = ""
 
       if (Array.isArray(data)) {
         // Find the configuration data
@@ -317,6 +318,15 @@ export default function ProfessionalSetupPage() {
 
         if (structured) {
           const config = structured.webhook_response.config_data
+
+          // Extract last_updated timestamp first
+          if (config.last_updated) {
+            lastUpdatedLocal = config.last_updated
+            console.log("Found last_updated in webhook:", lastUpdatedLocal)
+          } else {
+            lastUpdatedLocal = new Date().toISOString()
+            console.log("No last_updated found, using current time:", lastUpdatedLocal)
+          }
 
           // Booking Preferences
           const rawPrefs = config.booking_preferences ?? {}
@@ -407,10 +417,15 @@ export default function ProfessionalSetupPage() {
               console.log("Processed employees from separate objects:", employeesLocal)
             }
           }
-
-          // Timestamp - use last_updated from webhook response or current time as fallback
-          setLastUpdated(config.last_updated || new Date().toISOString())
+        } else {
+          // No structured config found, use current time as fallback
+          lastUpdatedLocal = new Date().toISOString()
+          console.log("No structured config found, using current time:", lastUpdatedLocal)
         }
+      } else {
+        // Data is not an array, use current time as fallback
+        lastUpdatedLocal = new Date().toISOString()
+        console.log("Data is not an array, using current time:", lastUpdatedLocal)
       }
 
       // Set all state
@@ -418,6 +433,7 @@ export default function ProfessionalSetupPage() {
       setEmployees(employeesLocal)
       setCapacityRules(capacityRulesLocal)
       setBlockedTimes(blockedTimesLocal)
+      setLastUpdated(lastUpdatedLocal)
 
       // Store original snapshots for precise change detection
       setOriginalBookingPreferences({ ...bookingPrefsLocal })
@@ -427,9 +443,12 @@ export default function ProfessionalSetupPage() {
 
       console.log("Configuration loaded & snapshots saved.")
       console.log("Final employees state:", employeesLocal)
+      console.log("Final lastUpdated state:", lastUpdatedLocal)
     } catch (err) {
       console.error("Error loading configuration:", err)
       setError("Failed to load configuration. Please try again.")
+      // Set current time as fallback even on error
+      setLastUpdated(new Date().toISOString())
     } finally {
       setLoading(false)
     }
