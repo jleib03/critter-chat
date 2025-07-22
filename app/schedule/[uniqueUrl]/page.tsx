@@ -978,12 +978,6 @@ export default function SchedulePage() {
                   {selectedPet?.pet_name} ({selectedPet?.pet_type})
                 </span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Customer:</span>
-                <span className="font-medium">
-                  {customerInfo.firstName} {customerInfo.lastName}
-                </span>
-              </div>
               {bookingType === "recurring" && recurringConfig && (
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Recurring:</span>
