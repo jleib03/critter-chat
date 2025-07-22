@@ -272,3 +272,15 @@ export type MultiServiceBooking = {
   quarter?: string
   services?: Service[]
 }
+
+export interface CustomerInfoFormProps {
+  selectedServices: Service[]
+  selectedTimeSlot: SelectedTimeSlot
+  professionalId: string
+  professionalName: string
+  sessionId: string
+  onPetsReceived: (customerInfo: CustomerInfo, petResponse: PetResponse) => void
+  onBack: () => void
+  bookingType: "direct_booking" | "request_to_book" | "no_online_booking" | null
+  recurringConfig: RecurringConfig | null
+}

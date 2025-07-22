@@ -1,49 +1,16 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { ArrowLeft, ArrowRight } from "lucide-react"
-import type { Service, SelectedTimeSlot, BookingType, RecurringConfig } from "@/types/schedule"
-
-type CustomerFormProps = {
-  selectedServices: Service[]
-  selectedTimeSlot: SelectedTimeSlot
-  professionalId: string
-  professionalName: string
-  sessionId: string
-  onPetsReceived: (customerInfo: CustomerInfo, petResponse: PetResponse) => void
-  onBack: () => void
-  bookingType: BookingType | null
-  recurringConfig: RecurringConfig | null
-}
-
-type CustomerInfo = {
-  firstName: string
-  lastName: string
-  email: string
-  phone?: string
-  notes?: string
-}
-
-type PetResponse = {
-  pets: Pet[]
-}
-
-type Pet = {
-  pet_id: string
-  pet_name: string
-  pet_type: string
-  breed: string
-  age: string
-  weight: string
-  special_notes: string
-}
+import type { CustomerInfoFormProps } from "@/types/schedule"
+import { Textarea } from "@/components/ui/textarea"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import type { PetResponse } from "@/types/schedule"
 
 const formSchema = z.object({
   firstName: z.string().min(2, {
@@ -69,10 +36,8 @@ export function CustomerForm({
   onBack,
   bookingType,
   recurringConfig,
-}: CustomerFormProps) {
+}: CustomerInfoFormProps) {
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -86,39 +51,61 @@ export function CustomerForm({
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true)
-
     try {
       const webhookUrl = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
+
+      const petData = {
+        action: "get_customer_pets",
+        uniqueUrl: professionalId, // Use uniqueUrl here
+        session_id: sessionId,
+        timestamp: new Date().toISOString(),
+        customer_info: values,
+        booking_context: {
+          selected_services: selectedServices.map((s) => s.name),
+          selected_date: selectedTimeSlot.date,
+          selected_time: selectedTimeSlot.startTime,
+          booking_type: bookingType,
+          recurring_config: recurringConfig,
+        },
+      }
+
+      console.log("Sending webhook to:", webhookUrl)
+      console.log("Sending customer pets webhook with payload:", petData)
 
       const response = await fetch(webhookUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          action: "get_customer_pets",
-          uniqueUrl: professionalId,
-          session_id: sessionId,
-          timestamp: new Date().toISOString(),
-          customer_info: values,
-          booking_context: {
-            selected_services: selectedServices.map((s) => s.name),
-            selected_date: selectedTimeSlot.date,
-            selected_time: selectedTimeSlot.startTime,
-            booking_type: bookingType,
-            recurring_config: recurringConfig,
-          },
-        }),
+        body: JSON.stringify(petData),
       })
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      const petResponse: PetResponse = await response.json()
+      const petResponse = (await response.json()) as PetResponse
       console.log("Pets webhook response received:", petResponse)
 
-      onPetsReceived(values, petResponse)
+      // Parse the pet data
+      const parsedPets = petResponse[0]?.pets || []
+      console.log("Parsed pets:", parsedPets)
+
+      // Format the pet response
+      const finalPetResponse = {
+        pets: parsedPets.map((pet) => ({
+          pet_id: pet.pet_id,
+          pet_name: pet.pet_name,
+          pet_type: pet.pet_type,
+          breed: "",
+          age: "",
+          weight: "",
+          special_notes: "",
+        })),
+      }
+      console.log("Final pet response:", finalPetResponse)
+
+      onPetsReceived(values, finalPetResponse)
     } catch (error) {
       console.error("Error fetching pets:", error)
       alert("Failed to load pet data. Please try again.")
@@ -128,105 +115,95 @@ export function CustomerForm({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border p-6">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-[#E75837] mb-2 header-font">Customer Information</h2>
-        <p className="text-gray-600 body-font">
-          Please provide your contact information to book with <span className="font-medium">{professionalName}</span>
-        </p>
-      </div>
-
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="firstName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="header-font">First Name*</FormLabel>
-                  <FormControl>
-                    <Input placeholder="John" {...field} className="body-font" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="lastName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="header-font">Last Name*</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Doe" {...field} className="body-font" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="header-font">Email*</FormLabel>
-                <FormControl>
-                  <Input placeholder="john.doe@example.com" {...field} className="body-font" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="header-font">Phone Number</FormLabel>
-                <FormControl>
-                  <Input placeholder="847-555-1212" {...field} className="body-font" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="notes"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="header-font">Additional Notes</FormLabel>
-                <FormControl>
-                  <Input placeholder="Anything else we should know?" {...field} className="body-font" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="flex justify-between">
-            <Button variant="outline" onClick={onBack} className="flex items-center body-font bg-transparent">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Calendar
-            </Button>
-            <Button
-              type="submit"
-              disabled={loading}
-              className={`flex items-center body-font ${
-                loading ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-[#E75837] hover:bg-[#d04e30] text-white"
-              }`}
-            >
-              {loading ? "Loading..." : "Continue to Pet Selection"}
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </div>
-        </form>
-      </Form>
+    <div className="max-w-2xl mx-auto p-6 pt-16">
+      <Card className="shadow-lg border-0 rounded-2xl">
+        <CardHeader className="text-center pb-4">
+          <CardTitle className="text-2xl header-font">Customer Information</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="firstName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>First name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="First name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Last name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="your-email@example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone number (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="847-707-5040" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Additional Notes (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Any special requests or notes for the professional?"
+                        className="resize-none"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-between">
+                <Button variant="outline" onClick={() => onBack()} disabled={loading}>
+                  Back to Schedule
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? "Loading..." : "Continue to Pet Selection"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
     </div>
   )
 }

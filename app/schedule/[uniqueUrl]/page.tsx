@@ -123,7 +123,7 @@ export default function SchedulePage() {
         offset: offsetString,
         offsetMinutes: offsetMinutes,
         timestamp: now.toISOString(),
-        localTime: now.toLocaleString(),
+        localTime: new Date().toLocaleString(),
       }
     } catch (error) {
       console.error("Error detecting timezone:", error)
