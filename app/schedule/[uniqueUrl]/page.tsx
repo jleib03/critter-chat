@@ -209,6 +209,9 @@ export default function SchedulePage() {
     const start = new Date(startDate)
     const endDate = new Date(config.endDate)
 
+    console.log("Generating recurring dates with config:", config)
+    console.log("Start date:", startDate, "End date:", config.endDate)
+
     const currentDate = new Date(start)
     let occurrenceCount = 0
 
@@ -217,6 +220,12 @@ export default function SchedulePage() {
         date: currentDate.toISOString().split("T")[0],
         day_of_week: currentDate.toLocaleDateString("en-US", { weekday: "long" }),
         occurrence_number: occurrenceCount + 1,
+        formatted_date: currentDate.toLocaleDateString("en-US", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }),
       })
 
       // Calculate next occurrence based on frequency and unit
@@ -231,6 +240,7 @@ export default function SchedulePage() {
       occurrenceCount++
     }
 
+    console.log("Generated recurring dates:", dates)
     return dates
   }
 
@@ -603,7 +613,7 @@ export default function SchedulePage() {
         const recurringDates = generateRecurringDates(selectedTimeSlot!.date, recurringConfig)
 
         enhancedRecurringDetails = {
-          // Basic recurring config
+          // Basic recurring config - use the actual recurringConfig values
           frequency: recurringConfig.frequency,
           unit: recurringConfig.unit,
           end_date: recurringConfig.endDate,
@@ -634,9 +644,20 @@ export default function SchedulePage() {
             duration_minutes: totalDurationMinutes,
             timezone: userTimezoneData.timezone,
           },
+
+          // Additional useful information
+          booking_pattern: {
+            frequency_number: recurringConfig.frequency,
+            frequency_unit: recurringConfig.unit,
+            pattern_type:
+              recurringConfig.frequency === 1
+                ? `${recurringConfig.unit}ly`
+                : `every_${recurringConfig.frequency}_${recurringConfig.unit}s`,
+            human_readable: `Every ${recurringConfig.frequency} ${recurringConfig.unit}${recurringConfig.frequency > 1 ? "s" : ""}`,
+          },
         }
 
-        console.log("Enhanced recurring details:", enhancedRecurringDetails)
+        console.log("Enhanced recurring details with proper config:", enhancedRecurringDetails)
       }
 
       const bookingData = {
