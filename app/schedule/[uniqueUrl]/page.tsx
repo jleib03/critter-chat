@@ -203,6 +203,37 @@ export default function SchedulePage() {
     return endDate.toISOString()
   }
 
+  // Helper function to generate recurring dates based on config
+  const generateRecurringDates = (startDate: string, config: RecurringConfig) => {
+    const dates = []
+    const start = new Date(startDate)
+    const endDate = new Date(config.endDate)
+
+    const currentDate = new Date(start)
+    let occurrenceCount = 0
+
+    while (currentDate <= endDate && occurrenceCount < config.totalAppointments) {
+      dates.push({
+        date: currentDate.toISOString().split("T")[0],
+        day_of_week: currentDate.toLocaleDateString("en-US", { weekday: "long" }),
+        occurrence_number: occurrenceCount + 1,
+      })
+
+      // Calculate next occurrence based on frequency and unit
+      if (config.unit === "day") {
+        currentDate.setDate(currentDate.getDate() + config.frequency)
+      } else if (config.unit === "week") {
+        currentDate.setDate(currentDate.getDate() + config.frequency * 7)
+      } else if (config.unit === "month") {
+        currentDate.setMonth(currentDate.getMonth() + config.frequency)
+      }
+
+      occurrenceCount++
+    }
+
+    return dates
+  }
+
   // Update the initializeSchedule function to parse the new webhook format
   const initializeSchedule = async () => {
     try {
@@ -566,6 +597,48 @@ export default function SchedulePage() {
         timeZone: userTimezoneData.timezone,
       })
 
+      // Enhanced recurring details for webhook
+      let enhancedRecurringDetails = null
+      if (bookingType === "recurring" && recurringConfig) {
+        const recurringDates = generateRecurringDates(selectedTimeSlot!.date, recurringConfig)
+
+        enhancedRecurringDetails = {
+          // Basic recurring config
+          frequency: recurringConfig.frequency,
+          unit: recurringConfig.unit,
+          end_date: recurringConfig.endDate,
+          total_appointments: recurringConfig.totalAppointments,
+
+          // Enhanced details
+          pattern_description: `Every ${recurringConfig.frequency} ${recurringConfig.unit}${recurringConfig.frequency > 1 ? "s" : ""}`,
+          start_date: selectedTimeSlot!.date,
+          start_time: selectedTimeSlot!.startTime,
+          end_time: endTimeLocal,
+
+          // All occurrence dates with details
+          all_occurrences: recurringDates,
+
+          // Summary information
+          total_occurrences: recurringDates.length,
+          days_of_week_included: [...new Set(recurringDates.map((d) => d.day_of_week))],
+          date_range: {
+            first_appointment: recurringDates[0]?.date,
+            last_appointment: recurringDates[recurringDates.length - 1]?.date,
+          },
+
+          // Time details for each occurrence
+          recurring_schedule: {
+            same_time_each_occurrence: true,
+            start_time_local: selectedTimeSlot!.startTime,
+            end_time_local: endTimeLocal,
+            duration_minutes: totalDurationMinutes,
+            timezone: userTimezoneData.timezone,
+          },
+        }
+
+        console.log("Enhanced recurring details:", enhancedRecurringDetails)
+      }
+
       const bookingData = {
         action: "create_booking",
         uniqueUrl: uniqueUrl,
@@ -583,14 +656,13 @@ export default function SchedulePage() {
         // Add user's booking choice (one-time vs recurring)
         user_booking_type: bookingType, // "one-time" or "recurring"
 
+        // Enhanced recurring details
         ...(bookingType === "recurring" &&
-          recurringConfig && {
-            recurring_details: {
-              frequency: recurringConfig.frequency,
-              unit: recurringConfig.unit,
-              end_date: recurringConfig.endDate,
-            },
+          enhancedRecurringDetails && {
+            recurring_details: enhancedRecurringDetails,
+            is_recurring_booking: true,
           }),
+
         booking_details: {
           service_names: selectedServices.map((service) => service.name),
           service_descriptions: selectedServices.map((service) => service.description),
@@ -649,7 +721,7 @@ export default function SchedulePage() {
         }),
       }
 
-      console.log("Sending booking data with UTC times and notifications:", bookingData)
+      console.log("Sending enhanced booking data with detailed recurring information:", bookingData)
 
       const response = await fetch(webhookUrl, {
         method: "POST",
@@ -667,7 +739,7 @@ export default function SchedulePage() {
       console.log("Booking created:", result)
 
       if (result && result[0] && result[0].output === "Booking Successfully Created") {
-        // Send confirmation email webhook
+        // Send confirmation email webhook with enhanced recurring details
         try {
           const confirmationWebhookData = {
             action: "send_confirmation_emails",
@@ -706,17 +778,14 @@ export default function SchedulePage() {
               special_notes: pet.special_notes,
             },
             is_recurring: bookingType === "recurring",
+            // Include enhanced recurring details in confirmation email
             ...(bookingType === "recurring" &&
-              recurringConfig && {
-                recurring_details: {
-                  frequency: recurringConfig.frequency,
-                  unit: recurringConfig.unit,
-                  end_date: recurringConfig.endDate,
-                },
+              enhancedRecurringDetails && {
+                recurring_details: enhancedRecurringDetails,
               }),
           }
 
-          console.log("Sending confirmation email webhook:", confirmationWebhookData)
+          console.log("Sending confirmation email webhook with enhanced recurring details:", confirmationWebhookData)
 
           const confirmationResponse = await fetch(webhookUrl, {
             method: "POST",
@@ -894,6 +963,15 @@ export default function SchedulePage() {
                   {customerInfo.firstName} {customerInfo.lastName}
                 </span>
               </div>
+              {bookingType === "recurring" && recurringConfig && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Recurring:</span>
+                  <span className="font-medium text-blue-600">
+                    Every {recurringConfig.frequency} {recurringConfig.unit}
+                    {recurringConfig.frequency > 1 ? "s" : ""}
+                  </span>
+                </div>
+              )}
               {isDirectBooking && selectedNotifications.length > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Notifications:</span>
