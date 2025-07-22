@@ -1,17 +1,18 @@
 "use client"
 
 import { useState } from "react"
-import type { Pet, Service, SelectedTimeSlot, CustomerInfo, RecurringConfig } from "@/types/schedule"
-import type { BookingType } from "@/components/schedule/booking-type-selection"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ArrowLeft, PawPrint, User, Calendar, Clock, DollarSign, Bell } from "lucide-react"
+import { ArrowLeft, Clock, Calendar, DollarSign, Bell } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { toast } from "@/hooks/use-toast"
+import type { Service, SelectedTimeSlot, CustomerInfo, Pet } from "@/types/schedule"
+import type { BookingType, RecurringConfig } from "./booking-type-selection"
 
 type NotificationPreference = "1_hour" | "1_day" | "1_week"
 
-type PetSelectionProps = {
+interface PetSelectionProps {
   pets: Pet[]
   customerInfo: CustomerInfo
   selectedServices: Service[]
@@ -20,8 +21,8 @@ type PetSelectionProps = {
   isDirectBooking: boolean
   onPetSelect: (pet: Pet, notifications: NotificationPreference[]) => void
   onBack: () => void
-  bookingType: BookingType | null
-  recurringConfig: RecurringConfig | null
+  bookingType?: BookingType | null
+  recurringConfig?: RecurringConfig | null
 }
 
 export function PetSelection({
@@ -38,52 +39,13 @@ export function PetSelection({
 }: PetSelectionProps) {
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null)
   const [selectedNotifications, setSelectedNotifications] = useState<NotificationPreference[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handlePetSelect = (pet: Pet) => {
-    setSelectedPet(pet)
-  }
+  // Calculate totals
+  const totalCost = selectedServices.reduce((sum, service) => {
+    return sum + Number.parseFloat(service.customer_cost.toString())
+  }, 0)
 
-  const handleNotificationChange = (notification: NotificationPreference, checked: boolean) => {
-    setSelectedNotifications((prev) => {
-      if (checked) {
-        return [...prev, notification]
-      } else {
-        return prev.filter((n) => n !== notification)
-      }
-    })
-  }
-
-  const handleContinue = () => {
-    if (selectedPet) {
-      // For request bookings, pass empty notifications array
-      const notifications = isDirectBooking ? selectedNotifications : []
-      onPetSelect(selectedPet, notifications)
-    }
-  }
-
-  const formatPrice = (price: string | number) => {
-    return `$${Number.parseFloat(price.toString()).toFixed(0)}`
-  }
-
-  const formatDuration = (duration: number, unit: string) => {
-    if (unit === "Minutes") {
-      if (duration >= 60) {
-        const hours = Math.floor(duration / 60)
-        const minutes = duration % 60
-        return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`
-      }
-      return `${duration}m`
-    }
-    if (unit === "Hours") {
-      return duration === 1 ? `${duration} hour` : `${duration} hours`
-    }
-    if (unit === "Days") {
-      return duration === 1 ? `${duration} day` : `${duration} days`
-    }
-    return `${duration} ${unit.toLowerCase()}`
-  }
-
-  // Calculate totals for all selected services
   const totalDuration = selectedServices.reduce((sum, service) => {
     let durationInMinutes = service.duration_number
     if (service.duration_unit === "Hours") {
@@ -94,286 +56,307 @@ export function PetSelection({
     return sum + durationInMinutes
   }, 0)
 
-  const totalCost = selectedServices.reduce((sum, service) => {
-    return sum + Number.parseFloat(service.customer_cost.toString())
-  }, 0)
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(amount)
+  }
 
-  const notificationOptions = [
-    {
-      id: "1_hour" as NotificationPreference,
-      label: "1 hour before",
-      description: "Get reminded 1 hour before your appointment",
-    },
-    {
-      id: "1_day" as NotificationPreference,
-      label: "1 day before",
-      description: "Get reminded 1 day before your appointment",
-    },
-    {
-      id: "1_week" as NotificationPreference,
-      label: "1 week before",
-      description: "Get reminded 1 week before your appointment",
-    },
-  ]
+  const formatDuration = (minutes: number) => {
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    if (hours > 0 && mins > 0) {
+      return `${hours}h ${mins}m`
+    } else if (hours > 0) {
+      return `${hours}h`
+    } else {
+      return `${mins}m`
+    }
+  }
+
+  const formatDate = (dateStr: string) => {
+    const [year, month, day] = dateStr.split("-").map(Number)
+    const date = new Date(year, month - 1, day)
+    return date.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    })
+  }
+
+  const formatRecurringInfo = () => {
+    if (!recurringConfig || !bookingType || bookingType !== "recurring") {
+      return null
+    }
+
+    const daysText = recurringConfig.daysOfWeek?.join(", ") || ""
+    const endDateFormatted = new Date(recurringConfig.endDate).toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    })
+
+    return `Every ${daysText} until ${endDateFormatted}`
+  }
+
+  const handlePetSelect = (pet: Pet) => {
+    setSelectedPet(pet)
+  }
+
+  const handleNotificationToggle = (value: NotificationPreference) => {
+    setSelectedNotifications((prev) => {
+      if (prev.includes(value)) {
+        return prev.filter((item) => item !== value)
+      } else {
+        return [...prev, value]
+      }
+    })
+  }
+
+  const handleSubmit = () => {
+    if (!selectedPet) {
+      toast({
+        title: "Please select a pet",
+        description: "You need to select a pet to continue.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSubmitting(true)
+    onPetSelect(selectedPet, selectedNotifications)
+  }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6">
       {/* Back Button */}
       <Button variant="ghost" onClick={onBack} className="text-gray-600 hover:text-gray-900 body-font">
         <ArrowLeft className="w-4 h-4 mr-2" />
-        Back to Customer Info
+        Back to Customer Information
       </Button>
 
-      {/* Booking Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl header-font text-[#E75837]">
-            {isDirectBooking ? "Booking Summary" : "Booking Request Summary"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {!isDirectBooking && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800 body-font">
-                <span className="font-medium">Note:</span> This will be submitted as a booking request that requires
-                approval from {professionalName}.
-              </p>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <User className="w-4 h-4 text-gray-500" />
-              <div>
-                <span className="text-gray-500 body-font">Professional:</span>
-                <p className="font-medium body-font">{professionalName}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-gray-500" />
-              <div>
-                <span className="text-gray-500 body-font">Date:</span>
-                <p className="font-medium body-font">
-                  {selectedTimeSlot.dayOfWeek}, {(() => {
-                    const [year, month, day] = selectedTimeSlot.date.split("-").map(Number)
-                    const date = new Date(year, month - 1, day)
-                    return date.toLocaleDateString("en-US", {
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    })
-                  })()}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-gray-500" />
-              <div>
-                <span className="text-gray-500 body-font">Time:</span>
-                <p className="font-medium body-font">
-                  {selectedTimeSlot.startTime} - {selectedTimeSlot.endTime}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-gray-500" />
-              <div>
-                <span className="text-gray-500 body-font">Total Cost:</span>
-                <p className="font-medium body-font">${totalCost.toFixed(2)}</p>
-              </div>
-            </div>
-
-            {bookingType === "recurring" && recurringConfig && (
-              <div className="flex items-center gap-2 md:col-span-2">
-                <Calendar className="w-4 h-4 text-gray-500" />
-                <div>
-                  <span className="text-gray-500 body-font">Recurring:</span>
-                  <p className="font-medium body-font text-blue-600">
-                    Every {recurringConfig.daysOfWeek?.join(", ")} until{" "}
-                    {new Date(recurringConfig.endDate).toLocaleDateString("en-US", {
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Services List */}
-          <div className="mt-4 pt-4 border-t">
-            <p className="font-medium text-gray-900 body-font mb-2">Selected Services:</p>
-            {selectedServices.map((service, index) => (
-              <div key={index} className="mb-2">
-                <p className="font-medium text-gray-900 body-font">{service.name}</p>
-                <p className="text-sm text-gray-600 body-font">
-                  {formatDuration(service.duration_number, service.duration_unit)} •{" "}
-                  {formatPrice(service.customer_cost)}
-                </p>
-                {service.description && <p className="text-sm text-gray-600 body-font mt-1">{service.description}</p>}
-              </div>
-            ))}
-            <div className="mt-2 pt-2 border-t text-sm">
-              <p className="font-medium text-gray-900 body-font">
-                Total Duration: {Math.floor(totalDuration / 60)}h {totalDuration % 60}m
-              </p>
-            </div>
-          </div>
-
-          {/* Customer Info */}
-          <div className="mt-4 pt-4 border-t">
-            <p className="text-sm text-gray-600 body-font">
-              <span className="font-medium">Customer:</span> {customerInfo.firstName} {customerInfo.lastName}
-            </p>
-            <p className="text-sm text-gray-600 body-font">
-              <span className="font-medium">Email:</span> {customerInfo.email}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Pet Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl header-font text-[#E75837] flex items-center gap-2">
-            <PawPrint className="w-5 h-5" />
-            Select Your Pet
-          </CardTitle>
-          <p className="text-gray-600 body-font">
-            We found {pets.length} pet{pets.length !== 1 ? "s" : ""} associated with your account. Please select which
-            pet this {isDirectBooking ? "appointment" : "booking request"} is for.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {pets.map((pet) => (
-              <div
-                key={pet.pet_id}
-                className={`border rounded-lg p-4 cursor-pointer transition-all hover:shadow-md ${
-                  selectedPet?.pet_id === pet.pet_id
-                    ? "border-[#E75837] bg-orange-50 shadow-md"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-                onClick={() => handlePetSelect(pet)}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h3 className="font-semibold text-gray-900 header-font">{pet.pet_name}</h3>
-                    <p className="text-sm text-gray-600 body-font capitalize">{pet.pet_type}</p>
-                  </div>
-                  {selectedPet?.pet_id === pet.pet_id && (
-                    <div className="w-5 h-5 bg-[#E75837] rounded-full flex items-center justify-center">
-                      <div className="w-2 h-2 bg-white rounded-full" />
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  {pet.breed && (
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs body-font">
-                        {pet.breed}
-                      </Badge>
-                    </div>
-                  )}
-
-                  <div className="flex flex-wrap gap-2 text-xs text-gray-600 body-font">
-                    {pet.age && <span>Age: {pet.age}</span>}
-                    {pet.weight && <span>Weight: {pet.weight}</span>}
-                  </div>
-
-                  {pet.special_notes && (
-                    <p className="text-xs text-gray-600 body-font mt-2 p-2 bg-gray-50 rounded">
-                      <span className="font-medium">Notes:</span> {pet.special_notes}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {pets.length === 0 && (
-            <div className="text-center py-8">
-              <PawPrint className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-600 body-font">No pets found for this account.</p>
-              <p className="text-sm text-gray-500 body-font mt-2">
-                You may need to add pet information to your account first.
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Notification Preferences - Only show for direct bookings */}
-      {isDirectBooking && (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Pet Selection */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl header-font text-[#E75837] flex items-center gap-2">
-              <Bell className="w-5 h-5" />
-              Notification Preferences
-            </CardTitle>
-            <p className="text-gray-600 body-font">
-              Choose when you'd like to receive reminders about your upcoming appointment. You can select multiple
-              options or none at all.
-            </p>
+            <CardTitle className="text-xl header-font text-[#E75837]">Select Your Pet</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {notificationOptions.map((option) => (
-                <div key={option.id} className="flex items-start space-x-3">
-                  <Checkbox
-                    id={option.id}
-                    checked={selectedNotifications.includes(option.id)}
-                    onCheckedChange={(checked) => handleNotificationChange(option.id, checked as boolean)}
-                    className="mt-1"
-                  />
-                  <div className="flex-1">
-                    <label htmlFor={option.id} className="text-sm font-medium text-gray-900 body-font cursor-pointer">
-                      {option.label}
-                    </label>
-                    <p className="text-sm text-gray-600 body-font">{option.description}</p>
-                  </div>
+              {pets.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 body-font">No pets found for this account.</p>
                 </div>
-              ))}
-            </div>
+              ) : (
+                <>
+                  <div className="grid gap-4">
+                    {pets.map((pet) => (
+                      <div
+                        key={pet.pet_id}
+                        className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                          selectedPet?.pet_id === pet.pet_id
+                            ? "border-[#E75837] bg-orange-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                        onClick={() => handlePetSelect(pet)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div
+                              className={`w-5 h-5 rounded-full border ${
+                                selectedPet?.pet_id === pet.pet_id
+                                  ? "border-4 border-[#E75837]"
+                                  : "border border-gray-300"
+                              }`}
+                            />
+                            <div>
+                              <h3 className="font-medium text-gray-900 body-font">{pet.pet_name}</h3>
+                              <p className="text-sm text-gray-500 body-font">
+                                {pet.pet_type}
+                                {pet.breed ? ` • ${pet.breed}` : ""}
+                                {pet.age ? ` • ${pet.age}` : ""}
+                              </p>
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="text-xs body-font">
+                            {pet.pet_type}
+                          </Badge>
+                        </div>
+                        {selectedPet?.pet_id === pet.pet_id && pet.special_notes && (
+                          <div className="mt-3 text-sm text-gray-600 body-font">
+                            <p className="font-medium">Special Notes:</p>
+                            <p className="mt-1">{pet.special_notes}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
 
-            {selectedNotifications.length > 0 && (
-              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800 body-font">
-                  <span className="font-medium">Selected notifications:</span>{" "}
-                  {selectedNotifications.map((n) => notificationOptions.find((opt) => opt.id === n)?.label).join(", ")}
-                </p>
-              </div>
-            )}
+                  {/* Notification Preferences - Only for Direct Bookings */}
+                  {isDirectBooking && (
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                      <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2 body-font">
+                        <Bell className="w-4 h-4 text-gray-500" />
+                        Notification Preferences
+                      </h3>
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="notification-1hour"
+                            checked={selectedNotifications.includes("1_hour")}
+                            onCheckedChange={() => handleNotificationToggle("1_hour")}
+                          />
+                          <label
+                            htmlFor="notification-1hour"
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 body-font"
+                          >
+                            1 hour before appointment
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="notification-1day"
+                            checked={selectedNotifications.includes("1_day")}
+                            onCheckedChange={() => handleNotificationToggle("1_day")}
+                          />
+                          <label
+                            htmlFor="notification-1day"
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 body-font"
+                          >
+                            1 day before appointment
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="notification-1week"
+                            checked={selectedNotifications.includes("1_week")}
+                            onCheckedChange={() => handleNotificationToggle("1_week")}
+                          />
+                          <label
+                            htmlFor="notification-1week"
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 body-font"
+                          >
+                            1 week before appointment
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={!selectedPet || isSubmitting}
+                    className="w-full mt-4 bg-[#E75837] hover:bg-[#d14a2a] text-white body-font"
+                  >
+                    {isDirectBooking ? "Confirm Booking" : "Submit Request"}
+                  </Button>
+                </>
+              )}
+            </div>
           </CardContent>
         </Card>
-      )}
 
-      {/* Continue Button */}
-      {selectedPet && (
-        <div className="flex items-center justify-between p-6 bg-white border border-gray-200 rounded-lg">
-          <div>
-            <p className="text-sm text-gray-600 body-font">Selected pet:</p>
-            <p className="font-medium text-gray-900 body-font">
-              {selectedPet.pet_name} ({selectedPet.pet_type})
-            </p>
-            {isDirectBooking && selectedNotifications.length > 0 && (
-              <p className="text-sm text-gray-600 body-font mt-1">
-                Notifications: {selectedNotifications.length} selected
-              </p>
+        {/* Booking Summary */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl header-font text-[#E75837]">Booking Summary</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Date & Time */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <h3 className="font-medium text-gray-900 body-font">Date & Time</h3>
+              </div>
+              <p className="text-gray-700 body-font">{formatDate(selectedTimeSlot.date)}</p>
+              <div className="flex items-center gap-1 mt-1">
+                <Clock className="w-4 h-4 text-gray-500" />
+                <p className="text-gray-700 body-font">{selectedTimeSlot.startTime}</p>
+              </div>
+            </div>
+
+            {/* Services */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <DollarSign className="w-4 h-4 text-gray-500" />
+                <h3 className="font-medium text-gray-900 body-font">Services</h3>
+              </div>
+              <div className="space-y-3">
+                {selectedServices.map((service, index) => (
+                  <div key={index} className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900 body-font">{service.name}</p>
+                      <p className="text-sm text-gray-600 body-font">
+                        {service.duration_number}{" "}
+                        {service.duration_unit === "Minutes"
+                          ? service.duration_number === 1
+                            ? "minute"
+                            : "minutes"
+                          : service.duration_unit.toLowerCase()}
+                      </p>
+                    </div>
+                    <p className="font-medium text-gray-900 body-font">
+                      {formatCurrency(Number.parseFloat(service.customer_cost.toString()))}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Total */}
+            <div className="border-t pt-4">
+              <div className="flex justify-between items-center mb-2">
+                <p className="font-semibold text-gray-900 body-font">Total</p>
+                <p className="font-semibold text-gray-900 body-font text-lg">{formatCurrency(totalCost)}</p>
+              </div>
+              <div className="flex justify-between items-center">
+                <p className="text-sm text-gray-600 body-font">Duration</p>
+                <p className="text-sm text-gray-600 body-font">{formatDuration(totalDuration)}</p>
+              </div>
+            </div>
+
+            {/* Booking Type */}
+            {bookingType && (
+              <div className="pt-4 border-t">
+                <Badge
+                  className={`body-font ${
+                    bookingType === "one-time"
+                      ? "bg-[#E75837] hover:bg-[#d14a2a] text-white"
+                      : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                  }`}
+                >
+                  {bookingType === "one-time" ? "One-time Booking" : "Recurring Booking"}
+                </Badge>
+                {recurringConfig && bookingType === "recurring" && (
+                  <p className="text-sm text-gray-600 mt-2 body-font">{formatRecurringInfo()}</p>
+                )}
+              </div>
             )}
-            {!isDirectBooking && (
-              <p className="text-sm text-gray-600 body-font mt-1 text-blue-600">
-                Booking request - no notifications available
+
+            {/* Customer Info */}
+            <div className="pt-4 border-t">
+              <p className="text-sm text-gray-600 body-font">
+                <span className="font-medium">Customer:</span> {customerInfo.firstName} {customerInfo.lastName}
               </p>
-            )}
-          </div>
-          <Button onClick={handleContinue} className="bg-[#E75837] hover:bg-[#d14a2a] text-white body-font">
-            {isDirectBooking ? "Continue to Booking" : "Submit Booking Request"}
-          </Button>
-        </div>
-      )}
+              <p className="text-sm text-gray-600 body-font">
+                <span className="font-medium">Email:</span> {customerInfo.email}
+              </p>
+            </div>
+
+            {/* Professional Info */}
+            <div className="pt-4 border-t">
+              <p className="text-sm text-gray-600 body-font">
+                <span className="font-medium">with</span> {professionalName}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
+
+// Export both named and default
+export default PetSelection
