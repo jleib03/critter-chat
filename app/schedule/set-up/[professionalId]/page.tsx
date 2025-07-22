@@ -20,8 +20,8 @@ import {
   Shield,
   Calendar,
   AlertCircle,
-  CheckCircle,
   Smartphone,
+  CheckCircle,
 } from "lucide-react"
 import type {
   GetConfigWebhookPayload,
@@ -685,11 +685,6 @@ export default function ProfessionalSetupPage() {
             <div>
               <h1 className="text-3xl font-bold text-[#E75837] mb-2 header-font">Professional Setup</h1>
               <p className="text-gray-600 body-font">Configure your booking preferences and team settings</p>
-              {lastUpdated && (
-                <p className="text-sm text-gray-500 body-font mt-2">
-                  Last updated: {new Date(lastUpdated).toLocaleString()}
-                </p>
-              )}
             </div>
             <div className="flex gap-3">
               <Button
