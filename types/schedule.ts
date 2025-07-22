@@ -223,6 +223,10 @@ export type RecurringConfig = {
   unit: "day" | "week" | "month"
   endDate: string
   totalAppointments: number
+  // Add these fields to preserve original user selections
+  daysOfWeek?: string[]
+  selectedDays?: string[]
+  originalEndDate?: string
 }
 
 export type SelectedServices = Service[]
@@ -271,16 +275,4 @@ export type MultiServiceBooking = {
   month_number?: string
   quarter?: string
   services?: Service[]
-}
-
-export interface CustomerInfoFormProps {
-  selectedServices: Service[]
-  selectedTimeSlot: SelectedTimeSlot
-  professionalId: string
-  professionalName: string
-  sessionId: string
-  onPetsReceived: (customerInfo: CustomerInfo, petResponse: PetResponse) => void
-  onBack: () => void
-  bookingType: "direct_booking" | "request_to_book" | "no_online_booking" | null
-  recurringConfig: RecurringConfig | null
 }

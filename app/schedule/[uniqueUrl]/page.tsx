@@ -123,7 +123,7 @@ export default function SchedulePage() {
         offset: offsetString,
         offsetMinutes: offsetMinutes,
         timestamp: now.toISOString(),
-        localTime: new Date().toLocaleString(),
+        localTime: now.toLocaleString(),
       }
     } catch (error) {
       console.error("Error detecting timezone:", error)
@@ -613,14 +613,19 @@ export default function SchedulePage() {
         const recurringDates = generateRecurringDates(selectedTimeSlot!.date, recurringConfig)
 
         enhancedRecurringDetails = {
+          // Add the original user selections
+          selected_days_of_week: recurringConfig.daysOfWeek || recurringConfig.selectedDays || [],
+          selected_end_date: recurringConfig.endDate || recurringConfig.originalEndDate,
+          recurring_start_date: selectedTimeSlot!.date,
+
           // Basic recurring config - use the actual recurringConfig values
-          frequency: recurringConfig.frequency,
-          unit: recurringConfig.unit,
+          frequency: recurringConfig.frequency || 1,
+          unit: recurringConfig.unit || "week",
           end_date: recurringConfig.endDate,
-          total_appointments: recurringConfig.totalAppointments,
+          total_appointments: recurringConfig.totalAppointments || recurringDates.length,
 
           // Enhanced details
-          pattern_description: `Every ${recurringConfig.frequency} ${recurringConfig.unit}${recurringConfig.frequency > 1 ? "s" : ""}`,
+          pattern_description: `Every ${recurringConfig.frequency || 1} ${recurringConfig.unit || "week"}${(recurringConfig.frequency || 1) > 1 ? "s" : ""}`,
           start_date: selectedTimeSlot!.date,
           start_time: selectedTimeSlot!.startTime,
           end_time: endTimeLocal,
@@ -647,13 +652,13 @@ export default function SchedulePage() {
 
           // Additional useful information
           booking_pattern: {
-            frequency_number: recurringConfig.frequency,
-            frequency_unit: recurringConfig.unit,
+            frequency_number: recurringConfig.frequency || 1,
+            frequency_unit: recurringConfig.unit || "week",
             pattern_type:
-              recurringConfig.frequency === 1
-                ? `${recurringConfig.unit}ly`
-                : `every_${recurringConfig.frequency}_${recurringConfig.unit}s`,
-            human_readable: `Every ${recurringConfig.frequency} ${recurringConfig.unit}${recurringConfig.frequency > 1 ? "s" : ""}`,
+              (recurringConfig.frequency || 1) === 1
+                ? `${recurringConfig.unit || "week"}ly`
+                : `every_${recurringConfig.frequency || 1}_${recurringConfig.unit || "week"}s`,
+            human_readable: `Every ${recurringConfig.frequency || 1} ${recurringConfig.unit || "week"}${(recurringConfig.frequency || 1) > 1 ? "s" : ""}`,
           },
         }
 
@@ -976,6 +981,12 @@ export default function SchedulePage() {
                 <span className="text-gray-600">Pet:</span>
                 <span className="font-medium">
                   {selectedPet?.pet_name} ({selectedPet?.pet_type})
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Customer:</span>
+                <span className="font-medium">
+                  {customerInfo.firstName} {customerInfo.lastName}
                 </span>
               </div>
               {bookingType === "recurring" && recurringConfig && (

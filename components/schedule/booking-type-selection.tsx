@@ -11,6 +11,9 @@ export type BookingType = "one-time" | "recurring"
 export type RecurringConfig = {
   daysOfWeek: string[] // e.g., ["Monday", "Wednesday", "Friday"]
   endDate: string
+  // Add these fields to preserve the original user selections
+  selectedDays: string[] // Keep the original day selections
+  originalEndDate: string // Keep the original end date
 }
 
 type BookingTypeSelectionProps = {
@@ -26,13 +29,20 @@ export function BookingTypeSelection({ selectedService, onBookingTypeSelect, onB
   const [recurringConfig, setRecurringConfig] = useState<RecurringConfig>({
     daysOfWeek: [],
     endDate: "",
+    selectedDays: [],
+    originalEndDate: "",
   })
 
   const handleContinue = () => {
     if (selectedType === "one-time") {
       onBookingTypeSelect("one-time")
     } else if (selectedType === "recurring") {
-      onBookingTypeSelect("recurring", recurringConfig)
+      const configWithOriginals = {
+        ...recurringConfig,
+        selectedDays: recurringConfig.daysOfWeek,
+        originalEndDate: recurringConfig.endDate,
+      }
+      onBookingTypeSelect("recurring", configWithOriginals)
     }
   }
 
@@ -228,7 +238,7 @@ export function BookingTypeSelection({ selectedService, onBookingTypeSelect, onB
 
       {/* Navigation buttons */}
       <div className="flex justify-between">
-        <Button variant="outline" onClick={onBack} className="flex items-center body-font">
+        <Button variant="outline" onClick={onBack} className="flex items-center body-font bg-transparent">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Services
         </Button>
