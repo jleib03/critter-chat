@@ -181,23 +181,7 @@ export default function ProfessionalLandingPage() {
                 <p className="text-gray-700 leading-relaxed mb-6 body-font">{professionalData.description}</p>
 
                 {/* Quick Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  <div className="flex items-center gap-3 text-gray-600">
-                    <MapPin className="w-5 h-5 text-[#E75837]" />
-                    <div>
-                      <p className="font-medium body-font">{professionalData.location.address}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 text-gray-600">
-                    <Clock className="w-5 h-5 text-[#E75837]" />
-                    <div>
-                      <p className="font-medium body-font">
-                        {todayHours.isOpen ? `Open today: ${todayHours.open} - ${todayHours.close}` : "Closed today"}
-                      </p>
-                      <p className="text-sm body-font">See all hours below</p>
-                    </div>
-                  </div>
-                </div>
+                {/* Remove Quick Info Grid */}
 
                 {/* Contact Info */}
                 <div className="flex flex-wrap gap-4 mb-6">
@@ -240,6 +224,34 @@ export default function ProfessionalLandingPage() {
                         {specialty}
                       </span>
                     ))}
+                  </div>
+                </div>
+
+                {/* Service Information - Moved from above */}
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 header-font">Service Information</h3>
+                  <div className="space-y-3">
+                    {/* Service Areas */}
+                    <div className="flex items-start gap-3 text-gray-600">
+                      <MapPin className="w-5 h-5 text-[#E75837] mt-0.5 flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium body-font mb-1">Service Areas</p>
+                        <p className="text-sm text-gray-600 body-font break-words">
+                          {professionalData.location.address}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Hours */}
+                    <div className="flex items-start gap-3 text-gray-600">
+                      <Clock className="w-5 h-5 text-[#E75837] mt-0.5 flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium body-font">
+                          {todayHours.isOpen ? `Open today: ${todayHours.open} - ${todayHours.close}` : "Closed today"}
+                        </p>
+                        <p className="text-sm body-font">See all hours below</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
