@@ -1068,7 +1068,6 @@ export default function SchedulePage() {
           </div>
         ) : showConfirmation ? (
           <BookingConfirmation
-            selectedService={selectedServices[0]!}
             selectedTimeSlot={selectedTimeSlot!}
             customerInfo={customerInfo}
             selectedPet={selectedPet!}
@@ -1077,6 +1076,7 @@ export default function SchedulePage() {
             bookingType={bookingType}
             recurringConfig={recurringConfig}
             selectedServices={selectedServices}
+            isDirectBooking={isDirectBooking}
           />
         ) : showPetSelection ? (
           <PetSelection

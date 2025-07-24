@@ -21,6 +21,7 @@ type BookingConfirmationProps = {
   onNewBooking: () => void
   bookingType?: "one-time" | "recurring"
   recurringConfig?: RecurringConfig | null
+  isDirectBooking: boolean
 }
 
 export function BookingConfirmation({
@@ -32,6 +33,7 @@ export function BookingConfirmation({
   onNewBooking,
   bookingType,
   recurringConfig,
+  isDirectBooking,
 }: BookingConfirmationProps) {
   const formatPrice = (price: string) => {
     return `$${Number.parseFloat(price).toFixed(0)}`
@@ -115,9 +117,13 @@ export function BookingConfirmation({
             <CheckCircle className="w-16 h-16 text-green-600" />
           </div>
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-green-800 mb-2 header-font">Booking Confirmed!</h1>
+            <h1 className="text-3xl font-bold text-green-800 mb-2 header-font">
+              {isDirectBooking ? "Booking Confirmed!" : "Request Submitted!"}
+            </h1>
             <p className="text-green-700 body-font text-lg">
-              Your appointment has been successfully scheduled with {professionalName}.
+              {isDirectBooking
+                ? `Your appointment has been successfully scheduled with ${professionalName}.`
+                : `Your appointment request has been successfully submitted to ${professionalName}. You will receive a confirmation once it's approved.`}
             </p>
           </div>
         </CardContent>
@@ -310,9 +316,13 @@ export function BookingConfirmation({
                 1
               </div>
               <div>
-                <p className="font-medium text-gray-900">Confirmation Email</p>
+                <p className="font-medium text-gray-900">
+                  {isDirectBooking ? "Confirmation Email" : "Request Submitted"}
+                </p>
                 <p className="text-gray-600">
-                  You'll receive a confirmation email at {customerInfo.email} with your appointment details.
+                  {isDirectBooking
+                    ? `You'll receive a confirmation email at ${customerInfo.email} with your appointment details.`
+                    : `You'll receive an email at ${customerInfo.email} once your request is reviewed and approved.`}
                 </p>
               </div>
             </div>
