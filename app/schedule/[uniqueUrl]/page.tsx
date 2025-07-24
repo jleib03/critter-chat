@@ -486,7 +486,7 @@ export default function SchedulePage() {
     if (serviceName.toLowerCase().includes("groom")) return "Grooming"
     if (serviceName.toLowerCase().includes("walk")) return "Walks"
     if (serviceName.toLowerCase().includes("add on") || serviceName.toLowerCase().includes("addon")) return "Add-Ons"
-    return "Services"
+    return "Other Services"
   }
 
   // Memoize professional config to prevent unnecessary re-renders
