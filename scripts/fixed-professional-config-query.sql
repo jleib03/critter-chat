@@ -22,8 +22,7 @@ employee_data AS (
                 'role', e.role,
                 'email', e.email,
                 'is_active', e.is_active,
-                'working_days', COALESCE(wd.working_days, '[]'::jsonb),
-                'services', COALESCE(svc.services, '[]'::jsonb)
+                'working_days', COALESCE(wd.working_days, '[]'::jsonb)
             ) ORDER BY e.name
         ) as employees
     FROM employees e
@@ -51,14 +50,6 @@ employee_data AS (
         FROM employee_working_days ewd
         GROUP BY ewd.employee_id
     ) wd ON e.employee_id = wd.employee_id
-    LEFT JOIN (
-        -- Get services for each employee
-        SELECT 
-            es.employee_id,
-            jsonb_agg(es.service_name ORDER BY es.service_name) as services
-        FROM employee_services es
-        GROUP BY es.employee_id
-    ) svc ON e.employee_id = svc.employee_id
     WHERE e.professional_id = $1
     GROUP BY e.professional_id
 ),
