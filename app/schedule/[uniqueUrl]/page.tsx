@@ -494,6 +494,7 @@ export default function SchedulePage() {
 
   useEffect(() => {
     if (uniqueUrl) {
+      console.log("useEffect - Initializing schedule for uniqueUrl:", uniqueUrl) // ADDED LOG
       initializeSchedule()
     }
   }, [uniqueUrl])

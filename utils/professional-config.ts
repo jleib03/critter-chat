@@ -2,7 +2,9 @@ import type { ProfessionalConfig, Employee } from "@/types/professional-config"
 
 export const loadProfessionalConfig = (professionalId: string): ProfessionalConfig | null => {
   try {
+    console.log("Loading professional configuration for professionalId:", professionalId) // ADDED LOG
     const savedConfig = localStorage.getItem(`professional_config_${professionalId}`)
+    console.log("Saved config from local storage:", savedConfig) // ADDED LOG
     if (savedConfig) {
       return JSON.parse(savedConfig)
     }

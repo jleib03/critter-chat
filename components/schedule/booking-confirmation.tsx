@@ -2,15 +2,8 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { CheckCircle, Calendar, Clock, DollarSign, User, PawPrint, Mail, Repeat } from "lucide-react"
 import type { Service, SelectedTimeSlot, CustomerInfo, Pet } from "@/types/schedule"
-
-type RecurringConfig = {
-  selectedDays: string[]
-  endDate: string
-  totalAppointments: number
-}
+import type { RecurringConfig } from "./booking-type-selection"
 
 type BookingConfirmationProps = {
   selectedServices: Service[]
@@ -111,258 +104,73 @@ export function BookingConfirmation({
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Success Header */}
-      <Card className="border-green-200 bg-green-50">
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-center mb-4">
-            <CheckCircle className="w-16 h-16 text-green-600" />
-          </div>
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-green-800 mb-2 header-font">
-              {isDirectBooking ? "Booking Confirmed!" : "Request Submitted!"}
-            </h1>
-            <p className="text-green-700 body-font text-lg">
-              {isDirectBooking
-                ? `Your appointment has been successfully scheduled with ${professionalName}.`
-                : `Your appointment request has been successfully submitted to ${professionalName}. You will receive a confirmation once it's approved.`}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Booking Details */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl header-font text-[#E75837] flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            Appointment Details
+      <Card className="border-green-200 bg-green-50 shadow-lg border-0 rounded-2xl">
+        <CardHeader className="text-center pb-4">
+          <CardTitle className="text-xl header-font">
+            {isDirectBooking ? "Booking Confirmed!" : "Request Submitted!"}
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Service Information */}
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2 header-font">Services</h3>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <ul className="space-y-2">
-                    {selectedServices.map((service) => (
-                      <li key={service.id} className="mb-2">
-                        <p className="font-medium text-gray-900 body-font">{service.name}</p>
-                        {service.description && (
-                          <p className="text-sm text-gray-600 body-font mt-1">{service.description}</p>
-                        )}
-                        <div className="flex items-center gap-4 mt-1">
-                          <div className="flex items-center gap-1 text-sm text-gray-600">
-                            <Clock className="w-4 h-4" />
-                            <span className="body-font">
-                              {formatDuration(service.duration_number, service.duration_unit)}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1 text-sm text-gray-600">
-                            <DollarSign className="w-4 h-4" />
-                            <span className="body-font font-medium">{formatPrice(service.customer_cost)}</span>
-                          </div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="mt-4 pt-4 border-t border-gray-300">
-                    <div className="flex justify-between items-center">
-                      <span className="font-semibold text-gray-900 header-font">Total Duration:</span>
-                      <span className="font-medium text-gray-900 body-font">{formatTotalDuration()}</span>
-                    </div>
-                    <div className="flex justify-between items-center mt-2">
-                      <span className="font-semibold text-gray-900 header-font">Total Cost:</span>
-                      <span className="font-medium text-gray-900 body-font">{formatTotalPrice()}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Date & Time */}
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2 header-font">Date & Time</h3>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Calendar className="w-4 h-4 text-gray-500" />
-                    <span className="font-medium body-font">
-                      {selectedTimeSlot.dayOfWeek}, {(() => {
-                        const [year, month, day] = selectedTimeSlot.date.split("-").map(Number)
-                        const date = new Date(year, month - 1, day)
-                        return date.toLocaleDateString("en-US", {
-                          month: "long",
-                          day: "numeric",
-                          year: "numeric",
-                        })
-                      })()}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-gray-500" />
-                    <span className="font-medium body-font">
-                      {selectedTimeSlot.startTime} - {selectedTimeSlot.endTime}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {bookingType === "recurring" && recurringConfig && (
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-2 header-font">Recurring Schedule</h3>
-                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Repeat className="w-4 h-4 text-blue-500" />
-                      <span className="font-medium body-font text-blue-900">
-                        Weekly on {formatRecurringDays(recurringConfig.selectedDays)}
-                      </span>
-                    </div>
-                    <div className="text-sm text-blue-700 body-font space-y-1">
-                      <div>
-                        Until: {(() => {
-                          const [year, month, day] = recurringConfig.endDate.split("-").map(Number)
-                          const date = new Date(year, month - 1, day)
-                          return date.toLocaleDateString("en-US", {
-                            weekday: "long",
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })
-                        })()}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Customer & Pet Information */}
-            <div className="space-y-4">
-              {/* Customer Info */}
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2 header-font">Customer Information</h3>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <User className="w-4 h-4 text-gray-500" />
-                    <span className="font-medium body-font">
-                      {customerInfo.firstName} {customerInfo.lastName}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm text-gray-600 body-font">{customerInfo.email}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Pet Info */}
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2 header-font">Pet Information</h3>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <PawPrint className="w-4 h-4 text-gray-500" />
-                    <span className="font-medium body-font">
-                      {selectedPet.pet_name} ({selectedPet.pet_type})
-                    </span>
-                  </div>
-                  {selectedPet.breed && (
-                    <div className="mb-2">
-                      <Badge variant="secondary" className="text-xs body-font">
-                        {selectedPet.breed}
-                      </Badge>
-                    </div>
-                  )}
-                  <div className="flex flex-wrap gap-2 text-xs text-gray-600 body-font">
-                    {selectedPet.age && <span>Age: {selectedPet.age}</span>}
-                    {selectedPet.weight && <span>Weight: {selectedPet.weight}</span>}
-                  </div>
-                  {selectedPet.special_notes && (
-                    <div className="mt-2 p-2 bg-white rounded border">
-                      <p className="text-xs text-gray-600 body-font">
-                        <span className="font-medium">Notes:</span> {selectedPet.special_notes}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Professional Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl header-font text-[#E75837]">Professional Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <p className="font-medium text-gray-900 body-font mb-2">{professionalName}</p>
-            <p className="text-sm text-gray-600 body-font">
-              You will receive a confirmation email shortly with additional details and contact information.
+        <CardContent className="space-y-6">
+          <div className="text-center">
+            <p className="text-gray-600 body-font">
+              {isDirectBooking
+                ? `Your appointment has been successfully scheduled with ${professionalName}.`
+                : `Your appointment request has been successfully submitted to ${professionalName}.`}
             </p>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Next Steps */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl header-font text-[#E75837]">What's Next?</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3 text-sm body-font">
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 bg-[#E75837] text-white rounded-full flex items-center justify-center text-xs font-bold">
-                1
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">
-                  {isDirectBooking ? "Confirmation Email" : "Request Submitted"}
-                </p>
-                <p className="text-gray-600">
-                  {isDirectBooking
-                    ? `You'll receive a confirmation email at ${customerInfo.email} with your appointment details.`
-                    : `You'll receive an email at ${customerInfo.email} once your request is reviewed and approved.`}
-                </p>
-              </div>
+          <div className="bg-gray-50 rounded-xl p-6 space-y-3 text-left">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Services:</span>
+              <span className="font-medium">{selectedServices.map((s) => s.name).join(", ")}</span>
             </div>
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 bg-[#E75837] text-white rounded-full flex items-center justify-center text-xs font-bold">
-                2
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">Prepare for Your Appointment</p>
-                <p className="text-gray-600">
-                  Make sure {selectedPet.pet_name} is ready for their{" "}
-                  {selectedServices.map((s) => s.name.toLowerCase()).join(", ")} appointment
-                  {selectedServices.length > 1 ? "s" : ""}.
-                </p>
-              </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Date:</span>
+              <span className="font-medium">
+                {selectedTimeSlot.dayOfWeek}, {selectedTimeSlot.date}
+              </span>
             </div>
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 bg-[#E75837] text-white rounded-full flex items-center justify-center text-xs font-bold">
-                3
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">Contact if Needed</p>
-                <p className="text-gray-600">
-                  If you need to reschedule or have questions, contact {professionalName} directly.
-                </p>
-              </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Time:</span>
+              <span className="font-medium">{selectedTimeSlot.startTime}</span>
             </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Pet:</span>
+              <span className="font-medium">
+                {selectedPet.pet_name} ({selectedPet.pet_type})
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Customer:</span>
+              <span className="font-medium">
+                {customerInfo.firstName} {customerInfo.lastName}
+              </span>
+            </div>
+            {bookingType === "recurring" && recurringConfig && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Recurring:</span>
+                <span className="font-medium text-blue-600">
+                  Every {recurringConfig.daysOfWeek?.join(", ")} until{" "}
+                  {new Date(recurringConfig.endDate).toLocaleDateString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="text-center">
+            <Button
+              onClick={onNewBooking}
+              className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-6 py-3 rounded-lg font-medium transition-colors"
+            >
+              Book Another Appointment
+            </Button>
           </div>
         </CardContent>
       </Card>
-
-      {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-center">
-        <Button onClick={onNewBooking} className="bg-[#E75837] hover:bg-[#d14a2a] text-white body-font">
-          Book Another Appointment
-        </Button>
-        <Button variant="outline" onClick={() => window.print()} className="body-font">
-          Print Confirmation
-        </Button>
-      </div>
     </div>
   )
 }
