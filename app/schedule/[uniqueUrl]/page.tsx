@@ -366,9 +366,7 @@ export default function SchedulePage() {
     const scheduleEntry = rawData.find((entry) => entry.monday_start)
 
     // Find all booking entries
-    const bookingEntries = rawData.filter(
-      (entry) => entry.booking_date_formatted && !entry.name && !entry.webhook_response,
-    )
+    const bookingEntries = rawData.filter((entry) => entry.booking_id && entry.booking_date_formatted)
 
     // Find all service entries
     const serviceEntries = rawData.filter((entry) => entry.name && entry.duration_unit)
