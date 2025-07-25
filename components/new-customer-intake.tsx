@@ -231,8 +231,8 @@ export default function NewCustomerIntake({
                 }
 
                 // Use conservative category detection
-                const originalCategory = item.category || ""
-                const detectedCategory = isAddOnService(originalCategory, item.name) ? "Add-On" : "Main Service"
+                const originalCategory = item.category || "Other Services"
+                const detectedCategory = isAddOnService(originalCategory, item.name) ? "Add-On" : originalCategory
 
                 console.log(
                   `Service: "${item.name}" | Original Category: "${originalCategory}" | Detected: "${detectedCategory}"`,
