@@ -9,7 +9,7 @@ import { WeeklyCalendar } from "@/components/schedule/weekly-calendar"
 import { CustomerForm } from "@/components/schedule/customer-form"
 import { PetSelection } from "@/components/schedule/pet-selection"
 import { BookingConfirmation } from "@/components/schedule/booking-confirmation"
-import { loadProfessionalConfig } from "@/utils/professional-config"
+import { loadProfessionalConfig, saveProfessionalConfig } from "@/utils/professional-config"
 import type { ProfessionalConfig } from "@/types/professional-config"
 import {
   BookingTypeSelection,
@@ -284,8 +284,9 @@ export default function SchedulePage() {
       setWebhookData(parsedData)
 
       // Store the professional ID from the response
-      if (parsedData.professional_info && parsedData.professional_info.professional_id) {
-        setProfessionalId(parsedData.professional_info.professional_id)
+      const pId = parsedData.professional_info?.professional_id
+      if (pId) {
+        setProfessionalId(pId)
       }
 
       // Set booking preferences from parsed data
@@ -307,7 +308,7 @@ export default function SchedulePage() {
       // Create professional config from webhook data
       if (parsedData.config) {
         const configForProfessionalConfig: ProfessionalConfig = {
-          professionalId: professionalId || uniqueUrl,
+          professionalId: pId || uniqueUrl, // Use pId directly to avoid race condition
           businessName: parsedData.config.business_name || "Professional",
           employees: parsedData.config.employees
             ? parsedData.config.employees.map((emp: any) => ({
@@ -349,6 +350,7 @@ export default function SchedulePage() {
 
         console.log("Setting professional config with blocked times:", configForProfessionalConfig.blockedTimes)
         setProfessionalConfig(configForProfessionalConfig)
+        saveProfessionalConfig(configForProfessionalConfig) // Persist the config to local storage
       }
 
       console.log("Schedule data loaded successfully")
@@ -367,13 +369,14 @@ export default function SchedulePage() {
 
     // A more robust way to identify booking entries
     const bookingEntries = rawData.filter(
-      (entry) =>
-        entry.booking_id && // Must have a booking ID
-        entry.start && // Must have a start time
-        !entry.duration_unit && // Not a service definition
-        !entry.monday_start && // Not a schedule definition
-        !entry.webhook_response, // Not a config response
+      (entry) => entry.booking_id && entry.start, // Simplified filter
     )
+
+    if (bookingEntries.length === 0) {
+      console.warn(
+        "⚠️ No valid booking entries with an ID and start time were found in the webhook data. The schedule may appear fully open even if bookings exist.",
+      )
+    }
 
     // Fallback for booking_date_formatted
     bookingEntries.forEach((booking) => {
