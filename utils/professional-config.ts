@@ -271,13 +271,10 @@ export const calculateAvailableSlots = (
       const bookingStartMinutes = bookingStart.getHours() * 60 + bookingStart.getMinutes()
       const bookingEndMinutes = bookingEnd.getHours() * 60 + bookingEnd.getMinutes()
 
-      const slotStartMinutes = timeToMinutes(startTime)
-      const slotEndMinutes = timeToMinutes(endTime)
-
-      const isOverlapping = slotStartMinutes < bookingEndMinutes && slotEndMinutes > bookingStartMinutes
+      const isOverlapping = slotStart < bookingEndMinutes && slotEnd > bookingStartMinutes
 
       console.log(`[Capacity Check] Booking ${booking.booking_id} on ${date}`, {
-        slot: `${startTime} (${slotStartMinutes}) - ${endTime} (${slotEndMinutes})`,
+        slot: `${startTime} (${slotStart}) - ${endTime} (${slotEnd})`,
         booking: `${bookingStart.toLocaleTimeString()} (${bookingStartMinutes}) - ${bookingEnd.toLocaleTimeString()} (${bookingEndMinutes})`,
         isOverlapping,
       })
@@ -440,105 +437,4 @@ export const minutesToTime = (minutes: number): string => {
   const mins = minutes % 60
   return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`
 }
-
-export const calculateDefaultAvailableSlots = (
-  date: string,
-  startTime: string,
-  endTime: string,
-  dayName: string,
-  workingDays: any[],
-  existingBookings: any[] = [],
-): {
-  availableSlots: number
-  totalCapacity: number
-  workingEmployees: any[]
-  existingBookingsCount: number
-  capacityBreakdown: {
-    employeesWorking: number
-    capacityLimit: number
-    finalCapacity: number
-    existingBookings: number
-    availableSlots: number
-  }
-  reason?: string
-} => {
-  // Check if the professional is working on this day
-  const workingDay = workingDays.find((wd) => wd.day === dayName && wd.isWorking)
-
-  if (!workingDay) {
-    return {
-      availableSlots: 0,
-      totalCapacity: 0,
-      workingEmployees: [],
-      existingBookingsCount: 0,
-      capacityBreakdown: {
-        employeesWorking: 0,
-        capacityLimit: 0,
-        finalCapacity: 0,
-        existingBookings: 0,
-        availableSlots: 0,
-      },
-      reason: "Professional not working on this day",
-    }
-  }
-
-  // Check if the time slot fits within working hours
-  const workStart = timeToMinutes(workingDay.start)
-  const workEnd = timeToMinutes(workingDay.end)
-  const slotStart = timeToMinutes(startTime)
-  const slotEnd = timeToMinutes(endTime)
-
-  if (slotStart < workStart || slotEnd > workEnd) {
-    return {
-      availableSlots: 0,
-      totalCapacity: 0,
-      workingEmployees: [],
-      existingBookingsCount: 0,
-      capacityBreakdown: {
-        employeesWorking: 0,
-        capacityLimit: 0,
-        finalCapacity: 0,
-        existingBookings: 0,
-        availableSlots: 0,
-      },
-      reason: "Time slot outside working hours",
-    }
-  }
-
-  // Default capacity of 1 (the professional)
-  const finalCapacity = 1
-
-  // Count existing bookings that overlap with this time slot
-  const overlappingBookings = existingBookings.filter((booking) => {
-    if (booking.booking_date_formatted !== date) return false
-    if (!booking.start || !booking.end || !booking.booking_id) return false
-
-    const bookingStart = new Date(booking.start)
-    const bookingEnd = new Date(booking.end)
-
-    const bookingStartMinutes = bookingStart.getHours() * 60 + bookingStart.getMinutes()
-    const bookingEndMinutes = bookingEnd.getHours() * 60 + bookingEnd.getMinutes()
-
-    const slotStartMinutes = timeToMinutes(startTime)
-    const slotEndMinutes = timeToMinutes(endTime)
-
-    return slotStartMinutes < bookingEndMinutes && slotEndMinutes > bookingStartMinutes
-  })
-
-  const existingBookingsCount = overlappingBookings.length
-  const availableSlots = Math.max(0, finalCapacity - existingBookingsCount)
-
-  return {
-    availableSlots,
-    totalCapacity: finalCapacity,
-    workingEmployees: [{ id: "default", name: "Professional", isDefault: true }],
-    existingBookingsCount,
-    capacityBreakdown: {
-      employeesWorking: 1,
-      capacityLimit: 1,
-      finalCapacity,
-      existingBookings: existingBookingsCount,
-      availableSlots,
-    },
-  }
-}
+</merged_code>
