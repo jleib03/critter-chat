@@ -365,8 +365,34 @@ export default function SchedulePage() {
     // Find the first entry with working hours (schedule data)
     const scheduleEntry = rawData.find((entry) => entry.monday_start)
 
-    // Find all booking entries
-    const bookingEntries = rawData.filter((entry) => entry.booking_id && entry.booking_date_formatted)
+    // A more robust way to identify booking entries
+    const bookingEntries = rawData.filter(
+      (entry) =>
+        entry.booking_id && // Must have a booking ID
+        entry.start && // Must have a start time
+        !entry.duration_unit && // Not a service definition
+        !entry.monday_start && // Not a schedule definition
+        !entry.webhook_response, // Not a config response
+    )
+
+    // Fallback for booking_date_formatted
+    bookingEntries.forEach((booking) => {
+      if (!booking.booking_date_formatted && booking.start) {
+        try {
+          // Create date in user's local timezone from UTC string
+          const localDate = new Date(booking.start)
+          const year = localDate.getFullYear()
+          const month = String(localDate.getMonth() + 1).padStart(2, "0")
+          const day = String(localDate.getDate()).padStart(2, "0")
+          booking.booking_date_formatted = `${year}-${month}-${day}`
+          console.log(
+            `Fallback: Generated booking_date_formatted '${booking.booking_date_formatted}' for booking ${booking.booking_id}`,
+          )
+        } catch (e) {
+          console.error(`Could not parse date for booking ${booking.booking_id}`, e)
+        }
+      }
+    })
 
     // Find all service entries
     const serviceEntries = rawData.filter((entry) => entry.name && entry.duration_unit)

@@ -274,7 +274,15 @@ export const calculateAvailableSlots = (
       const slotStartMinutes = timeToMinutes(startTime)
       const slotEndMinutes = timeToMinutes(endTime)
 
-      return slotStartMinutes < bookingEndMinutes && slotEndMinutes > bookingStartMinutes
+      const isOverlapping = slotStartMinutes < bookingEndMinutes && slotEndMinutes > bookingStartMinutes
+
+      console.log(`[Capacity Check] Booking ${booking.booking_id} on ${date}`, {
+        slot: `${startTime} (${slotStartMinutes}) - ${endTime} (${slotEndMinutes})`,
+        booking: `${bookingStart.toLocaleTimeString()} (${bookingStartMinutes}) - ${bookingEnd.toLocaleTimeString()} (${bookingEndMinutes})`,
+        isOverlapping,
+      })
+
+      return isOverlapping
     })
 
     const existingBookingsCount = overlappingBookings.length
