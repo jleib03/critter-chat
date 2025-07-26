@@ -254,7 +254,7 @@ export default function SchedulePage() {
       userTimezoneRef.current = JSON.stringify(detectUserTimezone())
       loadProfessionalConfiguration()
 
-      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook/803d260b-1b17-4abf-8079-2d40225c29b0"
+      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
 
       console.log("Initializing schedule with session:", sessionIdRef.current)
 
@@ -368,12 +368,11 @@ export default function SchedulePage() {
     // A more robust way to identify booking entries
     const bookingEntries = rawData.filter(
       (entry) =>
-        entry.booking_id !== undefined && // Must have a booking ID
-        entry.start !== undefined && // Must have a start time
-        entry.booking_date_formatted !== undefined && // Must have a formatted date
-        entry.professional_id === scheduleEntry?.professional_id && // Must match the professional ID
-        entry.monday_start === undefined && // Not a schedule definition
-        entry.webhook_response === undefined, // Not a config response
+        entry.booking_id && // Must have a booking ID
+        entry.start && // Must have a start time
+        !entry.duration_unit && // Not a service definition
+        !entry.monday_start && // Not a schedule definition
+        !entry.webhook_response, // Not a config response
     )
 
     // Fallback for booking_date_formatted
@@ -598,7 +597,7 @@ export default function SchedulePage() {
     setCreatingBooking(true)
 
     try {
-      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook/803d260b-1b17-4abf-8079-2d40225c29b0"
+      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
       const userTimezoneData = JSON.parse(userTimezoneRef.current!)
 
       const startDateTimeUTC = convertLocalTimeToUTC(
