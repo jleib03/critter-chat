@@ -510,9 +510,11 @@ export default function SchedulePage() {
 
   // Helper function to categorize services
   const getCategoryFromService = (serviceName: string): string => {
-    if (serviceName.toLowerCase().includes("groom")) return "Grooming"
-    if (serviceName.toLowerCase().includes("walk")) return "Walks"
-    if (serviceName.toLowerCase().includes("add on") || serviceName.toLowerCase().includes("addon")) return "Add-Ons"
+    const lower = serviceName.toLowerCase()
+    if (lower.includes("add on") || lower.includes("addon")) return "Add-Ons"
+    if (lower.includes("groom")) return "Grooming"
+    if (lower.includes("walk")) return "Walks"
+    if (lower.includes("board")) return "Boarding"
     return "Other Services"
   }
 
