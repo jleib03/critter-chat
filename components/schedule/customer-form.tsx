@@ -32,6 +32,7 @@ interface CustomerFormProps {
   recurringConfig: RecurringConfig | null
   onPetsReceived: (customerInfo: CustomerInfo, petResponse: PetResponse) => void
   onBack: () => void
+  showPrices: boolean
 }
 
 export function CustomerForm({
@@ -44,6 +45,7 @@ export function CustomerForm({
   recurringConfig,
   onPetsReceived,
   onBack,
+  showPrices,
 }: CustomerFormProps) {
   const [customerData, setCustomerData] = useState<CustomerData>({
     firstName: "",
@@ -396,9 +398,11 @@ export function CustomerForm({
                           : service.duration_unit.toLowerCase()}
                       </p>
                     </div>
-                    <p className="font-medium text-gray-900 body-font">
-                      {formatCurrency(Number.parseFloat(service.customer_cost.toString()))}
-                    </p>
+                    {showPrices && (
+                      <p className="font-medium text-gray-900 body-font">
+                        {formatCurrency(Number.parseFloat(service.customer_cost.toString()))}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -406,10 +410,12 @@ export function CustomerForm({
 
             {/* Total */}
             <div className="border-t pt-4">
-              <div className="flex justify-between items-center mb-2">
-                <p className="font-semibold text-gray-900 body-font">Total</p>
-                <p className="font-semibold text-gray-900 body-font text-lg">{formatCurrency(totalCost)}</p>
-              </div>
+              {showPrices && (
+                <div className="flex justify-between items-center mb-2">
+                  <p className="font-semibold text-gray-900 body-font">Total</p>
+                  <p className="font-semibold text-gray-900 body-font text-lg">{formatCurrency(totalCost)}</p>
+                </div>
+              )}
               <div className="flex justify-between items-center">
                 <p className="text-sm text-gray-600 body-font">Duration</p>
                 <p className="text-sm text-gray-600 body-font">{formatDuration(totalDuration)}</p>
