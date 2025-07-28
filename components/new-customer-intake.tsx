@@ -183,7 +183,7 @@ export default function NewCustomerIntake({
           selectedAction: "new_customer_intake",
         },
         formData: combinedData,
-        professionalID: initialProfessionalId,
+        professionalID: initialProfessionalId, // Use the actual professional_id from the lookup
         type: "new_customer_get_services",
         source: "critter_booking_site",
       },
@@ -231,8 +231,8 @@ export default function NewCustomerIntake({
                 }
 
                 // Use conservative category detection
-                const originalCategory = item.category || ""
-                const detectedCategory = isAddOnService(originalCategory, item.name) ? "Add-On" : "Main Service"
+                const originalCategory = item.category || "Other Services"
+                const detectedCategory = isAddOnService(originalCategory, item.name) ? "Add-On" : originalCategory
 
                 console.log(
                   `Service: "${item.name}" | Original Category: "${originalCategory}" | Detected: "${detectedCategory}"`,
@@ -350,7 +350,7 @@ export default function NewCustomerIntake({
             },
         formData: formData,
         serviceData: serviceSelectionData,
-        professionalID: initialProfessionalId,
+        professionalID: initialProfessionalId, // Use the actual professional_id from the lookup
         type: "new_customer_final_intake_submission",
         source: "critter_booking_site",
       },
@@ -394,7 +394,7 @@ export default function NewCustomerIntake({
         },
         body: JSON.stringify({
           action: "new_customer_onboarding",
-          professionalId: initialProfessionalId || null,
+          professionalId: initialProfessionalId, // Use the actual professional_id from the lookup
           formData: dataToSubmit,
         }),
       })

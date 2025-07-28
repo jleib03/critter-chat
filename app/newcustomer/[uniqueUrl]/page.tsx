@@ -8,8 +8,9 @@ import { Loader2 } from "lucide-react"
 export default function ProfessionalSpecificPage() {
   const params = useParams()
   const router = useRouter()
-  const professionalId = params.professionalId as string
+  const uniqueUrl = params.uniqueUrl as string
   const [professionalName, setProfessionalName] = useState<string>("")
+  const [professionalId, setProfessionalId] = useState<string>("")
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -25,7 +26,7 @@ export default function ProfessionalSpecificPage() {
     const fetchProfessionalName = async () => {
       try {
         setLoading(true)
-        console.log("Fetching professional info for intake ID:", professionalId)
+        console.log("Fetching professional info for intake URL:", uniqueUrl)
 
         const response = await fetch(WEBHOOK_URL, {
           method: "POST",
@@ -34,7 +35,7 @@ export default function ProfessionalSpecificPage() {
           },
           body: JSON.stringify({
             action: "get_professional_name",
-            professionalId: professionalId,
+            uniqueUrl: uniqueUrl,
           }),
         })
 
@@ -74,6 +75,7 @@ export default function ProfessionalSpecificPage() {
         if (data) {
           console.log("Checking data.name:", data.name)
           console.log("Checking data.professional_name:", data.professional_name)
+          console.log("Checking data.professional_id:", data.professional_id)
 
           // Check if data is an array (which it is in this case)
           if (Array.isArray(data) && data.length > 0) {
@@ -89,12 +91,31 @@ export default function ProfessionalSpecificPage() {
               console.log("No name found in first array element")
               throw new Error("Professional name not found in response")
             }
+
+            // Set professional ID if available
+            if (firstItem.professional_id) {
+              console.log("Found ID in data[0].professional_id:", firstItem.professional_id)
+              setProfessionalId(firstItem.professional_id)
+            } else if (firstItem.id) {
+              console.log("Found ID in data[0].id:", firstItem.id)
+              setProfessionalId(firstItem.id)
+            }
           } else if (data.name) {
             console.log("Found name in data.name:", data.name)
             setProfessionalName(data.name)
+            if (data.professional_id) {
+              setProfessionalId(data.professional_id)
+            } else if (data.id) {
+              setProfessionalId(data.id)
+            }
           } else if (data.professional_name) {
             console.log("Found name in data.professional_name:", data.professional_name)
             setProfessionalName(data.professional_name)
+            if (data.professional_id) {
+              setProfessionalId(data.professional_id)
+            } else if (data.id) {
+              setProfessionalId(data.id)
+            }
           } else if (data.message && typeof data.message === "string") {
             console.log("Checking data.message:", data.message)
             // Try to parse message if it's a string that might contain JSON
@@ -110,6 +131,13 @@ export default function ProfessionalSpecificPage() {
               } else {
                 console.log("No name found in parsed message data")
                 throw new Error("Professional name not found in response")
+              }
+
+              // Set professional ID if available
+              if (messageData.professional_id) {
+                setProfessionalId(messageData.professional_id)
+              } else if (messageData.id) {
+                setProfessionalId(messageData.id)
               }
             } catch (e) {
               console.log("Message is not JSON, checking if it contains name directly")
@@ -139,10 +167,10 @@ export default function ProfessionalSpecificPage() {
       }
     }
 
-    if (professionalId) {
+    if (uniqueUrl) {
       fetchProfessionalName()
     }
-  }, [professionalId, WEBHOOK_URL])
+  }, [uniqueUrl, WEBHOOK_URL])
 
   return (
     <div className="min-h-screen bg-[#FBF8F3] flex flex-col">
@@ -174,7 +202,7 @@ export default function ProfessionalSpecificPage() {
                   onCancel={handleBackToLanding}
                   onComplete={handleBackToLanding}
                   webhookUrl={WEBHOOK_URL}
-                  initialProfessionalId={professionalId}
+                  initialProfessionalId={professionalId || uniqueUrl}
                   initialProfessionalName={professionalName}
                   skipProfessionalStep={true}
                   userInfo={null}

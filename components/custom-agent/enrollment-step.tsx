@@ -3,16 +3,16 @@ import { useState } from "react"
 import { ArrowRight, Check, X, Search, Loader2 } from "lucide-react"
 
 type EnrollmentStepProps = {
-  professionalName: string
-  setProfessionalName: (name: string) => void
+  professionalId: string
+  setProfessionalId: (id: string) => void
   isEnrolled: boolean | null
   toggleEnrollment: (enroll: boolean) => Promise<boolean>
   onNext: () => void
 }
 
 export default function EnrollmentStep({
-  professionalName,
-  setProfessionalName,
+  professionalId,
+  setProfessionalId,
   isEnrolled,
   toggleEnrollment,
   onNext,
@@ -23,7 +23,7 @@ export default function EnrollmentStep({
   const [justEnrolled, setJustEnrolled] = useState(false)
 
   const handleVerify = async () => {
-    if (!professionalName.trim()) return
+    if (!professionalId.trim()) return
     setIsVerifying(true)
 
     try {
@@ -48,31 +48,30 @@ export default function EnrollmentStep({
   if (!hasVerified || isEnrolled === null) {
     return (
       <div>
-        <h2 className="text-2xl font-bold mb-4 header-font">Step 1: Enrollment</h2>
+        <h2 className="text-2xl font-bold mb-4 header-font">Step 1: Enrollment Verification</h2>
         <p className="text-gray-600 mb-6 body-font">
-          Let's start by verifying your Critter professional account. Please enter your business name exactly as it
-          appears in your Critter account.
+          Enter your professional ID to verify your enrollment status in the Custom Support Agent program.
         </p>
 
         <div className="mb-6">
-          <label htmlFor="professionalName" className="block text-sm font-medium text-gray-700 mb-2 header-font">
-            Business Name*
+          <label htmlFor="professionalId" className="block text-sm font-medium text-gray-700 mb-2 header-font">
+            Professional ID*
           </label>
           <div className="flex gap-2">
             <input
               type="text"
-              id="professionalName"
-              value={professionalName}
-              onChange={(e) => setProfessionalName(e.target.value)}
+              id="professionalId"
+              value={professionalId}
+              onChange={(e) => setProfessionalId(e.target.value)}
               className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#94ABD6] body-font"
-              placeholder="Enter your business name as it appears in Critter"
+              placeholder="Enter your professional ID (e.g., 151)"
               disabled={isVerifying}
             />
             <button
               onClick={handleVerify}
-              disabled={!professionalName.trim() || isVerifying}
+              disabled={!professionalId.trim() || isVerifying}
               className={`px-4 py-2 rounded-lg flex items-center justify-center transition-colors ${
-                !professionalName.trim() || isVerifying
+                !professionalId.trim() || isVerifying
                   ? "bg-gray-300 cursor-not-allowed"
                   : "bg-[#94ABD6] hover:bg-[#7a90ba] text-white"
               }`}
@@ -88,7 +87,7 @@ export default function EnrollmentStep({
             </button>
           </div>
           <p className="mt-2 text-sm text-gray-500 body-font">
-            This helps us verify your account and set up your custom support agent.
+            Your professional ID can be found in your Critter dashboard or account settings.
           </p>
         </div>
       </div>
@@ -98,16 +97,14 @@ export default function EnrollmentStep({
   // Show enrollment status after verification
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-4 header-font">Step 1: Enrollment</h2>
+      <h2 className="text-2xl font-bold mb-4 header-font">Step 1: Enrollment Verification</h2>
       <p className="text-gray-600 mb-6 body-font">
-        Great! We've verified your Critter professional account. Here's your enrollment status:
+        Great! We've verified your professional ID. Here's your enrollment status:
       </p>
 
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2 header-font">Business Name</label>
-        <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg body-font text-gray-700">
-          {professionalName}
-        </div>
+        <label className="block text-sm font-medium text-gray-700 mb-2 header-font">Professional ID</label>
+        <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg body-font text-gray-700">{professionalId}</div>
       </div>
 
       <div
@@ -125,16 +122,16 @@ export default function EnrollmentStep({
                 <>
                   <h3 className="text-sm font-medium text-green-800 header-font">Successfully Enrolled!</h3>
                   <p className="mt-1 text-sm text-green-700 body-font">
-                    Great! Your business has been successfully enrolled in the Custom Support Agent program. You can now
-                    proceed to configure your personalized agent.
+                    Great! Your professional account has been successfully enrolled in the Custom Support Agent program.
+                    You can now proceed to configure your personalized agent.
                   </p>
                 </>
               ) : (
                 <>
                   <h3 className="text-sm font-medium text-green-800 header-font">Enrollment Active</h3>
                   <p className="mt-1 text-sm text-green-700 body-font">
-                    Your business is already enrolled in the Custom Support Agent program. You can proceed to update
-                    your agent configuration or create a new setup.
+                    Your professional account is already enrolled in the Custom Support Agent program. You can proceed
+                    to update your agent configuration or create a new setup.
                   </p>
                 </>
               )}
@@ -148,8 +145,8 @@ export default function EnrollmentStep({
             <div className="ml-3">
               <h3 className="text-sm font-medium text-amber-800 header-font">Not Enrolled</h3>
               <p className="mt-1 text-sm text-amber-700 body-font">
-                Your business is not currently enrolled in the Custom Support Agent program. Would you like to enroll
-                now?
+                Your professional account is not currently enrolled in the Custom Support Agent program. Would you like
+                to enroll now?
               </p>
               <div className="mt-3">
                 <button
