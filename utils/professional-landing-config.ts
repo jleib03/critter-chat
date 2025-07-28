@@ -78,15 +78,21 @@ function formatPhoneNumber(phone: string): string {
 }
 
 // Helper function to format duration
-function formatDuration(duration: number, unit: string): string {
-  if (unit.toLowerCase() === "hours") {
+function formatDuration(duration: number | null, unit: string | null): string {
+  if (duration === null || unit === null) {
+    return ""
+  }
+
+  const lowerUnit = unit.toLowerCase()
+
+  if (lowerUnit === "hours") {
     return duration === 1 ? "1 hour" : `${duration} hours`
-  } else if (unit.toLowerCase() === "minutes") {
+  } else if (lowerUnit === "minutes") {
     return duration === 1 ? "1 minute" : `${duration} minutes`
-  } else if (unit.toLowerCase() === "days") {
+  } else if (lowerUnit === "days") {
     return duration === 1 ? "1 day" : `${duration} days`
   }
-  return `${duration} ${unit.toLowerCase()}`
+  return `${duration} ${lowerUnit}`
 }
 
 // Helper function to get service type display name
