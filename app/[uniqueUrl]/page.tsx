@@ -321,7 +321,7 @@ export default function ProfessionalLandingPage() {
                           <div key={service.id} className="p-4 border-b border-gray-50 last:border-b-0">
                             <div className="flex justify-between items-start mb-2">
                               <h4 className="font-medium text-gray-900 body-font">{service.name}</h4>
-                              {service.cost && (
+                              {service.cost && professionalData.show_prices && (
                                 <span className="text-[#E75837] font-semibold body-font">{service.cost}</span>
                               )}
                             </div>
