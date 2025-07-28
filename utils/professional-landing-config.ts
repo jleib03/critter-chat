@@ -48,6 +48,7 @@ export interface ProfessionalLandingData {
   total_reviews: number
   years_experience: number
   certifications: string[]
+  show_prices: boolean
 }
 
 // Helper function to format time from 24-hour to 12-hour format
@@ -371,6 +372,7 @@ export async function loadProfessionalLandingData(
           "Professional Service Provider",
           "Critter Verified Professional",
         ],
+        show_prices: business?.show_prices ?? true,
       }
 
       console.log("✅ Final parsed landing data:", JSON.stringify(landingData, null, 2))
@@ -419,6 +421,7 @@ export function getDefaultProfessionalData(uniqueUrl: string): ProfessionalLandi
     total_reviews: 50,
     years_experience: 5,
     certifications: ["Certified Professional", "Licensed Pet Care Provider"],
+    show_prices: true,
   }
 }
 
