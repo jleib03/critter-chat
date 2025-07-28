@@ -120,6 +120,12 @@ export default function ProfessionalLandingPage() {
     return professionalData.working_hours[today] || { open: "9:00 AM", close: "6:00 PM", isOpen: true }
   }
 
+  const todayHours = getCurrentDayHours()
+  const PrimaryServiceIcon =
+    professionalData.services && professionalData.services.length > 0
+      ? getServiceIcon(professionalData.services[0].type)
+      : Scissors
+
   // Show loading state while data is being fetched
   if (isProfessionalDataLoading) {
     return (
@@ -155,8 +161,6 @@ export default function ProfessionalLandingPage() {
     )
   }
 
-  const todayHours = getCurrentDayHours()
-
   return (
     <div className="min-h-screen bg-[#FBF8F3]">
       <Header />
@@ -170,7 +174,7 @@ export default function ProfessionalLandingPage() {
               <div className="lg:col-span-2">
                 <div className="flex items-start gap-4 mb-6">
                   <div className="w-20 h-20 bg-[#E75837] rounded-full flex items-center justify-center">
-                    <Scissors className="w-10 h-10 text-white" />
+                    <PrimaryServiceIcon className="w-10 h-10 text-white" />
                   </div>
                   <div>
                     <h1 className="text-4xl font-bold text-gray-900 mb-2 title-font">{professionalData.name}</h1>
