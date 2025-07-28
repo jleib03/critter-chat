@@ -21,7 +21,10 @@ export function ServiceSelectorBar({
   onContinue,
   summaryOnly,
 }: ServiceSelectorBarProps) {
-  const formatDuration = (duration: number, unit: string) => {
+  const formatDuration = (duration: number | null, unit: string | null) => {
+    if (duration === null || unit === null) {
+      return null
+    }
     if (unit === "Minutes") {
       if (duration >= 60) {
         const hours = Math.floor(duration / 60)
@@ -39,8 +42,14 @@ export function ServiceSelectorBar({
     return `${duration} ${unit.toLowerCase()}`
   }
 
-  const formatPrice = (price: string | number, currency: string) => {
+  const formatPrice = (price: string | number | null, currency: string | null) => {
+    if (price === null || price === undefined) {
+      return "By Consult"
+    }
     const priceNumber = typeof price === "string" ? Number.parseFloat(price) : price
+    if (isNaN(priceNumber)) {
+      return "By Consult"
+    }
     return `$${priceNumber.toFixed(0)}`
   }
 
@@ -68,9 +77,12 @@ export function ServiceSelectorBar({
   })
 
   const totalCost = selectedServices.reduce((total, service) => {
+    if (service.customer_cost === null || service.customer_cost === undefined) {
+      return total
+    }
     const cost =
       typeof service.customer_cost === "string" ? Number.parseFloat(service.customer_cost) : service.customer_cost
-    return total + cost
+    return total + (isNaN(cost) ? 0 : cost)
   }, 0)
 
   if (summaryOnly) {
@@ -78,19 +90,20 @@ export function ServiceSelectorBar({
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-4 header-font">Selected Services</h2>
         <div className="space-y-2">
-          {selectedServices.map((service) => (
-            <div key={service.name} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-              <div>
-                <p className="font-semibold header-font">{service.name}</p>
-                <p className="text-sm text-gray-500 body-font">
-                  {formatDuration(service.duration_number, service.duration_unit)}
+          {selectedServices.map((service) => {
+            const durationText = formatDuration(service.duration_number, service.duration_unit)
+            return (
+              <div key={service.name} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <p className="font-semibold header-font">{service.name}</p>
+                  {durationText && <p className="text-sm text-gray-500 body-font">{durationText}</p>}
+                </div>
+                <p className="font-semibold body-font">
+                  {formatPrice(service.customer_cost, service.customer_cost_currency)}
                 </p>
               </div>
-              <p className="font-semibold body-font">
-                {formatPrice(service.customer_cost, service.customer_cost_currency)}
-              </p>
-            </div>
-          ))}
+            )
+          })}
         </div>
         <div className="mt-4 pt-4 border-t flex justify-between font-bold text-lg header-font">
           <span>Total</span>
@@ -116,6 +129,7 @@ export function ServiceSelectorBar({
               <div className="divide-y divide-gray-200/60 bg-white">
                 {servicesByCategory[category].map((service, index) => {
                   const isSelected = selectedServices.some((s) => s.name === service.name)
+                  const durationText = formatDuration(service.duration_number, service.duration_unit)
                   return (
                     <div
                       key={`${category}-${index}`}
@@ -134,12 +148,12 @@ export function ServiceSelectorBar({
                             <p className="text-sm text-gray-600 mt-1 body-font line-clamp-2">{service.description}</p>
                           )}
                           <div className="flex items-center gap-4 mt-3">
-                            <div className="flex items-center gap-1 text-sm text-gray-500">
-                              <Clock className="w-4 h-4 flex-shrink-0" />
-                              <span className="body-font">
-                                {formatDuration(service.duration_number, service.duration_unit)}
-                              </span>
-                            </div>
+                            {durationText && (
+                              <div className="flex items-center gap-1 text-sm text-gray-500">
+                                <Clock className="w-4 h-4 flex-shrink-0" />
+                                <span className="body-font">{durationText}</span>
+                              </div>
+                            )}
                             <div className="flex items-center gap-1 text-sm text-gray-500">
                               <DollarSign className="w-4 h-4 flex-shrink-0" />
                               <span className="body-font font-medium">

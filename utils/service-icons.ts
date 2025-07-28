@@ -1,4 +1,19 @@
-import { Scissors, Heart, Home, MapPin, Stethoscope, Car, Users, Clock, Star, Shield, Zap, Coffee } from "lucide-react"
+import {
+  Scissors,
+  Heart,
+  Home,
+  MapPin,
+  Stethoscope,
+  Car,
+  Users,
+  Clock,
+  Star,
+  Shield,
+  Zap,
+  Coffee,
+  PawPrint,
+} from "lucide-react"
+import type { ServiceItem } from "./professional-landing-config"
 
 // Service type to icon mapping
 export const getServiceIcon = (serviceType: string) => {
@@ -35,6 +50,25 @@ export const getServiceIcon = (serviceType: string) => {
     default:
       return Heart
   }
+}
+
+// New function to determine the primary hero icon for the landing page
+export const getPrimaryServiceIcon = (services: ServiceItem[] | undefined) => {
+  if (!services || services.length === 0) {
+    return Scissors // Default icon if no services
+  }
+
+  // Count unique service types to identify generalists
+  const uniqueServiceTypes = new Set(services.map((s) => s.type))
+
+  // If provider offers more than 2 distinct types of services, show a generic paw print
+  if (uniqueServiceTypes.size > 2) {
+    return PawPrint
+  }
+
+  // Otherwise, show the icon for the primary service (services are pre-sorted)
+  const primaryServiceType = services[0].type
+  return getServiceIcon(primaryServiceType)
 }
 
 // Service type to color mapping

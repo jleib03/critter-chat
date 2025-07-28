@@ -3,23 +3,12 @@
 import { useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import {
-  Calendar,
-  Clock,
-  MapPin,
-  Phone,
-  Mail,
-  UserPlus,
-  MessageCircle,
-  ArrowRight,
-  Scissors,
-  Loader2,
-} from "lucide-react"
+import { Calendar, Clock, MapPin, Phone, Mail, UserPlus, MessageCircle, ArrowRight, Loader2 } from "lucide-react"
 import Header from "../../components/header"
 import LiveChatWidget from "../../components/live-chat-widget"
 import { loadChatConfig } from "../../utils/chat-config"
 import { loadProfessionalLandingData, getDefaultProfessionalData } from "../../utils/professional-landing-config"
-import { getServiceIcon, getServiceColor } from "../../utils/service-icons"
+import { getServiceIcon, getServiceColor, getPrimaryServiceIcon } from "../../utils/service-icons"
 import type { ChatAgentConfig } from "../../types/chat-config"
 import type { ProfessionalLandingData, ServiceGroup } from "../../utils/professional-landing-config"
 
@@ -156,6 +145,7 @@ export default function ProfessionalLandingPage() {
   }
 
   const todayHours = getCurrentDayHours()
+  const PrimaryServiceIcon = getPrimaryServiceIcon(professionalData?.services)
 
   return (
     <div className="min-h-screen bg-[#FBF8F3]">
@@ -170,7 +160,7 @@ export default function ProfessionalLandingPage() {
               <div className="lg:col-span-2">
                 <div className="flex items-start gap-4 mb-6">
                   <div className="w-20 h-20 bg-[#E75837] rounded-full flex items-center justify-center">
-                    <Scissors className="w-10 h-10 text-white" />
+                    <PrimaryServiceIcon className="w-10 h-10 text-white" />
                   </div>
                   <div>
                     <h1 className="text-4xl font-bold text-gray-900 mb-2 title-font">{professionalData.name}</h1>
