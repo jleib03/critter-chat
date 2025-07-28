@@ -230,7 +230,13 @@ export async function loadProfessionalLandingData(
       return null
     }
 
-    const data = await response.json()
+    const responseText = await response.text()
+    if (!responseText) {
+      console.warn("Webhook for professional landing data returned an empty response.")
+      return null
+    }
+
+    const data = JSON.parse(responseText)
     console.log("📥 Raw professional landing response:", JSON.stringify(data, null, 2))
 
     // Parse the new simplified response format
