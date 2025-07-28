@@ -3,23 +3,12 @@
 import { useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import {
-  Calendar,
-  Clock,
-  MapPin,
-  Phone,
-  Mail,
-  UserPlus,
-  MessageCircle,
-  ArrowRight,
-  Scissors,
-  Loader2,
-} from "lucide-react"
+import { Calendar, Clock, MapPin, Phone, Mail, UserPlus, MessageCircle, ArrowRight, Loader2 } from "lucide-react"
 import Header from "../../components/header"
 import LiveChatWidget from "../../components/live-chat-widget"
 import { loadChatConfig } from "../../utils/chat-config"
 import { loadProfessionalLandingData, getDefaultProfessionalData } from "../../utils/professional-landing-config"
-import { getServiceIcon, getServiceColor } from "../../utils/service-icons"
+import { getServiceIcon, getServiceColor, getPrimaryServiceIcon } from "../../utils/service-icons"
 import type { ChatAgentConfig } from "../../types/chat-config"
 import type { ProfessionalLandingData, ServiceGroup } from "../../utils/professional-landing-config"
 
@@ -120,12 +109,6 @@ export default function ProfessionalLandingPage() {
     return professionalData.working_hours[today] || { open: "9:00 AM", close: "6:00 PM", isOpen: true }
   }
 
-  const todayHours = getCurrentDayHours()
-  const PrimaryServiceIcon =
-    professionalData.services && professionalData.services.length > 0
-      ? getServiceIcon(professionalData.services[0].type)
-      : Scissors
-
   // Show loading state while data is being fetched
   if (isProfessionalDataLoading) {
     return (
@@ -160,6 +143,9 @@ export default function ProfessionalLandingPage() {
       </div>
     )
   }
+
+  const todayHours = getCurrentDayHours()
+  const PrimaryServiceIcon = getPrimaryServiceIcon(professionalData?.services)
 
   return (
     <div className="min-h-screen bg-[#FBF8F3]">
