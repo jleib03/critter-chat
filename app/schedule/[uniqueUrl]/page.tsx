@@ -268,7 +268,7 @@ export default function SchedulePage() {
           uniqueUrl: uniqueUrl,
           session_id: sessionIdRef.current,
           timestamp: new Date().toISOString(),
-          user_timezone: JSON.parse(userTimezoneRef.current!),
+          user_timezone: JSON.parse(userTimezoneRef.current),
         }),
       })
 
@@ -276,15 +276,7 @@ export default function SchedulePage() {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      const responseText = await response.text()
-      if (!responseText) {
-        console.warn("Webhook for schedule initialization returned an empty response.")
-        setError("Failed to load scheduling data. The server returned an empty response.")
-        setLoading(false)
-        return
-      }
-
-      const rawData = JSON.parse(responseText)
+      const rawData = await response.json()
       console.log("Raw webhook data:", rawData)
 
       // Parse the new webhook format
@@ -663,9 +655,7 @@ export default function SchedulePage() {
           total_appointments: recurringConfig.totalAppointments || recurringDates.length,
 
           // Enhanced details
-          pattern_description: `Every ${recurringConfig.frequency || 1} ${recurringConfig.unit || "week"}${
-            (recurringConfig.frequency || 1) > 1 ? "s" : ""
-          }`,
+          pattern_description: `Every ${recurringConfig.frequency || 1} ${recurringConfig.unit || "week"}${(recurringConfig.frequency || 1) > 1 ? "s" : ""}`,
           start_date: selectedTimeSlot!.date,
           start_time: selectedTimeSlot!.startTime,
           end_time: endTimeLocal,
@@ -698,9 +688,7 @@ export default function SchedulePage() {
               (recurringConfig.frequency || 1) === 1
                 ? `${recurringConfig.unit || "week"}ly`
                 : `every_${recurringConfig.frequency || 1}_${recurringConfig.unit || "week"}s`,
-            human_readable: `Every ${recurringConfig.frequency || 1} ${recurringConfig.unit || "week"}${
-              (recurringConfig.frequency || 1) > 1 ? "s" : ""
-            }`,
+            human_readable: `Every ${recurringConfig.frequency || 1} ${recurringConfig.unit || "week"}${(recurringConfig.frequency || 1) > 1 ? "s" : ""}`,
           },
         }
 
@@ -803,12 +791,7 @@ export default function SchedulePage() {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      const responseText = await response.text()
-      if (!responseText) {
-        console.error("Booking creation webhook returned an empty response.")
-        throw new Error("Booking creation failed: empty response from server.")
-      }
-      const result = JSON.parse(responseText)
+      const result = await response.json()
       console.log("Booking created:", result)
 
       if (result && result[0] && result[0].output === "Booking Successfully Created") {

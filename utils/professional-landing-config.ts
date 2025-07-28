@@ -79,7 +79,7 @@ function formatPhoneNumber(phone: string): string {
 
 // Helper function to format duration
 function formatDuration(duration: number | null, unit: string | null): string {
-  if (!duration || !unit) {
+  if (duration === null || unit === null) {
     return ""
   }
 
@@ -96,10 +96,7 @@ function formatDuration(duration: number | null, unit: string | null): string {
 }
 
 // Helper function to get service type display name
-function getServiceTypeDisplayName(serviceType: string | null): string {
-  if (!serviceType) {
-    return "Other Services"
-  }
+function getServiceTypeDisplayName(serviceType: string): string {
   const type = serviceType.toLowerCase()
 
   switch (type) {
@@ -230,13 +227,7 @@ export async function loadProfessionalLandingData(
       return null
     }
 
-    const responseText = await response.text()
-    if (!responseText) {
-      console.warn("Webhook for professional landing data returned an empty response.")
-      return null
-    }
-
-    const data = JSON.parse(responseText)
+    const data = await response.json()
     console.log("📥 Raw professional landing response:", JSON.stringify(data, null, 2))
 
     // Parse the new simplified response format
