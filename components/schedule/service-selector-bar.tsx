@@ -12,6 +12,7 @@ type ServiceSelectorBarProps = {
   onServiceSelect: (service: Service) => void
   onContinue?: () => void
   summaryOnly: boolean
+  showPrices: boolean
 }
 
 export function ServiceSelectorBar({
@@ -20,6 +21,7 @@ export function ServiceSelectorBar({
   onServiceSelect,
   onContinue,
   summaryOnly,
+  showPrices,
 }: ServiceSelectorBarProps) {
   const formatDuration = (duration: number | null, unit: string | null) => {
     if (duration === null || unit === null) {
@@ -81,7 +83,9 @@ export function ServiceSelectorBar({
       return total
     }
     const cost =
-      typeof service.customer_cost === "string" ? Number.parseFloat(service.customer_cost) : service.customer_cost
+      typeof service.customer_cost === "string"
+        ? Number.parseFloat(service.customer_cost)
+        : Number(service.customer_cost)
     return total + (isNaN(cost) ? 0 : cost)
   }, 0)
 
@@ -98,17 +102,21 @@ export function ServiceSelectorBar({
                   <p className="font-semibold header-font">{service.name}</p>
                   {durationText && <p className="text-sm text-gray-500 body-font">{durationText}</p>}
                 </div>
-                <p className="font-semibold body-font">
-                  {formatPrice(service.customer_cost, service.customer_cost_currency)}
-                </p>
+                {showPrices && (
+                  <p className="font-semibold body-font">
+                    {formatPrice(service.customer_cost, service.customer_cost_currency)}
+                  </p>
+                )}
               </div>
             )
           })}
         </div>
-        <div className="mt-4 pt-4 border-t flex justify-between font-bold text-lg header-font">
-          <span>Total</span>
-          <span>{formatPrice(totalCost, "USD")}</span>
-        </div>
+        {showPrices && (
+          <div className="mt-4 pt-4 border-t flex justify-between font-bold text-lg header-font">
+            <span>Total</span>
+            <span>{formatPrice(totalCost, "USD")}</span>
+          </div>
+        )}
       </div>
     )
   }
@@ -154,12 +162,14 @@ export function ServiceSelectorBar({
                                 <span className="body-font">{durationText}</span>
                               </div>
                             )}
-                            <div className="flex items-center gap-1 text-sm text-gray-500">
-                              <DollarSign className="w-4 h-4 flex-shrink-0" />
-                              <span className="body-font font-medium">
-                                {formatPrice(service.customer_cost, service.customer_cost_currency)}
-                              </span>
-                            </div>
+                            {showPrices && (
+                              <div className="flex items-center gap-1 text-sm text-gray-500">
+                                <DollarSign className="w-4 h-4 flex-shrink-0" />
+                                <span className="body-font font-medium">
+                                  {formatPrice(service.customer_cost, service.customer_cost_currency)}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center justify-center h-full pt-1">
@@ -189,7 +199,7 @@ export function ServiceSelectorBar({
               <p className="font-semibold header-font">
                 {selectedServices.length} service{selectedServices.length > 1 ? "s" : ""} selected
               </p>
-              <p className="text-sm text-gray-600 body-font">Total: {formatPrice(totalCost, "USD")}</p>
+              {showPrices && <p className="text-sm text-gray-600 body-font">Total: {formatPrice(totalCost, "USD")}</p>}
             </div>
             <Button onClick={onContinue} className="bg-[#E75837] hover:bg-[#d14a2a] text-white body-font">
               Continue

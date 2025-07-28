@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useMemo } from "react"
 import { useParams } from "next/navigation"
 import { Loader2, Clock, Calendar } from "lucide-react"
-import type { WebhookResponse, Service, SelectedTimeSlot, CustomerInfo, Pet, PetResponse } from "@/types/schedule"
+import type { Service, SelectedTimeSlot, CustomerInfo, Pet, PetResponse, ParsedWebhookData } from "@/types/schedule"
 import { ServiceSelectorBar } from "@/components/schedule/service-selector-bar"
 import { WeeklyCalendar } from "@/components/schedule/weekly-calendar"
 import { CustomerForm } from "@/components/schedule/customer-form"
@@ -21,40 +21,11 @@ import { Button } from "@/components/ui/button"
 
 type NotificationPreference = "1_hour" | "1_day" | "1_week"
 
-interface ParsedWebhookData {
-  professional_info: {
-    professional_id: string
-    professional_name: string
-  }
-  schedule: {
-    working_days: {
-      day: string
-      start: string
-      end: string
-      isWorking: boolean
-    }[]
-  }
-  bookings: {
-    all_booking_data: any[]
-  }
-  services: {
-    services_by_category: { [category: string]: Service[] }
-  }
-  config: any
-  booking_preferences: {
-    business_name?: string
-    booking_system?: string
-    allow_direct_booking?: boolean
-    require_approval?: boolean
-    online_booking_enabled?: boolean
-  } | null
-}
-
 export default function SchedulePage() {
   const params = useParams()
   const uniqueUrl = params.uniqueUrl as string
 
-  const [webhookData, setWebhookData] = useState<WebhookResponse | null>(null)
+  const [webhookData, setWebhookData] = useState<ParsedWebhookData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedServices, setSelectedServices] = useState<Service[]>([])
@@ -86,6 +57,7 @@ export default function SchedulePage() {
   } | null>(null)
   const [showBookingDisabledModal, setShowBookingDisabledModal] = useState(false)
   const [showBookingDisabled, setShowBookingDisabled] = useState(false)
+  const [showPrices, setShowPrices] = useState(true)
 
   // Helper function to determine if this is a direct booking
   const determineBookingType = () => {
@@ -282,6 +254,7 @@ export default function SchedulePage() {
       // Parse the new webhook format
       const parsedData = parseWebhookData(rawData)
       setWebhookData(parsedData)
+      setShowPrices(parsedData.show_prices)
 
       // Store the professional ID from the response
       const pId = parsedData.professional_info?.professional_id
@@ -481,6 +454,9 @@ export default function SchedulePage() {
       bookingPrefs = configEntry.webhook_response.config_data
     }
 
+    const priceSettingEntry = rawData.find((entry) => entry.hasOwnProperty("show_prices"))
+    const showPrices = priceSettingEntry ? priceSettingEntry.show_prices : true
+
     return {
       professional_info: {
         professional_id: scheduleEntry?.professional_id || uniqueUrl,
@@ -505,6 +481,7 @@ export default function SchedulePage() {
             online_booking_enabled: bookingPrefs.online_booking_enabled,
           }
         : null,
+      show_prices: showPrices,
     }
   }
 
@@ -625,7 +602,7 @@ export default function SchedulePage() {
         }
 
         totalDurationMinutes += durationInMinutes
-        totalCost += service.customer_cost
+        totalCost += Number(service.customer_cost)
       })
 
       const endDateTimeUTC = calculateEndDateTimeUTC(startDateTimeUTC, totalDurationMinutes, "Minutes")
@@ -1120,6 +1097,7 @@ export default function SchedulePage() {
             onBack={handleBackToCustomerForm}
             bookingType={bookingType}
             recurringConfig={recurringConfig}
+            showPrices={showPrices}
           />
         ) : showCustomerForm && selectedServices.length > 0 && selectedTimeSlot ? (
           <CustomerForm
@@ -1132,6 +1110,7 @@ export default function SchedulePage() {
             onBack={handleBackToSchedule}
             bookingType={bookingType}
             recurringConfig={recurringConfig}
+            showPrices={showPrices}
           />
         ) : showBookingTypeSelection && selectedServices.length > 0 ? (
           <BookingTypeSelection
@@ -1151,6 +1130,7 @@ export default function SchedulePage() {
                   onServiceSelect={handleServiceSelect}
                   onContinue={selectedServices.length > 0 ? () => setShowBookingTypeSelection(true) : undefined}
                   summaryOnly={false}
+                  showPrices={showPrices}
                 />
               </div>
             )}
@@ -1165,6 +1145,7 @@ export default function SchedulePage() {
                     selectedServices={selectedServices}
                     onServiceSelect={handleServiceSelect}
                     summaryOnly={true}
+                    showPrices={showPrices}
                   />
                 </div>
 

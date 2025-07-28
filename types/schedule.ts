@@ -216,6 +216,14 @@ export type ParsedWebhookData = {
     blocked_times: any[]
     business_name: string
   }
+  booking_preferences: {
+    business_name?: string
+    booking_system?: string
+    allow_direct_booking?: boolean
+    require_approval?: boolean
+    online_booking_enabled?: boolean
+  } | null
+  show_prices: boolean
 }
 
 export type RecurringConfig = {
