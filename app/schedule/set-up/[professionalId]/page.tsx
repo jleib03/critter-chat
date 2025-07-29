@@ -593,30 +593,58 @@ export default function ProfessionalSetupPage() {
     const startDate = newBlockedTime.start_date
     const endDate = newBlockedTime.end_date || newBlockedTime.start_date
 
-    if (!startDate) return
+    if (!startDate) {
+      toast({
+        title: "Date is required",
+        description: "Please select a start date for the blocked time.",
+        variant: "destructive",
+      })
+      return
+    }
 
-    // For multi-day blocks, create individual entries for each day
     const start = new Date(parseDateFromInput(startDate))
     const end = new Date(parseDateFromInput(endDate))
 
-    const blockedTimeEntries: WebhookBlockedTime[] = []
+    const allNewEntries: WebhookBlockedTime[] = []
 
-    for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
-      const blockedTime: WebhookBlockedTime = {
-        blocked_time_id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${date.getTime()}`,
-        employee_id: newBlockedTime.employee_id,
-        date: date.toISOString().split("T")[0], // Store as date internally
-        start_time: newBlockedTime.is_all_day ? "00:00" : newBlockedTime.start_time || "09:00",
-        end_time: newBlockedTime.is_all_day ? "23:59" : newBlockedTime.end_time || "17:00",
-        reason: newBlockedTime.reason || "",
-        is_recurring: newBlockedTime.is_recurring ?? false,
-        is_all_day: newBlockedTime.is_all_day ?? false,
-        recurrence_pattern: newBlockedTime.is_recurring ? newBlockedTime.recurrence_pattern : undefined, // Don't set if not recurring
-      }
-      blockedTimeEntries.push(blockedTime)
+    // Determine which employees to create blocks for.
+    // If employee_id is null (from selecting "All Team Members"), target all employees.
+    // Otherwise, filter for the specific employee.
+    const targetEmployees = !newBlockedTime.employee_id
+      ? employees
+      : employees.filter((emp) => emp.employee_id === newBlockedTime.employee_id)
+
+    if (targetEmployees.length === 0 && !newBlockedTime.employee_id) {
+      toast({
+        title: "No Team Members",
+        description: "You must have at least one team member to block time for 'All Team Members'.",
+        variant: "destructive",
+      })
+      return
     }
 
-    setBlockedTimes((prev) => [...prev, ...blockedTimeEntries])
+    // Iterate over each day in the selected date range
+    for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+      // For each day, iterate over each target employee and create a block
+      for (const employee of targetEmployees) {
+        const blockedTime: WebhookBlockedTime = {
+          blocked_time_id: `block_${Date.now()}_${employee.employee_id}_${date.getTime()}`,
+          employee_id: employee.employee_id, // Assign the specific employee ID
+          date: date.toISOString().split("T")[0],
+          start_time: newBlockedTime.is_all_day ? "00:00" : newBlockedTime.start_time || "09:00",
+          end_time: newBlockedTime.is_all_day ? "23:59" : newBlockedTime.end_time || "17:00",
+          reason: newBlockedTime.reason || "",
+          is_recurring: newBlockedTime.is_recurring ?? false,
+          is_all_day: newBlockedTime.is_all_day ?? false,
+          recurrence_pattern: newBlockedTime.is_recurring ? newBlockedTime.recurrence_pattern : undefined,
+        }
+        allNewEntries.push(blockedTime)
+      }
+    }
+
+    setBlockedTimes((prev) => [...prev, ...allNewEntries])
+
+    // Reset the form
     setNewBlockedTime({
       start_date: "",
       end_date: "",
@@ -625,6 +653,7 @@ export default function ProfessionalSetupPage() {
       reason: "",
       is_recurring: false,
       is_all_day: false,
+      employee_id: null, // Reset dropdown to "All Team Members"
     })
   }
 
