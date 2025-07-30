@@ -4,14 +4,14 @@ import type React from "react"
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Loader2, User, Mail, Calendar, Clock } from "lucide-react"
+import { ArrowLeft, User, Mail } from "lucide-react"
 import type { Service, SelectedTimeSlot, CustomerInfo, PetResponse } from "@/types/schedule"
-import type { BookingType, RecurringConfig } from "@/components/schedule/booking-type-selection"
+import type { RecurringConfig } from "./booking-type-selection"
 
-interface CustomerFormProps {
+type CustomerFormProps = {
   selectedServices: Service[]
   selectedTimeSlot: SelectedTimeSlot
   professionalId: string
@@ -19,7 +19,7 @@ interface CustomerFormProps {
   sessionId: string
   onPetsReceived: (customerInfo: CustomerInfo, petResponse: PetResponse) => void
   onBack: () => void
-  bookingType?: BookingType | null
+  bookingType?: "one-time" | "recurring"
   recurringConfig?: RecurringConfig | null
   showPrices?: boolean
 }
@@ -44,6 +44,13 @@ export function CustomerForm({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const handleInputChange = (field: keyof CustomerInfo, value: string) => {
+    setCustomerInfo((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -58,7 +65,7 @@ export function CustomerForm({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          action: "get_customer_pets",
+          action: "lookup_pets",
           professional_id: professionalId,
           session_id: sessionId,
           timestamp: new Date().toISOString(),
@@ -77,16 +84,25 @@ export function CustomerForm({
       const result = await response.json()
       console.log("Pet lookup result:", result)
 
-      // Handle the response - it should contain pets data
-      const petResponse: PetResponse = {
-        pets: result.pets || [],
-        customer_exists: result.customer_exists || false,
+      // Parse the pet response - handle the nested array structure
+      let petResponse: PetResponse = { pets: [] }
+
+      if (Array.isArray(result) && result.length > 0 && result[0].pets) {
+        // Handle the case where result is an array with pets nested inside
+        petResponse = { pets: result[0].pets }
+      } else if (result.pets) {
+        // Handle the case where pets are directly in the result
+        petResponse = { pets: result.pets }
+      } else if (Array.isArray(result)) {
+        // Handle the case where result is directly an array of pets
+        petResponse = { pets: result }
       }
 
+      console.log("Parsed pet response:", petResponse)
       onPetsReceived(customerInfo, petResponse)
     } catch (err) {
-      console.error("Error fetching pets:", err)
-      setError("Failed to load customer information. Please try again.")
+      console.error("Error looking up pets:", err)
+      setError("Failed to look up pets. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -94,205 +110,171 @@ export function CustomerForm({
 
   const totalCost = selectedServices.reduce((sum, service) => sum + Number(service.customer_cost), 0)
   const totalDuration = selectedServices.reduce((sum, service) => {
-    let duration = service.duration_number
+    let durationInMinutes = service.duration_number
     if (service.duration_unit === "Hours") {
-      duration = duration * 60
+      durationInMinutes = service.duration_number * 60
     } else if (service.duration_unit === "Days") {
-      duration = duration * 24 * 60
+      durationInMinutes = service.duration_number * 24 * 60
     }
-    return sum + duration
+    return sum + durationInMinutes
   }, 0)
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(amount)
+  }
+
   const formatDuration = (minutes: number) => {
-    if (minutes < 60) {
-      return `${minutes} min`
-    } else if (minutes < 1440) {
-      const hours = Math.floor(minutes / 60)
-      const remainingMinutes = minutes % 60
-      return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    if (hours > 0 && mins > 0) {
+      return `${hours}h ${mins}m`
+    } else if (hours > 0) {
+      return `${hours}h`
     } else {
-      const days = Math.floor(minutes / 1440)
-      const remainingHours = Math.floor((minutes % 1440) / 60)
-      return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days}d`
+      return `${mins}m`
     }
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      {/* Back Button */}
-      <Button onClick={onBack} variant="outline" className="flex items-center gap-2 rounded-lg bg-transparent">
-        <ArrowLeft className="w-4 h-4" />
+    <div className="max-w-6xl mx-auto space-y-6">
+      <Button variant="ghost" onClick={onBack} className="text-gray-600 hover:text-gray-900 body-font">
+        <ArrowLeft className="w-4 h-4 mr-2" />
         Back to Schedule
       </Button>
 
-      {/* Booking Summary */}
-      <Card className="shadow-lg border-0 rounded-2xl">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-xl header-font">Booking Summary</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-center gap-3">
-              <Calendar className="w-5 h-5 text-[#E75837]" />
-              <div>
-                <p className="font-medium body-font">
-                  {selectedTimeSlot.dayOfWeek},{" "}
-                  {new Date(selectedTimeSlot.date).toLocaleDateString("en-US", {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </p>
-                <p className="text-sm text-gray-600 body-font">Date</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Clock className="w-5 h-5 text-[#E75837]" />
-              <div>
-                <p className="font-medium body-font">{selectedTimeSlot.startTime}</p>
-                <p className="text-sm text-gray-600 body-font">Start Time</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t pt-4">
-            <h4 className="font-medium mb-3 header-font">Selected Services</h4>
-            <div className="space-y-2">
-              {selectedServices.map((service, index) => (
-                <div key={index} className="flex justify-between items-center py-2">
-                  <div>
-                    <p className="font-medium body-font">{service.name}</p>
-                    <p className="text-sm text-gray-600 body-font">
-                      {service.duration_number} {service.duration_unit.toLowerCase()}
-                    </p>
-                  </div>
-                  {showPrices && (
-                    <p className="font-medium body-font">
-                      {service.customer_cost_currency}
-                      {Number(service.customer_cost).toFixed(2)}
-                    </p>
-                  )}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Customer Information Form */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl header-font text-[#E75837] flex items-center gap-2">
+              <User className="w-5 h-5" />
+              Contact Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="firstName" className="body-font">
+                    First Name
+                  </Label>
+                  <Input
+                    id="firstName"
+                    type="text"
+                    value={customerInfo.firstName}
+                    onChange={(e) => handleInputChange("firstName", e.target.value)}
+                    required
+                    className="mt-1"
+                  />
                 </div>
-              ))}
-            </div>
-            <div className="border-t pt-3 mt-3 flex justify-between items-center">
-              <div>
-                <p className="font-semibold body-font">Total</p>
-                <p className="text-sm text-gray-600 body-font">{formatDuration(totalDuration)}</p>
+                <div>
+                  <Label htmlFor="lastName" className="body-font">
+                    Last Name
+                  </Label>
+                  <Input
+                    id="lastName"
+                    type="text"
+                    value={customerInfo.lastName}
+                    onChange={(e) => handleInputChange("lastName", e.target.value)}
+                    required
+                    className="mt-1"
+                  />
+                </div>
               </div>
-              {showPrices && (
-                <p className="font-semibold text-lg body-font">
-                  {selectedServices[0]?.customer_cost_currency || "$"}
-                  {totalCost.toFixed(2)}
-                </p>
-              )}
-            </div>
-          </div>
 
-          {bookingType === "recurring" && recurringConfig && (
-            <div className="border-t pt-4">
-              <h4 className="font-medium mb-2 header-font text-blue-600">Recurring Booking</h4>
-              <p className="text-sm text-gray-600 body-font">
-                This appointment will repeat every {recurringConfig.frequency} {recurringConfig.unit}
-                {recurringConfig.frequency > 1 ? "s" : ""} until{" "}
-                {new Date(recurringConfig.endDate).toLocaleDateString("en-US", {
-                  month: "long",
-                  day: "numeric",
-                  year: "numeric",
-                })}
-              </p>
-              {recurringConfig.totalAppointments && (
-                <p className="text-sm text-blue-600 body-font mt-1">
-                  Total appointments: {recurringConfig.totalAppointments}
-                </p>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Customer Information Form */}
-      <Card className="shadow-lg border-0 rounded-2xl">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-xl header-font">
-            <User className="w-5 h-5 text-[#E75837]" />
-            Your Information
-          </CardTitle>
-          <p className="text-gray-600 body-font">Please provide your contact details</p>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="firstName" className="body-font font-medium">
-                  First Name
+                <Label htmlFor="email" className="body-font flex items-center gap-2">
+                  <Mail className="w-4 h-4" />
+                  Email Address
                 </Label>
-                <Input
-                  id="firstName"
-                  type="text"
-                  value={customerInfo.firstName}
-                  onChange={(e) => setCustomerInfo({ ...customerInfo, firstName: e.target.value })}
-                  required
-                  className="mt-1 rounded-lg"
-                  placeholder="Enter your first name"
-                />
-              </div>
-              <div>
-                <Label htmlFor="lastName" className="body-font font-medium">
-                  Last Name
-                </Label>
-                <Input
-                  id="lastName"
-                  type="text"
-                  value={customerInfo.lastName}
-                  onChange={(e) => setCustomerInfo({ ...customerInfo, lastName: e.target.value })}
-                  required
-                  className="mt-1 rounded-lg"
-                  placeholder="Enter your last name"
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="email" className="body-font font-medium">
-                Email Address
-              </Label>
-              <div className="relative mt-1">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
                   id="email"
                   type="email"
                   value={customerInfo.email}
-                  onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
+                  onChange={(e) => handleInputChange("email", e.target.value)}
                   required
-                  className="pl-10 rounded-lg"
-                  placeholder="Enter your email address"
+                  className="mt-1"
                 />
               </div>
-            </div>
 
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-red-600 text-sm body-font">{error}</p>
+              {error && <div className="text-red-600 text-sm body-font">{error}</div>}
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-[#E75837] hover:bg-[#d14a2a] text-white body-font"
+              >
+                {loading ? "Looking up pets..." : "Continue to Pet Selection"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* Booking Summary */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl header-font text-[#E75837]">Booking Summary</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-600 body-font">Professional</span>
+                <span className="font-medium body-font">{professionalName}</span>
               </div>
-            )}
-
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-[#E75837] hover:bg-[#d14a2a] text-white py-3 rounded-lg font-medium transition-colors"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Loading your pets...
-                </>
-              ) : (
-                "Continue to Pet Selection"
+              <div className="flex justify-between">
+                <span className="text-gray-600 body-font">Date</span>
+                <span className="font-medium body-font">
+                  {new Date(selectedTimeSlot.date).toLocaleDateString("en-US", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 body-font">Time</span>
+                <span className="font-medium body-font">{selectedTimeSlot.startTime}</span>
+              </div>
+              {bookingType === "recurring" && recurringConfig && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600 body-font">Recurring</span>
+                  <span className="font-medium text-blue-600 body-font">
+                    Every {recurringConfig.frequency} {recurringConfig.unit}
+                    {recurringConfig.frequency > 1 ? "s" : ""}
+                  </span>
+                </div>
               )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+            </div>
+            <div className="border-t pt-4 space-y-2">
+              <h4 className="font-semibold header-font">Selected Services</h4>
+              {selectedServices.map((service) => (
+                <div key={service.name} className="flex justify-between">
+                  <span className="text-gray-600 body-font">{service.name}</span>
+                  {showPrices && (
+                    <span className="font-medium body-font">{formatCurrency(Number(service.customer_cost))}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="border-t pt-4">
+              {showPrices && (
+                <div className="flex justify-between items-center font-semibold mb-2">
+                  <span className="header-font">Total</span>
+                  <span className="header-font">{formatCurrency(totalCost)}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-600 body-font">Total Duration</span>
+                <span className="text-gray-600 body-font">{formatDuration(totalDuration)}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
