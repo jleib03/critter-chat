@@ -62,7 +62,9 @@ export function BookingConfirmation({
           <div className="flex justify-between text-sm">
             <span className="text-gray-600">Pet(s):</span>
             <span className="font-medium">
-              {selectedPets.map((pet) => `${pet.pet_name} (${pet.pet_type})`).join(", ")}
+              {selectedPets?.length > 0
+                ? selectedPets.map((pet) => `${pet.pet_name} (${pet.pet_type})`).join(", ")
+                : "No pets selected"}
             </span>
           </div>
           <div className="flex justify-between text-sm">

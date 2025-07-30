@@ -7,8 +7,8 @@ import type { Service, SelectedTimeSlot, CustomerInfo, Pet, PetResponse, ParsedW
 import { ServiceSelectorBar } from "@/components/schedule/service-selector-bar"
 import { WeeklyCalendar } from "@/components/schedule/weekly-calendar"
 import { CustomerForm } from "@/components/schedule/customer-form"
-import { PetSelection } from "@/components/schedule/pet-selection"
 import { BookingConfirmation } from "@/components/schedule/booking-confirmation"
+import { PetSelection } from "@/components/schedule/pet-selection" // Import PetSelection component
 import { loadProfessionalConfig, saveProfessionalConfig } from "@/utils/professional-config"
 import type { ProfessionalConfig } from "@/types/professional-config"
 import {
@@ -1075,7 +1075,7 @@ export default function SchedulePage() {
           <BookingConfirmation
             selectedTimeSlot={selectedTimeSlot!}
             customerInfo={customerInfo}
-            selectedPet={selectedPets[0]} // Corrected variable name
+            selectedPets={selectedPets}
             professionalName={webhookData.professional_info.professional_name}
             onNewBooking={handleNewBooking}
             bookingType={bookingType}
