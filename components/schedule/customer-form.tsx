@@ -2,15 +2,14 @@
 
 import { useState } from "react"
 
-const SCHEDULE_WEBHOOK_URL = "https://example.com/webhook"
-
 const CustomerForm = () => {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
 
   const handleSubmit = async (event) => {
     event.preventDefault()
-    const response = await fetch(SCHEDULE_WEBHOOK_URL, {
+    const webhookUrl = "https://jleib03.app.n8n.cloud/webhook/b550ab35-0e19-48d0-a831-a12dd775dfce"
+    const response = await fetch(webhookUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
