@@ -6,21 +6,10 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, ArrowLeft, User, Calendar, Clock, DollarSign } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { toast } from "@/hooks/use-toast"
+import { ArrowLeft, Loader2, User, Mail, Calendar, Clock } from "lucide-react"
 import type { Service, SelectedTimeSlot, CustomerInfo, PetResponse } from "@/types/schedule"
-import type { BookingType, RecurringConfig } from "./booking-type-selection"
-
-interface CustomerData {
-  firstName: string
-  lastName: string
-  email: string
-  phone: string
-  notes: string
-}
+import type { BookingType, RecurringConfig } from "@/components/schedule/booking-type-selection"
 
 interface CustomerFormProps {
   selectedServices: Service[]
@@ -28,11 +17,11 @@ interface CustomerFormProps {
   professionalId: string
   professionalName: string
   sessionId: string
-  bookingType: BookingType | null
-  recurringConfig: RecurringConfig | null
   onPetsReceived: (customerInfo: CustomerInfo, petResponse: PetResponse) => void
   onBack: () => void
-  showPrices: boolean
+  bookingType?: BookingType | null
+  recurringConfig?: RecurringConfig | null
+  showPrices?: boolean
 }
 
 export function CustomerForm({
@@ -41,143 +30,44 @@ export function CustomerForm({
   professionalId,
   professionalName,
   sessionId,
-  bookingType,
-  recurringConfig,
   onPetsReceived,
   onBack,
-  showPrices,
+  bookingType,
+  recurringConfig,
+  showPrices = true,
 }: CustomerFormProps) {
-  const [customerData, setCustomerData] = useState<CustomerData>({
+  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     firstName: "",
     lastName: "",
     email: "",
-    phone: "",
-    notes: "",
   })
-
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [errors, setErrors] = useState<Partial<CustomerData>>({})
-
-  // Calculate totals
-  const totalCost = selectedServices.reduce((sum, service) => {
-    return sum + Number.parseFloat(service.customer_cost.toString())
-  }, 0)
-
-  const totalDuration = selectedServices.reduce((sum, service) => {
-    let durationInMinutes = service.duration_number
-    if (service.duration_unit === "Hours") {
-      durationInMinutes = service.duration_number * 60
-    } else if (service.duration_unit === "Days") {
-      durationInMinutes = service.duration_number * 24 * 60
-    }
-    return sum + durationInMinutes
-  }, 0)
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount)
-  }
-
-  const formatDuration = (minutes: number) => {
-    const hours = Math.floor(minutes / 60)
-    const mins = minutes % 60
-    if (hours > 0 && mins > 0) {
-      return `${hours}h ${mins}m`
-    } else if (hours > 0) {
-      return `${hours}h`
-    } else {
-      return `${mins}m`
-    }
-  }
-
-  const formatDate = (dateStr: string) => {
-    const [year, month, day] = dateStr.split("-").map(Number)
-    const date = new Date(year, month - 1, day)
-    return date.toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    })
-  }
-
-  const validateForm = () => {
-    const newErrors: Partial<CustomerData> = {}
-
-    if (!customerData.firstName.trim()) {
-      newErrors.firstName = "First name is required"
-    }
-    if (!customerData.lastName.trim()) {
-      newErrors.lastName = "Last name is required"
-    }
-    if (!customerData.email.trim()) {
-      newErrors.email = "Email is required"
-    } else if (!/\S+@\S+\.\S+/.test(customerData.email)) {
-      newErrors.email = "Please enter a valid email address"
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const handleInputChange = (field: keyof CustomerData, value: string) => {
-    setCustomerData((prev) => ({ ...prev, [field]: value }))
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }))
-    }
-  }
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (!validateForm()) {
-      toast({
-        title: "Please fill in all required fields",
-        description: "First name, last name, and email are required.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setIsSubmitting(true)
+    setLoading(true)
+    setError(null)
 
     try {
-      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
-
-      console.log("Sending webhook to:", webhookUrl)
-
-      const payload = {
-        professional_id: professionalId,
-        action: "get_customer_pets",
-        session_id: sessionId,
-        timestamp: new Date().toISOString(),
-        customer_info: {
-          first_name: customerData.firstName.trim(),
-          last_name: customerData.lastName.trim(),
-          email: customerData.email.trim().toLowerCase(),
-          phone: customerData.phone.trim(),
-          notes: customerData.notes.trim(),
-        },
-        booking_context: {
-          selected_services: selectedServices.map((service) => service.name),
-          selected_date: selectedTimeSlot.date,
-          selected_time: selectedTimeSlot.startTime,
-          booking_type: bookingType,
-          recurring_config: recurringConfig,
-        },
-      }
-
-      console.log("Sending customer pets webhook with payload:", payload)
+      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/b550ab35-0e19-48d0-a831-a12dd775dfce"
 
       const response = await fetch(webhookUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          action: "get_customer_pets",
+          professional_id: professionalId,
+          session_id: sessionId,
+          timestamp: new Date().toISOString(),
+          customer_info: {
+            first_name: customerInfo.firstName.trim(),
+            last_name: customerInfo.lastName.trim(),
+            email: customerInfo.email.trim().toLowerCase(),
+          },
+        }),
       })
 
       if (!response.ok) {
@@ -185,276 +75,224 @@ export function CustomerForm({
       }
 
       const result = await response.json()
-      console.log("Pets webhook response received:", result)
+      console.log("Pet lookup result:", result)
 
-      // Parse the response correctly - it's an array with nested pets
-      let pets: any[] = []
-
-      if (Array.isArray(result)) {
-        // Handle array response format: [{"pets":[...]}]
-        const firstItem = result[0]
-        if (firstItem && firstItem.pets && Array.isArray(firstItem.pets)) {
-          pets = firstItem.pets
-        }
-      } else if (result && result.pets && Array.isArray(result.pets)) {
-        // Handle direct object format: {"pets":[...]}
-        pets = result.pets
-      }
-
-      console.log("Parsed pets:", pets)
-
-      const customerInfo: CustomerInfo = {
-        firstName: customerData.firstName.trim(),
-        lastName: customerData.lastName.trim(),
-        email: customerData.email.trim().toLowerCase(),
-      }
-
+      // Handle the response - it should contain pets data
       const petResponse: PetResponse = {
-        pets: pets.map((pet: any) => ({
-          pet_id: pet.pet_id || pet.id || "",
-          pet_name: pet.pet_name || pet.name || "",
-          pet_type: pet.pet_type || pet.type || "",
-          breed: pet.breed || "",
-          age: pet.age || "",
-          weight: pet.weight || "",
-          special_notes: pet.special_notes || pet.notes || "",
-        })),
+        pets: result.pets || [],
+        customer_exists: result.customer_exists || false,
       }
-
-      console.log("Final pet response:", petResponse)
-
-      toast({
-        title: "Customer information saved",
-        description: `Found ${petResponse.pets.length} pet${petResponse.pets.length !== 1 ? "s" : ""} for your account.`,
-      })
 
       onPetsReceived(customerInfo, petResponse)
-    } catch (error) {
-      console.error("Error getting customer pets:", error)
-      toast({
-        title: "Error",
-        description: "Failed to get pet information. Please try again.",
-        variant: "destructive",
-      })
+    } catch (err) {
+      console.error("Error fetching pets:", err)
+      setError("Failed to load customer information. Please try again.")
     } finally {
-      setIsSubmitting(false)
+      setLoading(false)
+    }
+  }
+
+  const totalCost = selectedServices.reduce((sum, service) => sum + Number(service.customer_cost), 0)
+  const totalDuration = selectedServices.reduce((sum, service) => {
+    let duration = service.duration_number
+    if (service.duration_unit === "Hours") {
+      duration = duration * 60
+    } else if (service.duration_unit === "Days") {
+      duration = duration * 24 * 60
+    }
+    return sum + duration
+  }, 0)
+
+  const formatDuration = (minutes: number) => {
+    if (minutes < 60) {
+      return `${minutes} min`
+    } else if (minutes < 1440) {
+      const hours = Math.floor(minutes / 60)
+      const remainingMinutes = minutes % 60
+      return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`
+    } else {
+      const days = Math.floor(minutes / 1440)
+      const remainingHours = Math.floor((minutes % 1440) / 60)
+      return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days}d`
     }
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-6">
       {/* Back Button */}
-      <Button variant="ghost" onClick={onBack} className="text-gray-600 hover:text-gray-900 body-font">
-        <ArrowLeft className="w-4 h-4 mr-2" />
+      <Button onClick={onBack} variant="outline" className="flex items-center gap-2 rounded-lg bg-transparent">
+        <ArrowLeft className="w-4 h-4" />
         Back to Schedule
       </Button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Contact Information Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl header-font text-[#E75837] flex items-center gap-2">
-              <User className="w-5 h-5" />
-              Contact Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Name Fields */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="firstName" className="body-font">
-                    First Name *
-                  </Label>
-                  <Input
-                    id="firstName"
-                    type="text"
-                    value={customerData.firstName}
-                    onChange={(e) => handleInputChange("firstName", e.target.value)}
-                    className={`body-font ${errors.firstName ? "border-red-500" : ""}`}
-                    placeholder="First Name"
-                    required
-                  />
-                  {errors.firstName && <p className="text-sm text-red-500 mt-1 body-font">{errors.firstName}</p>}
-                </div>
-                <div>
-                  <Label htmlFor="lastName" className="body-font">
-                    Last Name *
-                  </Label>
-                  <Input
-                    id="lastName"
-                    type="text"
-                    value={customerData.lastName}
-                    onChange={(e) => handleInputChange("lastName", e.target.value)}
-                    className={`body-font ${errors.lastName ? "border-red-500" : ""}`}
-                    placeholder="Last Name"
-                    required
-                  />
-                  {errors.lastName && <p className="text-sm text-red-500 mt-1 body-font">{errors.lastName}</p>}
-                </div>
-              </div>
-
-              {/* Email and Phone */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="email" className="body-font">
-                    Email Address *
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={customerData.email}
-                    onChange={(e) => handleInputChange("email", e.target.value)}
-                    className={`body-font ${errors.email ? "border-red-500" : ""}`}
-                    placeholder="your@email.com"
-                    required
-                  />
-                  {errors.email && <p className="text-sm text-red-500 mt-1 body-font">{errors.email}</p>}
-                </div>
-                <div>
-                  <Label htmlFor="phone" className="body-font">
-                    Phone Number
-                  </Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={customerData.phone}
-                    onChange={(e) => handleInputChange("phone", e.target.value)}
-                    className="body-font"
-                    placeholder="(555) 123-4567"
-                  />
-                </div>
-              </div>
-
-              {/* Special Instructions */}
+      {/* Booking Summary */}
+      <Card className="shadow-lg border-0 rounded-2xl">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl header-font">Booking Summary</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex items-center gap-3">
+              <Calendar className="w-5 h-5 text-[#E75837]" />
               <div>
-                <Label htmlFor="notes" className="body-font">
-                  Special Instructions or Notes
-                </Label>
-                <Textarea
-                  id="notes"
-                  value={customerData.notes}
-                  onChange={(e) => handleInputChange("notes", e.target.value)}
-                  className="body-font min-h-[100px]"
-                  placeholder="Any special requests or information we should know..."
-                />
-              </div>
-
-              {/* Submit Button */}
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-[#E75837] hover:bg-[#d14a2a] text-white body-font"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Getting Pet Information...
-                  </>
-                ) : (
-                  <>Continue to Pet Selection</>
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        {/* Booking Summary */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl header-font text-[#E75837]">Booking Summary</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Date & Time */}
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Calendar className="w-4 h-4 text-gray-500" />
-                <h3 className="font-medium text-gray-900 body-font">Date & Time</h3>
-              </div>
-              <p className="text-gray-700 body-font">{formatDate(selectedTimeSlot.date)}</p>
-              <div className="flex items-center gap-1 mt-1">
-                <Clock className="w-4 h-4 text-gray-500" />
-                <p className="text-gray-700 body-font">{selectedTimeSlot.startTime}</p>
+                <p className="font-medium body-font">
+                  {selectedTimeSlot.dayOfWeek},{" "}
+                  {new Date(selectedTimeSlot.date).toLocaleDateString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </p>
+                <p className="text-sm text-gray-600 body-font">Date</p>
               </div>
             </div>
-
-            {/* Services */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <DollarSign className="w-4 h-4 text-gray-500" />
-                <h3 className="font-medium text-gray-900 body-font">Services</h3>
+            <div className="flex items-center gap-3">
+              <Clock className="w-5 h-5 text-[#E75837]" />
+              <div>
+                <p className="font-medium body-font">{selectedTimeSlot.startTime}</p>
+                <p className="text-sm text-gray-600 body-font">Start Time</p>
               </div>
-              <div className="space-y-3">
-                {selectedServices.map((service, index) => (
-                  <div key={index} className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900 body-font">{service.name}</p>
-                      <p className="text-sm text-gray-600 body-font">
-                        {service.duration_number}{" "}
-                        {service.duration_unit === "Minutes"
-                          ? service.duration_number === 1
-                            ? "minute"
-                            : "minutes"
-                          : service.duration_unit.toLowerCase()}
-                      </p>
-                    </div>
-                    {showPrices && (
-                      <p className="font-medium text-gray-900 body-font">
-                        {formatCurrency(Number.parseFloat(service.customer_cost.toString()))}
-                      </p>
-                    )}
+            </div>
+          </div>
+
+          <div className="border-t pt-4">
+            <h4 className="font-medium mb-3 header-font">Selected Services</h4>
+            <div className="space-y-2">
+              {selectedServices.map((service, index) => (
+                <div key={index} className="flex justify-between items-center py-2">
+                  <div>
+                    <p className="font-medium body-font">{service.name}</p>
+                    <p className="text-sm text-gray-600 body-font">
+                      {service.duration_number} {service.duration_unit.toLowerCase()}
+                    </p>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Total */}
-            <div className="border-t pt-4">
-              {showPrices && (
-                <div className="flex justify-between items-center mb-2">
-                  <p className="font-semibold text-gray-900 body-font">Total</p>
-                  <p className="font-semibold text-gray-900 body-font text-lg">{formatCurrency(totalCost)}</p>
+                  {showPrices && (
+                    <p className="font-medium body-font">
+                      {service.customer_cost_currency}
+                      {Number(service.customer_cost).toFixed(2)}
+                    </p>
+                  )}
                 </div>
-              )}
-              <div className="flex justify-between items-center">
-                <p className="text-sm text-gray-600 body-font">Duration</p>
+              ))}
+            </div>
+            <div className="border-t pt-3 mt-3 flex justify-between items-center">
+              <div>
+                <p className="font-semibold body-font">Total</p>
                 <p className="text-sm text-gray-600 body-font">{formatDuration(totalDuration)}</p>
               </div>
+              {showPrices && (
+                <p className="font-semibold text-lg body-font">
+                  {selectedServices[0]?.customer_cost_currency || "$"}
+                  {totalCost.toFixed(2)}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {bookingType === "recurring" && recurringConfig && (
+            <div className="border-t pt-4">
+              <h4 className="font-medium mb-2 header-font text-blue-600">Recurring Booking</h4>
+              <p className="text-sm text-gray-600 body-font">
+                This appointment will repeat every {recurringConfig.frequency} {recurringConfig.unit}
+                {recurringConfig.frequency > 1 ? "s" : ""} until{" "}
+                {new Date(recurringConfig.endDate).toLocaleDateString("en-US", {
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </p>
+              {recurringConfig.totalAppointments && (
+                <p className="text-sm text-blue-600 body-font mt-1">
+                  Total appointments: {recurringConfig.totalAppointments}
+                </p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Customer Information Form */}
+      <Card className="shadow-lg border-0 rounded-2xl">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-xl header-font">
+            <User className="w-5 h-5 text-[#E75837]" />
+            Your Information
+          </CardTitle>
+          <p className="text-gray-600 body-font">Please provide your contact details</p>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="firstName" className="body-font font-medium">
+                  First Name
+                </Label>
+                <Input
+                  id="firstName"
+                  type="text"
+                  value={customerInfo.firstName}
+                  onChange={(e) => setCustomerInfo({ ...customerInfo, firstName: e.target.value })}
+                  required
+                  className="mt-1 rounded-lg"
+                  placeholder="Enter your first name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="lastName" className="body-font font-medium">
+                  Last Name
+                </Label>
+                <Input
+                  id="lastName"
+                  type="text"
+                  value={customerInfo.lastName}
+                  onChange={(e) => setCustomerInfo({ ...customerInfo, lastName: e.target.value })}
+                  required
+                  className="mt-1 rounded-lg"
+                  placeholder="Enter your last name"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="email" className="body-font font-medium">
+                Email Address
+              </Label>
+              <div className="relative mt-1">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  id="email"
+                  type="email"
+                  value={customerInfo.email}
+                  onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
+                  required
+                  className="pl-10 rounded-lg"
+                  placeholder="Enter your email address"
+                />
+              </div>
             </div>
 
-            {/* Booking Type */}
-            {bookingType && (
-              <div className="pt-4 border-t">
-                <Badge
-                  className={`body-font ${
-                    bookingType === "one-time"
-                      ? "bg-[#E75837] hover:bg-[#d14a2a] text-white"
-                      : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                  }`}
-                >
-                  {bookingType === "one-time" ? "One-time Booking" : "Recurring Booking"}
-                </Badge>
-                {recurringConfig && bookingType === "recurring" && (
-                  <p className="text-sm text-gray-600 mt-2 body-font">
-                    Every {recurringConfig.frequency} {recurringConfig.unit}
-                    {recurringConfig.frequency > 1 ? "s" : ""} until {recurringConfig.endDate}
-                  </p>
-                )}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-red-600 text-sm body-font">{error}</p>
               </div>
             )}
 
-            {/* Professional Info */}
-            <div className="pt-4 border-t">
-              <p className="text-sm text-gray-600 body-font">
-                <span className="font-medium">with</span> {professionalName}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-[#E75837] hover:bg-[#d14a2a] text-white py-3 rounded-lg font-medium transition-colors"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Loading your pets...
+                </>
+              ) : (
+                "Continue to Pet Selection"
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }
-
-// Export both named and default
-export default CustomerForm

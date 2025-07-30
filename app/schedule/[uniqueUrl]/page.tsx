@@ -226,7 +226,7 @@ export default function SchedulePage() {
       userTimezoneRef.current = JSON.stringify(detectUserTimezone())
       loadProfessionalConfiguration()
 
-      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
+      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/b550ab35-0e19-48d0-a831-a12dd775dfce"
 
       console.log("Initializing schedule with session:", sessionIdRef.current)
 
@@ -579,7 +579,7 @@ export default function SchedulePage() {
     setCreatingBooking(true)
 
     try {
-      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
+      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/b550ab35-0e19-48d0-a831-a12dd775dfce"
       const userTimezoneData = JSON.parse(userTimezoneRef.current!)
 
       const startDateTimeUTC = convertLocalTimeToUTC(
