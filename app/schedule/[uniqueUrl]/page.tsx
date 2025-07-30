@@ -19,8 +19,6 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 
-const SCHEDULE_WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/b550ab35-0e19-48d0-a831-a12dd775dfce"
-
 type NotificationPreference = "1_hour" | "1_day" | "1_week"
 
 export default function SchedulePage() {
@@ -228,7 +226,7 @@ export default function SchedulePage() {
       userTimezoneRef.current = JSON.stringify(detectUserTimezone())
       loadProfessionalConfiguration()
 
-      const webhookUrl = SCHEDULE_WEBHOOK_URL
+      const webhookUrl = "/api/webhook"
 
       console.log("Initializing schedule with session:", sessionIdRef.current)
 
@@ -581,7 +579,7 @@ export default function SchedulePage() {
     setCreatingBooking(true)
 
     try {
-      const webhookUrl = SCHEDULE_WEBHOOK_URL
+      const webhookUrl = "/api/webhook"
       const userTimezoneData = JSON.parse(userTimezoneRef.current!)
 
       const startDateTimeUTC = convertLocalTimeToUTC(
