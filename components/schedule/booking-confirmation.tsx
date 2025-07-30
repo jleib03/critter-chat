@@ -1,98 +1,65 @@
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { Service, SelectedTimeSlot, CustomerInfo, Pet } from "@/types/schedule"
-import type { RecurringConfig } from "./booking-type-selection"
+import type React from "react"
+import type { Pet, Service } from "../../types"
+import PawPrint from "../icons/PawPrint"
+import CalendarIcon from "../icons/CalendarIcon"
+import ClockIcon from "../icons/ClockIcon"
+import LocationMarkerIcon from "../icons/LocationMarkerIcon"
 
-type BookingConfirmationProps = {
+interface BookingConfirmationProps {
+  selectedPets: Pet[]
   selectedServices: Service[]
-  selectedTimeSlot: SelectedTimeSlot
-  customerInfo: CustomerInfo
-  selectedPet: Pet
-  professionalName: string
-  onNewBooking: () => void
-  bookingType?: "one-time" | "recurring"
-  recurringConfig?: RecurringConfig | null
-  isDirectBooking: boolean
+  bookingDate: string
+  bookingTime: string
+  location: string
 }
 
-export function BookingConfirmation({
+const BookingConfirmation: React.FC<BookingConfirmationProps> = ({
+  selectedPets,
   selectedServices,
-  selectedTimeSlot,
-  customerInfo,
-  selectedPet,
-  professionalName,
-  onNewBooking,
-  bookingType,
-  recurringConfig,
-  isDirectBooking,
-}: BookingConfirmationProps) {
+  bookingDate,
+  bookingTime,
+  location,
+}) => {
   return (
-    <Card className="shadow-lg border-0 rounded-2xl">
-      <CardHeader className="text-center pb-4">
-        <CardTitle className="text-xl header-font">
-          {isDirectBooking ? "Booking Confirmed!" : "Request Submitted!"}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="text-center">
-          <p className="text-gray-600 body-font">
-            {isDirectBooking
-              ? `Your appointment has been successfully scheduled with ${professionalName}.`
-              : `Your appointment request has been successfully submitted to ${professionalName}.`}
-          </p>
+    <div className="bg-white p-6 rounded-lg shadow-md">
+      <h2 className="text-xl font-bold mb-4">Booking Confirmation</h2>
+      <div className="flex items-start gap-3">
+        <PawPrint className="w-5 h-5 text-gray-500 mt-1" />
+        <div>
+          <p className="text-sm text-gray-600 body-font">Pet(s)</p>
+          <p className="font-medium body-font">{selectedPets.map((pet) => pet.pet_name).join(", ")}</p>
         </div>
-
-        <div className="bg-gray-50 rounded-xl p-6 space-y-3 text-left">
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Services:</span>
-            <span className="font-medium">{selectedServices.map((s) => s.name).join(", ")}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Date:</span>
-            <span className="font-medium">
-              {selectedTimeSlot.dayOfWeek}, {selectedTimeSlot.date}
-            </span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Time:</span>
-            <span className="font-medium">{selectedTimeSlot.startTime}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Pet:</span>
-            <span className="font-medium">
-              {selectedPet.pet_name} ({selectedPet.pet_type})
-            </span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Customer:</span>
-            <span className="font-medium">
-              {customerInfo.firstName} {customerInfo.lastName}
-            </span>
-          </div>
-          {bookingType === "recurring" && recurringConfig && (
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Recurring:</span>
-              <span className="font-medium text-blue-600">
-                Every {recurringConfig.daysOfWeek?.join(", ")} until{" "}
-                {new Date(recurringConfig.endDate).toLocaleDateString("en-US", {
-                  month: "long",
-                  day: "numeric",
-                  year: "numeric",
-                })}
-              </span>
-            </div>
-          )}
+      </div>
+      <div className="flex items-start gap-3 mt-4">
+        <CalendarIcon className="w-5 h-5 text-gray-500 mt-1" />
+        <div>
+          <p className="text-sm text-gray-600 body-font">Date</p>
+          <p className="font-medium body-font">{bookingDate}</p>
         </div>
-
-        <div className="text-center">
-          <Button
-            onClick={onNewBooking}
-            className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-6 py-3 rounded-lg font-medium transition-colors"
-          >
-            Book Another Appointment
-          </Button>
+      </div>
+      <div className="flex items-start gap-3 mt-4">
+        <ClockIcon className="w-5 h-5 text-gray-500 mt-1" />
+        <div>
+          <p className="text-sm text-gray-600 body-font">Time</p>
+          <p className="font-medium body-font">{bookingTime}</p>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+      <div className="flex items-start gap-3 mt-4">
+        <LocationMarkerIcon className="w-5 h-5 text-gray-500 mt-1" />
+        <div>
+          <p className="text-sm text-gray-600 body-font">Location</p>
+          <p className="font-medium body-font">{location}</p>
+        </div>
+      </div>
+      <div className="flex items-start gap-3 mt-4">
+        <PawPrint className="w-5 h-5 text-gray-500 mt-1" />
+        <div>
+          <p className="text-sm text-gray-600 body-font">Service(s)</p>
+          <p className="font-medium body-font">{selectedServices.map((service) => service.service_name).join(", ")}</p>
+        </div>
+      </div>
+    </div>
   )
 }
+
+export default BookingConfirmation

@@ -68,7 +68,7 @@ export default function SchedulePage() {
   const [creatingBooking, setCreatingBooking] = useState(false)
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({ firstName: "", lastName: "", email: "" })
   const [pets, setPets] = useState<Pet[]>([])
-  const [selectedPet, setSelectedPet] = useState<Pet | null>(null)
+  const [selectedPets, setSelectedPets] = useState<Pet[] | null>(null)
   const [selectedNotifications, setSelectedNotifications] = useState<NotificationPreference[]>([])
   const [professionalConfig, setProfessionalConfig] = useState<ProfessionalConfig | null>(null)
 
@@ -519,8 +519,9 @@ export default function SchedulePage() {
     setShowPetSelection(true)
   }
 
-  const handlePetSelect = async (pet: Pet, notifications: NotificationPreference[]) => {
-    setSelectedPet(pet)
+  const handlePetSelect = async (pets: Pet[], notifications: NotificationPreference[]) => {
+    // Changed to accept multiple pets
+    setSelectedPets(pets) // Changed to handle multiple pets
     setSelectedNotifications(notifications)
     setCreatingBooking(true)
 
@@ -548,7 +549,7 @@ export default function SchedulePage() {
         }
 
         totalDurationMinutes += durationInMinutes
-        totalCost += service.customer_cost
+        totalCost += Number(service.customer_cost)
       })
 
       const endDateTimeUTC = calculateEndDateTimeUTC(startDateTimeUTC, totalDurationMinutes, "Minutes")
@@ -611,7 +612,8 @@ export default function SchedulePage() {
           last_name: customerInfo.lastName.trim(),
           email: customerInfo.email.trim().toLowerCase(),
         },
-        pet_info: {
+        pets_info: pets.map((pet) => ({
+          // Changed to pets_info and maps over selected pets
           pet_id: pet.pet_id,
           pet_name: pet.pet_name,
           pet_type: pet.pet_type,
@@ -619,7 +621,7 @@ export default function SchedulePage() {
           age: pet.age,
           weight: pet.weight,
           special_notes: pet.special_notes,
-        },
+        })),
         // Only include notification preferences for direct bookings
         ...(isDirectBooking && {
           notification_preferences: {
@@ -692,7 +694,7 @@ export default function SchedulePage() {
     setCreatingBooking(false)
     setCustomerInfo({ firstName: "", lastName: "", email: "" })
     setPets([])
-    setSelectedPet(null)
+    setSelectedPets(null)
     setSelectedNotifications([])
     setShowBookingTypeSelection(false)
     setBookingType(null)
@@ -807,10 +809,8 @@ export default function SchedulePage() {
                 <span className="font-medium">{selectedTimeSlot?.startTime}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Pet:</span>
-                <span className="font-medium">
-                  {selectedPet?.pet_name} ({selectedPet?.pet_type})
-                </span>
+                <span className="text-gray-600">Pet(s):</span>
+                <span className="font-medium">{selectedPets?.map((p) => p.pet_name).join(", ")}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Customer:</span>
@@ -887,7 +887,7 @@ export default function SchedulePage() {
             selectedService={selectedServices[0]!}
             selectedTimeSlot={selectedTimeSlot!}
             customerInfo={customerInfo}
-            selectedPet={selectedPet!}
+            selectedPets={selectedPets!}
             professionalName={webhookData.professional_info.professional_name}
             onNewBooking={handleNewBooking}
             bookingType={bookingType}

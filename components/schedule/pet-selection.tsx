@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { ArrowLeft, PawPrint, Bell } from "lucide-react"
 import type { Service, SelectedTimeSlot, CustomerInfo, Pet } from "@/types/schedule"
 import type { RecurringConfig } from "./booking-type-selection"
@@ -19,7 +18,7 @@ type PetSelectionProps = {
   selectedTimeSlot: SelectedTimeSlot
   professionalName: string
   isDirectBooking: boolean
-  onPetSelect: (pet: Pet, notifications: NotificationPreference[]) => void
+  onPetSelect: (pets: Pet[], notifications: NotificationPreference[]) => void
   onBack: () => void
   bookingType?: "one-time" | "recurring"
   recurringConfig?: RecurringConfig | null
@@ -39,7 +38,7 @@ export function PetSelection({
   recurringConfig,
   showPrices,
 }: PetSelectionProps) {
-  const [selectedPetId, setSelectedPetId] = useState<string | null>(pets.length > 0 ? pets[0].pet_id : null)
+  const [selectedPetIds, setSelectedPetIds] = useState<string[]>([])
   const [selectedNotifications, setSelectedNotifications] = useState<NotificationPreference[]>([])
 
   const handleNotificationChange = (notification: NotificationPreference) => {
@@ -48,14 +47,18 @@ export function PetSelection({
     )
   }
 
+  const handlePetSelectionChange = (petId: string) => {
+    setSelectedPetIds((prev) => (prev.includes(petId) ? prev.filter((id) => id !== petId) : [...prev, petId]))
+  }
+
   const handleSubmit = () => {
-    if (!selectedPetId) {
-      alert("Please select a pet.")
+    if (selectedPetIds.length === 0) {
+      alert("Please select at least one pet.")
       return
     }
-    const selectedPet = pets.find((p) => p.pet_id === selectedPetId)
-    if (selectedPet) {
-      onPetSelect(selectedPet, selectedNotifications)
+    const selectedPets = pets.filter((p) => selectedPetIds.includes(p.pet_id))
+    if (selectedPets.length > 0) {
+      onPetSelect(selectedPets, selectedNotifications)
     }
   }
 
@@ -107,25 +110,29 @@ export function PetSelection({
           </CardHeader>
           <CardContent>
             {pets.length > 0 ? (
-              <RadioGroup value={selectedPetId || ""} onValueChange={setSelectedPetId} className="space-y-4">
+              <div className="space-y-4">
                 {pets.map((pet) => (
-                  <Label
+                  <div
                     key={pet.pet_id}
-                    htmlFor={pet.pet_id}
                     className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all ${
-                      selectedPetId === pet.pet_id ? "border-[#E75837] bg-orange-50" : "border-gray-200"
+                      selectedPetIds.includes(pet.pet_id) ? "border-[#E75837] bg-orange-50" : "border-gray-200"
                     }`}
                   >
-                    <RadioGroupItem value={pet.pet_id} id={pet.pet_id} className="mr-4" />
+                    <Checkbox
+                      id={pet.pet_id}
+                      checked={selectedPetIds.includes(pet.pet_id)}
+                      onCheckedChange={() => handlePetSelectionChange(pet.pet_id)}
+                      className="mr-4"
+                    />
                     <div>
                       <p className="font-semibold body-font">{pet.pet_name}</p>
                       <p className="text-sm text-gray-600 body-font">
                         {pet.breed} ({pet.pet_type})
                       </p>
                     </div>
-                  </Label>
+                  </div>
                 ))}
-              </RadioGroup>
+              </div>
             ) : (
               <p className="text-gray-600 body-font">No pets found for this account.</p>
             )}
