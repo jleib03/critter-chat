@@ -1258,7 +1258,7 @@ export default function ProfessionalSetupPage() {
                                 <div className="flex items-center gap-2">
                                   <Calendar className="w-4 h-4 text-gray-500" />
                                   <span className="font-medium body-font">
-                                    {new Date(blockedTime.date).toLocaleDateString("en-US", {
+                                    {new Date(blockedTime.date.replace(/-/g, "/")).toLocaleDateString("en-US", {
                                       weekday: "long",
                                       year: "numeric",
                                       month: "long",
