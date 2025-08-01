@@ -80,14 +80,16 @@ function enhancedMarkdownToHtml(text: string): string {
 
 // Function to convert list-like items to bullet points
 function convertListsToBullets(html: string): string {
-  // First, handle explicit lists (lines starting with - or *)
-  html = html.replace(/\n([-*]) (.*?)(?=\n|$)/g, '\n<ul class="bullet-list"><li class="body-font">$2</li></ul>')
+  // First, handle explicit lists (lines starting with -, *, or •)
+  // This regex handles list items at the start of the string or on a new line.
+  html = html.replace(/(^|\n)([-*•]) (.*?)(?=\n|$)/g, '$1<ul class="bullet-list"><li class="body-font">$3</li></ul>')
 
   // Combine adjacent list items
   html = html.replace(/<\/ul>\n<ul class="bullet-list">/g, "")
 
   // Handle numbered lists (lines starting with 1., 2., etc.)
-  html = html.replace(/\n(\d+)\. (.*?)(?=\n|$)/g, '\n<ol class="numbered-list"><li class="body-font">$2</li></ol>')
+  // This regex also handles lists at the start of the string.
+  html = html.replace(/(^|\n)(\d+)\. (.*?)(?=\n|$)/g, '$1<ol class="numbered-list"><li class="body-font">$3</li></ol>')
 
   // Combine adjacent numbered list items
   html = html.replace(/<\/ol>\n<ol class="numbered-list">/g, "")
