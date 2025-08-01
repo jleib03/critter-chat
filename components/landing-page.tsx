@@ -2,6 +2,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { logWebhookUsage } from "../types/webhook-endpoints"
 import {
   ArrowRight,
   Construction,
@@ -152,6 +153,7 @@ export default function LandingPage({ webhookUrl, onExistingCustomer, onNewCusto
     }
 
     setIsSubmitting(true)
+    logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "notify_me_professional_matching")
 
     try {
       // Create a unique user ID for this submission

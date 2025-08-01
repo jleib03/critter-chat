@@ -10,9 +10,7 @@ import TestingStep from "../../../components/custom-agent/testing-step"
 import ImplementationStep from "../../../components/custom-agent/implementation-step"
 import SuccessStep from "../../../components/custom-agent/success-step"
 import { Loader2, MessageSquare, CheckCircle2 } from "lucide-react"
-
-// Define the webhook URL
-const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/803d260b-1b17-4abf-8079-2d40225c29b0"
+import { getWebhookEndpoint, logWebhookUsage } from "../../../types/webhook-endpoints"
 
 export default function CustomAgentSetupPage() {
   const router = useRouter()
@@ -89,7 +87,10 @@ export default function CustomAgentSetupPage() {
   // Function to load existing customization settings
   const loadExistingCustomization = async (professionalId: string) => {
     try {
-      const response = await fetch(WEBHOOK_URL, {
+      const webhookUrl = getWebhookEndpoint("CUSTOM_AGENT")
+      logWebhookUsage("CUSTOM_AGENT", "get_widget_customization")
+
+      const response = await fetch(webhookUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -135,7 +136,10 @@ export default function CustomAgentSetupPage() {
     if (!professionalId) return false
 
     try {
-      const response = await fetch(WEBHOOK_URL, {
+      const webhookUrl = getWebhookEndpoint("CUSTOM_AGENT")
+      logWebhookUsage("CUSTOM_AGENT", "save_widget_customization")
+
+      const response = await fetch(webhookUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -202,7 +206,10 @@ export default function CustomAgentSetupPage() {
     setError(null)
 
     try {
-      const response = await fetch(WEBHOOK_URL, {
+      const webhookUrl = getWebhookEndpoint("CUSTOM_AGENT")
+      logWebhookUsage("CUSTOM_AGENT", "check_enrollment")
+
+      const response = await fetch(webhookUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -258,7 +265,10 @@ export default function CustomAgentSetupPage() {
     setError(null)
 
     try {
-      const response = await fetch(WEBHOOK_URL, {
+      const webhookUrl = getWebhookEndpoint("CUSTOM_AGENT")
+      logWebhookUsage("CUSTOM_AGENT", "toggle_enrollment")
+
+      const response = await fetch(webhookUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -318,7 +328,10 @@ export default function CustomAgentSetupPage() {
     setError(null)
 
     try {
-      const response = await fetch(WEBHOOK_URL, {
+      const webhookUrl = getWebhookEndpoint("CUSTOM_AGENT")
+      logWebhookUsage("CUSTOM_AGENT", "save_agent_config")
+
+      const response = await fetch(webhookUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -384,7 +397,10 @@ export default function CustomAgentSetupPage() {
     setIsTestingActive(true)
 
     try {
-      const response = await fetch(WEBHOOK_URL, {
+      const webhookUrl = getWebhookEndpoint("CUSTOM_AGENT")
+      logWebhookUsage("CUSTOM_AGENT", "support_conversation")
+
+      const response = await fetch(webhookUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

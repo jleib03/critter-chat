@@ -30,6 +30,7 @@ import type {
   WebhookBlockedTime,
   WebhookCapacityRules,
 } from "@/types/webhook-config"
+import { getWebhookEndpoint, logWebhookUsage } from "@/types/webhook-endpoints"
 
 const DEFAULT_WORKING_DAYS = [
   { day: "Monday", start_time: "09:00", end_time: "17:00", is_working: true },
@@ -282,7 +283,8 @@ export default function ProfessionalSetupPage() {
       setLoading(true)
       setError(null)
 
-      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
+      const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG")
+      logWebhookUsage("PROFESSIONAL_CONFIG", "get_professional_config")
 
       const payload: GetConfigWebhookPayload = {
         action: "get_professional_config",
@@ -517,7 +519,8 @@ export default function ProfessionalSetupPage() {
 
       const { changes, changedTabs } = detectChanges()
 
-      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
+      const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG")
+      logWebhookUsage("PROFESSIONAL_CONFIG", "save_professional_config")
 
       const payload: SaveConfigWebhookPayload = {
         action: "save_professional_config",
