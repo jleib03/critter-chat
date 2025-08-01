@@ -9,6 +9,9 @@ export const WEBHOOK_ENDPOINTS = {
   CHAT_CONFIG:
     process.env.NEXT_PUBLIC_CHAT_CONFIG_WEBHOOK_URL ||
     "https://jleib03.app.n8n.cloud/webhook/803d260b-1b17-4abf-8079-2d40225c29b0",
+  NEW_CUSTOMER_ONBOARDING:
+    process.env.NEXT_PUBLIC_NEW_CUSTOMER_WEBHOOK_URL ||
+    "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4",
 } as const
 
 // Type for webhook endpoint keys

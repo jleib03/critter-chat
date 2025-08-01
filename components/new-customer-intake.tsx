@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { getWebhookEndpoint, logWebhookUsage } from "../types/webhook-endpoints"
 import OnboardingForm from "./onboarding-form"
 import ServiceSelection from "./service-selection"
 import Confirmation from "./confirmation"
@@ -115,10 +116,8 @@ export default function NewCustomerIntake({
         setError(null)
         try {
           console.log("Fetching professional name for ID:", initialProfessionalId)
-          const webhookUrl = process.env.NEXT_PUBLIC_WEBHOOK_URL
-          if (!webhookUrl) {
-            throw new Error("Webhook URL not configured")
-          }
+          const webhookUrl = getWebhookEndpoint("NEW_CUSTOMER_ONBOARDING")
+          logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "fetch_professional_name")
 
           const response = await fetch(`${webhookUrl}?professionalId=${initialProfessionalId}`)
           console.log("Response status:", response.status)
@@ -170,6 +169,7 @@ export default function NewCustomerIntake({
 
     setFormData(combinedData)
     setIsLoading(true)
+    logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "retrieve_services")
 
     const payload = {
       message: {
@@ -190,7 +190,7 @@ export default function NewCustomerIntake({
     }
 
     try {
-      const response = await fetch(process.env.NEXT_PUBLIC_WEBHOOK_URL || "", {
+      const response = await fetch(getWebhookEndpoint("NEW_CUSTOMER_ONBOARDING"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -333,6 +333,8 @@ export default function NewCustomerIntake({
   }
 
   const handleConfirmationSubmit = async (data: any) => {
+    logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "final_intake_submission")
+
     const payload = {
       message: {
         text: "New customer final intake submission",
@@ -357,7 +359,7 @@ export default function NewCustomerIntake({
     }
 
     try {
-      const response = await fetch(process.env.NEXT_PUBLIC_WEBHOOK_URL || "", {
+      const response = await fetch(getWebhookEndpoint("NEW_CUSTOMER_ONBOARDING"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -387,7 +389,9 @@ export default function NewCustomerIntake({
       // If we have an initialProfessionalName, use it
       const dataToSubmit = initialProfessionalName ? { ...data, professionalName: initialProfessionalName } : data
 
-      const response = await fetch(process.env.NEXT_PUBLIC_WEBHOOK_URL || "", {
+      logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "onboarding_submission")
+
+      const response = await fetch(getWebhookEndpoint("NEW_CUSTOMER_ONBOARDING"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -482,7 +486,7 @@ export default function NewCustomerIntake({
       {currentStep === "confirmation" && (
         <Confirmation
           onSubmit={handleConfirmationSubmit}
-          onCancel={handleCancel}
+          onCancel={onCancel}
           onBack={handleBackToServices}
           formData={formData}
           serviceData={serviceSelectionData}
