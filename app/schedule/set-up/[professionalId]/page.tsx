@@ -1258,12 +1258,16 @@ export default function ProfessionalSetupPage() {
                                 <div className="flex items-center gap-2">
                                   <Calendar className="w-4 h-4 text-gray-500" />
                                   <span className="font-medium body-font">
-                                    {new Date(blockedTime.date.replace(/-/g, "/")).toLocaleDateString("en-US", {
-                                      weekday: "long",
-                                      year: "numeric",
-                                      month: "long",
-                                      day: "numeric",
-                                    })}
+                                    {(() => {
+                                      const [year, month, day] = blockedTime.date.split("-").map(Number)
+                                      const localDate = new Date(year, month - 1, day)
+                                      return localDate.toLocaleDateString("en-US", {
+                                        weekday: "long",
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                      })
+                                    })()}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-2">
