@@ -972,12 +972,17 @@ export default function SchedulePage() {
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Date:</span>
                 <span className="font-medium">
-                  {selectedTimeSlot?.dayOfWeek},{" "}
-                  {new Date(selectedTimeSlot?.date || "").toLocaleDateString("en-US", {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
+                  {(() => {
+                    if (!selectedTimeSlot?.date) return ""
+                    // Fix: Create date in local timezone to prevent day-off errors
+                    const [year, month, day] = selectedTimeSlot.date.split("-").map(Number)
+                    const localDate = new Date(year, month - 1, day)
+                    return localDate.toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })
+                  })()}
                 </span>
               </div>
               <div className="flex justify-between text-sm">

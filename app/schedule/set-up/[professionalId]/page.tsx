@@ -105,13 +105,19 @@ export default function ProfessionalSetupPage() {
     return date.toISOString().split("T")[0]
   }
 
-  // Helper function to parse date from input (handles timezone correctly)
+  // Fixed helper function to parse date from input without timezone issues
   const parseDateFromInput = (dateString: string) => {
     if (!dateString) return ""
-    // Create date at noon local time to avoid timezone issues
+    // Simply return the date string as-is since HTML date inputs are already in YYYY-MM-DD format
+    return dateString
+  }
+
+  // Helper function to create a date object from YYYY-MM-DD string in local timezone
+  const createLocalDate = (dateString: string) => {
+    if (!dateString) return new Date()
     const [year, month, day] = dateString.split("-").map(Number)
-    const date = new Date(year, month - 1, day, 12, 0, 0)
-    return date.toISOString().split("T")[0]
+    // Create date in local timezone at midnight
+    return new Date(year, month - 1, day)
   }
 
   // Helper function to map booking_system to booking_type for webhook
@@ -591,7 +597,7 @@ export default function ProfessionalSetupPage() {
     setEmployees((prev) => prev.map((emp) => (emp.employee_id === employeeId ? { ...emp, ...updates } : emp)))
   }
 
-  // Enhanced blocked time management functions
+  // Fixed blocked time management function
   const addBlockedTime = () => {
     const startDate = newBlockedTime.start_date
     const endDate = newBlockedTime.end_date || newBlockedTime.start_date
@@ -605,8 +611,9 @@ export default function ProfessionalSetupPage() {
       return
     }
 
-    const start = new Date(parseDateFromInput(startDate))
-    const end = new Date(parseDateFromInput(endDate))
+    // Use the createLocalDate function to avoid timezone issues
+    const start = createLocalDate(startDate)
+    const end = createLocalDate(endDate)
 
     const allNewEntries: WebhookBlockedTime[] = []
 
@@ -627,13 +634,14 @@ export default function ProfessionalSetupPage() {
     }
 
     // Iterate over each day in the selected date range
-    for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+    const currentDate = new Date(start)
+    while (currentDate <= end) {
       // For each day, iterate over each target employee and create a block
       for (const employee of targetEmployees) {
         const blockedTime: WebhookBlockedTime = {
-          blocked_time_id: `block_${Date.now()}_${employee.employee_id}_${date.getTime()}`,
+          blocked_time_id: `block_${Date.now()}_${employee.employee_id}_${currentDate.getTime()}`,
           employee_id: employee.employee_id, // Assign the specific employee ID
-          date: date.toISOString().split("T")[0],
+          date: currentDate.toISOString().split("T")[0], // Format as YYYY-MM-DD
           start_time: newBlockedTime.is_all_day ? "00:00" : newBlockedTime.start_time || "09:00",
           end_time: newBlockedTime.is_all_day ? "23:59" : newBlockedTime.end_time || "17:00",
           reason: newBlockedTime.reason || "",
@@ -643,6 +651,9 @@ export default function ProfessionalSetupPage() {
         }
         allNewEntries.push(blockedTime)
       }
+
+      // Move to next day
+      currentDate.setDate(currentDate.getDate() + 1)
     }
 
     setBlockedTimes((prev) => [...prev, ...allNewEntries])
@@ -1247,12 +1258,16 @@ export default function ProfessionalSetupPage() {
                                 <div className="flex items-center gap-2">
                                   <Calendar className="w-4 h-4 text-gray-500" />
                                   <span className="font-medium body-font">
-                                    {new Date(blockedTime.date).toLocaleDateString("en-US", {
-                                      weekday: "long",
-                                      year: "numeric",
-                                      month: "long",
-                                      day: "numeric",
-                                    })}
+                                    {(() => {
+                                      const [year, month, day] = blockedTime.date.split("-").map(Number)
+                                      const localDate = new Date(year, month - 1, day)
+                                      return localDate.toLocaleDateString("en-US", {
+                                        weekday: "long",
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                      })
+                                    })()}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-2">
