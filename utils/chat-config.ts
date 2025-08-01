@@ -1,11 +1,13 @@
 import type { ChatAgentConfig } from "../types/chat-config"
-
-const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/803d260b-1b17-4abf-8079-2d40225c29b0"
+import { getWebhookEndpoint, logWebhookUsage } from "../types/webhook-endpoints"
 
 export async function loadChatConfig(uniqueUrl: string): Promise<ChatAgentConfig | null> {
   try {
+    const webhookUrl = getWebhookEndpoint("CHAT_CONFIG")
+    logWebhookUsage("CHAT_CONFIG", "get_chat_config")
+
     console.log(`🚀 Loading chat configuration for URL: ${uniqueUrl}`)
-    console.log(`🔗 Using webhook URL: ${WEBHOOK_URL}`)
+    console.log(`🔗 Using webhook URL: ${webhookUrl}`)
 
     const payload = {
       action: "get_chat_config",
@@ -15,7 +17,7 @@ export async function loadChatConfig(uniqueUrl: string): Promise<ChatAgentConfig
 
     console.log(`📤 Sending payload:`, JSON.stringify(payload, null, 2))
 
-    const response = await fetch(WEBHOOK_URL, {
+    const response = await fetch(webhookUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
