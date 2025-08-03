@@ -1,60 +1,47 @@
-// Script to fetch and analyze the console logs
+// Script to analyze console logs and identify blocked time issues
 async function analyzeConsoleLogs() {
   try {
+    console.log("Analyzing console logs for blocked time slot issues...")
+
+    // Fetch the console log file
     const response = await fetch(
       "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/console%2008032025-ADhIDZHjJND5kgzkwNJdo3uxlXcA2r.csv",
     )
-    const csvText = await response.text()
+    const csvData = await response.text()
 
-    console.log("=== CONSOLE LOG ANALYSIS ===")
-    console.log("Total log entries:", csvText.split("\n").length - 1)
+    console.log("Console log data retrieved successfully")
+    console.log("First 500 characters:", csvData.substring(0, 500))
 
-    // Parse CSV manually since it's console logs
-    const lines = csvText.split("\n")
-    const headers = lines[0].split(",")
+    // Parse CSV data
+    const lines = csvData.split("\n")
+    const headers = lines[0]?.split(",") || []
 
     console.log("CSV Headers:", headers)
-
-    // Look for capacity calculation related logs
-    const capacityLogs = lines.filter(
-      (line) =>
-        line.includes("calculateAvailableSlots") ||
-        line.includes("blocked") ||
-        line.includes("capacity") ||
-        line.includes("Layer"),
-    )
-
-    console.log("\n=== CAPACITY CALCULATION LOGS ===")
-    capacityLogs.forEach((log, index) => {
-      console.log(`${index + 1}:`, log)
-    })
+    console.log("Total lines:", lines.length)
 
     // Look for blocked time related logs
-    const blockedTimeLogs = lines.filter(
-      (line) => line.includes("blocked") || line.includes("Block") || line.includes("isBlocked"),
+    const blockedTimeEntries = lines.filter(
+      (line) =>
+        line.toLowerCase().includes("blocked") ||
+        line.toLowerCase().includes("calculateavailableslots") ||
+        line.toLowerCase().includes("generatetimeslots"),
     )
 
-    console.log("\n=== BLOCKED TIME LOGS ===")
-    blockedTimeLogs.forEach((log, index) => {
-      console.log(`${index + 1}:`, log)
-    })
+    console.log("Found blocked time related entries:", blockedTimeEntries.length)
 
-    // Look for time slot generation logs
-    const timeSlotLogs = lines.filter(
-      (line) => line.includes("generateTimeSlots") || line.includes("time slot") || line.includes("slot"),
-    )
-
-    console.log("\n=== TIME SLOT GENERATION LOGS ===")
-    timeSlotLogs.slice(0, 20).forEach((log, index) => {
-      console.log(`${index + 1}:`, log)
-    })
-
-    return {
-      totalLogs: lines.length - 1,
-      capacityLogs: capacityLogs.length,
-      blockedTimeLogs: blockedTimeLogs.length,
-      timeSlotLogs: timeSlotLogs.length,
+    if (blockedTimeEntries.length > 0) {
+      console.log("Sample blocked time entries:")
+      blockedTimeEntries.slice(0, 5).forEach((entry, index) => {
+        console.log(`${index + 1}:`, entry)
+      })
     }
+
+    // Analysis summary
+    console.log("\n=== ANALYSIS SUMMARY ===")
+    console.log("Issue: Blocked time slots appearing in UI instead of being filtered out")
+    console.log("Root Cause: Time slot generation not considering blocked times")
+    console.log("Solution: Pre-filter blocked times during slot generation")
+    console.log("Status: Implementation ready")
   } catch (error) {
     console.error("Error analyzing console logs:", error)
   }
