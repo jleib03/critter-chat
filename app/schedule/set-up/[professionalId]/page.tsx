@@ -283,6 +283,22 @@ export default function ProfessionalSetupPage() {
     return bookingPrefsChanged || employeesChanged || capacityChanged || blockedTimesComparison.hasChanges
   }
 
+  // Helper function to format time from 24-hour to 12-hour AM/PM format
+  const formatTimeToAMPM = (time24: string) => {
+    if (!time24) return ""
+
+    const [hours, minutes] = time24.split(":").map(Number)
+    const period = hours >= 12 ? "PM" : "AM"
+    const hours12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours
+
+    return `${hours12}:${minutes.toString().padStart(2, "0")} ${period}`
+  }
+
+  // Helper function to handle null/empty reason display
+  const formatReason = (reason: string | null | undefined) => {
+    return reason && reason !== "null" ? reason : ""
+  }
+
   // Load configuration
   const loadConfiguration = async () => {
     try {
@@ -1275,11 +1291,11 @@ export default function ProfessionalSetupPage() {
                                   <span className="body-font">
                                     {blockedTime.is_all_day
                                       ? "All Day"
-                                      : `${blockedTime.start_time} - ${blockedTime.end_time}`}
+                                      : `${formatTimeToAMPM(blockedTime.start_time)} - ${formatTimeToAMPM(blockedTime.end_time)}`}
                                   </span>
                                 </div>
                               </div>
-                              <p className="text-gray-600 body-font">{blockedTime.reason}</p>
+                              <p className="text-gray-600 body-font">{formatReason(blockedTime.reason)}</p>
                               <div className="flex items-center gap-2">
                                 {blockedTime.is_recurring && (
                                   <Badge variant="secondary" className="text-xs">
