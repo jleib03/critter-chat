@@ -25,6 +25,45 @@ export const timeToMinutes = (timeStr: string): number => {
   }
 }
 
+// Helper function to check if a specific time slot is blocked
+export const isTimeSlotBlocked = (
+  date: string,
+  startTime: string,
+  endTime: string,
+  blockedTimes: any[],
+  employeeId?: string,
+): boolean => {
+  if (!blockedTimes || blockedTimes.length === 0) return false
+
+  const slotStartMinutes = timeToMinutes(startTime)
+  const slotEndMinutes = timeToMinutes(endTime)
+  const dateObj = new Date(date)
+
+  return blockedTimes.some((block) => {
+    // If this is an employee-specific block and doesn't match the employee, skip
+    if (block.employeeId && employeeId && block.employeeId !== employeeId) return false
+
+    // Check if the date matches
+    let dateMatches = block.date === date
+    if (block.isRecurring) {
+      const blockedDate = new Date(block.date)
+      if (block.recurrencePattern === "weekly") {
+        dateMatches = dateObj.getDay() === blockedDate.getDay()
+      }
+      if (block.recurrencePattern === "monthly") {
+        dateMatches = dateObj.getDate() === blockedDate.getDate()
+      }
+    }
+
+    if (!dateMatches) return false
+
+    // Check if the time overlaps
+    const blockStart = timeToMinutes(block.startTime)
+    const blockEnd = timeToMinutes(block.endTime)
+    return slotStartMinutes < blockEnd && slotEndMinutes > blockStart
+  })
+}
+
 // Main calculation function
 export const calculateAvailableSlots = (
   config: ProfessionalConfig | null,
@@ -122,23 +161,11 @@ export const calculateAvailableSlots = (
     }
   }
 
-  // Layer 2: Check for blocked times (global and employee-specific)
-  const dateObj = new Date(date)
+  // Layer 2: Check for employee-specific blocked times (global blocks are pre-filtered)
   const employeesAfterBlocks = employeesWorkingThisSlot.filter((emp) => {
-    const isBlocked = blockedTimes.some((block) => {
-      if (block.employeeId && block.employeeId !== emp.id) return false
-      let dateMatches = block.date === date
-      if (block.isRecurring) {
-        const blockedDate = new Date(block.date)
-        if (block.recurrencePattern === "weekly") dateMatches = dateObj.getDay() === blockedDate.getDay()
-        if (block.recurrencePattern === "monthly") dateMatches = dateObj.getDate() === blockedDate.getDate()
-      }
-      if (!dateMatches) return false
-      const blockStart = timeToMinutes(block.startTime)
-      const blockEnd = timeToMinutes(block.endTime)
-      return slotStartMinutes < blockEnd && slotEndMinutes > blockStart
-    })
-    return !isBlocked
+    // Only check employee-specific blocks since global blocks are already filtered out
+    const isEmployeeBlocked = isTimeSlotBlocked(date, startTime, endTime, blockedTimes, emp.id)
+    return !isEmployeeBlocked
   })
 
   if (employeesAfterBlocks.length === 0) {

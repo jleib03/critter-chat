@@ -5,7 +5,7 @@ import type { BookingData, WorkingDay, Service, SelectedTimeSlot } from "@/types
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, Clock, ChevronDown, ChevronUp, Users } from "lucide-react"
-import { calculateAvailableSlots, timeToMinutes } from "@/utils/professional-config"
+import { calculateAvailableSlots, timeToMinutes, isTimeSlotBlocked } from "@/utils/professional-config"
 import type { ProfessionalConfig } from "@/types/professional-config"
 import type { BookingType, RecurringConfig } from "./booking-type-selection"
 
@@ -159,6 +159,16 @@ export function WeeklyCalendar({
 
       const startTimeFormatted = formatTime(slotStart)
       const endTimeFormatted = formatTime(slotEnd)
+
+      // Check if this time slot is blocked before calculating availability
+      const isBlocked = professionalConfig?.blockedTimes
+        ? isTimeSlotBlocked(dateStr, startTimeFormatted, endTimeFormatted, professionalConfig.blockedTimes)
+        : false
+
+      // Skip blocked slots entirely
+      if (isBlocked) {
+        continue
+      }
 
       const availability = calculateAvailableSlots(
         professionalConfig,
