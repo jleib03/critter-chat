@@ -48,7 +48,7 @@ export default function SchedulePage() {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              action: "initialize",
+              action: "initialize_schedule", // Updated action
               uniqueUrl: uniqueUrl,
               timestamp: new Date().toISOString(),
             }),
