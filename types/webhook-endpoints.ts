@@ -1,43 +1,22 @@
 // Centralized webhook endpoint configuration
 export const WEBHOOK_ENDPOINTS = {
-  CUSTOM_AGENT:
-    process.env.NEXT_PUBLIC_CUSTOM_AGENT_WEBHOOK_URL ||
-    "https://jleib03.app.n8n.cloud/webhook-test/94a7e18e-149c-4a66-a16b-db77f15756a2",
-  PROFESSIONAL_CONFIG:
-    process.env.NEXT_PUBLIC_PROFESSIONAL_CONFIG_WEBHOOK_URL ||
-    "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16",
-  CHAT_CONFIG:
-    process.env.NEXT_PUBLIC_CHAT_CONFIG_WEBHOOK_URL ||
-    "https://jleib03.app.n8n.cloud/webhook-test/94a7e18e-149c-4a66-a16b-db77f15756a2",
-  NEW_CUSTOMER_ONBOARDING:
-    process.env.NEXT_PUBLIC_NEW_CUSTOMER_WEBHOOK_URL ||
-    "https://jleib03.app.n8n.cloud/webhook-test/a306584e-8637-4284-8a41-ecd5d24dc255",
+  NEW_CUSTOMER: "https://jleib03.app.n8n.cloud/webhook-test/a306584e-8637-4284-8a41-ecd5d24dc255",
+  PROFESSIONAL_CONFIG: "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16",
+  CHAT_CONFIG: "https://jleib03.app.n8n.cloud/webhook-test/94a7e18e-149c-4a66-a16b-db77f15756a2",
+  CUSTOM_AGENT: "https://jleib03.app.n8n.cloud/webhook-test/94a7e18e-149c-4a66-a16b-db77f15756a2",
 } as const
 
-// Type for webhook endpoint keys
 export type WebhookEndpointKey = keyof typeof WEBHOOK_ENDPOINTS
 
-// Webhook endpoint getter with validation
-export function getWebhookEndpoint(endpoint: WebhookEndpointKey): string {
-  const url = WEBHOOK_ENDPOINTS[endpoint]
+// Usage tracking for debugging
+const webhookUsage: Record<string, number> = {}
 
-  if (!url) {
-    throw new Error(`Webhook endpoint ${endpoint} is not configured`)
-  }
-
-  // Validate URL format
-  try {
-    new URL(url)
-    return url
-  } catch (error) {
-    throw new Error(`Invalid webhook URL for ${endpoint}: ${url}`)
-  }
+export function getWebhookEndpoint(key: WebhookEndpointKey): string {
+  return WEBHOOK_ENDPOINTS[key]
 }
 
-// Helper function to log webhook usage for debugging
-export function logWebhookUsage(endpoint: WebhookEndpointKey, action: string) {
-  if (process.env.NODE_ENV === "development") {
-    console.log(`🔗 Using ${endpoint} webhook for action: ${action}`)
-    console.log(`📍 URL: ${WEBHOOK_ENDPOINTS[endpoint]}`)
-  }
+export function logWebhookUsage(key: WebhookEndpointKey, action: string): void {
+  const logKey = `${key}_${action}`
+  webhookUsage[logKey] = (webhookUsage[logKey] || 0) + 1
+  console.log(`Webhook Usage: ${logKey} (${webhookUsage[logKey]} times)`)
 }
