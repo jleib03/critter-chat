@@ -3,9 +3,7 @@ export const WEBHOOK_ENDPOINTS = {
   CUSTOM_AGENT:
     process.env.NEXT_PUBLIC_CUSTOM_AGENT_WEBHOOK_URL ||
     "https://jleib03.app.n8n.cloud/webhook-test/94a7e18e-149c-4a66-a16b-db77f15756a2",
-  PROFESSIONAL_CONFIG:
-    process.env.NEXT_PUBLIC_PROFESSIONAL_CONFIG_WEBHOOK_URL ||
-    "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16",
+  PROFESSIONAL_CONFIG: "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16",
   CHAT_CONFIG:
     process.env.NEXT_PUBLIC_CHAT_CONFIG_WEBHOOK_URL ||
     "https://jleib03.app.n8n.cloud/webhook-test/94a7e18e-149c-4a66-a16b-db77f15756a2",
