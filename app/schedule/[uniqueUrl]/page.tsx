@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import BookingPage from "../../../components/booking-page"
 
-interface ProfessionalData {
+interface ProfessionalData \{
   id: string
   business_name: string
   first_name: string
@@ -19,74 +19,93 @@ interface ProfessionalData {
   services: string[]
   bio: string
   profile_image_url?: string
-  business_hours?: {
-    [key: string]: { open: string; close: string; isOpen: boolean }
-  }
-}
+  business_hours?: \{\
+    [key: string]: \{ open: string
+close: string
+isOpen: boolean
+\}
+  \}
+\}
 
-export default function SchedulePage() {
+export default function SchedulePage()
+\
+{
   const params = useParams()
   const uniqueUrl = params.uniqueUrl as string
 
   const [professionalData, setProfessionalData] = useState<ProfessionalData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    const fetchProfessionalData = async () => {
+  \
+  useEffect(() => \
+  {
+    \
+    const fetchProfessionalData = async () => \
+    {
       if (!uniqueUrl) return
 
-      try {
-        setLoading(true)
-        setError(null)
+      try
+      \
+      setLoading(true)
+      setError(null)
 
-        const response = await fetch(
-          "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
+      const response = await fetch(
+          "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16",\
+          \{
+            method: "POST",\
+            headers: \{\
+              "Content-Type": "application/json",\
+            \},\
+            body: JSON.stringify(\{
               action: "initialize_schedule",
               uniqueUrl: uniqueUrl,
-              timestamp: new Date().toISOString(),
-              user_timezone: {
-                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-              },
-            }),
-          },
+              timestamp: new Date().toISOString(),\
+              user_timezone: \{\
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,\
+              \},\
+            \}),\
+      \
+      ,
         )
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
+      if (!response.ok)
+      \
+      throw new Error(`HTTP error! status: $\{response.status\}`)
+      \
 
-        const data = await response.json()
-        console.log("Professional data response:", data)
+      const data = await response.json()
+      console.log("Professional data response:", data)
 
-        // Handle the response format
-        if (Array.isArray(data) && data.length > 0) {
-          const professional = data[0]
-          setProfessionalData({
-            id: professional.id || professional.professional_id,
-            business_name: professional.business_name || "",
-            first_name: professional.first_name || "",
-            last_name: professional.last_name || "",
-            email: professional.email || "",
-            phone: professional.phone || "",
-            address: professional.address || "",
-            city: professional.city || "",
-            state: professional.state || "",
-            zip: professional.zip || "",
-            services: professional.services || [],
-            bio: professional.bio || "",
-            profile_image_url: professional.profile_image_url,
-            business_hours: professional.business_hours,
-          })
-        } else if (data && typeof data === "object" && !Array.isArray(data)) {
-          // Handle single object response
-          setProfessionalData({
+      // Handle the response format
+      if (Array.isArray(data) && data.length > 0)
+      \
+      {
+        const professional = data[0]
+        \
+          setProfessionalData(\
+        id: professional.id || professional.professional_id,\
+        business_name: professional.business_name || "",\
+        first_name: professional.first_name || "",\
+        last_name: professional.last_name || "",\
+        email: professional.email || "",\
+        phone: professional.phone || "",\
+        address: professional.address || "",\
+        city: professional.city || "",\
+        state: professional.state || "",\
+        zip: professional.zip || "",\
+        services: professional.services || [],\
+        bio: professional.bio || "",\
+        profile_image_url: professional.profile_image_url,\
+        business_hours: professional.business_hours,\
+        \
+        )\
+        \
+      }
+      else
+      if (data && typeof data === "object")
+      \
+      // Handle single object response\
+      setProfessionalData(\{
             id: data.id || data.professional_id,
             business_name: data.business_name || "",
             first_name: data.first_name || "",
@@ -101,50 +120,69 @@ export default function SchedulePage() {
             bio: data.bio || "",
             profile_image_url: data.profile_image_url,
             business_hours: data.business_hours,
-          })
-        } else {
-          throw new Error("Professional not found")
-        }
-      } catch (err) {
-        console.error("Error fetching professional data:", err)
-        setError("Unable to load professional information. Please check the URL and try again.")
-      } finally {
-        setLoading(false)
-      }
+          \})
+      \
+      else \
+      throw new Error("Professional not found")
+      \
+      \
     }
+    catch (err) \
+    console.error("Error fetching professional data:", err)
+    setError("Unable to load professional information. Please check the URL and try again.")
+    \
+    finally \
+    setLoading(false)
+    \
+    \
+  }
 
-    fetchProfessionalData()
-  }, [uniqueUrl])
+  fetchProfessionalData()
+  \
+}
+, [uniqueUrl])
 
-  const handleBookingSubmit = async (bookingData: any) => {
-    try {
-      const response = await fetch("https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16", {
+const handleBookingSubmit = async (bookingData: any) => \
+{
+  try
+  \
+  {
+    const response = await fetch("https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16", \{
         method: "POST",
-        headers: {
+        headers: \{
           "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+        \},
+        body: JSON.stringify(\{
           action: "create_booking",
           ...bookingData,
           timestamp: new Date().toISOString(),
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const result = await response.json()
-      console.log("Booking creation response:", result)
-      return result
-    } catch (error) {
-      console.error("Error creating booking:", error)
-      throw error
-    }
+        \}),
+    \
   }
+  )
 
-  if (loading) {
-    return (
+  if (!response.ok)
+  \
+  throw new Error(`HTTP error! status: $\{response.status\}`)
+  \
+
+  const result = await response.json()
+  console.log("Booking creation response:", result)
+  return result
+  \
+}
+catch (error) \
+{
+  console.error("Error creating booking:", error)
+  throw error
+  \
+}
+\}
+
+if (loading)
+\
+{
+  return (
       <div className="min-h-screen bg-[#FBF8F3] flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-[#E75837] mx-auto mb-4" />
@@ -153,17 +191,20 @@ export default function SchedulePage() {
         </div>
       </div>
     )
-  }
+  \
+}
 
-  if (error) {
-    return (
+if (error)
+\
+{
+  return (
       <div className="min-h-screen bg-[#FBF8F3] flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6">
             <h2 className="text-xl font-semibold text-red-800 mb-2">Error Loading Page</h2>
-            <p className="text-red-600 mb-4">{error}</p>
+            <p className="text-red-600 mb-4">\{error\}</p>
             <button
-              onClick={() => window.location.reload()}
+              onClick=\{() => window.location.reload()\}
               className="bg-[#E75837] text-white px-4 py-2 rounded-lg hover:bg-[#d04e30] transition-colors"
             >
               Try Again
@@ -172,22 +213,26 @@ export default function SchedulePage() {
         </div>
       </div>
     )
-  }
+  \
+}
 
-  if (!professionalData) {
-    return (
+if (!professionalData)
+\
+{
+  return (
       <div className="min-h-screen bg-[#FBF8F3] flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
             <h2 className="text-xl font-semibold text-yellow-800 mb-2">Professional Not Found</h2>
             <p className="text-yellow-600">
-              We couldn't find a professional with the URL "{uniqueUrl}". Please check the URL and try again.
+              We couldn't find a professional with the URL "\{uniqueUrl\}". Please check the URL and try again.
             </p>
           </div>
         </div>
       </div>
     )
-  }
-
-  return <BookingPage professionalData={professionalData} onBookingSubmit={handleBookingSubmit} />
+  \
 }
+
+return <BookingPage professionalData=\{professionalData\} onBookingSubmit=\{handleBookingSubmit\} />
+\}
