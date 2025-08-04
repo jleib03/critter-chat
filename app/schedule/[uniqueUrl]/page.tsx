@@ -123,14 +123,6 @@ export default function SchedulePage() {
   // Helper function to convert local time to UTC
   const convertLocalTimeToUTC = (dateStr: string, timeStr: string, userTimezone: string) => {
     try {
-      // Handle full-day bookings
-      if (timeStr === "All Day" || timeStr === "12:01 AM") {
-        // For full-day bookings, use 12:01 AM as start time
-        const [year, month, day] = dateStr.split("-").map(Number)
-        const localDate = new Date(year, month - 1, day, 0, 1, 0, 0) // 12:01 AM
-        return localDate.toISOString()
-      }
-
       const [time, period] = timeStr.split(" ")
       const [hours, minutes] = time.split(":").map(Number)
 
@@ -151,14 +143,7 @@ export default function SchedulePage() {
     } catch (error) {
       console.error("Error converting time to UTC:", error)
 
-      // Fallback logic for full-day bookings
-      if (timeStr === "All Day" || timeStr === "12:01 AM") {
-        const [year, month, day] = dateStr.split("-").map(Number)
-        const date = new Date(year, month - 1, day, 0, 1, 0, 0)
-        return date.toISOString()
-      }
-
-      // Fallback logic for regular times
+      // Fallback logic
       const [time, period] = timeStr.split(" ")
       const [hours, minutes] = time.split(":").map(Number)
       let hour24 = hours
@@ -176,30 +161,8 @@ export default function SchedulePage() {
   }
 
   // Helper function to calculate end datetime in UTC
-  const calculateEndDateTimeUTC = (
-    startDateTimeUTC: string,
-    durationNumber: number,
-    durationUnit: string,
-    selectedTimeSlot: SelectedTimeSlot,
-  ) => {
+  const calculateEndDateTimeUTC = (startDateTimeUTC: string, durationNumber: number, durationUnit: string) => {
     const startDate = new Date(startDateTimeUTC)
-
-    // Handle full-day bookings
-    if (selectedTimeSlot.startTime === "All Day" || selectedTimeSlot.startTime === "12:01 AM") {
-      if (selectedTimeSlot.endDate && selectedTimeSlot.totalDays) {
-        // Multi-day booking - use the end date at 11:59 PM
-        const [year, month, day] = selectedTimeSlot.endDate.split("-").map(Number)
-        const endDate = new Date(year, month - 1, day, 23, 59, 0, 0)
-        return endDate.toISOString()
-      } else {
-        // Single day booking - end at 11:59 PM same day
-        const endDate = new Date(startDate)
-        endDate.setHours(23, 59, 0, 0)
-        return endDate.toISOString()
-      }
-    }
-
-    // Regular time-based bookings
     let durationInMinutes = durationNumber
 
     if (durationUnit === "Hours") {
@@ -263,7 +226,7 @@ export default function SchedulePage() {
       userTimezoneRef.current = JSON.stringify(detectUserTimezone())
       loadProfessionalConfiguration()
 
-      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
+      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16"
 
       console.log("Initializing schedule with session:", sessionIdRef.current)
 
@@ -616,7 +579,7 @@ export default function SchedulePage() {
     setCreatingBooking(true)
 
     try {
-      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
+      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16"
       const userTimezoneData = JSON.parse(userTimezoneRef.current!)
 
       const startDateTimeUTC = convertLocalTimeToUTC(
@@ -642,12 +605,7 @@ export default function SchedulePage() {
         totalCost += Number(service.customer_cost)
       })
 
-      const endDateTimeUTC = calculateEndDateTimeUTC(
-        startDateTimeUTC,
-        totalDurationMinutes,
-        "Minutes",
-        selectedTimeSlot!,
-      )
+      const endDateTimeUTC = calculateEndDateTimeUTC(startDateTimeUTC, totalDurationMinutes, "Minutes")
 
       const endTimeLocal = new Date(endDateTimeUTC).toLocaleTimeString("en-US", {
         hour: "numeric",
