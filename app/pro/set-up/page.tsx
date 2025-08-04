@@ -1,19 +1,41 @@
 "use client"
 import { useState } from "react"
-import { Loader2, Copy, Check, Settings, MessageSquare, Calendar, ArrowRight, Eye, Globe, LinkIcon } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { useToast } from "@/hooks/use-toast"
+import {
+  Loader2,
+  CheckCircle,
+  Copy,
+  Settings,
+  MessageSquare,
+  Calendar,
+  ArrowRight,
+  Eye,
+  Globe,
+  LinkIcon,
+} from "lucide-react"
 import Header from "../../../components/header"
 import PasswordProtection from "../../../components/password-protection"
 import { useRouter } from "next/navigation"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+
+// Updated webhook URLs
+const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/a306584e-8637-4284-8a41-ecd5d24dc255" // For get-url action
+const CUSTOM_URL_WEBHOOK = "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16" // For create-url action
 
 export default function ProfessionalSetupPage() {
+  const { toast } = useToast()
+  const router = useRouter()
+  const [step, setStep] = useState(1)
+  const [loading, setLoading] = useState(false)
+  const [professionalId, setProfessionalId] = useState("")
+  const [customUrl, setCustomUrl] = useState("")
+  const [generatedUrl, setGeneratedUrl] = useState("")
+  const [error, setError] = useState("")
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [businessName, setBusinessName] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState("")
-  const [professionalId, setProfessionalId] = useState("")
   const [showResults, setShowResults] = useState(false)
   const [copiedStates, setCopiedStates] = useState<{ [key: string]: boolean }>({})
   const [showScheduleModal, setShowScheduleModal] = useState(false)
@@ -22,17 +44,10 @@ export default function ProfessionalSetupPage() {
   const [showPreviewModal, setShowPreviewModal] = useState(false)
   const [previewUniqueUrl, setPreviewUniqueUrl] = useState("")
   const [previewError, setPreviewError] = useState("")
-
-  // Custom URL states
-  const [customUrl, setCustomUrl] = useState("")
   const [isCreatingUrl, setIsCreatingUrl] = useState(false)
   const [urlError, setUrlError] = useState("")
   const [urlSuccess, setUrlSuccess] = useState("")
   const [createdCustomUrl, setCreatedCustomUrl] = useState("")
-
-  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/a306584e-8637-4284-8a41-ecd5d24dc255"
-  const CUSTOM_URL_WEBHOOK = "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16"
-  const router = useRouter()
 
   // If not authenticated, show password protection
   if (!isAuthenticated) {
@@ -45,52 +60,37 @@ export default function ProfessionalSetupPage() {
     )
   }
 
-  const handleSetupClick = () => {
-    setShowModal(true)
-    setError("")
-    setBusinessName("")
-  }
-
-  const handleCloseModal = () => {
-    setShowModal(false)
-    setError("")
-    setBusinessName("")
-    setIsSubmitting(false)
-  }
-
-  const handleSubmit = async () => {
-    if (!businessName.trim()) {
-      setError("Please enter your business name")
+  // Step 1: Get Professional ID
+  const handleGetProfessionalId = async () => {
+    const localProfessionalId = professionalId.trim() // Declare professionalId here
+    if (!localProfessionalId) {
+      setError("Please enter your Professional ID")
       return
     }
 
-    setIsSubmitting(true)
+    setLoading(true)
     setError("")
 
     try {
-      const payload = {
-        action: "get-url",
-        businessName: businessName.trim(),
-        timestamp: new Date().toISOString(),
-        source: "professional_setup_page",
-      }
-
-      console.log("Sending request to get professional ID:", payload)
-
       const response = await fetch(WEBHOOK_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          action: "get-url",
+          professional_id: localProfessionalId,
+          timestamp: new Date().toISOString(),
+          source: "professional_setup_page",
+        }),
       })
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        throw new Error(`HTTP ${response.status}`)
       }
 
       const data = await response.json()
-      console.log("Received response:", data)
+      console.log("Professional ID verification response:", data)
 
       // Handle the response format: [{"id":"151"}]
       let professionalId = null
@@ -110,14 +110,15 @@ export default function ProfessionalSetupPage() {
       } else {
         setError("Business not found. Please check the spelling and try again.")
       }
-    } catch (error) {
-      console.error("Error getting professional ID:", error)
-      setError("There was an error processing your request. Please try again.")
+    } catch (err) {
+      console.error("Error verifying Professional ID:", err)
+      setError("Failed to verify Professional ID. Please check your ID and try again.")
     } finally {
-      setIsSubmitting(false)
+      setLoading(false)
     }
   }
 
+  // Step 2: Create Custom URL
   const handleCreateCustomUrl = async () => {
     if (!customUrl.trim()) {
       setUrlError("Please enter a custom URL")
@@ -136,30 +137,26 @@ export default function ProfessionalSetupPage() {
     setUrlSuccess("")
 
     try {
-      const payload = {
-        action: "create-url",
-        professionalId: professionalId,
-        customUrl: customUrl.trim(),
-        timestamp: new Date().toISOString(),
-        source: "professional_setup_page",
-      }
-
-      console.log("Sending request to create custom URL:", payload)
-
       const response = await fetch(CUSTOM_URL_WEBHOOK, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          action: "create-url",
+          professional_id: professionalId.trim(),
+          custom_url: customUrl.trim(),
+          timestamp: new Date().toISOString(),
+          source: "professional_setup_page",
+        }),
       })
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        throw new Error(`HTTP ${response.status}`)
       }
 
       const data = await response.json()
-      console.log("Received response:", data)
+      console.log("Custom URL creation response:", data)
 
       // Handle the new response format: [{"status":"success","message":"URL created successfully","url_id":5,"professional_id":"152","unique_url":"sully","date_modified":"2025-07-18T22:09:00.742Z"}]
       let isSuccess = false
@@ -193,8 +190,8 @@ export default function ProfessionalSetupPage() {
       } else {
         setUrlError(responseMessage || "Failed to create custom URL. It may already be taken.")
       }
-    } catch (error) {
-      console.error("Error creating custom URL:", error)
+    } catch (err) {
+      console.error("Error creating custom URL:", err)
       setUrlError("There was an error creating your custom URL. Please try again.")
     } finally {
       setIsCreatingUrl(false)
@@ -209,7 +206,7 @@ export default function ProfessionalSetupPage() {
         setCopiedStates((prev) => ({ ...prev, [key]: false }))
       }, 2000)
     } catch (err) {
-      console.error("Failed to copy text: ", err)
+      console.error("Failed to copy:", err)
     }
   }
 
@@ -294,7 +291,7 @@ export default function ProfessionalSetupPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
                 {/* Critter Landing Page Setup Tile - Clickable */}
                 <div
-                  onClick={handleSetupClick}
+                  onClick={() => setShowModal(true)}
                   className="bg-white rounded-xl shadow-md p-6 text-center transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer border border-transparent hover:border-[#E75837]/20"
                 >
                   <div className="w-12 h-12 bg-[#fff8f6] rounded-full flex items-center justify-center mx-auto mb-4">
@@ -329,7 +326,7 @@ export default function ProfessionalSetupPage() {
 
                 {/* Schedule Setup Tile - Replaces Under Construction */}
                 <div
-                  onClick={() => setShowScheduleModal(true)}
+                  onClick={handleScheduleSetupClick}
                   className="bg-white rounded-xl shadow-md p-6 text-center transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer border border-transparent hover:border-[#745E25]/20"
                 >
                   <div className="w-12 h-12 bg-[#f9f7f2] rounded-full flex items-center justify-center mx-auto mb-4">
@@ -383,7 +380,7 @@ export default function ProfessionalSetupPage() {
                     className="flex items-center px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
                   >
                     {copiedStates.professionalId ? (
-                      <Check className="h-4 w-4 text-green-600" />
+                      <CheckCircle className="h-4 w-4 text-green-600" />
                     ) : (
                       <Copy className="h-4 w-4" />
                     )}
@@ -447,7 +444,7 @@ export default function ProfessionalSetupPage() {
                             className="flex items-center px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors ml-2"
                           >
                             {copiedStates.customLandingUrl ? (
-                              <Check className="h-4 w-4 text-green-600" />
+                              <CheckCircle className="h-4 w-4 text-green-600" />
                             ) : (
                               <Copy className="h-4 w-4" />
                             )}
@@ -525,16 +522,16 @@ export default function ProfessionalSetupPage() {
 
             <div className="flex justify-end space-x-3">
               <button
-                onClick={handleCloseModal}
+                onClick={() => setShowModal(false)}
                 disabled={isSubmitting}
                 className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors body-font"
               >
                 Cancel
               </button>
               <button
-                onClick={handleSubmit}
+                onClick={handleGetProfessionalId}
                 disabled={isSubmitting || !businessName.trim()}
-                className="px-6 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#d04e30] transition-colors body-font flex items-center"
+                className="px-6 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#d04e30] transition-colors body-font flex items-center disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <>
