@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, Calendar, Users, AlertCircle, CheckCircle2 } from "lucide-react"
+import { ChevronLeft, ChevronRight, Calendar, Users, AlertCircle, CheckCircle2, CalendarDays } from "lucide-react"
 import type { BookingData, WorkingDay, Service, SelectedTimeSlot } from "@/types/schedule"
 import type { ProfessionalConfig } from "@/types/professional-config"
 import { getTotalDurationInDays, calculateDayAvailability, validateMultiDayBooking } from "@/utils/professional-config"
@@ -31,6 +31,7 @@ export function DayPickerInterface({
   })
 
   const [selectedStartDate, setSelectedStartDate] = useState<string | null>(null)
+  const [selectedEndDate, setSelectedEndDate] = useState<string | null>(null)
 
   const totalDays = useMemo(() => getTotalDurationInDays(selectedServices), [selectedServices])
 
@@ -90,35 +91,67 @@ export function DayPickerInterface({
     return date < today
   }
 
+  const calculateDateDifference = (startDate: string, endDate: string): number => {
+    const start = new Date(startDate)
+    const end = new Date(endDate)
+    const diffTime = Math.abs(end.getTime() - start.getTime())
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1 // +1 to include both start and end dates
+  }
+
   const handleDateSelect = (date: Date) => {
     const dateStr = formatDate(date)
 
     if (totalDays === 1) {
       // Single day booking
       setSelectedStartDate(dateStr)
+      setSelectedEndDate(dateStr)
       onTimeSlotSelect({
         date: dateStr,
-        startTime: "All Day",
-        endTime: "All Day",
+        startTime: "12:01 AM", // Use 12:01 AM as start time for full day
+        endTime: "11:59 PM", // Use 11:59 PM as end time for full day
         dayOfWeek: getDayName(date),
       })
     } else {
-      // Multi-day booking
-      if (selectedStartDate === dateStr) {
-        // Deselect if clicking the same date
-        setSelectedStartDate(null)
-      } else {
+      // Multi-day booking - allow manual start/end selection
+      if (!selectedStartDate || (selectedStartDate && selectedEndDate)) {
+        // Start new selection
         setSelectedStartDate(dateStr)
+        setSelectedEndDate(null)
+      } else if (selectedStartDate && !selectedEndDate) {
+        // Complete the selection
+        const startDate = new Date(selectedStartDate)
+        const endDate = new Date(dateStr)
+
+        if (endDate < startDate) {
+          // If end date is before start date, swap them
+          setSelectedStartDate(dateStr)
+          setSelectedEndDate(selectedStartDate)
+        } else {
+          setSelectedEndDate(dateStr)
+        }
+
+        // Calculate the actual date range
+        const actualStartDate = endDate < startDate ? dateStr : selectedStartDate
+        const actualEndDate = endDate < startDate ? selectedStartDate : dateStr
+        const actualDays = calculateDateDifference(actualStartDate, actualEndDate)
 
         // Validate multi-day booking
-        const validation = validateMultiDayBooking(dateStr, totalDays, professionalConfig, workingDays, bookingData)
+        const validation = validateMultiDayBooking(
+          actualStartDate,
+          actualDays,
+          professionalConfig,
+          workingDays,
+          bookingData,
+        )
 
         if (validation.valid) {
           onTimeSlotSelect({
-            date: dateStr,
-            startTime: "All Day",
-            endTime: "All Day",
-            dayOfWeek: getDayName(date),
+            date: actualStartDate,
+            startTime: "12:01 AM", // Use 12:01 AM as start time for full day
+            endTime: "11:59 PM", // Use 11:59 PM as end time for full day
+            dayOfWeek: getDayName(new Date(actualStartDate)),
+            endDate: actualEndDate, // Add end date for multi-day bookings
+            totalDays: actualDays,
           })
         }
       }
@@ -132,21 +165,32 @@ export function DayPickerInterface({
     return calculateDayAvailability(professionalConfig, workingDays, dateStr, dayName, bookingData)
   }
 
-  const getMultiDayValidation = (startDate: string) => {
-    if (totalDays <= 1) return null
+  const getMultiDayValidation = (startDate: string, endDate: string) => {
+    if (!startDate || !endDate) return null
 
-    return validateMultiDayBooking(startDate, totalDays, professionalConfig, workingDays, bookingData)
+    const days = calculateDateDifference(startDate, endDate)
+    return validateMultiDayBooking(startDate, days, professionalConfig, workingDays, bookingData)
   }
 
   const isDateInSelectedRange = (date: Date) => {
-    if (!selectedStartDate || totalDays <= 1) return false
+    if (!selectedStartDate) return false
 
     const dateStr = formatDate(date)
-    const startDate = new Date(selectedStartDate)
-    const endDate = new Date(selectedStartDate)
-    endDate.setDate(startDate.getDate() + totalDays - 1)
 
-    return date >= startDate && date <= endDate
+    if (totalDays === 1) {
+      return selectedStartDate === dateStr
+    }
+
+    if (!selectedEndDate) {
+      return selectedStartDate === dateStr
+    }
+
+    const startDate = new Date(selectedStartDate)
+    const endDate = new Date(selectedEndDate)
+    const actualStart = startDate <= endDate ? startDate : endDate
+    const actualEnd = startDate <= endDate ? endDate : startDate
+
+    return date >= actualStart && date <= actualEnd
   }
 
   const getDateStatus = (date: Date) => {
@@ -156,14 +200,41 @@ export function DayPickerInterface({
     const isInRange = isDateInSelectedRange(date)
     const isPast = isPastDate(date)
     const inCurrentMonth = isInCurrentMonth(date)
+    const isStartDate = selectedStartDate === dateStr
+    const isEndDate = selectedEndDate === dateStr
 
     if (isPast) return { type: "past", available: false, reason: "Past date" }
     if (!inCurrentMonth) return { type: "other-month", available: false, reason: "Other month" }
     if (availability.availableSlots <= 0) return { type: "unavailable", available: false, reason: availability.reason }
     if (isSelected) return { type: "selected", available: true, reason: "Selected" }
+    if (isStartDate) return { type: "start-date", available: true, reason: "Start date" }
+    if (isEndDate) return { type: "end-date", available: true, reason: "End date" }
     if (isInRange) return { type: "in-range", available: true, reason: "In selected range" }
 
     return { type: "available", available: true, reason: "Available" }
+  }
+
+  const getSelectedDateRange = () => {
+    if (!selectedStartDate) return null
+
+    if (totalDays === 1 || !selectedEndDate) {
+      return {
+        startDate: selectedStartDate,
+        endDate: selectedStartDate,
+        days: 1,
+      }
+    }
+
+    const startDate = new Date(selectedStartDate)
+    const endDate = new Date(selectedEndDate)
+    const actualStart = startDate <= endDate ? selectedStartDate : selectedEndDate
+    const actualEnd = startDate <= endDate ? selectedEndDate : selectedStartDate
+
+    return {
+      startDate: actualStart,
+      endDate: actualEnd,
+      days: calculateDateDifference(actualStart, actualEnd),
+    }
   }
 
   return (
@@ -173,7 +244,7 @@ export function DayPickerInterface({
         <div>
           <h2 className="text-2xl font-bold text-gray-900 header-font">Select Your Dates</h2>
           <p className="text-gray-600 body-font">
-            Choose {totalDays > 1 ? `${totalDays} consecutive days` : "a day"} for{" "}
+            Choose {totalDays > 1 ? `${totalDays} or more consecutive days` : "a day"} for{" "}
             <span className="font-medium">{selectedServices.map((s) => s.name).join(", ")}</span>
           </p>
         </div>
@@ -195,16 +266,53 @@ export function DayPickerInterface({
         <Card className="border-blue-200 bg-blue-50">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Calendar className="w-4 h-4 text-blue-600" />
+              <CalendarDays className="w-4 h-4 text-blue-600" />
               <span className="font-medium text-blue-900 header-font">Multi-Day Booking</span>
             </div>
             <p className="text-sm text-blue-800 body-font">
-              Select your check-in date. We'll automatically reserve {totalDays} consecutive days starting from your
-              selected date.
+              Click to select your check-in date, then click another date to select your check-out date. Minimum stay:{" "}
+              {totalDays} days.
             </p>
           </CardContent>
         </Card>
       )}
+
+      {/* Selected date range display */}
+      {(() => {
+        const range = getSelectedDateRange()
+        if (!range) return null
+
+        return (
+          <Card className="border-green-200 bg-green-50">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-green-600" />
+                  <span className="font-medium text-green-900 header-font">
+                    {range.days === 1 ? "Selected Date" : "Selected Date Range"}
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedStartDate(null)
+                    setSelectedEndDate(null)
+                  }}
+                  className="text-green-700 hover:text-green-900"
+                >
+                  Clear
+                </Button>
+              </div>
+              <p className="text-sm text-green-800 body-font mt-1">
+                {range.days === 1
+                  ? `${new Date(range.startDate).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}`
+                  : `${new Date(range.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${new Date(range.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} (${range.days} days)`}
+              </p>
+            </CardContent>
+          </Card>
+        )
+      })()}
 
       {/* Calendar Grid */}
       <Card>
@@ -234,7 +342,7 @@ export function DayPickerInterface({
                         ? "text-gray-300 cursor-not-allowed"
                         : status.type === "unavailable"
                           ? "text-gray-400 cursor-not-allowed"
-                          : status.type === "selected"
+                          : status.type === "selected" || status.type === "start-date" || status.type === "end-date"
                             ? "bg-[#E75837] text-white hover:bg-[#d14a2a]"
                             : status.type === "in-range"
                               ? "bg-[#E75837]/20 text-[#E75837] hover:bg-[#E75837]/30"
@@ -262,7 +370,7 @@ export function DayPickerInterface({
       </Card>
 
       {/* Multi-day validation results */}
-      {selectedStartDate && totalDays > 1 && (
+      {selectedStartDate && selectedEndDate && totalDays > 1 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg header-font flex items-center gap-2">
@@ -272,7 +380,7 @@ export function DayPickerInterface({
           </CardHeader>
           <CardContent>
             {(() => {
-              const validation = getMultiDayValidation(selectedStartDate)
+              const validation = getMultiDayValidation(selectedStartDate, selectedEndDate)
               if (!validation) return null
 
               return (
@@ -281,7 +389,7 @@ export function DayPickerInterface({
                     {validation.valid ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
                     <span className="font-medium body-font">
                       {validation.valid
-                        ? `All ${totalDays} days are available!`
+                        ? `All ${calculateDateDifference(selectedStartDate, selectedEndDate)} days are available!`
                         : `Booking not available: ${validation.reason}`}
                     </span>
                   </div>
