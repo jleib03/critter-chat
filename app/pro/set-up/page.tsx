@@ -1,407 +1,649 @@
 "use client"
-
 import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Loader2, Copy, Check, Settings, MessageSquare, Calendar, ArrowRight, Eye, Globe, LinkIcon } from "lucide-react"
+import Header from "../../../components/header"
+import PasswordProtection from "../../../components/password-protection"
+import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
-import { Loader2, CheckCircle, AlertCircle, ExternalLink, Copy, Settings, MessageSquare } from "lucide-react"
-
-// Updated webhook URLs
-const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/a306584e-8637-4284-8a41-ecd5d24dc255" // For get-url action
-const CUSTOM_URL_WEBHOOK = "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16" // For create-url action
 
 export default function ProfessionalSetupPage() {
-  const { toast } = useToast()
-  const [step, setStep] = useState(1)
-  const [loading, setLoading] = useState(false)
-  const [professionalId, setProfessionalId] = useState("")
-  const [customUrl, setCustomUrl] = useState("")
-  const [generatedUrl, setGeneratedUrl] = useState("")
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  const [businessName, setBusinessName] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
+  const [professionalId, setProfessionalId] = useState("")
+  const [showResults, setShowResults] = useState(false)
+  const [copiedStates, setCopiedStates] = useState<{ [key: string]: boolean }>({})
+  const [showScheduleModal, setShowScheduleModal] = useState(false)
+  const [scheduleProfessionalId, setScheduleProfessionalId] = useState("")
+  const [scheduleError, setScheduleError] = useState("")
+  const [showPreviewModal, setShowPreviewModal] = useState(false)
+  const [previewUniqueUrl, setPreviewUniqueUrl] = useState("")
+  const [previewError, setPreviewError] = useState("")
 
-  // Step 1: Get Professional ID
-  const handleGetProfessionalId = async () => {
-    if (!professionalId.trim()) {
-      setError("Please enter your Professional ID")
+  // Custom URL states
+  const [customUrl, setCustomUrl] = useState("")
+  const [isCreatingUrl, setIsCreatingUrl] = useState(false)
+  const [urlError, setUrlError] = useState("")
+  const [urlSuccess, setUrlSuccess] = useState("")
+  const [createdCustomUrl, setCreatedCustomUrl] = useState("")
+
+  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/a306584e-8637-4284-8a41-ecd5d24dc255"
+  const CUSTOM_URL_WEBHOOK = "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16"
+  const router = useRouter()
+
+  // If not authenticated, show password protection
+  if (!isAuthenticated) {
+    return (
+      <PasswordProtection
+        onAuthenticated={() => setIsAuthenticated(true)}
+        title="Critter Professional Access"
+        description="Enter your professional password to access setup tools and resources."
+      />
+    )
+  }
+
+  const handleSetupClick = () => {
+    setShowModal(true)
+    setError("")
+    setBusinessName("")
+  }
+
+  const handleCloseModal = () => {
+    setShowModal(false)
+    setError("")
+    setBusinessName("")
+    setIsSubmitting(false)
+  }
+
+  const handleSubmit = async () => {
+    if (!businessName.trim()) {
+      setError("Please enter your business name")
       return
     }
 
-    setLoading(true)
+    setIsSubmitting(true)
     setError("")
 
     try {
+      const payload = {
+        action: "get-url",
+        businessName: businessName.trim(),
+        timestamp: new Date().toISOString(),
+        source: "professional_setup_page",
+      }
+
+      console.log("Sending request to get professional ID:", payload)
+
       const response = await fetch(WEBHOOK_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          action: "get-url",
-          professional_id: professionalId.trim(),
-          timestamp: new Date().toISOString(),
-        }),
+        body: JSON.stringify(payload),
       })
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
 
       const data = await response.json()
-      console.log("Professional ID verification response:", data)
+      console.log("Received response:", data)
 
-      toast({
-        title: "✅ Professional ID Verified",
-        description: "Your Professional ID has been verified successfully.",
-        duration: 3000,
-      })
+      // Handle the response format: [{"id":"151"}]
+      let professionalId = null
 
-      setStep(2)
-    } catch (err) {
-      console.error("Error verifying Professional ID:", err)
-      setError("Failed to verify Professional ID. Please check your ID and try again.")
-      toast({
-        title: "❌ Verification Failed",
-        description: "Could not verify your Professional ID. Please try again.",
-        variant: "destructive",
-        duration: 5000,
-      })
+      if (Array.isArray(data) && data.length > 0 && data[0].id) {
+        professionalId = data[0].id
+      } else if (data.professionalId) {
+        professionalId = data.professionalId
+      } else if (data.id) {
+        professionalId = data.id
+      }
+
+      if (professionalId) {
+        setProfessionalId(professionalId)
+        setShowModal(false)
+        setShowResults(true)
+      } else {
+        setError("Business not found. Please check the spelling and try again.")
+      }
+    } catch (error) {
+      console.error("Error getting professional ID:", error)
+      setError("There was an error processing your request. Please try again.")
     } finally {
-      setLoading(false)
+      setIsSubmitting(false)
     }
   }
 
-  // Step 2: Create Custom URL
   const handleCreateCustomUrl = async () => {
     if (!customUrl.trim()) {
-      setError("Please enter a custom URL")
+      setUrlError("Please enter a custom URL")
       return
     }
 
     // Basic URL validation
     const urlPattern = /^[a-zA-Z0-9-_]+$/
     if (!urlPattern.test(customUrl.trim())) {
-      setError("Custom URL can only contain letters, numbers, hyphens, and underscores")
+      setUrlError("URL can only contain letters, numbers, hyphens, and underscores")
       return
     }
 
-    setLoading(true)
-    setError("")
+    setIsCreatingUrl(true)
+    setUrlError("")
+    setUrlSuccess("")
 
     try {
+      const payload = {
+        action: "create-url",
+        professionalId: professionalId,
+        customUrl: customUrl.trim(),
+        timestamp: new Date().toISOString(),
+        source: "professional_setup_page",
+      }
+
+      console.log("Sending request to create custom URL:", payload)
+
       const response = await fetch(CUSTOM_URL_WEBHOOK, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          action: "create-url",
-          professional_id: professionalId.trim(),
-          custom_url: customUrl.trim(),
-          timestamp: new Date().toISOString(),
-        }),
+        body: JSON.stringify(payload),
       })
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
 
       const data = await response.json()
-      console.log("Custom URL creation response:", data)
+      console.log("Received response:", data)
 
-      const fullUrl = `https://critter-pet-services.vercel.app/${customUrl.trim()}`
-      setGeneratedUrl(fullUrl)
+      // Handle the new response format: [{"status":"success","message":"URL created successfully","url_id":5,"professional_id":"152","unique_url":"sully","date_modified":"2025-07-18T22:09:00.742Z"}]
+      let isSuccess = false
+      let responseMessage = ""
+      let createdUrl = ""
 
-      toast({
-        title: "🎉 Custom URL Created!",
-        description: `Your booking page is now live at ${customUrl.trim()}`,
-        duration: 5000,
-      })
+      if (Array.isArray(data) && data.length > 0) {
+        const firstItem = data[0]
+        if (firstItem.status === "success") {
+          isSuccess = true
+          responseMessage = firstItem.message || "URL created successfully"
+          createdUrl = firstItem.unique_url || customUrl.trim()
+        } else {
+          responseMessage = firstItem.message || "Failed to create custom URL"
+        }
+      } else if (data.success) {
+        // Fallback for old response format
+        isSuccess = true
+        responseMessage = data.message || "URL created successfully"
+        createdUrl = customUrl.trim()
+      } else {
+        responseMessage = data.message || "Failed to create custom URL"
+      }
 
-      setStep(3)
-    } catch (err) {
-      console.error("Error creating custom URL:", err)
-      setError("Failed to create custom URL. It may already be taken or there was a server error.")
-      toast({
-        title: "❌ URL Creation Failed",
-        description: "Could not create your custom URL. Please try a different one.",
-        variant: "destructive",
-        duration: 5000,
-      })
+      if (isSuccess) {
+        setCreatedCustomUrl(createdUrl)
+        setUrlSuccess(
+          `Custom URL created successfully! Your page is now available at: booking.critter.pet/${createdUrl}`,
+        )
+        setCustomUrl("")
+      } else {
+        setUrlError(responseMessage || "Failed to create custom URL. It may already be taken.")
+      }
+    } catch (error) {
+      console.error("Error creating custom URL:", error)
+      setUrlError("There was an error creating your custom URL. Please try again.")
     } finally {
-      setLoading(false)
+      setIsCreatingUrl(false)
     }
   }
 
-  const copyToClipboard = async (text: string) => {
+  const copyToClipboard = async (text: string, key: string) => {
     try {
       await navigator.clipboard.writeText(text)
-      toast({
-        title: "📋 Copied!",
-        description: "URL copied to clipboard",
-        duration: 2000,
-      })
+      setCopiedStates((prev) => ({ ...prev, [key]: true }))
+      setTimeout(() => {
+        setCopiedStates((prev) => ({ ...prev, [key]: false }))
+      }, 2000)
     } catch (err) {
-      console.error("Failed to copy:", err)
+      console.error("Failed to copy text: ", err)
     }
   }
 
-  const resetForm = () => {
-    setStep(1)
-    setProfessionalId("")
-    setCustomUrl("")
-    setGeneratedUrl("")
-    setError("")
+  const landingUrl = `https://booking.critter.pet/${professionalId}`
+
+  const handleScheduleSetupClick = () => {
+    setShowScheduleModal(true)
+    setScheduleError("")
+    setScheduleProfessionalId("")
+  }
+
+  const handleCloseScheduleModal = () => {
+    setShowScheduleModal(false)
+    setScheduleError("")
+    setScheduleProfessionalId("")
+  }
+
+  const handleScheduleSubmit = () => {
+    if (!scheduleProfessionalId.trim()) {
+      setScheduleError("Please enter your Professional ID")
+      return
+    }
+
+    // Navigate directly to schedule setup page
+    router.push(`/schedule/set-up/${scheduleProfessionalId.trim()}`)
+  }
+
+  const handlePreviewClick = () => {
+    setShowPreviewModal(true)
+    setPreviewError("")
+    setPreviewUniqueUrl("")
+  }
+
+  const handleClosePreviewModal = () => {
+    setShowPreviewModal(false)
+    setPreviewError("")
+    setPreviewUniqueUrl("")
+  }
+
+  const handlePreviewSubmit = () => {
+    if (!previewUniqueUrl.trim()) {
+      setPreviewError("Please enter your unique URL")
+      return
+    }
+
+    // Navigate directly to the professional landing page using unique URL
+    window.open(`https://booking.critter.pet/${previewUniqueUrl.trim()}`, "_blank")
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="bg-white rounded-2xl shadow-lg border p-8">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-[#E75837] mb-2 header-font">Critter Landing Page Set-Up</h1>
-            <p className="text-gray-600 body-font">Create your custom booking page in just a few steps</p>
-          </div>
-        </div>
+    <div className="min-h-screen bg-[#FBF8F3] flex flex-col">
+      <Header />
 
-        {/* Progress Steps */}
-        <div className="bg-white rounded-2xl shadow-lg border p-6">
-          <div className="flex items-center justify-between mb-8">
-            {[1, 2, 3].map((stepNumber) => (
-              <div key={stepNumber} className="flex items-center">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
-                    step >= stepNumber
-                      ? "bg-[#E75837] text-white"
-                      : step === stepNumber
-                        ? "bg-[#E75837] text-white animate-pulse"
-                        : "bg-gray-200 text-gray-500"
-                  }`}
-                >
-                  {step > stepNumber ? <CheckCircle className="w-5 h-5" /> : stepNumber}
+      <main className="pt-8 flex-1 flex flex-col">
+        <div className="max-w-4xl mx-auto px-4 flex flex-col page-content">
+          {!showResults ? (
+            <>
+              {/* Hero Section */}
+              <div className="text-center mb-12">
+                <div className="w-16 h-16 bg-[#E75837] rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Settings className="h-8 w-8 text-white" />
                 </div>
-                {stepNumber < 3 && (
-                  <div
-                    className={`w-20 h-1 mx-4 ${step > stepNumber ? "bg-[#E75837]" : "bg-gray-200"} transition-colors duration-300`}
-                  />
-                )}
+                <h1 className="text-4xl md:text-5xl title-font mb-4">Professional Setup</h1>
+                <p className="text-xl text-gray-700 max-w-3xl mx-auto body-font">
+                  Tools and resources to enhance your Critter professional experience
+                </p>
+                {/* Add this new callout */}
+                <div className="mt-6 max-w-2xl mx-auto">
+                  <div className="bg-[#E75837]/10 border border-[#E75837]/30 rounded-lg p-4">
+                    <p className="text-[#E75837] body-font text-center">
+                      <strong>First time here?</strong> Check out our{" "}
+                      <a href="/pro/how-to-use" className="text-[#E75837] hover:text-[#d04e30] underline font-medium">
+                        step-by-step help guide
+                      </a>{" "}
+                      to walk you through setting up all your professional tools.
+                    </p>
+                  </div>
+                </div>
               </div>
-            ))}
-          </div>
 
-          <div className="text-center mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 header-font">
-              {step === 1 && "Step 1: Verify Professional ID"}
-              {step === 2 && "Step 2: Create Custom URL"}
-              {step === 3 && "Step 3: Your Booking Page is Ready!"}
-            </h2>
-            <p className="text-gray-600 body-font mt-2">
-              {step === 1 && "Enter your Professional ID to get started"}
-              {step === 2 && "Choose a custom URL for your booking page"}
-              {step === 3 && "Share your new booking page with customers"}
-            </p>
-          </div>
-
-          {/* Step 1: Professional ID */}
-          {step === 1 && (
-            <Card className="max-w-md mx-auto">
-              <CardContent className="pt-6 space-y-4">
-                <div>
-                  <Label htmlFor="professionalId" className="body-font font-medium">
-                    Professional ID
-                  </Label>
-                  <Input
-                    id="professionalId"
-                    value={professionalId}
-                    onChange={(e) => setProfessionalId(e.target.value)}
-                    placeholder="Enter your Professional ID"
-                    className="mt-1"
-                    onKeyPress={(e) => e.key === "Enter" && handleGetProfessionalId()}
-                  />
-                  <p className="text-sm text-gray-500 mt-1 body-font">
-                    This is the ID provided when you signed up for Critter
-                  </p>
-                </div>
-
-                {error && (
-                  <div className="flex items-center gap-2 text-red-600 text-sm">
-                    <AlertCircle className="w-4 h-4" />
-                    {error}
-                  </div>
-                )}
-
-                <Button
-                  onClick={handleGetProfessionalId}
-                  disabled={loading || !professionalId.trim()}
-                  className="w-full bg-[#E75837] hover:bg-[#d14a2a] text-white"
+              {/* Feature Tiles Section */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                {/* Critter Landing Page Setup Tile - Clickable */}
+                <div
+                  onClick={handleSetupClick}
+                  className="bg-white rounded-xl shadow-md p-6 text-center transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer border border-transparent hover:border-[#E75837]/20"
                 >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Verifying...
-                    </>
-                  ) : (
-                    "Verify Professional ID"
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Step 2: Custom URL */}
-          {step === 2 && (
-            <Card className="max-w-md mx-auto">
-              <CardContent className="pt-6 space-y-4">
-                <div>
-                  <Label htmlFor="customUrl" className="body-font font-medium">
-                    Custom URL
-                  </Label>
-                  <div className="mt-1 flex">
-                    <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm body-font">
-                      critter-pet-services.vercel.app/
-                    </span>
-                    <Input
-                      id="customUrl"
-                      value={customUrl}
-                      onChange={(e) => setCustomUrl(e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, ""))}
-                      placeholder="your-business-name"
-                      className="rounded-l-none"
-                      onKeyPress={(e) => e.key === "Enter" && handleCreateCustomUrl()}
-                    />
+                  <div className="w-12 h-12 bg-[#fff8f6] rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Globe className="h-6 w-6 text-[#E75837]" />
                   </div>
-                  <p className="text-sm text-gray-500 mt-1 body-font">
-                    Choose a memorable URL for your customers (letters, numbers, hyphens, and underscores only)
+                  <h3 className="text-lg font-bold mb-2 header-font">Critter Landing Page Set-Up</h3>
+                  <p className="text-gray-600 body-font mb-4">
+                    Generate a custom link for your Critter landing page to share with customers and showcase your
+                    services.
                   </p>
+                  <span className="inline-flex items-center text-[#E75837] text-sm font-medium">
+                    Set up now <ArrowRight className="ml-1 h-4 w-4" />
+                  </span>
                 </div>
 
-                {error && (
-                  <div className="flex items-center gap-2 text-red-600 text-sm">
-                    <AlertCircle className="w-4 h-4" />
-                    {error}
+                {/* Custom Support Agent Tile - Coming Soon */}
+                <div
+                  onClick={() => router.push("/pro/custom-agent")}
+                  className="bg-white rounded-xl shadow-md p-6 text-center transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer border border-transparent hover:border-[#94ABD6]/20"
+                >
+                  <div className="w-12 h-12 bg-[#f5f8fd] rounded-full flex items-center justify-center mx-auto mb-4">
+                    <MessageSquare className="h-6 w-6 text-[#94ABD6]" />
                   </div>
-                )}
+                  <h3 className="text-lg font-bold mb-2 header-font">Custom Support Agent</h3>
+                  <p className="text-gray-600 body-font mb-4">
+                    Create a personalized AI support agent trained on your business policies and FAQs.
+                  </p>
+                  <span className="inline-flex items-center text-[#94ABD6] text-sm font-medium">
+                    Set up now <ArrowRight className="ml-1 h-4 w-4" />
+                  </span>
+                </div>
 
-                <div className="flex gap-2">
-                  <Button onClick={() => setStep(1)} variant="outline" className="flex-1" disabled={loading}>
-                    Back
-                  </Button>
-                  <Button
-                    onClick={handleCreateCustomUrl}
-                    disabled={loading || !customUrl.trim()}
-                    className="flex-1 bg-[#E75837] hover:bg-[#d14a2a] text-white"
+                {/* Schedule Setup Tile - Replaces Under Construction */}
+                <div
+                  onClick={() => setShowScheduleModal(true)}
+                  className="bg-white rounded-xl shadow-md p-6 text-center transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer border border-transparent hover:border-[#745E25]/20"
+                >
+                  <div className="w-12 h-12 bg-[#f9f7f2] rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Calendar className="h-6 w-6 text-[#745E25]" />
+                  </div>
+                  <h3 className="text-lg font-bold mb-2 header-font">Schedule Setup</h3>
+                  <p className="text-gray-600 body-font mb-4">
+                    Configure your team, working hours, capacity rules, and blocked time for appointment scheduling.
+                  </p>
+                  <span className="inline-flex items-center text-[#745E25] text-sm font-medium">
+                    Set up now <ArrowRight className="ml-1 h-4 w-4" />
+                  </span>
+                </div>
+              </div>
+
+              {/* Preview Landing Page Button */}
+              <div className="text-center mb-12">
+                <button
+                  onClick={handlePreviewClick}
+                  className="inline-flex items-center px-8 py-4 bg-white hover:bg-gray-50 text-gray-800 rounded-xl transition-all duration-200 border-2 border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md body-font font-medium"
+                >
+                  <Eye className="h-5 w-5 mr-3 text-gray-600" />
+                  Preview Landing Page
+                </button>
+                <p className="text-sm text-gray-500 mt-3 body-font">
+                  See how your professional landing page looks to customers
+                </p>
+              </div>
+            </>
+          ) : (
+            /* Results Section */
+            <div className="space-y-8">
+              {/* Success Header */}
+              <div className="text-center">
+                <div className="w-16 h-16 bg-[#E75837] rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Settings className="h-8 w-8 text-white" />
+                </div>
+                <h1 className="text-4xl title-font mb-4">Set Up Your Landing Page</h1>
+                <p className="text-xl text-gray-700 body-font">
+                  Your Professional ID has been found. Now create your custom landing page URL.
+                </p>
+              </div>
+
+              {/* Professional ID */}
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <h2 className="text-xl font-bold mb-4 header-font">Your Professional ID</h2>
+                <div className="bg-gray-50 rounded-lg p-4 flex items-center justify-between">
+                  <code className="text-lg font-mono text-[#E75837]">{professionalId}</code>
+                  <button
+                    onClick={() => copyToClipboard(professionalId, "professionalId")}
+                    className="flex items-center px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
                   >
-                    {loading ? (
+                    {copiedStates.professionalId ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                <p className="text-sm text-gray-600 mt-2 body-font">
+                  This is your unique identifier that connects customers to your Critter account.
+                </p>
+              </div>
+
+              {/* Custom URL Creation Section */}
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <h2 className="text-xl font-bold mb-4 header-font flex items-center">
+                  <LinkIcon className="h-5 w-5 mr-2" />
+                  Create Custom URL
+                </h2>
+                <p className="text-gray-600 mb-4 body-font">
+                  Create a personalized URL for your landing page that's easier to remember and share.
+                </p>
+
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="customUrl" className="body-font">
+                      Custom URL *
+                    </Label>
+                    <div className="flex items-center mt-1">
+                      <span className="text-sm text-gray-500 body-font mr-2">booking.critter.pet/</span>
+                      <Input
+                        id="customUrl"
+                        value={customUrl}
+                        onChange={(e) => setCustomUrl(e.target.value)}
+                        placeholder="your-business-name"
+                        className="flex-1"
+                        disabled={isCreatingUrl}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1 body-font">
+                      Use letters, numbers, hyphens, and underscores only. Example: "sally-grooming" or "best_pet_care"
+                    </p>
+                  </div>
+
+                  {urlError && <div className="text-sm text-red-600 body-font">{urlError}</div>}
+
+                  {urlSuccess && (
+                    <>
+                      <div className="text-sm text-green-600 body-font">{urlSuccess}</div>
+
+                      {/* Show the landing page link after successful custom URL creation */}
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
+                        <h3 className="text-lg font-bold mb-2 text-green-800 header-font">
+                          Your Landing Page is Ready!
+                        </h3>
+                        <div className="bg-white rounded-lg p-3 flex items-center justify-between">
+                          <code className="text-sm font-mono text-[#E75837] break-all">
+                            https://booking.critter.pet/{createdCustomUrl}
+                          </code>
+                          <button
+                            onClick={() =>
+                              copyToClipboard(`https://booking.critter.pet/${createdCustomUrl}`, "customLandingUrl")
+                            }
+                            className="flex items-center px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors ml-2"
+                          >
+                            {copiedStates.customLandingUrl ? (
+                              <Check className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                        <p className="text-sm text-green-700 mt-2 body-font">
+                          Share this link with customers to showcase your services and accept bookings.
+                        </p>
+                      </div>
+                    </>
+                  )}
+
+                  <button
+                    onClick={handleCreateCustomUrl}
+                    disabled={isCreatingUrl || !customUrl.trim()}
+                    className="w-full bg-[#E75837] text-white px-4 py-3 rounded-lg hover:bg-[#d04e30] transition-colors body-font flex items-center justify-center disabled:opacity-50"
+                  >
+                    {isCreatingUrl ? (
                       <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Creating...
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Creating URL...
                       </>
                     ) : (
-                      "Create URL"
+                      <>
+                        <LinkIcon className="h-4 w-4 mr-2" />
+                        Create Custom URL
+                      </>
                     )}
-                  </Button>
+                  </button>
                 </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Step 3: Success */}
-          {step === 3 && (
-            <div className="max-w-2xl mx-auto space-y-6">
-              <Card>
-                <CardContent className="pt-6 text-center space-y-4">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                    <CheckCircle className="w-8 h-8 text-green-600" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 header-font">🎉 Your Booking Page is Live!</h3>
-                  <p className="text-gray-600 body-font">
-                    Your custom booking page has been created successfully. Share this URL with your customers to start
-                    receiving bookings.
-                  </p>
-
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex-1 text-left">
-                        <p className="text-sm text-gray-500 body-font">Your Booking Page URL:</p>
-                        <p className="font-mono text-sm text-gray-900 break-all">{generatedUrl}</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => copyToClipboard(generatedUrl)}
-                          variant="outline"
-                          size="sm"
-                          className="shrink-0"
-                        >
-                          <Copy className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          onClick={() => window.open(generatedUrl, "_blank")}
-                          variant="outline"
-                          size="sm"
-                          className="shrink-0"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Next Steps */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg header-font">
-                      <Settings className="w-5 h-5 text-[#E75837]" />
-                      Configure Schedule
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-600 body-font mb-4">
-                      Set up your availability, team members, and booking preferences.
-                    </p>
-                    <Button
-                      onClick={() => window.open(`/schedule/set-up/${professionalId}`, "_blank")}
-                      className="w-full bg-[#E75837] hover:bg-[#d14a2a] text-white"
-                    >
-                      Schedule Set-Up
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg header-font">
-                      <MessageSquare className="w-5 h-5 text-[#E75837]" />
-                      Custom Support Agent
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-600 body-font mb-4">
-                      Create an AI-powered support agent for your customers.
-                    </p>
-                    <Button
-                      onClick={() => window.open("/pro/custom-agent", "_blank")}
-                      variant="outline"
-                      className="w-full"
-                    >
-                      Set Up Agent
-                    </Button>
-                  </CardContent>
-                </Card>
               </div>
 
+              {/* Reset Button */}
               <div className="text-center">
-                <Button onClick={resetForm} variant="outline" className="px-8 bg-transparent">
-                  Create Another URL
-                </Button>
+                <button
+                  onClick={() => {
+                    setShowResults(false)
+                    setProfessionalId("")
+                    setCopiedStates({})
+                    setCustomUrl("")
+                    setUrlError("")
+                    setUrlSuccess("")
+                    setCreatedCustomUrl("")
+                  }}
+                  className="text-gray-600 hover:text-gray-800 underline body-font"
+                >
+                  Set up for a different business
+                </button>
               </div>
             </div>
           )}
         </div>
-      </div>
+      </main>
+
+      {/* Landing Page Setup Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold mb-4 header-font">Enter Your Business Name</h3>
+            <p className="text-gray-600 mb-4 body-font">
+              Please enter your business name exactly as it appears in your Critter professional account.
+            </p>
+
+            <div className="mb-4">
+              <input
+                type="text"
+                value={businessName}
+                onChange={(e) => setBusinessName(e.target.value)}
+                placeholder="Your business name"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
+                disabled={isSubmitting}
+              />
+              {error && <p className="mt-2 text-sm text-red-600 body-font">{error}</p>}
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={handleCloseModal}
+                disabled={isSubmitting}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors body-font"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={isSubmitting || !businessName.trim()}
+                className="px-6 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#d04e30] transition-colors body-font flex items-center"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Getting Link...
+                  </>
+                ) : (
+                  "Get My Link"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Schedule Setup Modal */}
+      {showScheduleModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold mb-4 header-font">Schedule Setup</h3>
+            <p className="text-gray-600 mb-4 body-font">
+              Enter your Professional ID to access your schedule configuration. This will set up your team, working
+              hours, and booking capacity.
+            </p>
+
+            <div className="mb-4">
+              <Label htmlFor="scheduleProfId" className="body-font">
+                Professional ID *
+              </Label>
+              <Input
+                id="scheduleProfId"
+                value={scheduleProfessionalId}
+                onChange={(e) => setScheduleProfessionalId(e.target.value)}
+                placeholder="e.g., 22, 151, etc."
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#745E25] body-font"
+              />
+              {scheduleError && <p className="mt-2 text-sm text-red-600 body-font">{scheduleError}</p>}
+              <p className="text-xs text-gray-500 mt-2 body-font">
+                Your Professional ID can be found in your Critter account or from your landing page setup above.
+              </p>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={handleCloseScheduleModal}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors body-font"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleScheduleSubmit}
+                disabled={!scheduleProfessionalId.trim()}
+                className="px-6 py-2 bg-[#745E25] text-white rounded-lg hover:bg-[#5d4a1e] transition-colors body-font flex items-center disabled:opacity-50"
+              >
+                Access Schedule Setup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Preview Landing Page Modal */}
+      {showPreviewModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold mb-4 header-font">Preview Landing Page</h3>
+            <p className="text-gray-600 mb-4 body-font">
+              Enter your unique URL to preview how your landing page appears to customers.
+            </p>
+
+            <div className="mb-4">
+              <Label htmlFor="previewUniqueUrl" className="body-font">
+                Unique URL *
+              </Label>
+              <div className="flex items-center mt-1">
+                <span className="text-sm text-gray-500 body-font mr-2">booking.critter.pet/</span>
+                <Input
+                  id="previewUniqueUrl"
+                  value={previewUniqueUrl}
+                  onChange={(e) => setPreviewUniqueUrl(e.target.value)}
+                  placeholder="sally-grooming"
+                  className="flex-1"
+                />
+              </div>
+              {previewError && <p className="mt-2 text-sm text-red-600 body-font">{previewError}</p>}
+              <p className="text-xs text-gray-500 mt-2 body-font">
+                Enter just the URL portion after the slash (e.g., "sally-grooming" or "151")
+              </p>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={handleClosePreviewModal}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors body-font"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePreviewSubmit}
+                disabled={!previewUniqueUrl.trim()}
+                className="px-6 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#d04e30] transition-colors body-font flex items-center disabled:opacity-50"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Preview Page
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
