@@ -442,7 +442,7 @@ export default function ProfessionalLandingPage() {
                 href={`/newcustomer/${uniqueUrl}`}
                 className="inline-flex items-center gap-2 bg-white text-[#E75837] border-2 border-[#E75837] px-8 py-3 rounded-lg font-medium hover:bg-[#E75837] hover:text-white transition-colors text-lg header-font"
               >
-                <UserPlus className="w-5 h-5" />
+                <UserPlus className="w-4 h-4" />
                 New Customer Intake
               </Link>
             </div>
@@ -463,4 +463,3 @@ export default function ProfessionalLandingPage() {
     </div>
   )
 }
-</merged_code>
