@@ -30,8 +30,8 @@ export default function ProfessionalSetupPage() {
   const [urlSuccess, setUrlSuccess] = useState("")
   const [createdCustomUrl, setCreatedCustomUrl] = useState("")
 
-  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
-  const CUSTOM_URL_WEBHOOK = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
+  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16"
+  const CUSTOM_URL_WEBHOOK = "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16"
   const router = useRouter()
 
   // If not authenticated, show password protection

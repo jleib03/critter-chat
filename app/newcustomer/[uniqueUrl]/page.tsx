@@ -1,217 +1,163 @@
 "use client"
-import { useParams, useRouter } from "next/navigation"
-import { useState, useEffect } from "react"
-import NewCustomerIntake from "../../../components/new-customer-intake"
-import Header from "../../../components/header"
-import { Loader2 } from "lucide-react"
 
-export default function ProfessionalSpecificPage() {
+import { useState, useEffect } from "react"
+import { useParams } from "next/navigation"
+import { Loader2 } from "lucide-react"
+import NewCustomerOnboarding from "../../../components/new-customer-onboarding"
+
+interface ProfessionalData {
+  id: string
+  business_name: string
+  first_name: string
+  last_name: string
+  email: string
+  phone: string
+  address: string
+  city: string
+  state: string
+  zip: string
+  services: string[]
+  bio: string
+  profile_image_url?: string
+  business_hours?: {
+    [key: string]: { open: string; close: string; isOpen: boolean }
+  }
+}
+
+export default function NewCustomerPage() {
   const params = useParams()
-  const router = useRouter()
   const uniqueUrl = params.uniqueUrl as string
-  const [professionalName, setProfessionalName] = useState<string>("")
-  const [professionalId, setProfessionalId] = useState<string>("")
-  const [loading, setLoading] = useState<boolean>(true)
+
+  const [professionalData, setProfessionalData] = useState<ProfessionalData | null>(null)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/a306584e-8637-4284-8a41-ecd5d24dc255"
-
-  // Handler to go back to landing page
-  const handleBackToLanding = () => {
-    router.push("/")
-  }
-
-  // Fetch professional name when component mounts
   useEffect(() => {
-    const fetchProfessionalName = async () => {
+    const fetchProfessionalData = async () => {
+      if (!uniqueUrl) return
+
       try {
         setLoading(true)
-        console.log("Fetching professional info for intake URL:", uniqueUrl)
+        setError(null)
 
-        const response = await fetch(WEBHOOK_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+        const response = await fetch(
+          "https://jleib03.app.n8n.cloud/webhook-test/a306584e-8637-4284-8a41-ecd5d24dc255",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              action: "get_professional_data",
+              uniqueUrl: uniqueUrl,
+              timestamp: new Date().toISOString(),
+            }),
           },
-          body: JSON.stringify({
-            action: "get_professional_name",
-            uniqueUrl: uniqueUrl,
-          }),
-        })
+        )
 
         if (!response.ok) {
-          throw new Error(`Error: ${response.status}`)
+          throw new Error(`HTTP error! status: ${response.status}`)
         }
 
-        // Get the raw text first to debug
-        const rawText = await response.text()
-        console.log("Raw response:", rawText)
+        const data = await response.json()
+        console.log("Professional data response:", data)
 
-        // Try to parse if it looks like JSON
-        let data
-        try {
-          if (rawText && rawText.trim()) {
-            data = JSON.parse(rawText)
-            console.log("Parsed data:", data)
-            console.log("Data type:", typeof data)
-            console.log("Data keys:", Object.keys(data))
-          }
-        } catch (parseError) {
-          console.error("JSON parse error:", parseError)
-          // If we can't parse as JSON but have text, try to extract the name directly
-          if (rawText && rawText.includes("name")) {
-            const nameMatch = rawText.match(/"name"\s*:\s*"([^"]+)"/)
-            if (nameMatch && nameMatch[1]) {
-              console.log("Extracted name from regex:", nameMatch[1])
-              setProfessionalName(nameMatch[1])
-              setLoading(false)
-              return
-            }
-          }
-          throw new Error("Invalid response format")
-        }
-
-        // Check for name in parsed data
-        if (data) {
-          console.log("Checking data.name:", data.name)
-          console.log("Checking data.professional_name:", data.professional_name)
-          console.log("Checking data.professional_id:", data.professional_id)
-
-          // Check if data is an array (which it is in this case)
-          if (Array.isArray(data) && data.length > 0) {
-            console.log("Data is an array, checking first element:", data[0])
-            const firstItem = data[0]
-            if (firstItem.name) {
-              console.log("Found name in data[0].name:", firstItem.name)
-              setProfessionalName(firstItem.name)
-            } else if (firstItem.professional_name) {
-              console.log("Found name in data[0].professional_name:", firstItem.professional_name)
-              setProfessionalName(firstItem.professional_name)
-            } else {
-              console.log("No name found in first array element")
-              throw new Error("Professional name not found in response")
-            }
-
-            // Set professional ID if available
-            if (firstItem.professional_id) {
-              console.log("Found ID in data[0].professional_id:", firstItem.professional_id)
-              setProfessionalId(firstItem.professional_id)
-            } else if (firstItem.id) {
-              console.log("Found ID in data[0].id:", firstItem.id)
-              setProfessionalId(firstItem.id)
-            }
-          } else if (data.name) {
-            console.log("Found name in data.name:", data.name)
-            setProfessionalName(data.name)
-            if (data.professional_id) {
-              setProfessionalId(data.professional_id)
-            } else if (data.id) {
-              setProfessionalId(data.id)
-            }
-          } else if (data.professional_name) {
-            console.log("Found name in data.professional_name:", data.professional_name)
-            setProfessionalName(data.professional_name)
-            if (data.professional_id) {
-              setProfessionalId(data.professional_id)
-            } else if (data.id) {
-              setProfessionalId(data.id)
-            }
-          } else if (data.message && typeof data.message === "string") {
-            console.log("Checking data.message:", data.message)
-            // Try to parse message if it's a string that might contain JSON
-            try {
-              const messageData = JSON.parse(data.message)
-              console.log("Parsed message data:", messageData)
-              if (messageData.name) {
-                console.log("Found name in messageData.name:", messageData.name)
-                setProfessionalName(messageData.name)
-              } else if (messageData.professional_name) {
-                console.log("Found name in messageData.professional_name:", messageData.professional_name)
-                setProfessionalName(messageData.professional_name)
-              } else {
-                console.log("No name found in parsed message data")
-                throw new Error("Professional name not found in response")
-              }
-
-              // Set professional ID if available
-              if (messageData.professional_id) {
-                setProfessionalId(messageData.professional_id)
-              } else if (messageData.id) {
-                setProfessionalId(messageData.id)
-              }
-            } catch (e) {
-              console.log("Message is not JSON, checking if it contains name directly")
-              // If message isn't JSON, check if it directly contains the name
-              if (data.message.includes("Critter")) {
-                console.log("Found Critter in message, using as name:", data.message)
-                setProfessionalName(data.message)
-              } else {
-                console.log("No Critter found in message")
-                throw new Error("Professional name not found in response")
-              }
-            }
-          } else {
-            console.log("No name found in any expected location")
-            console.log("Available data properties:", Object.keys(data))
-            throw new Error("Professional name not found in response")
-          }
+        // Handle the response format
+        if (Array.isArray(data) && data.length > 0) {
+          const professional = data[0]
+          setProfessionalData({
+            id: professional.id || professional.professional_id,
+            business_name: professional.business_name || "",
+            first_name: professional.first_name || "",
+            last_name: professional.last_name || "",
+            email: professional.email || "",
+            phone: professional.phone || "",
+            address: professional.address || "",
+            city: professional.city || "",
+            state: professional.state || "",
+            zip: professional.zip || "",
+            services: professional.services || [],
+            bio: professional.bio || "",
+            profile_image_url: professional.profile_image_url,
+            business_hours: professional.business_hours,
+          })
+        } else if (data && typeof data === "object") {
+          // Handle single object response
+          setProfessionalData({
+            id: data.id || data.professional_id,
+            business_name: data.business_name || "",
+            first_name: data.first_name || "",
+            last_name: data.last_name || "",
+            email: data.email || "",
+            phone: data.phone || "",
+            address: data.address || "",
+            city: data.city || "",
+            state: data.state || "",
+            zip: data.zip || "",
+            services: data.services || [],
+            bio: data.bio || "",
+            profile_image_url: data.profile_image_url,
+            business_hours: data.business_hours,
+          })
         } else {
-          console.log("No data after parsing")
-          throw new Error("Empty response from server")
+          throw new Error("Professional not found")
         }
       } catch (err) {
-        console.error("Error fetching professional name:", err)
-        setError("Professional not found")
+        console.error("Error fetching professional data:", err)
+        setError("Unable to load professional information. Please check the URL and try again.")
       } finally {
         setLoading(false)
       }
     }
 
-    if (uniqueUrl) {
-      fetchProfessionalName()
-    }
-  }, [uniqueUrl, WEBHOOK_URL])
+    fetchProfessionalData()
+  }, [uniqueUrl])
 
-  return (
-    <div className="min-h-screen bg-[#FBF8F3] flex flex-col">
-      <Header />
-
-      <main className="pt-8 flex-1 flex flex-col">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col page-content">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 text-[#E75837] animate-spin mb-4" />
-              <p className="text-gray-600 body-font">Loading professional information...</p>
-            </div>
-          ) : error ? (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8">
-              <p className="text-red-600 text-center body-font">{error}</p>
-              <div className="flex justify-center mt-4">
-                <button
-                  onClick={handleBackToLanding}
-                  className="px-4 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#d04e30] transition-colors body-font"
-                >
-                  Return to Home
-                </button>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="flex-1 flex flex-col mb-12">
-                <NewCustomerIntake
-                  onCancel={handleBackToLanding}
-                  onComplete={handleBackToLanding}
-                  webhookUrl={WEBHOOK_URL}
-                  initialProfessionalId={professionalId || uniqueUrl}
-                  initialProfessionalName={professionalName}
-                  skipProfessionalStep={true}
-                  userInfo={null}
-                />
-              </div>
-            </>
-          )}
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FBF8F3] flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-[#E75837] mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Professional Information</h2>
+          <p className="text-gray-600">Please wait while we fetch the details...</p>
         </div>
-      </main>
-    </div>
-  )
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#FBF8F3] flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <h2 className="text-xl font-semibold text-red-800 mb-2">Error Loading Page</h2>
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-[#E75837] text-white px-4 py-2 rounded-lg hover:bg-[#d04e30] transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!professionalData) {
+    return (
+      <div className="min-h-screen bg-[#FBF8F3] flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+            <h2 className="text-xl font-semibold text-yellow-800 mb-2">Professional Not Found</h2>
+            <p className="text-yellow-600">
+              We couldn't find a professional with the URL "{uniqueUrl}". Please check the URL and try again.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return <NewCustomerOnboarding professionalData={professionalData} />
 }
