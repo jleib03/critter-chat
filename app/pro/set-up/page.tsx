@@ -30,7 +30,7 @@ export default function ProfessionalSetupPage() {
   const [urlSuccess, setUrlSuccess] = useState("")
   const [createdCustomUrl, setCreatedCustomUrl] = useState("")
 
-  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16"
+  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/a306584e-8637-4284-8a41-ecd5d24dc255"
   const CUSTOM_URL_WEBHOOK = "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16"
   const router = useRouter()
 
