@@ -1,7 +1,5 @@
 "use client"
-import { useState } from "react"
-import { useEffect } from "react"
-
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Header from "../../../components/header"
 import EnrollmentStep from "../../../components/custom-agent/enrollment-step"

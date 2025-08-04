@@ -290,10 +290,10 @@ export default function ProfessionalSetupPage() {
       setError(null)
 
       const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG")
-      logWebhookUsage("PROFESSIONAL_CONFIG", "initialize_schedule")
+      logWebhookUsage("PROFESSIONAL_CONFIG", "get_professional_config")
 
       const payload: GetConfigWebhookPayload = {
-        action: "initialize_schedule",
+        action: "get_professional_config",
         professional_id: professionalId,
         session_id: generateSessionId(),
         timestamp: new Date().toISOString(),
@@ -1096,7 +1096,7 @@ export default function ProfessionalSetupPage() {
                       <Switch
                         id="allowOverlapping"
                         checked={capacityRules.allow_overlapping}
-                        onChange={(checked) =>
+                        onCheckedChange={(checked) =>
                           setCapacityRules((prev) => ({
                             ...prev,
                             allow_overlapping: checked,
@@ -1115,7 +1115,7 @@ export default function ProfessionalSetupPage() {
                       <Switch
                         id="requireAllEmployees"
                         checked={capacityRules.require_all_employees_for_service}
-                        onChange={(checked) =>
+                        onCheckedChange={(checked) =>
                           setCapacityRules((prev) => ({
                             ...prev,
                             require_all_employees_for_service: checked,
@@ -1209,14 +1209,16 @@ export default function ProfessionalSetupPage() {
                         <div className="flex items-center space-x-2">
                           <Switch
                             checked={newBlockedTime.is_all_day}
-                            onChange={(checked) => setNewBlockedTime({ ...newBlockedTime, is_all_day: checked })}
+                            onCheckedChange={(checked) => setNewBlockedTime({ ...newBlockedTime, is_all_day: checked })}
                           />
                           <Label className="body-font">All Day</Label>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Switch
                             checked={newBlockedTime.is_recurring}
-                            onChange={(checked) => setNewBlockedTime({ ...newBlockedTime, is_recurring: checked })}
+                            onCheckedChange={(checked) =>
+                              setNewBlockedTime({ ...newBlockedTime, is_recurring: checked })
+                            }
                           />
                           <Label className="body-font">Recurring</Label>
                         </div>

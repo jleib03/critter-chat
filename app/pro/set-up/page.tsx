@@ -517,35 +517,29 @@ export default function ProfessionalSetupPage() {
                 value={businessName}
                 onChange={(e) => setBusinessName(e.target.value)}
                 placeholder="Your business name"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
-                disabled={isSubmitting}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837]"
               />
-              {error && <p className="mt-2 text-sm text-red-600 body-font">{error}</p>}
             </div>
 
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={handleCloseModal}
-                disabled={isSubmitting}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors body-font"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={isSubmitting || !businessName.trim()}
-                className="px-6 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#d04e30] transition-colors body-font flex items-center"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Getting Link...
-                  </>
-                ) : (
-                  "Get My Link"
-                )}
-              </button>
-            </div>
+            <button
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="w-full bg-[#E75837] text-white px-4 py-3 rounded-lg hover:bg-[#d04e30] transition-colors body-font flex items-center justify-center disabled:opacity-50"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                  Submit
+                </>
+              )}
+            </button>
+
+            {error && <div className="text-sm text-red-600 mt-4 body-font">{error}</div>}
           </div>
         </div>
       )}
@@ -554,44 +548,30 @@ export default function ProfessionalSetupPage() {
       {showScheduleModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-            <h3 className="text-xl font-bold mb-4 header-font">Schedule Setup</h3>
+            <h3 className="text-xl font-bold mb-4 header-font">Enter Your Professional ID</h3>
             <p className="text-gray-600 mb-4 body-font">
-              Enter your Professional ID to access your schedule configuration. This will set up your team, working
-              hours, and booking capacity.
+              Please enter your Professional ID to configure your appointment scheduling.
             </p>
 
             <div className="mb-4">
-              <Label htmlFor="scheduleProfId" className="body-font">
-                Professional ID *
-              </Label>
-              <Input
-                id="scheduleProfId"
+              <input
+                type="text"
                 value={scheduleProfessionalId}
                 onChange={(e) => setScheduleProfessionalId(e.target.value)}
-                placeholder="e.g., 22, 151, etc."
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#745E25] body-font"
+                placeholder="Your Professional ID"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#745E25]"
               />
-              {scheduleError && <p className="mt-2 text-sm text-red-600 body-font">{scheduleError}</p>}
-              <p className="text-xs text-gray-500 mt-2 body-font">
-                Your Professional ID can be found in your Critter account or from your landing page setup above.
-              </p>
             </div>
 
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={handleCloseScheduleModal}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors body-font"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleScheduleSubmit}
-                disabled={!scheduleProfessionalId.trim()}
-                className="px-6 py-2 bg-[#745E25] text-white rounded-lg hover:bg-[#5d4a1e] transition-colors body-font flex items-center disabled:opacity-50"
-              >
-                Access Schedule Setup
-              </button>
-            </div>
+            <button
+              onClick={handleScheduleSubmit}
+              className="w-full bg-[#745E25] text-white px-4 py-3 rounded-lg hover:bg-[#5a461a] transition-colors body-font flex items-center justify-center"
+            >
+              <ArrowRight className="h-4 w-4 mr-2" />
+              Submit
+            </button>
+
+            {scheduleError && <div className="text-sm text-red-600 mt-4 body-font">{scheduleError}</div>}
           </div>
         </div>
       )}
@@ -600,47 +580,30 @@ export default function ProfessionalSetupPage() {
       {showPreviewModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-            <h3 className="text-xl font-bold mb-4 header-font">Preview Landing Page</h3>
+            <h3 className="text-xl font-bold mb-4 header-font">Enter Your Unique URL</h3>
             <p className="text-gray-600 mb-4 body-font">
-              Enter your unique URL to preview how your landing page appears to customers.
+              Please enter your unique URL to preview your professional landing page.
             </p>
 
             <div className="mb-4">
-              <Label htmlFor="previewUniqueUrl" className="body-font">
-                Unique URL *
-              </Label>
-              <div className="flex items-center mt-1">
-                <span className="text-sm text-gray-500 body-font mr-2">booking.critter.pet/</span>
-                <Input
-                  id="previewUniqueUrl"
-                  value={previewUniqueUrl}
-                  onChange={(e) => setPreviewUniqueUrl(e.target.value)}
-                  placeholder="sally-grooming"
-                  className="flex-1"
-                />
-              </div>
-              {previewError && <p className="mt-2 text-sm text-red-600 body-font">{previewError}</p>}
-              <p className="text-xs text-gray-500 mt-2 body-font">
-                Enter just the URL portion after the slash (e.g., "sally-grooming" or "151")
-              </p>
+              <input
+                type="text"
+                value={previewUniqueUrl}
+                onChange={(e) => setPreviewUniqueUrl(e.target.value)}
+                placeholder="Your unique URL"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837]"
+              />
             </div>
 
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={handleClosePreviewModal}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors body-font"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handlePreviewSubmit}
-                disabled={!previewUniqueUrl.trim()}
-                className="px-6 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#d04e30] transition-colors body-font flex items-center disabled:opacity-50"
-              >
-                <Eye className="h-4 w-4 mr-2" />
-                Preview Page
-              </button>
-            </div>
+            <button
+              onClick={handlePreviewSubmit}
+              className="w-full bg-[#E75837] text-white px-4 py-3 rounded-lg hover:bg-[#d04e30] transition-colors body-font flex items-center justify-center"
+            >
+              <ArrowRight className="h-4 w-4 mr-2" />
+              Preview
+            </button>
+
+            {previewError && <div className="text-sm text-red-600 mt-4 body-font">{previewError}</div>}
           </div>
         </div>
       )}
