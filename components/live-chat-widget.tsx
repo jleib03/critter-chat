@@ -4,6 +4,7 @@ import type React from "react"
 import { Send, Loader2, X, MessageCircle } from "lucide-react"
 import type { ChatAgentConfig } from "../types/chat-config"
 import { formatMessage } from "../utils/message-formatter"
+import { getWebhookEndpoint, logWebhookUsage } from "../types/webhook-endpoints"
 
 interface ChatMessage {
   id: string
@@ -20,8 +21,6 @@ interface LiveChatWidgetProps {
   chatConfig: ChatAgentConfig
   isConfigLoading: boolean
 }
-
-const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/803d260b-1b17-4abf-8079-2d40225c29b0"
 
 export default function LiveChatWidget({
   uniqueUrl,
@@ -92,6 +91,10 @@ export default function LiveChatWidget({
     setIsTyping(true)
 
     try {
+      // Use centralized webhook configuration
+      const webhookUrl = getWebhookEndpoint("CUSTOM_AGENT")
+      logWebhookUsage("CUSTOM_AGENT", "support_conversation")
+
       // Send message to webhook with the specific format requested
       const payload = {
         action: "support_conversation",
@@ -109,7 +112,7 @@ export default function LiveChatWidget({
 
       console.log("Sending chat message to webhook:", payload)
 
-      const response = await fetch(WEBHOOK_URL, {
+      const response = await fetch(webhookUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
