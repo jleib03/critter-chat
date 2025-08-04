@@ -4,8 +4,16 @@ import { useState, useMemo } from "react"
 import type { BookingData, WorkingDay, Service, SelectedTimeSlot } from "@/types/schedule"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, Clock, ChevronDown, ChevronUp, Users } from "lucide-react"
-import { calculateAvailableSlots, timeToMinutes, isTimeSlotBlocked } from "@/utils/professional-config"
+import { ChevronLeft, ChevronRight, Clock, ChevronDown, ChevronUp, Users, Calendar } from "lucide-react"
+import {
+  calculateAvailableSlots,
+  timeToMinutes,
+  isTimeSlotBlocked,
+  hasFullDayServices,
+  getTotalDurationInDays,
+  calculateDayAvailability,
+  isDayBlocked,
+} from "@/utils/professional-config"
 import type { ProfessionalConfig } from "@/types/professional-config"
 import type { BookingType, RecurringConfig } from "./booking-type-selection"
 
@@ -42,6 +50,10 @@ export function WeeklyCalendar({
   })
 
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set())
+
+  // Detect if we're dealing with full-day services
+  const isFullDayBooking = useMemo(() => hasFullDayServices(selectedServices), [selectedServices])
+  const totalDays = useMemo(() => getTotalDurationInDays(selectedServices), [selectedServices])
 
   const getWeekDates = (startDate: Date) => {
     return Array.from({ length: 7 }).map((_, i) => {
@@ -134,6 +146,37 @@ export function WeeklyCalendar({
     return true
   }
 
+  // New function to generate day-level slots for full-day services
+  const generateDaySlots = (date: Date) => {
+    const dayName = getDayName(date)
+    const workingDay = workingDays.find((wd) => wd.day === dayName && wd.isWorking)
+    if (!workingDay) return []
+
+    const dateStr = formatDate(date)
+
+    // Check if this day is blocked
+    if (professionalConfig?.blockedTimes && isDayBlocked(dateStr, professionalConfig.blockedTimes)) {
+      return []
+    }
+
+    const availability = calculateDayAvailability(professionalConfig, workingDays, dateStr, dayName, bookingData)
+
+    if (availability.availableSlots > 0) {
+      return [
+        {
+          date: dateStr,
+          startTime: "All Day",
+          endTime: "All Day",
+          dayOfWeek: dayName,
+          ...availability,
+        },
+      ]
+    }
+
+    return []
+  }
+
+  // Existing function for time-based slots
   const generateTimeSlots = (date: Date) => {
     const dayName = getDayName(date)
     const workingDay = workingDays.find((wd) => wd.day === dayName && wd.isWorking)
@@ -213,14 +256,29 @@ export function WeeklyCalendar({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 header-font">Available Times</h2>
+          <h2 className="text-2xl font-bold text-gray-900 header-font">
+            {isFullDayBooking ? "Available Days" : "Available Times"}
+          </h2>
           <p className="text-gray-600 body-font">
-            Select a time slot for <span className="font-medium">{selectedServices.map((s) => s.name).join(", ")}</span>
-            {bookingType === "recurring" && recurringConfig && (
-              <span className="text-sm text-[#E75837] ml-2 font-medium">
-                (Recurring weekly on {recurringConfig.daysOfWeek?.join(", ")} until{" "}
-                {new Date(recurringConfig.endDate).toLocaleDateString()})
-              </span>
+            {isFullDayBooking ? (
+              <>
+                Select {totalDays > 1 ? `${totalDays} consecutive days` : "a day"} for{" "}
+                <span className="font-medium">{selectedServices.map((s) => s.name).join(", ")}</span>
+                {totalDays > 1 && (
+                  <span className="text-sm text-[#E75837] ml-2 font-medium">(Multi-day booking: {totalDays} days)</span>
+                )}
+              </>
+            ) : (
+              <>
+                Select a time slot for{" "}
+                <span className="font-medium">{selectedServices.map((s) => s.name).join(", ")}</span>
+                {bookingType === "recurring" && recurringConfig && (
+                  <span className="text-sm text-[#E75837] ml-2 font-medium">
+                    (Recurring weekly on {recurringConfig.daysOfWeek?.join(", ")} until{" "}
+                    {new Date(recurringConfig.endDate).toLocaleDateString()})
+                  </span>
+                )}
+              </>
             )}
           </p>
         </div>
@@ -242,10 +300,13 @@ export function WeeklyCalendar({
           const dayName = getDayName(date)
           const isToday = formatDate(date) === formatDate(new Date())
           const isPast = date < new Date(new Date().setHours(0, 0, 0, 0))
-          const timeSlots = isPast ? [] : generateTimeSlots(date)
+
+          // Use different slot generation based on service type
+          const timeSlots = isPast ? [] : isFullDayBooking ? generateDaySlots(date) : generateTimeSlots(date)
+
           const dateStr = formatDate(date)
           const isExpanded = expandedDays.has(dateStr)
-          const initialSlotCount = 8
+          const initialSlotCount = isFullDayBooking ? 1 : 8 // Show only 1 slot for full-day services
           const hasMoreSlots = timeSlots.length > initialSlotCount
           const displayedSlots = isExpanded ? timeSlots : timeSlots.slice(0, initialSlotCount)
           const isRecurringDay = bookingType === "recurring" && recurringConfig?.daysOfWeek?.includes(dayName)
@@ -276,7 +337,9 @@ export function WeeklyCalendar({
                   </div>
                 ) : timeSlots.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-sm text-gray-400 body-font">No available times</p>
+                    <p className="text-sm text-gray-400 body-font">
+                      {isFullDayBooking ? "Not available" : "No available times"}
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -300,7 +363,14 @@ export function WeeklyCalendar({
                           title={tooltipText}
                         >
                           <div className="flex flex-col items-center w-full">
-                            <span className="font-medium">{slot.startTime}</span>
+                            {isFullDayBooking ? (
+                              <>
+                                <Calendar className="w-4 h-4 mb-1" />
+                                <span className="font-medium">Full Day</span>
+                              </>
+                            ) : (
+                              <span className="font-medium">{slot.startTime}</span>
+                            )}
                             <div className="flex items-center justify-center mt-1">
                               <div className="flex items-center gap-1">
                                 <Users className="w-2.5 h-2.5" />
@@ -315,7 +385,7 @@ export function WeeklyCalendar({
                         </Button>
                       )
                     })}
-                    {hasMoreSlots && (
+                    {hasMoreSlots && !isFullDayBooking && (
                       <Button
                         variant="ghost"
                         size="sm"
