@@ -1,17 +1,9 @@
 // Centralized webhook endpoint configuration
 export const WEBHOOK_ENDPOINTS = {
-  CUSTOM_AGENT:
-    process.env.NEXT_PUBLIC_CUSTOM_AGENT_WEBHOOK_URL ||
-    "https://jleib03.app.n8n.cloud/webhook-test/94a7e18e-149c-4a66-a16b-db77f15756a2",
-  PROFESSIONAL_CONFIG:
-    process.env.NEXT_PUBLIC_PROFESSIONAL_CONFIG_WEBHOOK_URL ||
-    "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16",
-  CHAT_CONFIG:
-    process.env.NEXT_PUBLIC_CHAT_CONFIG_WEBHOOK_URL ||
-    "https://jleib03.app.n8n.cloud/webhook-test/94a7e18e-149c-4a66-a16b-db77f15756a2",
-  NEW_CUSTOMER_ONBOARDING:
-    process.env.NEXT_PUBLIC_NEW_CUSTOMER_WEBHOOK_URL ||
-    "https://jleib03.app.n8n.cloud/webhook-test/a306584e-8637-4284-8a41-ecd5d24dc255",
+  CUSTOM_AGENT: "https://jleib03.app.n8n.cloud/webhook-test/94a7e18e-149c-4a66-a16b-db77f15756a2",
+  PROFESSIONAL_CONFIG: "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16",
+  CHAT_CONFIG: "https://jleib03.app.n8n.cloud/webhook-test/94a7e18e-149c-4a66-a16b-db77f15756a2",
+  NEW_CUSTOMER_ONBOARDING: "https://jleib03.app.n8n.cloud/webhook-test/a306584e-8637-4284-8a41-ecd5d24dc255",
 } as const
 
 // Type for webhook endpoint keys
