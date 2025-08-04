@@ -48,9 +48,12 @@ export default function SchedulePage() {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              action: "initialize_schedule", // Updated action
+              action: "initialize_schedule",
               uniqueUrl: uniqueUrl,
               timestamp: new Date().toISOString(),
+              user_timezone: {
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+              },
             }),
           },
         )
