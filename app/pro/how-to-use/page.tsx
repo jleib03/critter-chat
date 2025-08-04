@@ -1,164 +1,457 @@
 "use client"
 
 import { useState } from "react"
-import PasswordProtection from "../../../components/password-protection"
 import Header from "../../../components/header"
 import {
-  Database,
-  Settings,
+  BookOpen,
   Calendar,
   MessageSquare,
-  Globe,
-  UserPlus,
+  Settings,
+  Users,
+  ChevronRight,
+  Play,
   CheckCircle,
   ArrowRight,
-  ExternalLink,
-  Play,
   Clock,
-  Mail,
+  Smartphone,
+  Globe,
 } from "lucide-react"
 
 export default function HowToUsePage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [expandedStep, setExpandedStep] = useState<number | null>(1)
+  const [activeSection, setActiveSection] = useState("getting-started")
 
-  // If not authenticated, show password protection
-  if (!isAuthenticated) {
-    return (
-      <PasswordProtection
-        onAuthenticated={() => setIsAuthenticated(true)}
-        title="Professional Help Hub Access"
-        description="Access professional resources and documentation."
-      />
-    )
-  }
+  const sections = [
+    {
+      id: "getting-started",
+      title: "Getting Started",
+      icon: Play,
+      content: (
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold text-gray-900 header-font">Getting Started with Critter Pro</h2>
+          <p className="text-gray-600 body-font">
+            Welcome to Critter's professional booking system! This guide will help you set up and manage your online
+            booking presence.
+          </p>
 
-  const steps = [
-    {
-      id: 1,
-      title: "Start with Your Critter Platform",
-      subtitle: "Foundation Setup",
-      icon: <Database className="h-6 w-6" />,
-      color: "#E75837",
-      description: "Your Critter platform is the central hub for all business operations. Set this up first.",
-      tasks: [
-        "Add your customers and their pet profiles",
-        "Create your service catalog with pricing",
-        "Set up your basic business information",
-        "Configure payment processing",
-        "Add team members if applicable",
-      ],
-      actionButton: {
-        text: "Access Critter Platform",
-        url: "https://app.critter.pet",
-        external: true,
-      },
-      tips: [
-        "Make sure all your existing customers are in the system before setting up online booking",
-        "Your service catalog here will be used for all online booking tools",
-        "Customer email addresses must match exactly for online booking to work",
-      ],
-    },
-    {
-      id: 2,
-      title: "Set Up Your Professional Tools",
-      subtitle: "Online Presence Setup",
-      icon: <Settings className="h-6 w-6" />,
-      color: "#7C3AED",
-      description: "Configure your online tools to extend your Critter platform capabilities.",
-      tasks: [
-        "Generate your professional landing page link",
-        "Create custom URLs for easy sharing",
-        "Set up AI chatbot for your website",
-        "Get implementation codes for your site",
-      ],
-      actionButton: {
-        text: "Professional Setup",
-        url: "/pro/set-up",
-        external: false,
-      },
-      tips: [
-        "Your business name must match exactly what's in your Critter account",
-        "Custom URLs make it easier for customers to remember your booking link",
-        "The AI chatbot is trained on your Critter business data automatically",
-      ],
-    },
-    {
-      id: 3,
-      title: "Configure Your Schedule",
-      subtitle: "Booking Management",
-      icon: <Calendar className="h-6 w-6" />,
-      color: "#10B981",
-      description: "Set up your team, working hours, and booking capacity rules.",
-      tasks: [
-        "Define your working hours and availability",
-        "Set up team members and their schedules",
-        "Configure booking capacity and rules",
-        "Block out unavailable times",
-        "Set up recurring schedule patterns",
-      ],
-      actionButton: {
-        text: "Schedule Setup",
-        url: "/pro/set-up",
-        external: false,
-      },
-      tips: [
-        "You'll need your Professional ID from step 2",
-        "Set realistic capacity limits to avoid overbooking",
-        "Block out time for travel between appointments if needed",
-      ],
-    },
-    {
-      id: 4,
-      title: "Launch Customer-Facing Tools",
-      subtitle: "Go Live",
-      icon: <Globe className="h-6 w-6" />,
-      color: "#3B82F6",
-      description: "Your customers can now book appointments and get support online.",
-      tasks: [
-        "Share your booking link with existing customers",
-        "Add your AI chatbot to your website",
-        "Create intake links for social media",
-        "Test the booking process yourself",
-        "Train your team on the new workflow",
-      ],
-      actionButton: {
-        text: "Preview Your Landing Page",
-        url: "/pro/set-up",
-        external: false,
-      },
-      tips: [
-        "Test bookings with a friend or family member first",
-        "Customers must use the same name/email as in your Critter account",
-        "All booking requests come to your Critter platform for approval",
-      ],
-    },
-  ]
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-gradient-to-br from-[#E75837] to-[#f07a5f] rounded-xl p-6 text-white">
+              <Globe className="w-8 h-8 mb-4" />
+              <h3 className="text-lg font-semibold mb-2 header-font">Online Booking Page</h3>
+              <p className="text-sm opacity-90 body-font">
+                Your customers can book services 24/7 through your personalized booking page.
+              </p>
+            </div>
 
-  const features = [
-    {
-      title: "Customer Self-Service Booking",
-      icon: <Calendar className="h-5 w-5" />,
-      description: "Customers book at booking.critter.pet/your-url without creating accounts",
-      benefits: ["24/7 booking availability", "Reduces phone calls", "Automatic confirmation emails"],
+            <div className="bg-gradient-to-br from-[#94ABD6] to-[#b0c1e3] rounded-xl p-6 text-white">
+              <MessageSquare className="w-8 h-8 mb-4" />
+              <h3 className="text-lg font-semibold mb-2 header-font">AI Support Agent</h3>
+              <p className="text-sm opacity-90 body-font">
+                Automated customer support trained on your business policies and FAQs.
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-gray-50 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 header-font">Quick Setup Steps</h3>
+            <div className="space-y-3">
+              {[
+                "Configure your booking preferences",
+                "Set up your team and schedules",
+                "Customize your booking page",
+                "Test your setup",
+                "Share your booking link",
+              ].map((step, index) => (
+                <div key={index} className="flex items-center">
+                  <div className="w-6 h-6 bg-[#E75837] text-white rounded-full flex items-center justify-center text-sm font-medium mr-3">
+                    {index + 1}
+                  </div>
+                  <span className="body-font">{step}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ),
     },
     {
-      title: "AI Customer Support",
-      icon: <MessageSquare className="h-5 w-5" />,
-      description: "Chatbot on your website answers questions about services and pricing",
-      benefits: ["Instant customer support", "Trained on your business data", "Reduces repetitive questions"],
+      id: "booking-setup",
+      title: "Booking Setup",
+      icon: Calendar,
+      content: (
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold text-gray-900 header-font">Booking Configuration</h2>
+          <p className="text-gray-600 body-font">
+            Configure how customers book appointments with you. Choose from three booking modes based on your business
+            needs.
+          </p>
+
+          <div className="space-y-4">
+            <div className="border border-green-200 bg-green-50 rounded-xl p-6">
+              <div className="flex items-start">
+                <CheckCircle className="w-6 h-6 text-green-600 mt-1 mr-4 flex-shrink-0" />
+                <div>
+                  <h3 className="text-lg font-semibold text-green-900 mb-2 header-font">Direct Booking</h3>
+                  <p className="text-green-800 body-font mb-3">
+                    Customers can book appointments instantly without waiting for approval. Perfect for established
+                    client relationships.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm body-font">
+                      Instant confirmation
+                    </span>
+                    <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm body-font">
+                      Streamlined experience
+                    </span>
+                    <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm body-font">
+                      Reduce admin work
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="border border-amber-200 bg-amber-50 rounded-xl p-6">
+              <div className="flex items-start">
+                <Clock className="w-6 h-6 text-amber-600 mt-1 mr-4 flex-shrink-0" />
+                <div>
+                  <h3 className="text-lg font-semibold text-amber-900 mb-2 header-font">Request to Book</h3>
+                  <p className="text-amber-800 body-font mb-3">
+                    Customers submit booking requests that you review and approve. Gives you full control over your
+                    schedule.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm body-font">
+                      Manual approval
+                    </span>
+                    <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm body-font">
+                      Full control
+                    </span>
+                    <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm body-font">
+                      Screen new clients
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="border border-blue-200 bg-blue-50 rounded-xl p-6">
+              <div className="flex items-start">
+                <Smartphone className="w-6 h-6 text-blue-600 mt-1 mr-4 flex-shrink-0" />
+                <div>
+                  <h3 className="text-lg font-semibold text-blue-900 mb-2 header-font">No Online Booking</h3>
+                  <p className="text-blue-800 body-font mb-3">
+                    Customers must use the Critter app to request appointments. No public booking page available.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm body-font">
+                      App-only booking
+                    </span>
+                    <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm body-font">
+                      Simple process
+                    </span>
+                    <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm body-font">
+                      No availability constraints
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
     },
     {
-      title: "New Customer Intake",
-      icon: <UserPlus className="h-5 w-5" />,
-      description: "Custom links for social media to onboard new customers",
-      benefits: ["Streamlined lead capture", "Automatic data collection", "Social media integration"],
+      id: "team-management",
+      title: "Team Management",
+      icon: Users,
+      content: (
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold text-gray-900 header-font">Managing Your Team</h2>
+          <p className="text-gray-600 body-font">
+            Set up your team members and manage their schedules, availability, and service assignments.
+          </p>
+
+          <div className="bg-gray-50 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 header-font">Team Member Setup</h3>
+            <div className="space-y-4">
+              <div className="flex items-start">
+                <div className="w-8 h-8 bg-[#E75837] text-white rounded-full flex items-center justify-center text-sm font-medium mr-4 mt-1 flex-shrink-0">
+                  1
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 header-font">Add Team Members</h4>
+                  <p className="text-gray-600 body-font">
+                    Add your employees through the Critter app first, then they'll appear in your booking setup.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start">
+                <div className="w-8 h-8 bg-[#E75837] text-white rounded-full flex items-center justify-center text-sm font-medium mr-4 mt-1 flex-shrink-0">
+                  2
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 header-font">Set Working Hours</h4>
+                  <p className="text-gray-600 body-font">
+                    Configure individual schedules for each team member, including days off and working hours.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start">
+                <div className="w-8 h-8 bg-[#E75837] text-white rounded-full flex items-center justify-center text-sm font-medium mr-4 mt-1 flex-shrink-0">
+                  3
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 header-font">Assign Services</h4>
+                  <p className="text-gray-600 body-font">
+                    Specify which services each team member can provide to ensure proper booking assignments.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="border border-gray-200 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3 header-font">Working Hours</h3>
+              <p className="text-gray-600 body-font mb-4">
+                Set different schedules for each day of the week. Team members can have individual schedules.
+              </p>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="body-font">Monday - Friday</span>
+                  <span className="text-gray-500 body-font">9:00 AM - 5:00 PM</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="body-font">Saturday</span>
+                  <span className="text-gray-500 body-font">9:00 AM - 3:00 PM</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="body-font">Sunday</span>
+                  <span className="text-gray-500 body-font">Closed</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="border border-gray-200 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3 header-font">Blocked Time</h3>
+              <p className="text-gray-600 body-font mb-4">
+                Block specific dates and times when team members are unavailable.
+              </p>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
+                  <span className="body-font">Vacation days</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></div>
+                  <span className="body-font">Meetings & appointments</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                  <span className="body-font">Personal time off</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
     },
     {
-      title: "Automated Confirmations",
-      icon: <Mail className="h-5 w-5" />,
-      description: "Automatic confirmation emails sent to customers after booking",
-      benefits: ["Professional communication", "Reduces no-shows", "Includes all booking details"],
+      id: "ai-agent",
+      title: "AI Support Agent",
+      icon: MessageSquare,
+      content: (
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold text-gray-900 header-font">AI Support Agent</h2>
+          <p className="text-gray-600 body-font">
+            Set up an intelligent support agent that can answer customer questions about your services, policies, and
+            availability.
+          </p>
+
+          <div className="bg-gradient-to-r from-[#94ABD6] to-[#b0c1e3] rounded-xl p-6 text-white">
+            <div className="flex items-center mb-4">
+              <MessageSquare className="w-8 h-8 mr-3" />
+              <h3 className="text-xl font-semibold header-font">24/7 Customer Support</h3>
+            </div>
+            <p className="opacity-90 body-font">
+              Your AI agent works around the clock to answer customer questions, provide service information, and help
+              with booking inquiries.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 header-font">Setup Process</h3>
+              <div className="space-y-3">
+                {[
+                  { step: "Enrollment", desc: "Enter your professional ID to get started" },
+                  { step: "Training", desc: "Add your business policies and service details" },
+                  { step: "Customization", desc: "Personalize the chat appearance and messages" },
+                  { step: "Testing", desc: "Test your agent before going live" },
+                  { step: "Deployment", desc: "Activate your agent on your booking page" },
+                ].map((item, index) => (
+                  <div key={index} className="flex items-start">
+                    <div className="w-6 h-6 bg-[#94ABD6] text-white rounded-full flex items-center justify-center text-xs font-medium mr-3 mt-1 flex-shrink-0">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900 header-font">{item.step}</h4>
+                      <p className="text-sm text-gray-600 body-font">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 header-font">What Your Agent Can Do</h3>
+              <div className="space-y-3">
+                {[
+                  "Answer questions about your services",
+                  "Explain your cancellation policies",
+                  "Provide pricing information",
+                  "Help with booking inquiries",
+                  "Share your contact information",
+                  "Explain your new customer process",
+                ].map((capability, index) => (
+                  <div key={index} className="flex items-center">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-3 flex-shrink-0" />
+                    <span className="text-gray-700 body-font">{capability}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
+            <div className="flex items-start">
+              <div className="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center mr-3 mt-1 flex-shrink-0">
+                <span className="text-white text-xs font-bold">!</span>
+              </div>
+              <div>
+                <h4 className="font-semibold text-amber-900 header-font">Training Your Agent</h4>
+                <p className="text-amber-800 body-font mt-1">
+                  The more detailed information you provide about your services, policies, and processes, the better
+                  your AI agent will be at helping customers. Take time to fill out all the training sections
+                  thoroughly.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: "best-practices",
+      title: "Best Practices",
+      icon: BookOpen,
+      content: (
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold text-gray-900 header-font">Best Practices</h2>
+          <p className="text-gray-600 body-font">
+            Follow these recommendations to get the most out of your Critter booking system and provide the best
+            experience for your customers.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 header-font flex items-center">
+                <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
+                Do's
+              </h3>
+              <div className="space-y-3">
+                {[
+                  "Keep your availability calendar up to date",
+                  "Respond to booking requests promptly",
+                  "Provide detailed service descriptions",
+                  "Set clear cancellation policies",
+                  "Test your booking flow regularly",
+                  "Train your AI agent with comprehensive information",
+                  "Use professional photos and descriptions",
+                  "Set realistic buffer times between appointments",
+                ].map((item, index) => (
+                  <div key={index} className="flex items-start">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-3 mt-1 flex-shrink-0" />
+                    <span className="text-gray-700 body-font">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 header-font flex items-center">
+                <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center mr-2">
+                  <span className="text-white text-xs font-bold">×</span>
+                </div>
+                Don'ts
+              </h3>
+              <div className="space-y-3">
+                {[
+                  "Don't forget to block time for personal appointments",
+                  "Don't set unrealistic service durations",
+                  "Don't ignore customer booking requests",
+                  "Don't forget to update your team schedules",
+                  "Don't leave service descriptions empty",
+                  "Don't set booking windows too far in advance",
+                  "Don't forget to test changes before going live",
+                  "Don't overwhelm customers with too many options",
+                ].map((item, index) => (
+                  <div key={index} className="flex items-start">
+                    <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center mr-3 mt-1 flex-shrink-0">
+                      <span className="text-white text-xs font-bold">×</span>
+                    </div>
+                    <span className="text-gray-700 body-font">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-blue-900 mb-3 header-font">Pro Tips</h3>
+            <div className="space-y-3">
+              <div className="flex items-start">
+                <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 mt-1 flex-shrink-0">
+                  💡
+                </div>
+                <div>
+                  <h4 className="font-medium text-blue-900 header-font">Use Buffer Times</h4>
+                  <p className="text-blue-800 body-font">
+                    Set buffer times between appointments to account for travel, cleanup, or unexpected delays.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start">
+                <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 mt-1 flex-shrink-0">
+                  📱
+                </div>
+                <div>
+                  <h4 className="font-medium text-blue-900 header-font">Mobile-First Thinking</h4>
+                  <p className="text-blue-800 body-font">
+                    Most customers will book on mobile devices. Keep your service names and descriptions concise and
+                    clear.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start">
+                <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 mt-1 flex-shrink-0">
+                  🔄
+                </div>
+                <div>
+                  <h4 className="font-medium text-blue-900 header-font">Regular Updates</h4>
+                  <p className="text-blue-800 body-font">
+                    Review and update your booking settings monthly to ensure they reflect your current business needs.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
     },
   ]
 
@@ -166,148 +459,101 @@ export default function HowToUsePage() {
     <div className="min-h-screen bg-[#FBF8F3] flex flex-col">
       <Header />
 
-      <main className="pt-8 flex-1 flex flex-col">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col page-content">
-          {/* Header Section */}
-          <div className="text-center mb-12">
-            <h1 className="text-4xl title-font mb-4 font-sangbleu">Professional Setup Guide</h1>
-            <p className="text-xl text-gray-700 max-w-3xl mx-auto body-font">
-              Step-by-step guide to setting up your online capabilities and integrating them with your Critter platform
+      <main className="pt-8 flex-1">
+        <div className="max-w-7xl mx-auto px-4 page-content">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-[#f5f8fd] rounded-full flex items-center justify-center mx-auto mb-4">
+              <BookOpen className="h-8 w-8 text-[#94ABD6]" />
+            </div>
+            <h1 className="text-4xl title-font mb-4 font-sangbleu">How to Use Critter Pro</h1>
+            <p className="text-gray-700 max-w-3xl mx-auto body-font">
+              Complete guide to setting up and managing your professional booking system
             </p>
           </div>
 
-          {/* Step-by-Step Guide */}
-          <div className="space-y-6 mb-16">
-            {steps.map((step, index) => (
-              <div key={step.id} className="bg-white rounded-xl shadow-md overflow-hidden">
-                {/* Step Header */}
-                <div
-                  className="p-6 cursor-pointer hover:bg-gray-50 transition-colors"
-                  onClick={() => setExpandedStep(expandedStep === step.id ? null : step.id)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div
-                        className="w-12 h-12 rounded-full flex items-center justify-center text-white shadow-md"
-                        style={{ backgroundColor: step.color }}
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Sidebar Navigation */}
+            <div className="lg:w-1/4">
+              <div className="bg-white rounded-xl shadow-md p-6 sticky top-8">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4 header-font">Guide Sections</h2>
+                <nav className="space-y-2">
+                  {sections.map((section) => {
+                    const Icon = section.icon
+                    return (
+                      <button
+                        key={section.id}
+                        onClick={() => setActiveSection(section.id)}
+                        className={`w-full flex items-center justify-between p-3 rounded-lg text-left transition-colors ${
+                          activeSection === section.id ? "bg-[#E75837] text-white" : "text-gray-700 hover:bg-gray-50"
+                        }`}
                       >
-                        {step.icon}
-                      </div>
-                      <div>
-                        <div className="flex items-center space-x-3">
-                          <h3 className="text-xl font-bold header-font">
-                            Step {step.id}: {step.title}
-                          </h3>
-                          <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full body-font">
-                            {step.subtitle}
-                          </span>
+                        <div className="flex items-center">
+                          <Icon className="w-4 h-4 mr-3" />
+                          <span className="body-font">{section.title}</span>
                         </div>
-                        <p className="text-gray-600 body-font mt-1">{step.description}</p>
-                      </div>
-                    </div>
-                    <ArrowRight
-                      className={`h-5 w-5 text-gray-400 transition-transform ${
-                        expandedStep === step.id ? "rotate-90" : ""
-                      }`}
-                    />
-                  </div>
-                </div>
-
-                {/* Expanded Content */}
-                {expandedStep === step.id && (
-                  <div className="px-6 pb-6 border-t border-gray-100">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-6">
-                      {/* Tasks */}
-                      <div>
-                        <h4 className="font-bold text-gray-900 mb-4 header-font flex items-center">
-                          <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
-                          Tasks to Complete
-                        </h4>
-                        <ul className="space-y-3">
-                          {step.tasks.map((task, idx) => (
-                            <li key={idx} className="flex items-start space-x-3">
-                              <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center mt-0.5 flex-shrink-0">
-                                <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-                              </div>
-                              <span className="text-gray-700 body-font">{task}</span>
-                            </li>
-                          ))}
-                        </ul>
-
-                        {/* Action Button */}
-                        <div className="mt-6">
-                          <a
-                            href={step.actionButton.url}
-                            target={step.actionButton.external ? "_blank" : "_self"}
-                            rel={step.actionButton.external ? "noopener noreferrer" : ""}
-                            className="inline-flex items-center px-6 py-3 rounded-lg text-white font-medium body-font transition-all hover:shadow-lg"
-                            style={{ backgroundColor: step.color }}
-                          >
-                            {step.actionButton.external ? (
-                              <ExternalLink className="h-4 w-4 mr-2" />
-                            ) : (
-                              <Play className="h-4 w-4 mr-2" />
-                            )}
-                            {step.actionButton.text}
-                          </a>
-                          {step.actionButton.note && (
-                            <p className="text-xs text-gray-500 mt-2 body-font">{step.actionButton.note}</p>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Tips */}
-                      <div>
-                        <h4 className="font-bold text-gray-900 mb-4 header-font flex items-center">
-                          <Clock className="h-4 w-4 mr-2 text-blue-500" />
-                          Pro Tips
-                        </h4>
-                        <div className="space-y-3">
-                          {step.tips.map((tip, idx) => (
-                            <div key={idx} className="bg-blue-50 rounded-lg p-3">
-                              <p className="text-sm text-blue-800 body-font">{tip}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    )
+                  })}
+                </nav>
               </div>
-            ))}
-          </div>
-
-          {/* Features Overview */}
-          <div className="mb-16">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold header-font mb-4">What You'll Get</h2>
-              <p className="text-gray-600 body-font">
-                These tools work together with your Critter platform to create a seamless customer experience
-              </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {features.map((feature, index) => (
-                <div key={index} className="bg-white rounded-xl shadow-md p-6">
-                  <div className="flex items-start space-x-4">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      {feature.icon}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-gray-900 mb-2 header-font">{feature.title}</h3>
-                      <p className="text-gray-600 body-font mb-3">{feature.description}</p>
-                      <ul className="space-y-1">
-                        {feature.benefits.map((benefit, idx) => (
-                          <li key={idx} className="flex items-center text-sm text-green-700 body-font">
-                            <CheckCircle className="h-3 w-3 mr-2 text-green-500" />
-                            {benefit}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+            {/* Main Content */}
+            <div className="lg:w-3/4">
+              <div className="bg-white rounded-xl shadow-md p-8">
+                {sections.find((section) => section.id === activeSection)?.content}
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="mt-12 bg-white rounded-xl shadow-md p-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 header-font">Quick Actions</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <a
+                href="/pro/set-up"
+                className="flex items-center justify-between p-6 border border-gray-200 rounded-xl hover:shadow-md transition-shadow group"
+              >
+                <div className="flex items-center">
+                  <Settings className="w-8 h-8 text-[#E75837] mr-4" />
+                  <div>
+                    <h3 className="font-semibold text-gray-900 header-font">Professional Setup</h3>
+                    <p className="text-sm text-gray-600 body-font">Configure your booking system</p>
                   </div>
                 </div>
-              ))}
+                <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-[#E75837] transition-colors" />
+              </a>
+
+              <a
+                href="/pro/custom-agent"
+                className="flex items-center justify-between p-6 border border-gray-200 rounded-xl hover:shadow-md transition-shadow group"
+              >
+                <div className="flex items-center">
+                  <MessageSquare className="w-8 h-8 text-[#94ABD6] mr-4" />
+                  <div>
+                    <h3 className="font-semibold text-gray-900 header-font">AI Agent Setup</h3>
+                    <p className="text-sm text-gray-600 body-font">Create your support agent</p>
+                  </div>
+                </div>
+                <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-[#94ABD6] transition-colors" />
+              </a>
+
+              <a
+                href="https://critter.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-6 border border-gray-200 rounded-xl hover:shadow-md transition-shadow group"
+              >
+                <div className="flex items-center">
+                  <Smartphone className="w-8 h-8 text-[#745E25] mr-4" />
+                  <div>
+                    <h3 className="font-semibold text-gray-900 header-font">Critter App</h3>
+                    <p className="text-sm text-gray-600 body-font">Manage your business</p>
+                  </div>
+                </div>
+                <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-[#745E25] transition-colors" />
+              </a>
             </div>
           </div>
         </div>

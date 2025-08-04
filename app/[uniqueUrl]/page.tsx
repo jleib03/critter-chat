@@ -1,16 +1,29 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
-import { useState, useEffect } from "react"
+import { Loader2 } from "lucide-react"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Phone, Mail, UserPlus, MessageCircle, ArrowRight, Loader2 } from "lucide-react"
+import { Calendar, Clock, MapPin, Phone, Mail, UserPlus, MessageCircle, ArrowRight } from "lucide-react"
 import Header from "../../components/header"
 import LiveChatWidget from "../../components/live-chat-widget"
+import BookingPage from "../../components/booking-page"
 import { loadChatConfig } from "../../utils/chat-config"
-import { loadProfessionalLandingData, getDefaultProfessionalData } from "../../utils/professional-landing-config"
+import {
+  loadProfessionalLandingData,
+  loadProfessionalLandingConfig,
+  getDefaultProfessionalData,
+} from "../../utils/professional-landing-config"
 import { getServiceIcon, getServiceColor, getPrimaryServiceIcon } from "../../utils/service-icons"
 import type { ChatAgentConfig } from "../../types/chat-config"
 import type { ProfessionalLandingData, ServiceGroup } from "../../utils/professional-landing-config"
+import type { ProfessionalLandingConfig } from "../../types/professional-config"
+
+type UserInfo = {
+  email: string
+  firstName: string
+  lastName: string
+}
 
 export default function ProfessionalLandingPage() {
   const params = useParams()
@@ -21,6 +34,10 @@ export default function ProfessionalLandingPage() {
   const [isProfessionalDataLoading, setIsProfessionalDataLoading] = useState(true)
   const [isChatEnabled, setIsChatEnabled] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [config, setConfig] = useState<ProfessionalLandingConfig | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [showBooking, setShowBooking] = useState(false)
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
 
   // Function to load professional data
   const loadProfessionalData = async (forceRefresh = false) => {
@@ -48,15 +65,33 @@ export default function ProfessionalLandingPage() {
     }
   }
 
+  // Load professional landing config
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        setLoading(true)
+        const landingConfig = await loadProfessionalLandingConfig(uniqueUrl)
+        setConfig(landingConfig)
+      } catch (err) {
+        console.error("Error loading professional config:", err)
+        setError("Failed to load professional configuration")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (uniqueUrl) {
+      loadConfig()
+    }
+  }, [uniqueUrl])
+
   // Function to check if chat config is valid (not empty)
   const isValidChatConfig = (config: any): boolean => {
     if (!config) return false
 
-    // Check if it's an empty object or has no meaningful properties
     const keys = Object.keys(config)
     if (keys.length === 0) return false
 
-    // Check if all values are empty/null/undefined
     const hasValidValues = keys.some((key) => {
       const value = config[key]
       return value !== null && value !== undefined && value !== ""
@@ -70,10 +105,8 @@ export default function ProfessionalLandingPage() {
     const loadData = async () => {
       console.log("🔍 Loading data for unique URL:", uniqueUrl)
 
-      // Load professional landing data (with caching)
       await loadProfessionalData(false)
 
-      // Load chat configuration
       setIsChatConfigLoading(true)
       try {
         console.log("💬 Loading chat configuration...")
@@ -101,6 +134,15 @@ export default function ProfessionalLandingPage() {
     loadData()
   }, [uniqueUrl])
 
+  const handleExistingCustomer = (userInfo: UserInfo) => {
+    setUserInfo(userInfo)
+    setShowBooking(true)
+  }
+
+  const handleNewCustomer = () => {
+    setShowBooking(true)
+  }
+
   const getCurrentDayHours = () => {
     if (!professionalData) return { open: "9:00 AM", close: "6:00 PM", isOpen: true }
 
@@ -110,14 +152,16 @@ export default function ProfessionalLandingPage() {
   }
 
   // Show loading state while data is being fetched
-  if (isProfessionalDataLoading) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-[#FBF8F3]">
-        <Header />
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-[#E75837]" />
-            <p className="text-gray-600 body-font">Loading professional information...</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 bg-[#E75837] rounded-xl flex items-center justify-center mx-auto">
+            <Loader2 className="w-6 h-6 animate-spin text-white" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 header-font">Loading...</h2>
+            <p className="text-gray-600 body-font">Setting up your professional page</p>
           </div>
         </div>
       </div>
@@ -125,22 +169,39 @@ export default function ProfessionalLandingPage() {
   }
 
   // Show error state if data couldn't be loaded
-  if (!professionalData) {
+  if (error || !config) {
     return (
-      <div className="min-h-screen bg-[#FBF8F3]">
-        <Header />
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <p className="text-red-600 body-font mb-4">Failed to load professional information</p>
-            <button
-              onClick={() => loadProfessionalData(true)}
-              className="px-4 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#d04e30] transition-colors body-font"
-            >
-              Try Again
-            </button>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="text-center max-w-md mx-auto">
+          <div className="bg-white rounded-2xl shadow-lg border p-8 space-y-4">
+            <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mx-auto">
+              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 header-font">Configuration Error</h2>
+              <p className="text-gray-600 body-font mt-2">{error || "Unable to load professional configuration"}</p>
+            </div>
           </div>
         </div>
       </div>
+    )
+  }
+
+  if (showBooking) {
+    return (
+      <BookingPage
+        professionalId={config.professionalId}
+        professionalName={config.businessName}
+        userInfo={userInfo}
+        uniqueUrl={uniqueUrl}
+      />
     )
   }
 
@@ -169,9 +230,6 @@ export default function ProfessionalLandingPage() {
                 </div>
 
                 <p className="text-gray-700 leading-relaxed mb-6 body-font">{professionalData.description}</p>
-
-                {/* Quick Info */}
-                {/* Remove Quick Info Grid */}
 
                 {/* Contact Info */}
                 <div className="flex flex-wrap gap-4 mb-6">
@@ -202,7 +260,7 @@ export default function ProfessionalLandingPage() {
                   )}
                 </div>
 
-                {/* Specialties - Moved up from services section */}
+                {/* Specialties */}
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-3 header-font">Specialties</h3>
                   <div className="flex flex-wrap gap-2">
@@ -217,7 +275,7 @@ export default function ProfessionalLandingPage() {
                   </div>
                 </div>
 
-                {/* Service Information - Moved from above */}
+                {/* Service Information */}
                 <div className="mt-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-3 header-font">Service Information</h3>
                   <div className="space-y-3">
@@ -304,7 +362,6 @@ export default function ProfessionalLandingPage() {
 
                   return (
                     <div key={group.type} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                      {/* Group Header - No longer clickable */}
                       <div className="flex items-center gap-3 p-6 border-b border-gray-100">
                         <IconComponent className={`w-5 h-5 ${iconColor}`} />
                         <div>
@@ -315,7 +372,6 @@ export default function ProfessionalLandingPage() {
                         </div>
                       </div>
 
-                      {/* Group Services - Always visible */}
                       <div>
                         {group.services.map((service, index) => (
                           <div key={service.id} className="p-4 border-b border-gray-50 last:border-b-0">
@@ -407,3 +463,4 @@ export default function ProfessionalLandingPage() {
     </div>
   )
 }
+</merged_code>

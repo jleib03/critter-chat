@@ -2,10 +2,15 @@ import { Loader2 } from "lucide-react"
 
 export default function Loading() {
   return (
-    <div className="min-h-screen bg-[#FBF8F3] flex items-center justify-center">
-      <div className="text-center">
-        <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-[#E75837]" />
-        <p className="text-gray-600 body-font">Loading professional information...</p>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center space-y-4">
+        <div className="w-12 h-12 bg-[#E75837] rounded-xl flex items-center justify-center mx-auto">
+          <Loader2 className="w-6 h-6 animate-spin text-white" />
+        </div>
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900 header-font">Loading...</h2>
+          <p className="text-gray-600 body-font">Please wait while we load your booking page</p>
+        </div>
       </div>
     </div>
   )

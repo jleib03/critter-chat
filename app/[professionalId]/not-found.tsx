@@ -1,32 +1,32 @@
 import Link from "next/link"
-import { Home, Search } from "lucide-react"
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-[#FBF8F3] flex items-center justify-center">
-      <div className="text-center max-w-md mx-auto p-6">
-        <div className="bg-white border border-gray-200 rounded-lg p-8">
-          <Search className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2 header-font">Professional Not Found</h2>
-          <p className="text-gray-600 mb-6 body-font">
-            We couldn't find the professional you're looking for. They may have moved or the link might be incorrect.
-          </p>
-          <div className="space-y-3">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 bg-[#E75837] text-white px-6 py-3 rounded-lg hover:bg-[#d04e30] transition-colors body-font w-full justify-center"
-            >
-              <Home className="w-4 h-4" />
-              Return Home
-            </Link>
-            <Link
-              href="/findprofessional"
-              className="inline-flex items-center gap-2 bg-white text-[#E75837] border-2 border-[#E75837] px-6 py-3 rounded-lg hover:bg-[#E75837] hover:text-white transition-colors body-font w-full justify-center"
-            >
-              <Search className="w-4 h-4" />
-              Find a Professional
-            </Link>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+      <div className="text-center max-w-md mx-auto">
+        <div className="bg-white rounded-2xl shadow-lg border p-8 space-y-4">
+          <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto">
+            <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.291-1.007-5.691-2.709M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+              />
+            </svg>
           </div>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 header-font">Professional Not Found</h2>
+            <p className="text-gray-600 body-font mt-2">
+              The professional you're looking for doesn't exist or isn't available.
+            </p>
+          </div>
+          <Link
+            href="/"
+            className="inline-block bg-[#E75837] hover:bg-[#d14a2a] text-white px-6 py-2 rounded-lg font-medium transition-colors"
+          >
+            Go Home
+          </Link>
         </div>
       </div>
     </div>

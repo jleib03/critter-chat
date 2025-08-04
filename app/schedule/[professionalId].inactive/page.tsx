@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useMemo } from "react"
 import { useParams } from "next/navigation"
-import { Loader2, Clock, Calendar } from "lucide-react"
+import { Loader2, Clock, Calendar, AlertCircle, MessageCircle } from "lucide-react"
 import type { WebhookResponse, Service, SelectedTimeSlot, CustomerInfo, Pet, PetResponse } from "@/types/schedule"
 import { ServiceSelectorBar } from "@/components/schedule/service-selector-bar"
 import { WeeklyCalendar } from "@/components/schedule/weekly-calendar"
@@ -751,17 +751,64 @@ export default function SchedulePage() {
     )
   }
 
-  if (!webhookData) {
+  if (!webhookData || showBookingDisabled) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center mx-auto">
-            <Calendar className="w-6 h-6 text-gray-500" />
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold text-gray-700 header-font">No Schedule Available</h2>
-            <p className="text-gray-500 body-font">Unable to find scheduling data</p>
-          </div>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-2xl mx-auto p-6 pt-16">
+          <Card className="shadow-lg border-0 rounded-2xl">
+            <CardHeader className="text-center pb-4">
+              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="w-8 h-8 text-amber-600" />
+              </div>
+              <CardTitle className="text-2xl header-font">Booking Currently Unavailable</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center space-y-6">
+              <p className="text-gray-600 body-font">
+                This professional's online booking is temporarily inactive. They may be updating their schedule or
+                taking a break from online bookings.
+              </p>
+
+              <div className="bg-gray-50 rounded-xl p-6 space-y-4">
+                <h3 className="font-semibold text-gray-900 header-font">What you can do:</h3>
+                <div className="space-y-3 text-left">
+                  <div className="flex items-start gap-3">
+                    <MessageCircle className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-gray-900 body-font">Contact them directly</p>
+                      <p className="text-sm text-gray-600 body-font">
+                        Reach out through the Critter app or their preferred contact method
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Calendar className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-gray-900 body-font">Check back later</p>
+                      <p className="text-sm text-gray-600 body-font">They may reactivate online booking soon</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button
+                  onClick={() => window.open("https://critter.app", "_blank")}
+                  className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                >
+                  Open Critter App
+                </Button>
+                <Button
+                  onClick={() => window.history.back()}
+                  variant="outline"
+                  className="px-6 py-2 rounded-lg font-medium transition-colors"
+                >
+                  Go Back
+                </Button>
+              </div>
+
+              <p className="text-sm text-gray-500 body-font">Professional ID: {professionalId}</p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     )
@@ -862,27 +909,51 @@ export default function SchedulePage() {
           </div>
         </div>
 
-        {showBookingDisabled ? (
-          <div className="max-w-md mx-auto">
-            <Card className="shadow-lg border-0 rounded-2xl">
-              <CardHeader className="text-center pb-4">
-                <CardTitle className="text-xl header-font">Online Booking Unavailable</CardTitle>
-              </CardHeader>
-              <CardContent className="text-center space-y-4">
-                <p className="text-gray-600 body-font">
-                  {webhookData?.professional_info.professional_name} hasn't enabled online booking. Please contact them
-                  directly through the Critter app.
-                </p>
-                <Button
-                  onClick={() => window.open("https://critter.app", "_blank")}
-                  className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-6 py-2 rounded-lg font-medium transition-colors"
-                >
-                  Open Critter App
-                </Button>
-              </CardContent>
-            </Card>
+        {showBookingDisabledModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+              <div className="text-center space-y-4">
+                <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mx-auto">
+                  <svg className="w-6 h-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 header-font">Online Booking Unavailable</h3>
+                  <p className="text-gray-600 body-font mt-2">
+                    {webhookData?.professional_info.professional_name} hasn't enabled online booking. Please contact
+                    them directly through the Critter app.
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => setShowBookingDisabledModal(false)}
+                    variant="outline"
+                    className="flex-1 rounded-lg"
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      window.open("https://critter.app", "_blank")
+                      setShowBookingDisabledModal(false)
+                    }}
+                    className="flex-1 bg-[#E75837] hover:bg-[#d14a2a] text-white rounded-lg font-medium transition-colors"
+                  >
+                    Open Critter App
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
-        ) : showConfirmation ? (
+        )}
+
+        {showConfirmation ? (
           <BookingConfirmation
             selectedService={selectedServices[0]!}
             selectedTimeSlot={selectedTimeSlot!}
@@ -968,51 +1039,6 @@ export default function SchedulePage() {
                 </div>
               </div>
             )}
-          </div>
-        )}
-
-        {/* Clean Booking Disabled Modal */}
-        {showBookingDisabledModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-              <div className="text-center space-y-4">
-                <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mx-auto">
-                  <svg className="w-6 h-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 header-font">Online Booking Unavailable</h3>
-                  <p className="text-gray-600 body-font mt-2">
-                    {webhookData?.professional_info.professional_name} hasn't enabled online booking. Please contact
-                    them directly through the Critter app.
-                  </p>
-                </div>
-                <div className="flex gap-3">
-                  <Button
-                    onClick={() => setShowBookingDisabledModal(false)}
-                    variant="outline"
-                    className="flex-1 rounded-lg"
-                  >
-                    Close
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      window.open("https://critter.app", "_blank")
-                      setShowBookingDisabledModal(false)
-                    }}
-                    className="flex-1 bg-[#E75837] hover:bg-[#d14a2a] text-white rounded-lg font-medium transition-colors"
-                  >
-                    Open Critter App
-                  </Button>
-                </div>
-              </div>
-            </div>
           </div>
         )}
       </div>

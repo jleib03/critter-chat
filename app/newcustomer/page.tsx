@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import NewCustomerIntake from "../../components/new-customer-intake"
+import NewCustomerOnboarding from "../../components/new-customer-onboarding"
 
 export default function NewCustomerPage() {
   const router = useRouter()
@@ -30,7 +30,7 @@ export default function NewCustomerPage() {
         Complete the intake form below to set up your account with your Critter professional.
       </p>
       {sessionId && userId ? (
-        <NewCustomerIntake
+        <NewCustomerOnboarding
           onCancel={handleBackToLanding}
           onComplete={handleBackToLanding}
           webhookUrl={WEBHOOK_URL}
@@ -40,7 +40,6 @@ export default function NewCustomerPage() {
       ) : (
         <p>Loading...</p>
       )}
-
     </div>
   )
 }

@@ -1,151 +1,127 @@
 "use client"
+
+import type React from "react"
+
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Construction, Loader2, Check, AlertCircle } from "lucide-react"
-import Header from "../../components/header"
+import { Search, MapPin, Star, Users, ArrowLeft, Construction } from "lucide-react"
 
 export default function FindProfessionalPage() {
   const router = useRouter()
-  const [notifyEmail, setNotifyEmail] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle")
-  const [errorMessage, setErrorMessage] = useState("")
-  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
+  const [searchQuery, setSearchQuery] = useState("")
+  const [location, setLocation] = useState("")
 
-  // Function to validate email format
-  const isValidEmail = (email: string) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-  }
-
-  // Function to handle the notify me submission
-  const handleNotifySubmit = async () => {
-    // Reset states
-    setSubmitStatus("idle")
-    setErrorMessage("")
-
-    // Validate email
-    if (!notifyEmail) {
-      setErrorMessage("Please enter your email address")
-      return
-    }
-
-    if (!isValidEmail(notifyEmail)) {
-      setErrorMessage("Please enter a valid email address")
-      return
-    }
-
-    setIsSubmitting(true)
-
-    try {
-      // Create a unique user ID for this submission
-      const userId = `web_user_${Math.random().toString(36).substring(2, 10)}`
-
-      // Prepare the payload
-      const payload = {
-        message: {
-          text: "Notification request for professional matching service",
-          userId: userId,
-          timestamp: new Date().toISOString(),
-          userInfo: {
-            email: notifyEmail,
-            selectedAction: "notify_me",
-          },
-          source: "critter_booking_site",
-        },
-      }
-
-      console.log("Sending notification request to webhook:", WEBHOOK_URL)
-      console.log("Payload:", payload)
-
-      // Send the webhook
-      const response = await fetch(WEBHOOK_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      // Handle successful response
-      console.log("Notification request sent successfully")
-      setSubmitStatus("success")
-      setNotifyEmail("") // Clear the email field
-    } catch (error) {
-      console.error("Error sending notification request:", error)
-      setSubmitStatus("error")
-      setErrorMessage("There was an error submitting your request. Please try again.")
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  // Handler to go back to landing page
-  const handleBackToLanding = () => {
-    router.push("/")
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    // For now, show coming soon message
+    alert(
+      "Professional search feature coming soon! We're working hard to bring you the best pet care professionals in your area.",
+    )
   }
 
   return (
     <div className="min-h-screen bg-[#FBF8F3] flex flex-col">
-      <Header />
+      <div className="container mx-auto px-4 py-8 flex-1">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <div className="w-16 h-16 bg-[#f5f8fd] rounded-full flex items-center justify-center mx-auto mb-4">
+            <Users className="h-8 w-8 text-[#94ABD6]" />
+          </div>
+          <h1 className="text-4xl font-bold text-gray-900 header-font mb-4">Find a Professional</h1>
+          <p className="text-xl text-gray-700 max-w-3xl mx-auto body-font">
+            Discover trusted pet care professionals in your area. Browse profiles, read reviews, and book services with
+            confidence.
+          </p>
+        </div>
 
-      <main className="pt-8 flex-1 flex flex-col">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col page-content">
-          <div className="max-w-md mx-auto bg-white p-8 rounded-xl shadow-md mt-8">
-            <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 bg-[#f5f8fd] rounded-full flex items-center justify-center">
-                <Construction className="h-8 w-8 text-[#94ABD6]" />
+        {/* Search Form */}
+        <div className="max-w-2xl mx-auto mb-12">
+          <form onSubmit={handleSearch} className="bg-white rounded-2xl shadow-lg border p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div>
+                <label htmlFor="service" className="block text-sm font-medium text-gray-700 body-font mb-2">
+                  What service do you need?
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    id="service"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#94ABD6] body-font"
+                    placeholder="Dog walking, grooming, boarding..."
+                  />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="location" className="block text-sm font-medium text-gray-700 body-font mb-2">
+                  Where are you located?
+                </label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    id="location"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#94ABD6] body-font"
+                    placeholder="City, state, or zip code"
+                  />
+                </div>
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-center mb-4 header-font">Coming Soon!</h1>
-            <p className="text-gray-600 text-center mb-6 body-font">
-              We're working hard to bring you a professional matching service. Sign up for our newsletter to be the
-              first to know when it launches.
-            </p>
-
-            {submitStatus === "success" ? (
-              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 flex items-center">
-                <Check className="w-5 h-5 mr-2 flex-shrink-0" />
-                <p className="body-font">Thank you! We'll notify you when this feature launches.</p>
-              </div>
-            ) : (
-              <>
-                {errorMessage && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 flex items-center">
-                    <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
-                    <p className="body-font">{errorMessage}</p>
-                  </div>
-                )}
-                <div className="flex mb-4">
-                  <input
-                    type="email"
-                    placeholder="Your email address"
-                    value={notifyEmail}
-                    onChange={(e) => setNotifyEmail(e.target.value)}
-                    className="flex-1 p-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-[#94ABD6] body-font"
-                  />
-                  <button
-                    onClick={handleNotifySubmit}
-                    disabled={isSubmitting}
-                    className="bg-[#94ABD6] text-white px-4 py-3 rounded-r-lg hover:bg-[#7a90ba] transition-colors flex items-center justify-center min-w-[100px]"
-                  >
-                    {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : "Notify Me"}
-                  </button>
-                </div>
-              </>
-            )}
             <button
-              onClick={handleBackToLanding}
-              className="w-full text-gray-600 text-sm hover:text-gray-800 transition-colors body-font mt-4"
+              type="submit"
+              className="w-full bg-[#94ABD6] text-white py-3 px-6 rounded-lg hover:bg-[#7a90ba] transition-colors body-font font-medium"
             >
-              Back to Home
+              Search Professionals
             </button>
+          </form>
+        </div>
+
+        {/* Coming Soon Section */}
+        <div className="max-w-md mx-auto">
+          <div className="bg-white rounded-2xl shadow-lg border p-8 text-center">
+            <div className="w-16 h-16 bg-[#f5f8fd] rounded-full flex items-center justify-center mx-auto mb-6">
+              <Construction className="h-8 w-8 text-[#94ABD6]" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 header-font mb-4">Coming Soon!</h2>
+            <p className="text-gray-600 body-font mb-6">
+              We're working hard to bring you a comprehensive directory of pet care professionals. Soon you'll be able
+              to browse profiles, read reviews, and book services directly.
+            </p>
+            <div className="space-y-3 text-left mb-6">
+              <div className="flex items-center text-gray-600 body-font">
+                <Star className="w-4 h-4 mr-3 text-[#94ABD6]" />
+                <span>Browse verified professional profiles</span>
+              </div>
+              <div className="flex items-center text-gray-600 body-font">
+                <Users className="w-4 h-4 mr-3 text-[#94ABD6]" />
+                <span>Read reviews from other pet owners</span>
+              </div>
+              <div className="flex items-center text-gray-600 body-font">
+                <MapPin className="w-4 h-4 mr-3 text-[#94ABD6]" />
+                <span>Find professionals near you</span>
+              </div>
+            </div>
+            <p className="text-sm text-gray-500 body-font">
+              In the meantime, if you know your Critter professional, you can book directly through their unique link.
+            </p>
           </div>
         </div>
-      </main>
+
+        {/* Back Link */}
+        <div className="text-center mt-8">
+          <button
+            onClick={() => router.back()}
+            className="inline-flex items-center text-gray-500 hover:text-gray-700 body-font transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Go back to home
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
