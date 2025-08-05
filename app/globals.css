@@ -1,151 +1,327 @@
+@font-face {
+  font-family: "SangBleuKingdom";
+  src: url("/Fonts/SangBlue-Cuts/SangBleuKingdom-Light-WebXL.woff") format("woff"),
+    url("/Fonts/SangBlue-Cuts/SangBleuKingdom-Light-WebS.woff") format("woff");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Suisse-Intl-Book";
+  src: url("/Fonts/Suisse-Intl-Book/SuisseIntl-Book-WebM.woff") format("woff"),
+    url("/Fonts/Suisse-Intl-Book/SuisseIntl-Book-WebS.woff") format("woff");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Suisse-Intl-Light";
+  src: url("/Fonts/Suisse-Intl-Light/SuisseIntl-Light-WebM.woff") format("woff"),
+    url("/Fonts/Suisse-Intl-Light/SuisseIntl-Light-WebS.woff") format("woff");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@font-face {
-  font-family: "SangBleu Kingdom";
-  src: url("/Fonts/SangBlue-Cuts/SangBleuKingdom-Light-WebS.woff") format("woff");
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
+:root {
+  /* Updated color palette based on the provided image */
+  --primary: #e75837; /* Orange as primary */
+  --primary-dark: #d04e30; /* Darker version of Orange */
+  --primary-light: #f07a5f; /* Lighter version of Orange */
+  --secondary: #745e25; /* Green as secondary */
+  --accent: #94abd6; /* Blue */
+  --accent-light: #b0c1e3; /* Lighter Blue */
+  --accent-dark: #7a90ba; /* Darker Blue */
+  --pink: #f4baea; /* Pink */
+  --maroon: #3f001d; /* Maroon */
+  --dark-blue: #17000b; /* Dark Blue */
+  --gray: #808b92; /* Gray tint 1 */
+  --background: #fbf8f3; /* Beige */
+  --text: #17000b; /* Dark Blue for text */
+  --text-light: #3f001d; /* Maroon for light text */
+  --card-bg: #ffffff;
+  --border: #e0e0e0;
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --radius: 12px;
+
+  /* Add font family variables */
+  --font-title: "SangBleuKingdom", serif;
+  --font-header: "Suisse-Intl-Book", sans-serif;
+  --font-body: "Suisse-Intl-Light", sans-serif;
+
+  /* Chat container sizing variables - reduce height */
+  --chat-height: 500px;
+  --chat-max-height: calc(100vh - 350px);
+
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 255, 255, 255;
+  --background-end-rgb: 255, 255, 255;
 }
 
-@font-face {
-  font-family: "SangBleu Kingdom";
-  src: url("/Fonts/SangBlue-Cuts/SangBleuKingdom-Light-WebXL.woff") format("woff");
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Suisse Intl";
-  src: url("/Fonts/Suisse-Intl-Book/SuisseIntl-Book-WebS.woff") format("woff");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Suisse Intl";
-  src: url("/Fonts/Suisse-Intl-Book/SuisseIntl-Book-WebM.woff") format("woff");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Suisse Intl";
-  src: url("/Fonts/Suisse-Intl-Light/SuisseIntl-Light-WebS.woff") format("woff");
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Suisse Intl";
-  src: url("/Fonts/Suisse-Intl-Light/SuisseIntl-Light-WebM.woff") format("woff");
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
-
-@layer base {
+@media (prefers-color-scheme: dark) {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+/* Fix for scrolling issues */
+html,
+body {
+  font-family: var(--font-body), system-ui, sans-serif;
+  background-color: var(--background);
+  color: var(--text);
+  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow-x: hidden;
+  background: linear-gradient(to bottom, transparent, rgb(var(--background-end-rgb))) rgb(var(--background-start-rgb));
 }
 
-/* Custom font classes */
+/* Ensure the app takes up the full height */
+#__next,
+main {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Add these new font class styles */
 .title-font {
-  font-family: "SangBleu Kingdom", serif;
-  font-weight: 300;
+  font-family: var(--font-title);
 }
 
 .header-font {
-  font-family: "SangBleu Kingdom", serif;
-  font-weight: 300;
+  font-family: var(--font-header);
 }
 
 .body-font {
-  font-family: "Suisse Intl", sans-serif;
-  font-weight: 400;
+  font-family: var(--font-body);
 }
 
-.font-sangbleu {
-  font-family: "SangBleu Kingdom", serif;
+/* Add styles for titles */
+h1,
+.title {
+  font-family: var(--font-title);
 }
 
-.font-suisse {
-  font-family: "Suisse Intl", sans-serif;
+/* Add styles for headers */
+h2,
+h3,
+h4,
+h5,
+h6,
+.header {
+  font-family: var(--font-header);
 }
 
-/* Page content styling */
-.page-content {
-  min-height: calc(100vh - 80px);
+/* The rest of the CSS from the user's file */
+/* Additional styles for messages and UI elements */
+.message {
+  font-family: var(--font-body);
 }
 
-/* Animation for modal scale in */
+.message strong,
+.message .font-bold {
+  font-family: var(--font-header);
+  font-weight: 600;
+}
+
+.message h1,
+.message h2,
+.message h3,
+.message h4,
+.message h5,
+.message h6 {
+  font-family: var(--font-header);
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.message h1 {
+  font-family: var(--font-title);
+}
+
+/* Custom styling for professional and service listings */
+.professional-listing,
+.service-listing,
+.professional-item,
+.service-item,
+.pet-item {
+  margin-bottom: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+.professional-listing:not(:last-child),
+.service-listing:not(:last-child),
+.professional-item:not(:last-child),
+.service-item:not(:last-child),
+.pet-item:not(:last-child) {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.service-category,
+.professional-name,
+.service-name,
+.pet-name {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+}
+
+/* Styling for message sections */
+.message-intro {
+  margin-bottom: 0.5rem;
+}
+
+.message-footer {
+  margin-top: 0.5rem;
+}
+
+/* Update the bullet list styling section to differentiate between primary and secondary bullets */
+
+/* Bullet list styling */
+.bullet-list {
+  list-style-type: disc;
+  padding-left: 0.5rem;
+  margin-left: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.bullet-list li {
+  margin-bottom: 0.25rem;
+  position: relative;
+  padding-left: 0.25rem;
+}
+
+.bullet-list li::before {
+  content: "•";
+  position: absolute;
+  left: -0.75rem;
+  color: inherit; /* Use the text color instead of primary color */
+}
+
+/* Make only primary bullets bold */
+.bullet-list > li {
+  font-weight: 500; /* Primary bullets are semi-bold */
+}
+
+/* Secondary bullets use normal font weight */
+.bullet-list > li > ul > li,
+.bullet-list > li > ol > li,
+.booking-details li,
+.invoice-details li {
+  font-weight: normal;
+}
+
+/* Special styling for professionals list */
+.professionals-list,
+.services-list,
+.pets-list {
+  list-style-type: none;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.professionals-list > li,
+.services-list > li,
+.pets-list > li {
+  position: relative;
+  padding-left: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-weight: 500; /* Primary bullets are semi-bold */
+}
+
+.professionals-list > li > ul > li,
+.services-list > li > ul > li,
+.pets-list > li > ul > li {
+  font-weight: normal; /* Secondary bullets use normal font weight */
+}
+
+.professionals-list li::before,
+.services-list li::before,
+.pets-list li::before {
+  content: "•";
+  position: absolute;
+  left: -0.5rem;
+  color: inherit; /* Use the text color instead of primary color */
+}
+
+.professional-email,
+.professional-description,
+.service-details,
+.service-description {
+  margin-top: 0.125rem;
+  margin-left: 0.5rem;
+}
+
+/* Numbered list styling */
+.numbered-list {
+  list-style-type: decimal;
+  padding-left: 0.5rem;
+  margin-left: 0.5rem;
+}
+
+.numbered-list li {
+  margin-bottom: 0.25rem;
+  padding-left: 0.25rem;
+}
+
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+/* Add smooth scrolling */
+.overflow-y-auto {
+  scroll-behavior: smooth;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 @keyframes scaleIn {
   from {
     opacity: 0;
@@ -157,207 +333,128 @@
   }
 }
 
-.animate-scaleIn {
-  animation: scaleIn 0.2s ease-out;
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease forwards;
 }
 
-/* Hover scale effect */
+.animate-slideInRight {
+  animation: slideInRight 0.3s ease forwards;
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.3s ease forwards;
+}
+
 .hover\:scale-102:hover {
   transform: scale(1.02);
 }
 
-/* Custom scrollbar */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+/* Add to the existing transitions */
+.transition-all {
+  transition: all 0.3s ease;
 }
 
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
+.message {
+  animation: fadeIn 0.3s ease;
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
+/* Chat container styling */
+.chat-container,
+.user-info-container {
+  height: var(--chat-height);
+  max-height: var(--chat-max-height);
+  min-height: var(--chat-height);
+  overflow-y: auto;
+  flex: 0 0 auto; /* Prevent flex growth */
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+/* Ensure content doesn't get cut off at the bottom */
+.page-content {
+  margin-bottom: 4rem;
 }
 
-/* Focus styles for accessibility */
-.focus-visible:focus-visible {
-  outline: 2px solid #e75837;
-  outline-offset: 2px;
+/* Example of a custom component style */
+.custom-button {
+  @apply bg-blue-500 text-white font-bold py-2 px-4 rounded;
 }
 
-/* Button hover effects */
-.btn-hover-lift {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.btn-hover-lift:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-/* Card hover effects */
-.card-hover {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-}
-
-/* Loading spinner */
-.spinner {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* Gradient backgrounds */
-.gradient-orange {
-  background: linear-gradient(135deg, #e75837 0%, #f07a5f 100%);
-}
-
-.gradient-gold {
-  background: linear-gradient(135deg, #745e25 0%, #8b7030 100%);
-}
-
-.gradient-blue {
-  background: linear-gradient(135deg, #94abd6 0%, #b0c1e3 100%);
-}
-
-/* Text selection */
-::selection {
-  background-color: #e75837;
-  color: white;
-}
-
-::-moz-selection {
-  background-color: #e75837;
-  color: white;
-}
-
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
-}
-
-/* Hide scrollbar but keep functionality */
-.hide-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
-/* Custom input focus styles */
-input:focus,
-textarea:focus,
-select:focus {
-  outline: none;
-  border-color: #e75837;
-  box-shadow: 0 0 0 3px rgba(231, 88, 55, 0.1);
-}
-
-/* Disabled state */
-.disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Loading state */
-.loading {
-  pointer-events: none;
-  opacity: 0.7;
-}
-
-/* Error state */
-.error {
-  border-color: #ef4444;
-  background-color: #fef2f2;
-}
-
-/* Success state */
-.success {
-  border-color: #10b981;
-  background-color: #f0fdf4;
-}
-
-/* Warning state */
-.warning {
-  border-color: #f59e0b;
-  background-color: #fffbeb;
-}
-
-/* Info state */
-.info {
-  border-color: #3b82f6;
-  background-color: #eff6ff;
-}
-
-/* Responsive text sizes */
-@media (max-width: 640px) {
-  .title-font {
-    font-size: 2rem;
-    line-height: 2.5rem;
-  }
-
-  .header-font {
-    font-size: 1.5rem;
-    line-height: 2rem;
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
 
-/* Print styles */
-@media print {
-  .no-print {
-    display: none !important;
-  }
-
-  body {
-    background: white !important;
-    color: black !important;
-  }
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  .card-hover:hover {
-    box-shadow: 0 0 0 2px currentColor;
-  }
-}
-
-/* Reduced motion support */
-@media (prefers-reduced-motion: reduce) {
+@layer base {
   * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    @apply border-border;
   }
-
-  html {
-    scroll-behavior: auto;
-  }
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .auto-dark {
-    background-color: #1f2937;
-    color: #f9fafb;
+  body {
+    @apply bg-background text-foreground;
   }
 }

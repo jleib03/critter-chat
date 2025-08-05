@@ -2,16 +2,16 @@
 export const WEBHOOK_ENDPOINTS = {
   CUSTOM_AGENT:
     process.env.NEXT_PUBLIC_CUSTOM_AGENT_WEBHOOK_URL ||
-    "https://jleib03.app.n8n.cloud/webhook-test/94a7e18e-149c-4a66-a16b-db77f15756a2",
+    "https://jleib03.app.n8n.cloud/webhook/803d260b-1b17-4abf-8079-2d40225c29b0",
   PROFESSIONAL_CONFIG:
     process.env.NEXT_PUBLIC_PROFESSIONAL_CONFIG_WEBHOOK_URL ||
-    "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16",
+    "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520",
   CHAT_CONFIG:
     process.env.NEXT_PUBLIC_CHAT_CONFIG_WEBHOOK_URL ||
-    "https://jleib03.app.n8n.cloud/webhook-test/94a7e18e-149c-4a66-a16b-db77f15756a2",
+    "https://jleib03.app.n8n.cloud/webhook/803d260b-1b17-4abf-8079-2d40225c29b0",
   NEW_CUSTOMER_ONBOARDING:
     process.env.NEXT_PUBLIC_NEW_CUSTOMER_WEBHOOK_URL ||
-    "https://jleib03.app.n8n.cloud/webhook-test/a306584e-8637-4284-8a41-ecd5d24dc255",
+    "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4",
 } as const
 
 // Type for webhook endpoint keys

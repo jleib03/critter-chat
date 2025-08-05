@@ -1,11 +1,11 @@
 "use client"
 import { useParams, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
-import NewCustomerOnboarding from "../../../components/new-customer-onboarding"
+import NewCustomerIntake from "../../../components/new-customer-intake"
 import Header from "../../../components/header"
 import { Loader2 } from "lucide-react"
 
-export default function NewCustomerWithUrlPage() {
+export default function ProfessionalSpecificPage() {
   const params = useParams()
   const router = useRouter()
   const uniqueUrl = params.uniqueUrl as string
@@ -14,7 +14,7 @@ export default function NewCustomerWithUrlPage() {
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 
-  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
+  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/a306584e-8637-4284-8a41-ecd5d24dc255"
 
   // Handler to go back to landing page
   const handleBackToLanding = () => {
@@ -196,11 +196,19 @@ export default function NewCustomerWithUrlPage() {
               </div>
             </div>
           ) : (
-            <NewCustomerOnboarding
-              uniqueUrl={uniqueUrl}
-              professionalName={professionalName}
-              professionalId={professionalId}
-            />
+            <>
+              <div className="flex-1 flex flex-col mb-12">
+                <NewCustomerIntake
+                  onCancel={handleBackToLanding}
+                  onComplete={handleBackToLanding}
+                  webhookUrl={WEBHOOK_URL}
+                  initialProfessionalId={professionalId || uniqueUrl}
+                  initialProfessionalName={professionalName}
+                  skipProfessionalStep={true}
+                  userInfo={null}
+                />
+              </div>
+            </>
           )}
         </div>
       </main>

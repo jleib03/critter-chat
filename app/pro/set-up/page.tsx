@@ -1,20 +1,6 @@
 "use client"
 import { useState } from "react"
-import type React from "react"
-
-import {
-  Loader2,
-  Copy,
-  Check,
-  Settings,
-  MessageSquare,
-  Calendar,
-  ArrowRight,
-  Eye,
-  Globe,
-  LinkIcon,
-  Search,
-} from "lucide-react"
+import { Loader2, Copy, Check, Settings, MessageSquare, Calendar, ArrowRight, Eye, Globe, LinkIcon } from "lucide-react"
 import Header from "../../../components/header"
 import PasswordProtection from "../../../components/password-protection"
 import { useRouter } from "next/navigation"
@@ -36,7 +22,6 @@ export default function ProfessionalSetupPage() {
   const [showPreviewModal, setShowPreviewModal] = useState(false)
   const [previewUniqueUrl, setPreviewUniqueUrl] = useState("")
   const [previewError, setPreviewError] = useState("")
-  const [isSearching, setIsSearching] = useState(false) // Declare isSearching variable
 
   // Custom URL states
   const [customUrl, setCustomUrl] = useState("")
@@ -45,8 +30,8 @@ export default function ProfessionalSetupPage() {
   const [urlSuccess, setUrlSuccess] = useState("")
   const [createdCustomUrl, setCreatedCustomUrl] = useState("")
 
-  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/a306584e-8637-4284-8a41-ecd5d24dc255"
-  const CUSTOM_URL_WEBHOOK = "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16"
+  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
+  const CUSTOM_URL_WEBHOOK = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
   const router = useRouter()
 
   // If not authenticated, show password protection
@@ -274,23 +259,6 @@ export default function ProfessionalSetupPage() {
     window.open(`https://booking.critter.pet/${previewUniqueUrl.trim()}`, "_blank")
   }
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!professionalId.trim()) {
-      alert("Please enter your Professional ID")
-      return
-    }
-
-    setIsSearching(true)
-
-    // Simulate search delay
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    // Navigate to the setup page with the professional ID
-    router.push(`/schedule/set-up/${professionalId.trim()}`)
-  }
-
   return (
     <div className="min-h-screen bg-[#FBF8F3] flex flex-col">
       <Header />
@@ -304,7 +272,7 @@ export default function ProfessionalSetupPage() {
                 <div className="w-16 h-16 bg-[#E75837] rounded-full flex items-center justify-center mx-auto mb-6">
                   <Settings className="h-8 w-8 text-white" />
                 </div>
-                <h1 className="text-4xl md:text-5xl title-font mb-4 font-sangbleu">Professional Setup</h1>
+                <h1 className="text-4xl md:text-5xl title-font mb-4">Professional Setup</h1>
                 <p className="text-xl text-gray-700 max-w-3xl mx-auto body-font">
                   Tools and resources to enhance your Critter professional experience
                 </p>
@@ -320,50 +288,6 @@ export default function ProfessionalSetupPage() {
                     </p>
                   </div>
                 </div>
-              </div>
-
-              {/* Search Form */}
-              <div className="max-w-md mx-auto mb-12">
-                <form onSubmit={handleSearch} className="bg-white rounded-xl shadow-md p-6">
-                  <div className="mb-6">
-                    <label htmlFor="professionalId" className="block text-sm font-medium text-gray-700 body-font mb-2">
-                      Professional ID
-                    </label>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                      <input
-                        type="text"
-                        id="professionalId"
-                        value={professionalId}
-                        onChange={(e) => setProfessionalId(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
-                        placeholder="Enter your Professional ID"
-                        disabled={isSearching}
-                      />
-                    </div>
-                    <p className="mt-2 text-sm text-gray-500 body-font">
-                      Find your Professional ID in the Critter app under Settings → Professional Info
-                    </p>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isSearching || !professionalId.trim()}
-                    className="w-full bg-[#E75837] text-white py-3 px-6 rounded-lg hover:bg-[#d04e30] transition-colors body-font font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                  >
-                    {isSearching ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        Searching...
-                      </>
-                    ) : (
-                      <>
-                        Continue to Setup
-                        <ArrowRight className="w-4 h-4 ml-2" />
-                      </>
-                    )}
-                  </button>
-                </form>
               </div>
 
               {/* Feature Tiles Section */}
@@ -421,66 +345,18 @@ export default function ProfessionalSetupPage() {
                 </div>
               </div>
 
-              {/* Features Overview */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                <div className="bg-white rounded-xl shadow-md p-6 text-center">
-                  <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Settings className="w-6 h-6 text-emerald-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2 header-font">Booking Preferences</h3>
-                  <p className="text-gray-600 body-font text-sm">
-                    Choose between direct booking, request-to-book, or app-only booking modes
-                  </p>
-                </div>
-
-                <div className="bg-white rounded-xl shadow-md p-6 text-center">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                      />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2 header-font">Team Management</h3>
-                  <p className="text-gray-600 body-font text-sm">
-                    Set up team member schedules, working hours, and service assignments
-                  </p>
-                </div>
-
-                <div className="bg-white rounded-xl shadow-md p-6 text-center">
-                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2 header-font">Capacity Rules</h3>
-                  <p className="text-gray-600 body-font text-sm">
-                    Configure booking limits, buffer times, and availability constraints
-                  </p>
-                </div>
-              </div>
-
-              {/* Help Section */}
-              <div className="bg-white rounded-xl shadow-md p-6 text-center">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2 header-font">Need Help?</h3>
-                <p className="text-gray-600 body-font mb-4">
-                  Check out our comprehensive guide on how to set up and manage your professional booking system.
-                </p>
-                <a
-                  href="/pro/how-to-use"
-                  className="inline-flex items-center text-[#E75837] hover:text-[#d04e30] body-font font-medium transition-colors"
+              {/* Preview Landing Page Button */}
+              <div className="text-center mb-12">
+                <button
+                  onClick={handlePreviewClick}
+                  className="inline-flex items-center px-8 py-4 bg-white hover:bg-gray-50 text-gray-800 rounded-xl transition-all duration-200 border-2 border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md body-font font-medium"
                 >
-                  View Setup Guide
-                  <ArrowRight className="w-4 h-4 ml-1" />
-                </a>
+                  <Eye className="h-5 w-5 mr-3 text-gray-600" />
+                  Preview Landing Page
+                </button>
+                <p className="text-sm text-gray-500 mt-3 body-font">
+                  See how your professional landing page looks to customers
+                </p>
               </div>
             </>
           ) : (
