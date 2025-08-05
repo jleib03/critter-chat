@@ -1,3 +1,5 @@
+const WEBHOOK_BASE_URL = "https://jleib03.app.n8n.cloud/webhook-test/15f85beb-543f-47b2-954a-458984e3f94c"
+
 // Debug utility to see exactly what we're sending to the webhook
 export function debugChatConfigRequest(professionalId: string) {
   const payload = {
@@ -6,7 +8,7 @@ export function debugChatConfigRequest(professionalId: string) {
   }
 
   console.log("=== CHAT CONFIG WEBHOOK DEBUG ===")
-  console.log("Webhook URL:", process.env.NEXT_PUBLIC_WEBHOOK_URL + "/get-professional-info")
+  console.log("Webhook URL:", `${WEBHOOK_BASE_URL}/get-professional-info`)
   console.log("Method: POST")
   console.log("Headers:", {
     "Content-Type": "application/json",
@@ -22,7 +24,7 @@ export async function testChatConfigWebhook(professionalId: string) {
   const payload = debugChatConfigRequest(professionalId)
 
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_WEBHOOK_URL}/get-professional-info`, {
+    const response = await fetch(`${WEBHOOK_BASE_URL}/get-professional-info`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
