@@ -48,7 +48,7 @@ export type BookingData = {
 }
 
 export type Service = {
-  service_id?: string
+  service_id: string
   name: string
   description: string
   duration_unit: string
@@ -128,7 +128,6 @@ export type WebhookResponse = {
   month_number?: string
   quarter?: string
   // Service data
-  service_id?: string
   name?: string
   description?: string
   duration_unit?: string
