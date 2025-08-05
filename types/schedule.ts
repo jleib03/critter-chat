@@ -45,6 +45,7 @@ export type BookingData = {
   week_number?: string
   month_number?: string
   quarter?: string
+  all_day?: boolean // Add this for multi-day bookings
 }
 
 export type Service = {

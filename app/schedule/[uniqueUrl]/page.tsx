@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useEffect, useRef, useMemo } from "react"
+import { useEffect, useState, useRef, useMemo } from "react"
 import { useParams } from "next/navigation"
-import { Loader2, Clock, Calendar } from 'lucide-react'
-import type { Service, SelectedTimeSlot, CustomerInfo, Pet, PetResponse, ParsedWebhookData, BookingData } from "@/types/schedule"
+import { Loader2, Clock, Calendar } from "lucide-react"
+import type { Service, SelectedTimeSlot, CustomerInfo, Pet, PetResponse, ParsedWebhookData } from "@/types/schedule"
 import { ServiceSelectorBar } from "@/components/schedule/service-selector-bar"
 import { WeeklyCalendar } from "@/components/schedule/weekly-calendar"
 import { CustomerForm } from "@/components/schedule/customer-form"
@@ -13,43 +13,15 @@ import { loadProfessionalConfig, saveProfessionalConfig } from "@/utils/professi
 import type { ProfessionalConfig } from "@/types/professional-config"
 import {
   BookingTypeSelection,
-  type BookingType as BookingTypeAlias,
+  type BookingType,
   type RecurringConfig,
 } from "@/components/schedule/booking-type-selection"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { MultiDayBookingForm } from "@/components/schedule/multi-day-booking-form"
 import { calculateMultiDayAvailability } from "@/utils/professional-config"
-import { Header } from "@/components/header"
-import { ServiceSelection } from "@/components/schedule/service-selection"
 
 type NotificationPreference = "1_hour" | "1_day" | "1_week"
-
-interface ProfessionalConfigNew {
-  business_name: string
-  business_description: string
-  services: Service[]
-  booking_preferences: {
-    advance_booking_days: number
-    same_day_booking: boolean
-    cancellation_hours: number
-  }
-  branding: {
-    primary_color: string
-    logo_url?: string
-  }
-}
-
-type BookingStep =
-  | 'service-selection'
-  | 'booking-type'
-  | 'calendar'
-  | 'multi-day'
-  | 'pet-selection'
-  | 'customer-form'
-  | 'confirmation'
-
-type BookingType = 'one-time' | 'recurring' | 'multi-day'
 
 export default function SchedulePage() {
   const params = useParams()
@@ -58,49 +30,39 @@ export default function SchedulePage() {
   const [webhookData, setWebhookData] = useState<ParsedWebhookData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedServices, setSelectedServicesOld: any] = useState<Service[]>([])
-  const [selectedTimeSlot, setSelectedTimeSlotOld: any] = useState<SelectedTimeSlot | null>(null)
+  const [selectedServices, setSelectedServices] = useState<Service[]>([])
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<SelectedTimeSlot | null>(null)
   const sessionIdRef = useRef<string | null>(null)
   const userTimezoneRef = useRef<string | null>(null)
 
-  const [showCustomerForm, setShowCustomerFormOld: any] = useState(false)
-  const [showPetSelection, setShowPetSelectionOld: any] = useState(false)
-  const [showConfirmation, setShowConfirmationOld: any] = useState(false)
-  const [creatingBooking, setCreatingBookingOld: any] = useState(false)
-  const [customerInfo, setCustomerInfoOld: any] = useState<CustomerInfo>({ firstName: "", lastName: "", email: "" })
-  const [pets, setPetsOld: any] = useState<Pet[]>([])
-  const [selectedPet, setSelectedPetOld: any] = useState<Pet | null>(null)
-  const [selectedNotifications, setSelectedNotificationsOld: any] = useState<NotificationPreference[]>([])
-  const [professionalConfig, setProfessionalConfigOld: any] = useState<ProfessionalConfig | null>(null)
-  const [professionalId, setProfessionalIdOld: any] = useState<string>("")
+  const [showCustomerForm, setShowCustomerForm] = useState(false)
+  const [showPetSelection, setShowPetSelection] = useState(false)
+  const [showConfirmation, setShowConfirmation] = useState(false)
+  const [creatingBooking, setCreatingBooking] = useState(false)
+  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({ firstName: "", lastName: "", email: "" })
+  const [pets, setPets] = useState<Pet[]>([])
+  const [selectedPet, setSelectedPet] = useState<Pet | null>(null)
+  const [selectedNotifications, setSelectedNotifications] = useState<NotificationPreference[]>([])
+  const [professionalConfig, setProfessionalConfig] = useState<ProfessionalConfig | null>(null)
+  const [professionalId, setProfessionalId] = useState<string>("")
 
-  const [showBookingTypeSelection, setShowBookingTypeSelectionOld: any] = useState(false)
-  const [bookingTypeAlias, setBookingTypeAliasOld: any] = useState<BookingTypeAlias | null>(null)
-  const [recurringConfig, setRecurringConfigOld: any] = useState<RecurringConfig | null>(null)
+  const [showBookingTypeSelection, setShowBookingTypeSelection] = useState(false)
+  const [bookingType, setBookingType] = useState<BookingType | null>(null)
+  const [recurringConfig, setRecurringConfig] = useState<RecurringConfig | null>(null)
 
-  const [bookingPreferences, setBookingPreferencesOld: any] = useState<{
+  const [bookingPreferences, setBookingPreferences] = useState<{
     business_name?: string
     booking_system?: string
     allow_direct_booking?: boolean
     require_approval?: boolean
     online_booking_enabled?: boolean
   } | null>(null)
-  const [showBookingDisabledModal, setShowBookingDisabledModalOld: any] = useState(false)
-  const [showBookingDisabled, setShowBookingDisabledOld: any] = useState(false)
-  const [showPrices, setShowPricesOld: any] = useState(true)
+  const [showBookingDisabledModal, setShowBookingDisabledModal] = useState(false)
+  const [showBookingDisabled, setShowBookingDisabled] = useState(false)
+  const [showPrices, setShowPrices] = useState(true)
 
-  const [showMultiDayForm, setShowMultiDayFormOld: any] = useState(false)
-  const [multiDayTimeSlot, setMultiDayTimeSlotOld: any] = useState<{ start: Date; end: Date } | null>(null)
-
-  const [config, setConfig] = useState<ProfessionalConfigNew | null>(null)
-
-  const [currentStep, setCurrentStep] = useState<BookingStep>('service-selection')
-  const [selectedServices, setSelectedServices] = useState<Service[]>([])
-  const [bookingType, setBookingType] = useState<BookingType | null>(null)
-  const [selectedSlot, setSelectedSlot] = useState<{ date: Date; time: string } | null>(null)
-  const [multiDayDates, setMultiDayDates] = useState<{ start: Date; end: Date } | null>(null)
-  const [selectedPets, setSelectedPets] = useState<Pet[]>([])
-  const [bookingData, setBookingData] = useState<BookingData | null>(null)
+  const [showMultiDayForm, setShowMultiDayForm] = useState(false)
+  const [multiDayTimeSlot, setMultiDayTimeSlot] = useState<{ start: Date; end: Date } | null>(null)
 
   // Helper function to determine if this is a direct booking
   const determineBookingType = () => {
@@ -156,7 +118,7 @@ export default function SchedulePage() {
   const loadProfessionalConfiguration = () => {
     try {
       const config = loadProfessionalConfig(uniqueUrl)
-      setProfessionalConfigOld(config)
+      setProfessionalConfig(config)
       console.log("Professional configuration loaded:", config)
     } catch (error) {
       console.error("Error loading professional configuration:", error)
@@ -297,28 +259,28 @@ export default function SchedulePage() {
       // Parse the new webhook format
       const parsedData = parseWebhookData(rawData)
       setWebhookData(parsedData)
-      setShowPricesOld(parsedData.show_prices)
+      setShowPrices(parsedData.show_prices)
 
       // Store the professional ID from the response
       const pId = parsedData.professional_info?.professional_id
       if (pId) {
-        setProfessionalIdOld(pId)
+        setProfessionalId(pId)
       }
 
       // Set booking preferences from parsed data
       if (parsedData.booking_preferences) {
-        setBookingPreferencesOld(parsedData.booking_preferences)
+        setBookingPreferences(parsedData.booking_preferences)
 
         // Check if online booking is disabled
         if (parsedData.booking_preferences.online_booking_enabled === false) {
           console.log("Online booking is disabled - setting showBookingDisabled to true")
-          setShowBookingDisabledOld(true)
+          setShowBookingDisabled(true)
         } else {
-          setShowBookingDisabledOld(false)
+          setShowBookingDisabled(false)
         }
       } else {
         console.log("No booking preferences found")
-        setShowBookingDisabledOld(false)
+        setShowBookingDisabled(false)
       }
 
       // Create professional config from webhook data
@@ -365,7 +327,7 @@ export default function SchedulePage() {
         }
 
         console.log("Setting professional config with blocked times:", configForProfessionalConfig.blockedTimes)
-        setProfessionalConfigOld(configForProfessionalConfig)
+        setProfessionalConfig(configForProfessionalConfig)
         saveProfessionalConfig(configForProfessionalConfig) // Persist the config to local storage
       }
 
@@ -497,33 +459,15 @@ export default function SchedulePage() {
   useEffect(() => {
     if (uniqueUrl) {
       console.log("useEffect - Initializing schedule for uniqueUrl:", uniqueUrl) // ADDED LOG
-      //initializeSchedule()
-      const fetchConfig = async () => {
-        try {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_PROFESSIONAL_CONFIG_WEBHOOK_URL}?uniqueUrl=${uniqueUrl}`)
-          if (!response.ok) {
-            throw new Error('Failed to load professional configuration')
-          }
-          const data = await response.json()
-          setConfig(data)
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'An error occurred')
-        } finally {
-          setLoading(false)
-        }
-      }
-
-      if (uniqueUrl) {
-        fetchConfig()
-      }
+      initializeSchedule()
     }
   }, [uniqueUrl])
 
-  const handleServiceSelectOld = (service: Service) => {
+  const handleServiceSelect = (service: Service) => {
     console.log("handleServiceSelect called with:", service.name)
-    setSelectedTimeSlotOld(null)
+    setSelectedTimeSlot(null)
 
-    setSelectedServicesOld((prevServices) => {
+    setSelectedServices((prevServices) => {
       console.log("Previous services:", prevServices)
       const isAlreadySelected = prevServices.find((s) => s.name === service.name)
 
@@ -541,7 +485,7 @@ export default function SchedulePage() {
     })
   }
 
-  const handleContinueFromServicesOld = () => {
+  const handleContinueFromServices = () => {
     if (selectedServices.length === 0) return
 
     let totalDurationMinutes = 0
@@ -559,23 +503,23 @@ export default function SchedulePage() {
     const twelveHoursInMinutes = 12 * 60
 
     if (totalDurationMinutes > twelveHoursInMinutes) {
-      handleBookingTypeSelectOld("multi-day")
+      handleBookingTypeSelect("multi-day")
     } else {
-      setShowBookingTypeSelectionOld(true)
+      setShowBookingTypeSelection(true)
     }
   }
 
-  const handleBookingTypeSelectOld = (type: BookingTypeAlias, config?: RecurringConfig) => {
-    setBookingTypeAliasOld(type)
-    setShowBookingTypeSelectionOld(false)
+  const handleBookingTypeSelect = (type: BookingType, config?: RecurringConfig) => {
+    setBookingType(type)
+    setShowBookingTypeSelection(false)
     if (type === "recurring") {
-      setRecurringConfigOld(config || null)
+      setRecurringConfig(config || null)
     } else if (type === "multi-day") {
-      setShowMultiDayFormOld(true)
+      setShowMultiDayForm(true)
     }
   }
 
-  const handleMultiDayAvailabilityCheckOld = async (start: Date, end: Date) => {
+  const handleMultiDayAvailabilityCheck = async (start: Date, end: Date) => {
     if (!professionalConfig || !webhookData) {
       return { available: false, reason: "Configuration not loaded." }
     }
@@ -588,7 +532,7 @@ export default function SchedulePage() {
     )
   }
 
-  const handleMultiDayBookingConfirmOld = (start: Date, end: Date) => {
+  const handleMultiDayBookingConfirm = (start: Date, end: Date) => {
     // Create a synthetic "time slot" to fit into the existing flow
     const syntheticSlot: SelectedTimeSlot = {
       date: start.toISOString().split("T")[0],
@@ -596,25 +540,25 @@ export default function SchedulePage() {
       endTime: end.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true }),
       dayOfWeek: start.toLocaleDateString("en-US", { weekday: "long" }),
     }
-    setMultiDayTimeSlotOld({ start, end })
-    setSelectedTimeSlotOld(syntheticSlot)
-    setShowMultiDayFormOld(false)
-    setShowCustomerFormOld(true)
+    setMultiDayTimeSlot({ start, end })
+    setSelectedTimeSlot(syntheticSlot)
+    setShowMultiDayForm(false)
+    setShowCustomerForm(true)
   }
 
-  const handleBackFromMultiDayOld = () => {
-    setShowMultiDayFormOld(false)
-    setShowBookingTypeSelectionOld(true)
+  const handleBackFromMultiDay = () => {
+    setShowMultiDayForm(false)
+    setShowBookingTypeSelection(true)
   }
 
-  const handleBackToServicesOld = () => {
+  const handleBackToServices = () => {
     setSelectedServices([])
-    setShowBookingTypeSelectionOld(false)
-    setBookingTypeAliasOld(null)
-    setRecurringConfigOld(null)
+    setShowBookingTypeSelection(false)
+    setBookingType(null)
+    setRecurringConfig(null)
   }
 
-  const handleTimeSlotSelectOld = (slot: SelectedTimeSlot) => {
+  const handleTimeSlotSelect = (slot: SelectedTimeSlot) => {
     if (selectedServices.length === 0) {
       alert("Please select at least one service before selecting a time slot.")
       return
@@ -626,26 +570,26 @@ export default function SchedulePage() {
     // Check if online booking is disabled
     if (bookingPreferences && bookingPreferences.online_booking_enabled === false) {
       console.log("Online booking is disabled - showing modal")
-      setShowBookingDisabledModalOld(true)
+      setShowBookingDisabledModal(true)
       return
     }
 
     console.log("Proceeding with booking flow")
-    setSelectedTimeSlotOld(slot)
-    setShowCustomerFormOld(true)
+    setSelectedTimeSlot(slot)
+    setShowCustomerForm(true)
   }
 
-  const handlePetsReceivedOld = (customerInfo: CustomerInfo, petResponse: PetResponse) => {
-    setCustomerInfoOld(customerInfo)
-    setPetsOld(petResponse.pets || [])
-    setShowCustomerFormOld(false)
-    setShowPetSelectionOld(true)
+  const handlePetsReceived = (customerInfo: CustomerInfo, petResponse: PetResponse) => {
+    setCustomerInfo(customerInfo)
+    setPets(petResponse.pets || [])
+    setShowCustomerForm(false)
+    setShowPetSelection(true)
   }
 
-  const handlePetSelectOld = async (pet: Pet, notifications: NotificationPreference[]) => {
-    setSelectedPetOld(pet)
-    setSelectedNotificationsOld(notifications)
-    setCreatingBookingOld(true)
+  const handlePetSelect = async (pet: Pet, notifications: NotificationPreference[]) => {
+    setSelectedPet(pet)
+    setSelectedNotifications(notifications)
+    setCreatingBooking(true)
 
     try {
       const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16"
@@ -916,133 +860,46 @@ export default function SchedulePage() {
           // Continue with showing confirmation even if email webhook fails
         }
 
-        setShowPetSelectionOld(false)
-        setCreatingBookingOld(false)
-        setShowConfirmationOld(true)
+        setShowPetSelection(false)
+        setCreatingBooking(false)
+        setShowConfirmation(true)
       } else {
         throw new Error("Booking creation failed")
       }
     } catch (err) {
       console.error("Error creating booking:", err)
-      setCreatingBookingOld(false)
+      setCreatingBooking(false)
       setError("Failed to create booking. Please try again.")
     }
   }
 
-  const handleBackToCustomerFormOld = () => {
-    setShowPetSelectionOld(false)
-    setShowCustomerFormOld(true)
+  const handleBackToCustomerForm = () => {
+    setShowPetSelection(false)
+    setShowCustomerForm(true)
   }
 
-  const handleBackToScheduleOld = () => {
-    setShowCustomerFormOld(false)
-    setSelectedTimeSlotOld(null)
+  const handleBackToSchedule = () => {
+    setShowCustomerForm(false)
+    setSelectedTimeSlot(null)
   }
 
-  const handleNewBookingOld = async () => {
+  const handleNewBooking = async () => {
     setSelectedServices([])
-    setSelectedTimeSlotOld(null)
-    setShowCustomerFormOld(false)
-    setShowPetSelectionOld(false)
-    setShowConfirmationOld(false)
-    setCreatingBookingOld(false)
-    setCustomerInfoOld({ firstName: "", lastName: "", email: "" })
-    setPetsOld([])
-    setSelectedPetOld(null)
-    setSelectedNotificationsOld([])
-    setShowBookingTypeSelectionOld(false)
-    setBookingTypeAliasOld(null)
-    setRecurringConfigOld(null)
+    setSelectedTimeSlot(null)
+    setShowCustomerForm(false)
+    setShowPetSelection(false)
+    setShowConfirmation(false)
+    setCreatingBooking(false)
+    setCustomerInfo({ firstName: "", lastName: "", email: "" })
+    setPets([])
+    setSelectedPet(null)
+    setSelectedNotifications([])
+    setShowBookingTypeSelection(false)
+    setBookingType(null)
+    setRecurringConfig(null)
 
     console.log("Starting new booking - refreshing schedule data...")
     await initializeSchedule()
-  }
-
-  const handleServiceSelection = (services: Service[]) => {
-    setSelectedServices(services)
-
-    // Calculate total duration to determine next step
-    const totalDuration = services.reduce((total, service) => total + (service.duration_number || 0), 0)
-
-    // If total duration > 12 hours (720 minutes), skip booking type selection and go directly to multi-day
-    if (totalDuration > 720) {
-      setBookingType('multi-day')
-      setCurrentStep('multi-day')
-    } else {
-      setCurrentStep('booking-type')
-    }
-  }
-
-  const handleBookingTypeSelectionNew = (type: BookingType) => {
-    setBookingType(type)
-    if (type === 'multi-day') {
-      setCurrentStep('multi-day')
-    } else {
-      setCurrentStep('calendar')
-    }
-  }
-
-  const handleTimeSlotSelectionNew = (date: Date, time: string) => {
-    setSelectedSlot({ date, time })
-    setCurrentStep('pet-selection')
-  }
-
-  const handleMultiDayAvailabilityCheckNew = async (start: Date, end: Date) => {
-    // Simulate availability check
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    return {
-      available: true,
-      reason: "Dates are available for your selected services."
-    }
-  }
-
-  const handleMultiDayConfirmNew = (start: Date, end: Date) => {
-    setMultiDayDates({ start, end })
-    setCurrentStep('pet-selection')
-  }
-
-  const handlePetSelectionNew = (pets: Pet[]) => {
-    setSelectedPets(pets)
-    setCurrentStep('customer-form')
-  }
-
-  const handleCustomerFormSubmitNew = (data: BookingData) => {
-    setBookingData(data)
-    setCurrentStep('confirmation')
-  }
-
-  const handleBackToServicesNew = () => {
-    setCurrentStep('service-selection')
-    setSelectedServices([])
-    setBookingType(null)
-  }
-
-  const handleBackToBookingTypeNew = () => {
-    // Calculate total duration to determine if we should show booking type selection
-    const totalDuration = selectedServices.reduce((total, service) => total + (service.duration_number || 0), 0)
-
-    if (totalDuration > 720) {
-      // If multi-day only, go back to service selection
-      setCurrentStep('service-selection')
-    } else {
-      setCurrentStep('booking-type')
-    }
-    setBookingType(null)
-  }
-
-  const handleBackToCalendarNew = () => {
-    if (bookingType === 'multi-day') {
-      setCurrentStep('multi-day')
-    } else {
-      setCurrentStep('calendar')
-    }
-    setSelectedSlot(null)
-    setMultiDayDates(null)
-  }
-
-  const handleBackToPetsNew = () => {
-    setCurrentStep('pet-selection')
-    setSelectedPets([])
   }
 
   if (loading) {
@@ -1202,73 +1059,192 @@ export default function SchedulePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
-      <div className="container mx-auto px-4 py-8">
-        {currentStep === 'service-selection' && (
-          <ServiceSelection
-            services={config.services}
-            onServiceSelect={handleServiceSelection}
-            businessName={config.business_name}
-          />
-        )}
+      <div className="max-w-6xl mx-auto p-6 space-y-6">
+        {/* Clean Header */}
+        <div className="bg-white rounded-2xl shadow-lg border p-8">
+          <div className="max-w-4xl">
+            <h1 className="text-3xl font-bold text-[#E75837] mb-3 header-font">
+              Book with {webhookData.professional_info.professional_name}
+            </h1>
+            <p className="text-lg text-gray-600 body-font mb-4">
+              Select your service and preferred time to {isDirectBooking ? "book instantly" : "request an appointment"}
+            </p>
 
-        {currentStep === 'booking-type' && (
-          <BookingTypeSelection
+            {/* Simple timezone indicator */}
+            {userTimezoneRef.current && (
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-lg text-sm text-gray-600 body-font">
+                <Clock className="w-4 h-4" />
+                <span>{JSON.parse(userTimezoneRef.current).timezone}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {showBookingDisabled ? (
+          <div className="max-w-md mx-auto">
+            <Card className="shadow-lg border-0 rounded-2xl">
+              <CardHeader className="text-center pb-4">
+                <CardTitle className="text-xl header-font">Online Booking Unavailable</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center space-y-4">
+                <p className="text-gray-600 body-font">
+                  {webhookData?.professional_info.professional_name} hasn't enabled online booking. Please contact them
+                  directly through the Critter app.
+                </p>
+                <Button
+                  onClick={() => window.open("https://critter.app", "_blank")}
+                  className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                >
+                  Open Critter App
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        ) : showConfirmation ? (
+          <BookingConfirmation
+            selectedTimeSlot={selectedTimeSlot!}
+            customerInfo={customerInfo}
+            selectedPet={selectedPet!}
+            professionalName={webhookData.professional_info.professional_name}
+            onNewBooking={handleNewBooking}
+            bookingType={bookingType}
+            recurringConfig={recurringConfig}
             selectedServices={selectedServices}
-            onBookingTypeSelect={handleBookingTypeSelectionNew}
-            onBack={handleBackToServicesNew}
+            isDirectBooking={isDirectBooking}
           />
-        )}
-
-        {currentStep === 'calendar' && (
-          <WeeklyCalendar
-            selectedServices={selectedServices}
-            bookingType={bookingType!}
-            onTimeSlotSelect={handleTimeSlotSelectionNew}
-            onBack={handleBackToBookingTypeNew}
-            advanceBookingDays={config.booking_preferences.advance_booking_days}
-            sameDayBooking={config.booking_preferences.same_day_booking}
-          />
-        )}
-
-        {currentStep === 'multi-day' && (
-          <MultiDayBookingForm
-            selectedService={selectedServices[0]} // For display purposes
-            onAvailabilityCheck={handleMultiDayAvailabilityCheckNew}
-            onBookingConfirm={handleMultiDayConfirmNew}
-            onBack={handleBackToBookingTypeNew}
-          />
-        )}
-
-        {currentStep === 'pet-selection' && (
+        ) : showPetSelection ? (
           <PetSelection
+            pets={pets}
+            customerInfo={customerInfo}
             selectedServices={selectedServices}
-            onPetSelect={handlePetSelectionNew}
-            onBack={handleBackToCalendarNew}
+            selectedTimeSlot={selectedTimeSlot!}
+            professionalName={webhookData.professional_info.professional_name}
+            isDirectBooking={isDirectBooking}
+            onPetSelect={handlePetSelect}
+            onBack={handleBackToCustomerForm}
+            bookingType={bookingType}
+            recurringConfig={recurringConfig}
+            showPrices={showPrices}
           />
-        )}
-
-        {currentStep === 'customer-form' && (
+        ) : showCustomerForm && selectedServices.length > 0 && selectedTimeSlot ? (
           <CustomerForm
             selectedServices={selectedServices}
-            selectedPets={selectedPets}
-            bookingType={bookingType!}
-            selectedSlot={selectedSlot}
-            multiDayDates={multiDayDates}
-            onSubmit={handleCustomerFormSubmitNew}
-            onBack={handleBackToPetsNew}
+            selectedTimeSlot={selectedTimeSlot}
+            professionalId={professionalId || uniqueUrl}
+            professionalName={webhookData.professional_info.professional_name}
+            sessionId={sessionIdRef.current!}
+            onPetsReceived={handlePetsReceived}
+            onBack={handleBackToSchedule}
+            bookingType={bookingType}
+            recurringConfig={recurringConfig}
+            showPrices={showPrices}
           />
+        ) : showMultiDayForm && selectedServices.length > 0 ? (
+          <MultiDayBookingForm
+            selectedService={selectedServices[0]}
+            onAvailabilityCheck={handleMultiDayAvailabilityCheck}
+            onBookingConfirm={handleMultiDayBookingConfirm}
+            onBack={handleBackFromMultiDay}
+          />
+        ) : showBookingTypeSelection && selectedServices.length > 0 ? (
+          <BookingTypeSelection
+            selectedServices={selectedServices}
+            onBookingTypeSelect={handleBookingTypeSelect}
+            onBack={handleBackToServices}
+          />
+        ) : (
+          // Main booking interface
+          <div className="space-y-6">
+            {/* Service Selection */}
+            {!bookingType && (
+              <div className="bg-white rounded-2xl shadow-lg border p-6">
+                <ServiceSelectorBar
+                  servicesByCategory={webhookData.services.services_by_category}
+                  selectedServices={selectedServices}
+                  onServiceSelect={handleServiceSelect}
+                  onContinue={selectedServices.length > 0 ? handleContinueFromServices : undefined}
+                  summaryOnly={false}
+                  showPrices={showPrices}
+                />
+              </div>
+            )}
+
+            {/* Calendar view */}
+            {selectedServices.length > 0 && bookingType && !showMultiDayForm && (
+              <div className="space-y-6">
+                {/* Selected Services Summary */}
+                <div className="bg-white rounded-2xl shadow-lg border p-6">
+                  <ServiceSelectorBar
+                    servicesByCategory={webhookData.services.services_by_category}
+                    selectedServices={selectedServices}
+                    onServiceSelect={handleServiceSelect}
+                    summaryOnly={true}
+                    showPrices={showPrices}
+                  />
+                </div>
+
+                {/* Calendar */}
+                <div className="bg-white rounded-2xl shadow-lg border p-6">
+                  <WeeklyCalendar
+                    workingDays={webhookData.schedule.working_days}
+                    bookingData={webhookData.bookings.all_booking_data}
+                    selectedServices={selectedServices}
+                    onTimeSlotSelect={handleTimeSlotSelect}
+                    selectedTimeSlot={selectedTimeSlot}
+                    professionalId={professionalId || uniqueUrl}
+                    professionalConfig={memoizedProfessionalConfig}
+                    bookingType={bookingType}
+                    recurringConfig={recurringConfig}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
-        {currentStep === 'confirmation' && bookingData && (
-          <BookingConfirmation
-            bookingData={bookingData}
-            selectedServices={selectedServices}
-            selectedPets={selectedPets}
-            bookingType={bookingType!}
-            selectedSlot={selectedSlot}
-            multiDayDates={multiDayDates}
-          />
+        {/* Clean Booking Disabled Modal */}
+        {showBookingDisabledModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+              <div className="text-center space-y-4">
+                <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mx-auto">
+                  <svg className="w-6 h-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 header-font">Online Booking Unavailable</h3>
+                  <p className="text-gray-600 body-font mt-2">
+                    {webhookData?.professional_info.professional_name} hasn't enabled online booking. Please contact
+                    them directly through the Critter app.
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => setShowBookingDisabledModal(false)}
+                    variant="outline"
+                    className="flex-1 rounded-lg"
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      window.open("https://critter.app", "_blank")
+                      setShowBookingDisabledModal(false)
+                    }}
+                    className="flex-1 bg-[#E75837] hover:bg-[#d14a2a] text-white rounded-lg font-medium transition-colors"
+                  >
+                    Open Critter App
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

@@ -274,8 +274,9 @@ export const calculateMultiDayAvailability = (
     return { available: false, reason: "No active employees available for this period." }
   }
 
-  // Iterate through each day in the selected range
-  for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+  // Iterate through each day in the selected range.
+  // We check from startDate up to (but not including) endDate, as the booking ends on that day.
+  for (let d = new Date(startDate); d < endDate; d.setDate(d.getDate() + 1)) {
     const currentDateStr = d.toISOString().split("T")[0]
     const dayName = d.toLocaleDateString("en-US", { weekday: "long" })
 
@@ -289,7 +290,7 @@ export const calculateMultiDayAvailability = (
       return { available: false, reason: `No employees are working on ${currentDateStr}.` }
     }
 
-    // 2. Check for global blocked times on this day
+    // 2. Check for global (non-employee-specific) full-day blocks
     const isDayBlocked = blockedTimes.some(
       (block) => !block.employeeId && block.date === currentDateStr && block.isAllDay,
     )
@@ -297,25 +298,28 @@ export const calculateMultiDayAvailability = (
       return { available: false, reason: `The date ${currentDateStr} is blocked for all staff.` }
     }
 
-    // 3. Check concurrent multi-day bookings
-    const concurrentBookingsOnDay = existingBookings.filter((booking) => {
-      // This check assumes multi-day bookings can be identified.
-      // A future improvement would be a specific flag like `booking.all_day === 'yes'`.
-      const bookingStart = new Date(booking.start!)
-      const bookingEnd = new Date(booking.end!)
-      const isMultiDayLike = bookingEnd.getTime() - bookingStart.getTime() > 12 * 60 * 60 * 1000
+    // 3. Determine the total capacity for multi-day stays for this specific day
+    const dayCapacity = Math.min(employeesWorkingToday.length, capacityRules.maxConcurrentBookings)
 
-      return isMultiDayLike && bookingStart < new Date(d.getTime() + 24 * 60 * 60 * 1000) && bookingEnd > d
+    // 4. Count concurrent multi-day bookings that overlap with the current day
+    const concurrentBookingsOnDay = existingBookings.filter((booking) => {
+      // Use the 'all_day' flag for reliability
+      if (!booking.all_day || !booking.start || !booking.end) return false
+
+      const bookingStart = new Date(booking.start)
+      const bookingEnd = new Date(booking.end)
+
+      // A booking overlaps with day `d` if it starts on or before `d` and ends after `d`.
+      return bookingStart.getTime() <= d.getTime() && bookingEnd.getTime() > d.getTime()
     })
 
-    // 4. Check capacity
-    const totalCapacity = capacityRules.maxConcurrentBookings
-    const availableCapacity = totalCapacity - concurrentBookingsOnDay.length
+    // 5. Check if capacity is exceeded
+    const availableCapacity = dayCapacity - concurrentBookingsOnDay.length
 
     if (availableCapacity <= 0) {
       return {
         available: false,
-        reason: `Not enough capacity on ${currentDateStr}. All ${totalCapacity} spaces are booked.`,
+        reason: `Not enough capacity on ${currentDateStr}. All ${dayCapacity} spaces are booked.`,
       }
     }
   }

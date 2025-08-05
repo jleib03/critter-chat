@@ -1,134 +1,283 @@
 "use client"
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useState, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calendar, Repeat, Moon, ArrowLeft, ArrowRight } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Calendar, Repeat, ArrowLeft, ArrowRight, Clock, CalendarDays } from "lucide-react"
 import type { Service } from "@/types/schedule"
 
-interface BookingTypeSelectionProps {
+export type BookingType = "one-time" | "recurring" | "multi-day"
+
+export type RecurringConfig = {
+  daysOfWeek: string[]
+  endDate: string
+  selectedDays: string[]
+  originalEndDate: string
+}
+
+type BookingTypeSelectionProps = {
   selectedServices: Service[]
-  onBookingTypeSelect: (type: "one-time" | "recurring" | "multi-day") => void
+  onBookingTypeSelect: (type: BookingType, recurringConfig?: RecurringConfig) => void
   onBack: () => void
 }
 
+const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
 export function BookingTypeSelection({ selectedServices, onBookingTypeSelect, onBack }: BookingTypeSelectionProps) {
-  const [selectedType, setSelectedType] = useState<"one-time" | "recurring" | "multi-day" | null>(null)
+  const [selectedType, setSelectedType] = useState<BookingType | null>(null)
+  const [recurringConfig, setRecurringConfig] = useState<RecurringConfig>({
+    daysOfWeek: [],
+    endDate: "",
+    selectedDays: [],
+    originalEndDate: "",
+  })
 
-  // Calculate total duration of selected services
-  const totalDuration = selectedServices.reduce((total, service) => {
-    return total + (service.duration || 0)
-  }, 0)
+  const { serviceNames, totalDurationString } = useMemo(() => {
+    const totalMinutes = selectedServices.reduce((acc, service) => {
+      let durationInMinutes = service.duration_number
+      const unit = service.duration_unit.toLowerCase()
+      if (unit.startsWith("hour")) {
+        durationInMinutes = service.duration_number * 60
+      } else if (unit.startsWith("day")) {
+        durationInMinutes = service.duration_number * 24 * 60
+      }
+      return acc + durationInMinutes
+    }, 0)
 
-  // If total duration is > 12 hours (720 minutes), only show multi-day option
-  const isMultiDayOnly = totalDuration > 720
+    const hours = Math.floor(totalMinutes / 60)
+    const minutes = totalMinutes % 60
+
+    let durationString = ""
+    if (hours > 0) {
+      durationString += `${hours} hour${hours > 1 ? "s" : ""} `
+    }
+    if (minutes > 0) {
+      durationString += `${minutes} minute${minutes > 1 ? "s" : ""}`
+    }
+
+    return {
+      serviceNames: selectedServices.map((s) => s.name).join(", "),
+      totalDurationString: durationString.trim() || "0 minutes",
+    }
+  }, [selectedServices])
 
   const handleContinue = () => {
-    if (selectedType) {
-      onBookingTypeSelect(selectedType)
+    if (selectedType === "one-time") {
+      onBookingTypeSelect("one-time")
+    } else if (selectedType === "recurring") {
+      const configWithOriginals = {
+        ...recurringConfig,
+        selectedDays: recurringConfig.daysOfWeek,
+        originalEndDate: recurringConfig.endDate,
+      }
+      onBookingTypeSelect("recurring", configWithOriginals)
     }
   }
 
-  // If multi-day only, automatically select and continue
-  if (isMultiDayOnly && selectedType !== "multi-day") {
-    setSelectedType("multi-day")
-    onBookingTypeSelect("multi-day")
-    return null
+  const isFormValid = () => {
+    if (selectedType === "one-time") return true
+    if (selectedType === "recurring") {
+      return recurringConfig.daysOfWeek.length > 0 && recurringConfig.endDate !== ""
+    }
+    return false
   }
 
-  const bookingOptions = isMultiDayOnly
-    ? [
-        {
-          id: "multi-day" as const,
-          title: "Multi-Day / Overnight Stay",
-          description: "Perfect for extended care, boarding, or overnight services",
-          icon: Moon,
-          recommended: true,
-        },
-      ]
-    : [
-        {
-          id: "one-time" as const,
-          title: "One-Time Service",
-          description: "Schedule a single appointment for your selected services",
-          icon: Calendar,
-          recommended: false,
-        },
-        {
-          id: "recurring" as const,
-          title: "Recurring Service",
-          description: "Set up regular appointments (weekly, bi-weekly, monthly)",
-          icon: Repeat,
-          recommended: false,
-        },
-      ]
+  const handleDayToggle = (day: string) => {
+    setRecurringConfig((prev) => ({
+      ...prev,
+      daysOfWeek: prev.daysOfWeek.includes(day)
+        ? prev.daysOfWeek.filter((d) => d !== day)
+        : [...prev.daysOfWeek, day].sort((a, b) => DAYS_OF_WEEK.indexOf(a) - DAYS_OF_WEEK.indexOf(b)),
+    }))
+  }
+
+  const getMinEndDate = () => {
+    const today = new Date()
+    const minDate = new Date(today)
+    minDate.setDate(today.getDate() + 7)
+    return minDate.toISOString().split("T")[0]
+  }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold text-[#E75837] header-font">
-          {isMultiDayOnly ? "Booking Type" : "Choose Your Booking Type"}
-        </CardTitle>
-        {isMultiDayOnly && (
-          <p className="text-gray-600 body-font">
-            Based on your selected services (total duration: {Math.round(totalDuration / 60)} hours), we recommend our
-            multi-day booking option.
-          </p>
-        )}
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid gap-4">
-          {bookingOptions.map((option) => {
-            const Icon = option.icon
-            return (
+    <div className="bg-white rounded-lg shadow-sm border p-6">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-[#E75837] mb-2 header-font">Booking Type</h2>
+        <p className="text-gray-600 body-font">
+          How would you like to schedule <span className="font-medium">{serviceNames}</span>?
+        </p>
+      </div>
+
+      <div className="space-y-4 mb-8">
+        <Card
+          className={`cursor-pointer transition-all ${
+            selectedType === "one-time" ? "ring-2 ring-[#E75837] bg-[#fff8f6]" : "hover:bg-gray-50"
+          }`}
+          onClick={() => setSelectedType("one-time")}
+        >
+          <CardContent className="p-6">
+            <div className="flex items-start space-x-4">
               <div
-                key={option.id}
-                className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                  selectedType === option.id ? "border-[#E75837] bg-orange-50" : "border-gray-200 hover:border-gray-300"
-                } ${option.recommended ? "ring-2 ring-[#E75837] ring-opacity-20" : ""}`}
-                onClick={() => setSelectedType(option.id)}
+                className={`p-3 rounded-full ${
+                  selectedType === "one-time" ? "bg-[#E75837] text-white" : "bg-gray-100 text-gray-600"
+                }`}
               >
-                {option.recommended && (
-                  <div className="absolute -top-2 left-4 bg-[#E75837] text-white text-xs px-2 py-1 rounded">
-                    Recommended
-                  </div>
-                )}
-                <div className="flex items-start gap-4">
-                  <div
-                    className={`p-2 rounded-lg ${
-                      selectedType === option.id ? "bg-[#E75837] text-white" : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg header-font">{option.title}</h3>
-                    <p className="text-gray-600 body-font">{option.description}</p>
-                  </div>
-                  <div
-                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                      selectedType === option.id ? "border-[#E75837] bg-[#E75837]" : "border-gray-300"
-                    }`}
-                  >
-                    {selectedType === option.id && <div className="w-2 h-2 bg-white rounded-full" />}
-                  </div>
+                <Calendar className="w-6 h-6" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold mb-2 header-font">One-time Service</h3>
+                <p className="text-gray-600 body-font">Schedule a single appointment for {serviceNames}.</p>
+                <div className="mt-3 flex items-center text-sm text-gray-500">
+                  <Clock className="w-4 h-4 mr-1" />
+                  Total Duration: {totalDurationString}
                 </div>
               </div>
-            )
-          })}
-        </div>
+              {selectedType === "one-time" && (
+                <div className="w-6 h-6 bg-[#E75837] rounded-full flex items-center justify-center">
+                  <div className="w-2 h-2 bg-white rounded-full"></div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="flex justify-between items-center pt-4 border-t">
-          <Button variant="outline" onClick={onBack}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
-          </Button>
-          <Button onClick={handleContinue} disabled={!selectedType} className="bg-[#E75837] hover:bg-[#d04e30]">
-            Continue
-            <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+        <Card
+          className={`cursor-pointer transition-all ${
+            selectedType === "recurring" ? "ring-2 ring-[#E75837] bg-[#fff8f6]" : "hover:bg-gray-50"
+          }`}
+          onClick={() => setSelectedType("recurring")}
+        >
+          <CardContent className="p-6">
+            <div className="flex items-start space-x-4">
+              <div
+                className={`p-3 rounded-full ${
+                  selectedType === "recurring" ? "bg-[#E75837] text-white" : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                <Repeat className="w-6 h-6" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold mb-2 header-font">Recurring Service</h3>
+                <p className="text-gray-600 body-font">Schedule regular weekly appointments for {serviceNames}.</p>
+                <div className="mt-3 flex items-center text-sm text-gray-500">
+                  <CalendarDays className="w-4 h-4 mr-1" />
+                  Perfect for ongoing pet care needs
+                </div>
+              </div>
+              {selectedType === "recurring" && (
+                <div className="w-6 h-6 bg-[#E75837] rounded-full flex items-center justify-center">
+                  <div className="w-2 h-2 bg-white rounded-full"></div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {selectedType === "recurring" && (
+        <Card className="mb-8 border-[#E75837]/20">
+          <CardHeader>
+            <CardTitle className="text-lg text-[#E75837] header-font">Recurring Schedule Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3 header-font">
+                  Select days of the week*
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {DAYS_OF_WEEK.map((day) => (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => handleDayToggle(day)}
+                      className={`p-3 text-sm rounded-lg border transition-all body-font ${
+                        recurringConfig.daysOfWeek.includes(day)
+                          ? "bg-[#E75837] text-white border-[#E75837]"
+                          : "bg-white text-gray-700 border-gray-300 hover:border-[#E75837] hover:bg-[#fff8f6]"
+                      }`}
+                    >
+                      {day.slice(0, 3)}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-2 body-font">
+                  Select one or more days for your weekly recurring appointments
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-2 header-font">
+                  End date*
+                </label>
+                <input
+                  type="date"
+                  id="endDate"
+                  min={getMinEndDate()}
+                  value={recurringConfig.endDate}
+                  onChange={(e) =>
+                    setRecurringConfig((prev) => ({
+                      ...prev,
+                      endDate: e.target.value,
+                    }))
+                  }
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
+                />
+                <p className="text-xs text-gray-500 mt-1 body-font">Last possible appointment date</p>
+              </div>
+            </div>
+
+            {recurringConfig.daysOfWeek.length > 0 && recurringConfig.endDate && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-2 header-font">Schedule Preview</h4>
+                <p className="text-sm text-gray-600 body-font">
+                  Appointments will repeat every{" "}
+                  <span className="font-medium">
+                    {recurringConfig.daysOfWeek.length === 1
+                      ? recurringConfig.daysOfWeek[0]
+                      : recurringConfig.daysOfWeek.length === 2
+                        ? `${recurringConfig.daysOfWeek[0]} and ${recurringConfig.daysOfWeek[1]}`
+                        : `${recurringConfig.daysOfWeek.slice(0, -1).join(", ")}, and ${recurringConfig.daysOfWeek.slice(
+                            -1,
+                          )}`}
+                  </span>{" "}
+                  until{" "}
+                  <span className="font-medium">
+                    {new Date(recurringConfig.endDate).toLocaleDateString("en-US", {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </span>
+                </p>
+                <p className="text-xs text-gray-500 mt-1 body-font">
+                  We'll show you time slots that work for your entire recurring schedule
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="flex justify-between">
+        <Button variant="outline" onClick={onBack} className="flex items-center body-font bg-transparent">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Services
+        </Button>
+
+        <Button
+          onClick={handleContinue}
+          disabled={!isFormValid()}
+          className={`flex items-center body-font ${
+            isFormValid()
+              ? "bg-[#E75837] hover:bg-[#d04e30] text-white"
+              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+          }`}
+        >
+          Continue to Calendar
+          <ArrowRight className="w-4 h-4 ml-2" />
+        </Button>
+      </div>
+    </div>
   )
 }
