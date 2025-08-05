@@ -2,10 +2,22 @@
 
 import { useEffect, useState, useRef, useMemo } from "react"
 import { useParams } from "next/navigation"
+import { Loader2, Clock, Calendar } from "lucide-react"
 import type { Service, SelectedTimeSlot, CustomerInfo, Pet, PetResponse, ParsedWebhookData } from "@/types/schedule"
+import { ServiceSelectorBar } from "@/components/schedule/service-selector-bar"
+import { WeeklyCalendar } from "@/components/schedule/weekly-calendar"
+import { CustomerForm } from "@/components/schedule/customer-form"
+import { PetSelection } from "@/components/schedule/pet-selection"
+import { BookingConfirmation } from "@/components/schedule/booking-confirmation"
 import { loadProfessionalConfig, saveProfessionalConfig } from "@/utils/professional-config"
 import type { ProfessionalConfig } from "@/types/professional-config"
-import type { BookingType, RecurringConfig } from "@/components/schedule/booking-type-selection"
+import {
+  BookingTypeSelection,
+  type BookingType,
+  type RecurringConfig,
+} from "@/components/schedule/booking-type-selection"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 
 type NotificationPreference = "1_hour" | "1_day" | "1_week"
 
@@ -567,7 +579,7 @@ export default function SchedulePage() {
     setCreatingBooking(true)
 
     try {
-      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
+      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16"
       const userTimezoneData = JSON.parse(userTimezoneRef.current!)
 
       const startDateTimeUTC = convertLocalTimeToUTC(
@@ -620,7 +632,9 @@ export default function SchedulePage() {
           total_appointments: recurringConfig.totalAppointments || recurringDates.length,
 
           // Enhanced details
-          pattern_description: `Every ${recurringConfig.frequency || 1} ${recurringConfig.unit || "week"}${(recurringConfig.frequency || 1) > 1 ? "s" : ""}`,
+          pattern_description: `Every ${recurringConfig.frequency || 1} ${recurringConfig.unit || "week"}${
+            (recurringConfig.frequency || 1) > 1 ? "s" : ""
+          }`,
           start_date: selectedTimeSlot!.date,
           start_time: selectedTimeSlot!.startTime,
           end_time: endTimeLocal,
@@ -653,53 +667,561 @@ export default function SchedulePage() {
               (recurringConfig.frequency || 1) === 1
                 ? `${recurringConfig.unit || "week"}ly`
                 : `every_${recurringConfig.frequency || 1}_${recurringConfig.unit || "week"}s`,
-            human_readable: `Every ${recurringConfig.frequency || 1} ${recurringConfig.unit || "week"}${(recurringConfig.frequency || 1) > 1 ? "s" : ""}`,
+            human_readable: `Every ${recurringConfig.frequency || 1} ${recurringConfig.unit || "week"}${
+              (recurringConfig.frequency || 1) > 1 ? "s" : ""
+            }`,
           },
         }
+
+        console.log("Enhanced recurring details with proper config:", enhancedRecurringDetails)
       }
 
-      // Send booking data to webhook
+      const bookingData = {
+        action: "create_booking",
+        uniqueUrl: uniqueUrl,
+        professional_id: professionalId,
+        session_id: sessionIdRef.current,
+        timestamp: new Date().toISOString(),
+        user_timezone: userTimezoneData,
+
+        // Add booking_system from professional's preferences
+        booking_system: bookingPreferences?.booking_system || "direct_booking",
+
+        // Keep booking_type for the system's booking behavior (direct vs request)
+        booking_type: determineBookingType(),
+
+        // Add user's booking choice (one-time vs recurring)
+        user_booking_type: bookingType, // "one-time" or "recurring"
+
+        // Enhanced recurring details
+        ...(bookingType === "recurring" &&
+          enhancedRecurringDetails && {
+            recurring_details: enhancedRecurringDetails,
+            is_recurring_booking: true,
+          }),
+
+        booking_details: {
+          service_names: selectedServices.map((service) => service.name),
+          service_descriptions: selectedServices.map((service) => service.description),
+          service_durations: selectedServices.map((service) => service.duration_number),
+          service_duration_units: selectedServices.map((service) => service.duration_unit),
+          service_costs: selectedServices.map((service) => service.customer_cost),
+          service_currencies: selectedServices.map((service) => service.customer_cost_currency),
+
+          total_duration_minutes: totalDurationMinutes,
+          total_cost: totalCost,
+
+          start_utc: startDateTimeUTC,
+          end_utc: endDateTimeUTC,
+
+          date_local: selectedTimeSlot!.date,
+          start_time_local: selectedTimeSlot!.startTime,
+          end_time_local: endTimeLocal,
+          day_of_week: selectedTimeSlot!.dayOfWeek,
+
+          timezone: userTimezoneData.timezone,
+          timezone_offset: userTimezoneData.offset,
+        },
+        customer_info: {
+          first_name: customerInfo.firstName.trim(),
+          last_name: customerInfo.lastName.trim(),
+          email: customerInfo.email.trim().toLowerCase(),
+        },
+        pet_info: {
+          pet_id: pet.pet_id,
+          pet_name: pet.pet_name,
+          pet_type: pet.pet_type,
+          breed: pet.breed,
+          age: pet.age,
+          weight: pet.weight,
+          special_notes: pet.special_notes,
+        },
+        // Only include notification preferences for direct bookings
+        ...(isDirectBooking && {
+          notification_preferences: {
+            selected_notifications: notifications,
+            notification_details: notifications
+              .map((n) => {
+                switch (n) {
+                  case "1_hour":
+                    return { type: "1_hour", label: "1 hour before", enabled: true }
+                  case "1_day":
+                    return { type: "1_day", label: "1 day before", enabled: true }
+                  case "1_week":
+                    return { type: "1_week", label: "1 week before", enabled: true }
+                  default:
+                    return null
+                }
+              })
+              .filter(Boolean),
+          },
+        }),
+      }
+
+      console.log("Sending enhanced booking data with detailed recurring information:", bookingData)
+
       const response = await fetch(webhookUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          action: "create_booking",
-          uniqueUrl: uniqueUrl,
-          session_id: sessionIdRef.current,
-          timestamp: new Date().toISOString(),
-          user_timezone: userTimezoneData,
-          selected_services: selectedServices,
-          selected_time_slot: selectedTimeSlot,
-          customer_info: customerInfo,
-          selected_pet: selectedPet,
-          selected_notifications: selectedNotifications,
-          booking_type: bookingType,
-          recurring_details: enhancedRecurringDetails,
-        }),
+        body: JSON.stringify(bookingData),
       })
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      const bookingResponse = await response.json()
-      console.log("Booking response:", bookingResponse)
+      const result = await response.json()
+      console.log("Booking created:", result)
 
-      // Handle booking response
-      if (bookingResponse.success) {
-        console.log("Booking created successfully")
+      if (result && result[0] && result[0].output === "Booking Successfully Created") {
+        // Send confirmation email webhook with enhanced recurring details
+        try {
+          const confirmationWebhookData = {
+            action: "send_confirmation_emails",
+            uniqueUrl: uniqueUrl,
+            professional_id: professionalId,
+            session_id: sessionIdRef.current,
+            timestamp: new Date().toISOString(),
+            customer_info: {
+              first_name: customerInfo.firstName.trim(),
+              last_name: customerInfo.lastName.trim(),
+              email: customerInfo.email.trim().toLowerCase(),
+            },
+            services_selected: selectedServices.map((service) => ({
+              name: service.name,
+              description: service.description,
+              duration_number: service.duration_number,
+              duration_unit: service.duration_unit,
+              customer_cost: service.customer_cost,
+              customer_cost_currency: service.customer_cost_currency,
+            })),
+            booking_details: {
+              date: selectedTimeSlot!.date,
+              start_time: selectedTimeSlot!.startTime,
+              end_time: endTimeLocal,
+              day_of_week: selectedTimeSlot!.dayOfWeek,
+              timezone: userTimezoneData.timezone,
+              timezone_offset: userTimezoneData.offset,
+            },
+            pet_info: {
+              pet_id: pet.pet_id,
+              pet_name: pet.pet_name,
+              pet_type: pet.pet_type,
+              breed: pet.breed,
+              age: pet.age,
+              weight: pet.weight,
+              special_notes: pet.special_notes,
+            },
+            is_recurring: bookingType === "recurring",
+            // Include enhanced recurring details in confirmation email
+            ...(bookingType === "recurring" &&
+              enhancedRecurringDetails && {
+                recurring_details: enhancedRecurringDetails,
+              }),
+          }
+
+          console.log("Sending confirmation email webhook with enhanced recurring details:", confirmationWebhookData)
+
+          const confirmationResponse = await fetch(webhookUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(confirmationWebhookData),
+          })
+
+          if (confirmationResponse.ok) {
+            console.log("Confirmation email webhook sent successfully")
+          } else {
+            console.warn("Confirmation email webhook failed, but continuing with booking confirmation")
+          }
+        } catch (confirmationError) {
+          console.warn("Error sending confirmation email webhook:", confirmationError)
+          // Continue with showing confirmation even if email webhook fails
+        }
+
+        setShowPetSelection(false)
+        setCreatingBooking(false)
         setShowConfirmation(true)
       } else {
-        console.error("Booking creation failed:", bookingResponse.error)
-        alert("Booking creation failed. Please try again.")
+        throw new Error("Booking creation failed")
       }
     } catch (err) {
       console.error("Error creating booking:", err)
-      alert("An error occurred while creating your booking. Please try again.")
-    } finally {
       setCreatingBooking(false)
+      setError("Failed to create booking. Please try again.")
     }
   }
+
+  const handleBackToCustomerForm = () => {
+    setShowPetSelection(false)
+    setShowCustomerForm(true)
+  }
+
+  const handleBackToSchedule = () => {
+    setShowCustomerForm(false)
+    setSelectedTimeSlot(null)
+  }
+
+  const handleNewBooking = async () => {
+    setSelectedServices([])
+    setSelectedTimeSlot(null)
+    setShowCustomerForm(false)
+    setShowPetSelection(false)
+    setShowConfirmation(false)
+    setCreatingBooking(false)
+    setCustomerInfo({ firstName: "", lastName: "", email: "" })
+    setPets([])
+    setSelectedPet(null)
+    setSelectedNotifications([])
+    setShowBookingTypeSelection(false)
+    setBookingType(null)
+    setRecurringConfig(null)
+
+    console.log("Starting new booking - refreshing schedule data...")
+    await initializeSchedule()
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 bg-[#E75837] rounded-xl flex items-center justify-center mx-auto">
+            <Loader2 className="w-6 h-6 animate-spin text-white" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 header-font">
+              {showConfirmation ? "Refreshing schedule..." : "Loading booking system..."}
+            </h2>
+            <p className="text-gray-600 body-font mt-1">Please wait a moment</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="text-center max-w-md mx-auto">
+          <div className="bg-white rounded-2xl shadow-lg border p-8 space-y-4">
+            <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mx-auto">
+              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 header-font">Unable to Load Schedule</h2>
+              <p className="text-gray-600 body-font mt-2">{error}</p>
+            </div>
+            <Button
+              onClick={() => initializeSchedule()}
+              className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-6 py-2 rounded-lg font-medium transition-colors"
+            >
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!webhookData) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center mx-auto">
+            <Calendar className="w-6 h-6 text-gray-500" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-700 header-font">No Schedule Available</h2>
+            <p className="text-gray-500 body-font">Unable to find scheduling data</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (creatingBooking) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-2xl mx-auto p-6 pt-16">
+          <div className="bg-white rounded-2xl shadow-lg border p-8 text-center space-y-6">
+            <div className="w-16 h-16 bg-[#E75837] rounded-2xl flex items-center justify-center mx-auto">
+              <Loader2 className="w-8 h-8 animate-spin text-white" />
+            </div>
+
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 header-font mb-2">
+                {isDirectBooking ? "Confirming Your Booking" : "Submitting Your Request"}
+              </h1>
+              <p className="text-gray-600 body-font">
+                Please wait while we {isDirectBooking ? "confirm your appointment" : "submit your booking request"} with{" "}
+                {webhookData.professional_info.professional_name}
+              </p>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-6 space-y-3 text-left">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Services:</span>
+                <span className="font-medium">{selectedServices.map((s) => s.name).join(", ")}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Date:</span>
+                <span className="font-medium">
+                  {(() => {
+                    if (!selectedTimeSlot?.date) return ""
+                    // Fix: Create date in local timezone to prevent day-off errors
+                    const [year, month, day] = selectedTimeSlot.date.split("-").map(Number)
+                    const localDate = new Date(year, month - 1, day)
+                    return localDate.toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })
+                  })()}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Time:</span>
+                <span className="font-medium">{selectedTimeSlot?.startTime}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Pet:</span>
+                <span className="font-medium">
+                  {selectedPet?.pet_name} ({selectedPet?.pet_type})
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Customer:</span>
+                <span className="font-medium">
+                  {customerInfo.firstName} {customerInfo.lastName}
+                </span>
+              </div>
+              {bookingType === "recurring" && recurringConfig && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Recurring:</span>
+                  <span className="font-medium text-blue-600">
+                    Every {recurringConfig.daysOfWeek?.join(", ")} until{" "}
+                    {new Date(recurringConfig.endDate).toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </span>
+                </div>
+              )}
+              {isDirectBooking && selectedNotifications.length > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Notifications:</span>
+                  <span className="font-medium">{selectedNotifications.length} selected</span>
+                </div>
+              )}
+              {!isDirectBooking && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Type:</span>
+                  <span className="font-medium text-blue-600">Booking Request</span>
+                </div>
+              )}
+            </div>
+
+            <p className="text-sm text-gray-500">This should only take a few seconds...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-6xl mx-auto p-6 space-y-6">
+        {/* Clean Header */}
+        <div className="bg-white rounded-2xl shadow-lg border p-8">
+          <div className="max-w-4xl">
+            <h1 className="text-3xl font-bold text-[#E75837] mb-3 header-font">
+              Book with {webhookData.professional_info.professional_name}
+            </h1>
+            <p className="text-lg text-gray-600 body-font mb-4">
+              Select your service and preferred time to {isDirectBooking ? "book instantly" : "request an appointment"}
+            </p>
+
+            {/* Simple timezone indicator */}
+            {userTimezoneRef.current && (
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-lg text-sm text-gray-600 body-font">
+                <Clock className="w-4 h-4" />
+                <span>{JSON.parse(userTimezoneRef.current).timezone}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {showBookingDisabled ? (
+          <div className="max-w-md mx-auto">
+            <Card className="shadow-lg border-0 rounded-2xl">
+              <CardHeader className="text-center pb-4">
+                <CardTitle className="text-xl header-font">Online Booking Unavailable</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center space-y-4">
+                <p className="text-gray-600 body-font">
+                  {webhookData?.professional_info.professional_name} hasn't enabled online booking. Please contact them
+                  directly through the Critter app.
+                </p>
+                <Button
+                  onClick={() => window.open("https://critter.app", "_blank")}
+                  className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                >
+                  Open Critter App
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        ) : showConfirmation ? (
+          <BookingConfirmation
+            selectedTimeSlot={selectedTimeSlot!}
+            customerInfo={customerInfo}
+            selectedPet={selectedPet!}
+            professionalName={webhookData.professional_info.professional_name}
+            onNewBooking={handleNewBooking}
+            bookingType={bookingType}
+            recurringConfig={recurringConfig}
+            selectedServices={selectedServices}
+            isDirectBooking={isDirectBooking}
+          />
+        ) : showPetSelection ? (
+          <PetSelection
+            pets={pets}
+            customerInfo={customerInfo}
+            selectedServices={selectedServices}
+            selectedTimeSlot={selectedTimeSlot!}
+            professionalName={webhookData.professional_info.professional_name}
+            isDirectBooking={isDirectBooking}
+            onPetSelect={handlePetSelect}
+            onBack={handleBackToCustomerForm}
+            bookingType={bookingType}
+            recurringConfig={recurringConfig}
+            showPrices={showPrices}
+          />
+        ) : showCustomerForm && selectedServices.length > 0 && selectedTimeSlot ? (
+          <CustomerForm
+            selectedServices={selectedServices}
+            selectedTimeSlot={selectedTimeSlot}
+            professionalId={professionalId || uniqueUrl}
+            professionalName={webhookData.professional_info.professional_name}
+            sessionId={sessionIdRef.current!}
+            onPetsReceived={handlePetsReceived}
+            onBack={handleBackToSchedule}
+            bookingType={bookingType}
+            recurringConfig={recurringConfig}
+            showPrices={showPrices}
+          />
+        ) : showBookingTypeSelection && selectedServices.length > 0 ? (
+          <BookingTypeSelection
+            selectedService={selectedServices[0]}
+            onBookingTypeSelect={handleBookingTypeSelect}
+            onBack={handleBackToServices}
+          />
+        ) : (
+          // Main booking interface
+          <div className="space-y-6">
+            {/* Service Selection */}
+            {!bookingType && (
+              <div className="bg-white rounded-2xl shadow-lg border p-6">
+                <ServiceSelectorBar
+                  servicesByCategory={webhookData.services.services_by_category}
+                  selectedServices={selectedServices}
+                  onServiceSelect={handleServiceSelect}
+                  onContinue={selectedServices.length > 0 ? () => setShowBookingTypeSelection(true) : undefined}
+                  summaryOnly={false}
+                  showPrices={showPrices}
+                />
+              </div>
+            )}
+
+            {/* Calendar view */}
+            {selectedServices.length > 0 && bookingType && (
+              <div className="space-y-6">
+                {/* Selected Services Summary */}
+                <div className="bg-white rounded-2xl shadow-lg border p-6">
+                  <ServiceSelectorBar
+                    servicesByCategory={webhookData.services.services_by_category}
+                    selectedServices={selectedServices}
+                    onServiceSelect={handleServiceSelect}
+                    summaryOnly={true}
+                    showPrices={showPrices}
+                  />
+                </div>
+
+                {/* Calendar */}
+                <div className="bg-white rounded-2xl shadow-lg border p-6">
+                  <WeeklyCalendar
+                    workingDays={webhookData.schedule.working_days}
+                    bookingData={webhookData.bookings.all_booking_data}
+                    selectedServices={selectedServices}
+                    onTimeSlotSelect={handleTimeSlotSelect}
+                    selectedTimeSlot={selectedTimeSlot}
+                    professionalId={professionalId || uniqueUrl}
+                    professionalConfig={memoizedProfessionalConfig}
+                    bookingType={bookingType}
+                    recurringConfig={recurringConfig}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Clean Booking Disabled Modal */}
+        {showBookingDisabledModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+              <div className="text-center space-y-4">
+                <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mx-auto">
+                  <svg className="w-6 h-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 header-font">Online Booking Unavailable</h3>
+                  <p className="text-gray-600 body-font mt-2">
+                    {webhookData?.professional_info.professional_name} hasn't enabled online booking. Please contact
+                    them directly through the Critter app.
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => setShowBookingDisabledModal(false)}
+                    variant="outline"
+                    className="flex-1 rounded-lg"
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      window.open("https://critter.app", "_blank")
+                      setShowBookingDisabledModal(false)
+                    }}
+                    className="flex-1 bg-[#E75837] hover:bg-[#d14a2a] text-white rounded-lg font-medium transition-colors"
+                  >
+                    Open Critter App
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
 }
