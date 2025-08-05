@@ -375,8 +375,59 @@ export default function SchedulePage() {
       }
     })
 
-    // Find all service entries
-    const serviceEntries = rawData.filter((entry) => entry.name && entry.duration_unit && entry.service_id)
+    // Find all service entries - make service_id optional with fallback
+    const serviceEntries = rawData.filter((entry) => entry.name && entry.duration_unit)
+
+    // Find webhook response with config
+    const configEntry = rawData.find((entry) => entry.webhook_response?.success)
+
+    // Parse working days from schedule entry
+    const workingDays = scheduleEntry
+      ? [
+          {
+            day: "Monday",
+            start: scheduleEntry.monday_start,
+            end: scheduleEntry.monday_end,
+            isWorking: !!scheduleEntry.monday_working,
+          },
+          {
+            day: "Tuesday",
+            start: scheduleEntry.tuesday_start,
+            end: scheduleEntry.tuesday_end,
+            isWorking: !!scheduleEntry.tuesday_working,
+          },
+          {
+            day: "Wednesday",
+            start: scheduleEntry.wednesday_start,
+            end: scheduleEntry.wednesday_end,
+            isWorking: !!scheduleEntry.wednesday_working,
+          },
+          {
+            day: "Thursday",
+            start: scheduleEntry.thursday_start,
+            end: scheduleEntry.thursday_end,
+            isWorking: !!scheduleEntry.thursday_working,
+          },
+          {
+            day: "Friday",
+            start: scheduleEntry.friday_start,
+            end: scheduleEntry.friday_end,
+            isWorking: !!scheduleEntry.friday_working,
+          },
+          {
+            day: "Saturday",
+            start: scheduleEntry.saturday_start,
+            end: scheduleEntry.saturday_end,
+            isWorking: !!scheduleEntry.saturday_working,
+          },
+          {
+            day: "Sunday",
+            start: scheduleEntry.sunday_start,
+            end: scheduleEntry.sunday_end,
+            isWorking: !!scheduleEntry.sunday_working,
+          },
+        ]
+      : []
 
     // Parse services and group by category
     const servicesByCategory: { [category: string]: Service[] } = {}
@@ -386,7 +437,7 @@ export default function SchedulePage() {
         servicesByCategory[category] = []
       }
       servicesByCategory[category].push({
-        service_id: service.service_id,
+        service_id: service.service_id || `fallback_${service.name.replace(/\s+/g, "_").toLowerCase()}`,
         name: service.name,
         description: service.description || "",
         duration_unit: service.duration_unit,
@@ -405,15 +456,12 @@ export default function SchedulePage() {
     )
 
     // If bookingPrefs is undefined, try to find it in the webhook_response
-    const configEntry = rawData.find((entry) => entry.webhook_response)
     if (!bookingPrefs && configEntry?.webhook_response?.config_data) {
       bookingPrefs = configEntry.webhook_response.config_data
     }
 
     const priceSettingEntry = rawData.find((entry) => entry.hasOwnProperty("show_prices"))
     const showPrices = priceSettingEntry ? priceSettingEntry.show_prices : true
-
-    const workingDays = scheduleEntry ? scheduleEntry.working_days : []
 
     return {
       professional_info: {
@@ -693,7 +741,9 @@ export default function SchedulePage() {
           }),
 
         booking_details: {
-          service_ids: selectedServices.map((service) => service.service_id),
+          service_ids: selectedServices.map(
+            (service) => service.service_id || `fallback_${service.name.replace(/\s+/g, "_").toLowerCase()}`,
+          ),
           service_names: selectedServices.map((service) => service.name),
           service_descriptions: selectedServices.map((service) => service.description),
           service_durations: selectedServices.map((service) => service.duration_number),
@@ -783,7 +833,7 @@ export default function SchedulePage() {
               email: customerInfo.email.trim().toLowerCase(),
             },
             services_selected: selectedServices.map((service) => ({
-              service_id: service.service_id,
+              service_id: service.service_id || `fallback_${service.name.replace(/\s+/g, "_").toLowerCase()}`,
               name: service.name,
               description: service.description,
               duration_number: service.duration_number,
