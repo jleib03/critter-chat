@@ -221,6 +221,25 @@ export default function SchedulePage() {
     return dates
   }
 
+  // Helper function to parse working days from the main schedule entry
+  const parseWorkingDaysFromSchedule = (schedule: any): any[] => {
+    if (!schedule) return []
+    const days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+    return days.map((day) => {
+      const capitalizedDay = day.charAt(0).toUpperCase() + day.slice(1)
+      const isWorking = !!schedule[`${day}_working`]
+      const startTime = schedule[`${day}_start`]
+      const endTime = schedule[`${day}_end`]
+
+      return {
+        day: capitalizedDay,
+        start: startTime ? startTime.substring(0, 5) : "09:00",
+        end: endTime ? endTime.substring(0, 5) : "17:00",
+        isWorking: isWorking,
+      }
+    })
+  }
+
   // Update the initializeSchedule function to parse the new webhook format
   const initializeSchedule = async () => {
     try {
@@ -414,7 +433,7 @@ export default function SchedulePage() {
     const priceSettingEntry = rawData.find((entry) => entry.hasOwnProperty("show_prices"))
     const showPrices = priceSettingEntry ? priceSettingEntry.show_prices : true
 
-    const workingDays = scheduleEntry ? scheduleEntry.working_days : []
+    const workingDays = parseWorkingDaysFromSchedule(scheduleEntry)
 
     return {
       professional_info: {
