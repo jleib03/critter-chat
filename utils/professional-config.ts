@@ -255,7 +255,7 @@ export const saveProfessionalConfig = (config: ProfessionalConfig): boolean => {
   }
 }
 
-// Updated function for multi-day availability with explicit "all-or-nothing" logic.
+// Corrected function for multi-day availability
 export const calculateMultiDayAvailability = (
   config: ProfessionalConfig | null,
   existingBookings: BookingData[],
@@ -274,50 +274,59 @@ export const calculateMultiDayAvailability = (
     return { available: false, reason: "No active employees available for this period." }
   }
 
-  // This loop checks every day of the stay. If any day fails, it returns immediately.
   for (let d = new Date(startDate); d < endDate; d.setDate(d.getDate() + 1)) {
     const currentDateStr = d.toISOString().split("T")[0]
     const dayName = d.toLocaleDateString("en-US", { weekday: "long" })
 
-    // 1. Check for working employees on this specific day.
+    // 1. Find employees scheduled to work on this day.
     const employeesWorkingToday = activeEmployees.filter((emp) => {
       const workingDay = emp.workingDays.find((wd) => wd.day === dayName)
       return workingDay?.isWorking
     })
 
-    // If no one is working, the entire stay is unavailable.
     if (employeesWorkingToday.length === 0) {
       return { available: false, reason: `No employees are working on ${currentDateStr}.` }
     }
 
-    // 2. Check for global (non-employee-specific) full-day blocks.
-    const isDayBlocked = blockedTimes.some(
-      (block) => !block.employeeId && block.date === currentDateStr && block.isAllDay,
-    )
-    // If the day is blocked, the entire stay is unavailable.
-    if (isDayBlocked) {
+    // 2. Filter out employees who have a specific all-day block.
+    const employeesAvailableAfterBlocks = employeesWorkingToday.filter((emp) => {
+      const isEmployeeBlocked = blockedTimes.some((block) => {
+        // Infer all-day if not explicitly set but timespan covers the whole day.
+        const isAllDayBlock = block.isAllDay || (block.startTime === "00:00:00" && block.endTime === "23:59:00")
+        return block.employeeId === emp.id && block.date === currentDateStr && isAllDayBlock
+      })
+      return !isEmployeeBlocked
+    })
+
+    // If all working employees are blocked, the day is unavailable.
+    if (employeesAvailableAfterBlocks.length === 0 && employeesWorkingToday.length > 0) {
+      return { available: false, reason: `All available staff are blocked on ${currentDateStr}.` }
+    }
+
+    // 3. Check for a global (non-employee-specific) all-day block.
+    const isDayBlockedGlobally = blockedTimes.some((block) => {
+      const isAllDayBlock = block.isAllDay || (block.startTime === "00:00:00" && block.endTime === "23:59:00")
+      return !block.employeeId && block.date === currentDateStr && isAllDayBlock
+    })
+
+    if (isDayBlockedGlobally) {
       return { available: false, reason: `The date ${currentDateStr} is blocked for all staff.` }
     }
 
-    // 3. Determine the total capacity for multi-day stays for this specific day.
-    const dayCapacity = Math.min(employeesWorkingToday.length, capacityRules.maxConcurrentBookings)
+    // 4. Determine capacity based on employees who are actually available.
+    const dayCapacity = Math.min(employeesAvailableAfterBlocks.length, capacityRules.maxConcurrentBookings)
 
-    // 4. Count existing multi-day bookings that overlap with the current day.
+    // 5. Count concurrent multi-day bookings that overlap with the current day.
     const concurrentBookingsOnDay = existingBookings.filter((booking) => {
-      // Use the 'all_day' flag for reliability.
       if (!booking.all_day || !booking.start || !booking.end) return false
-
       const bookingStart = new Date(booking.start)
       const bookingEnd = new Date(booking.end)
-
-      // A booking overlaps with day `d` if it starts on or before `d` and ends after `d`.
       return bookingStart.getTime() <= d.getTime() && bookingEnd.getTime() > d.getTime()
     })
 
-    // 5. Check if capacity is exceeded for this day.
+    // 6. Check if capacity is exceeded.
     const availableCapacity = dayCapacity - concurrentBookingsOnDay.length
 
-    // If capacity is full on this day, the entire stay is unavailable.
     if (availableCapacity <= 0) {
       return {
         available: false,
@@ -326,6 +335,5 @@ export const calculateMultiDayAvailability = (
     }
   }
 
-  // If the loop completes without returning, it means every day is available.
   return { available: true, reason: "The selected dates are available for booking." }
 }

@@ -321,6 +321,7 @@ export default function SchedulePage() {
                 employeeId: bt.employee_id || undefined,
                 isRecurring: bt.is_recurring || false,
                 recurrencePattern: bt.recurrence_pattern || undefined,
+                isAllDay: bt.is_all_day || (bt.start_time === "00:00:00" && bt.end_time === "23:59:00"), // Add this line
               }))
             : [],
           lastUpdated: new Date().toISOString(),
