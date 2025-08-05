@@ -22,7 +22,7 @@ type WeeklyCalendarProps = {
 }
 
 export function WeeklyCalendar({
-  workingDays,
+  workingDays = [],
   bookingData,
   selectedServices,
   onTimeSlotSelect,
