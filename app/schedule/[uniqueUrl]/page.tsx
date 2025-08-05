@@ -971,6 +971,18 @@ export default function SchedulePage() {
     )
   }
 
+  const formatMultiDayRange = (start: Date, end: Date) => {
+    const options: Intl.DateTimeFormatOptions = {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }
+    return `${start.toLocaleString("en-US", options)} - ${end.toLocaleString("en-US", options)}`
+  }
+
   if (creatingBooking) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -995,26 +1007,29 @@ export default function SchedulePage() {
                 <span className="text-gray-600">Services:</span>
                 <span className="font-medium">{selectedServices.map((s) => s.name).join(", ")}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Date:</span>
-                <span className="font-medium">
-                  {(() => {
-                    if (!selectedTimeSlot?.date) return ""
-                    // Fix: Create date in local timezone to prevent day-off errors
-                    const [year, month, day] = selectedTimeSlot.date.split("-").map(Number)
-                    const localDate = new Date(year, month - 1, day)
-                    return localDate.toLocaleDateString("en-US", {
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    })
-                  })()}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Time:</span>
-                <span className="font-medium">{selectedTimeSlot?.startTime}</span>
-              </div>
+
+              {bookingType === "multi-day" && multiDayTimeSlot ? (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Stay:</span>
+                  <span className="font-medium text-right">
+                    {formatMultiDayRange(multiDayTimeSlot.start, multiDayTimeSlot.end)}
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Date:</span>
+                    <span className="font-medium">
+                      {selectedTimeSlot?.dayOfWeek}, {selectedTimeSlot?.date}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Time:</span>
+                    <span className="font-medium">{selectedTimeSlot?.startTime}</span>
+                  </div>
+                </>
+              )}
+
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Pet:</span>
                 <span className="font-medium">
@@ -1115,6 +1130,8 @@ export default function SchedulePage() {
             recurringConfig={recurringConfig}
             selectedServices={selectedServices}
             isDirectBooking={isDirectBooking}
+            multiDayTimeSlot={multiDayTimeSlot}
+            showPrices={showPrices}
           />
         ) : showPetSelection ? (
           <PetSelection
@@ -1129,6 +1146,7 @@ export default function SchedulePage() {
             bookingType={bookingType}
             recurringConfig={recurringConfig}
             showPrices={showPrices}
+            multiDayTimeSlot={multiDayTimeSlot}
           />
         ) : showCustomerForm && selectedServices.length > 0 && selectedTimeSlot ? (
           <CustomerForm
@@ -1142,6 +1160,7 @@ export default function SchedulePage() {
             bookingType={bookingType}
             recurringConfig={recurringConfig}
             showPrices={showPrices}
+            multiDayTimeSlot={multiDayTimeSlot}
           />
         ) : showMultiDayForm && selectedServices.length > 0 ? (
           <MultiDayBookingForm

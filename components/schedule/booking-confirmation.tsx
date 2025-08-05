@@ -1,7 +1,9 @@
+"use client"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { Service, SelectedTimeSlot, CustomerInfo, Pet } from "@/types/schedule"
-import type { RecurringConfig } from "./booking-type-selection"
+import type { RecurringConfig, BookingType } from "./booking-type-selection"
 
 type BookingConfirmationProps = {
   selectedServices: Service[]
@@ -10,9 +12,40 @@ type BookingConfirmationProps = {
   selectedPet: Pet
   professionalName: string
   onNewBooking: () => void
-  bookingType?: "one-time" | "recurring"
+  bookingType?: BookingType
   recurringConfig?: RecurringConfig | null
   isDirectBooking: boolean
+  multiDayTimeSlot?: { start: Date; end: Date } | null
+  showPrices: boolean
+}
+
+const formatMultiDayRange = (start: Date, end: Date) => {
+  const options: Intl.DateTimeFormatOptions = {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }
+  return `${start.toLocaleString("en-US", options)} - ${end.toLocaleString("en-US", options)}`
+}
+
+const calculateMultiDayCost = (start: Date, end: Date, service: Service): number => {
+  if (!service) return 0
+  const durationMs = end.getTime() - start.getTime()
+  const rate = Number(service.customer_cost)
+
+  const unit = service.duration_unit.toLowerCase()
+  if (unit.startsWith("day")) {
+    const durationInDays = Math.ceil(durationMs / (1000 * 60 * 60 * 24))
+    return durationInDays * rate
+  } else if (unit.startsWith("hour")) {
+    const durationInHours = Math.ceil(durationMs / (1000 * 60 * 60))
+    return durationInHours * rate
+  }
+
+  return rate
 }
 
 export function BookingConfirmation({
@@ -25,6 +58,8 @@ export function BookingConfirmation({
   bookingType,
   recurringConfig,
   isDirectBooking,
+  multiDayTimeSlot,
+  showPrices,
 }: BookingConfirmationProps) {
   return (
     <Card className="shadow-lg border-0 rounded-2xl">
@@ -47,16 +82,42 @@ export function BookingConfirmation({
             <span className="text-gray-600">Services:</span>
             <span className="font-medium">{selectedServices.map((s) => s.name).join(", ")}</span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Date:</span>
-            <span className="font-medium">
-              {selectedTimeSlot.dayOfWeek}, {selectedTimeSlot.date}
-            </span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Time:</span>
-            <span className="font-medium">{selectedTimeSlot.startTime}</span>
-          </div>
+
+          {bookingType === "multi-day" && multiDayTimeSlot ? (
+            <>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Stay Duration:</span>
+                <span className="font-medium text-right">
+                  {formatMultiDayRange(multiDayTimeSlot.start, multiDayTimeSlot.end)}
+                </span>
+              </div>
+              {showPrices && selectedServices.length > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Estimated Cost:</span>
+                  <span className="font-medium">
+                    $
+                    {calculateMultiDayCost(multiDayTimeSlot.start, multiDayTimeSlot.end, selectedServices[0]).toFixed(
+                      2,
+                    )}
+                  </span>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Date:</span>
+                <span className="font-medium">
+                  {selectedTimeSlot.dayOfWeek}, {selectedTimeSlot.date}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Time:</span>
+                <span className="font-medium">{selectedTimeSlot.startTime}</span>
+              </div>
+            </>
+          )}
+
           <div className="flex justify-between text-sm">
             <span className="text-gray-600">Pet:</span>
             <span className="font-medium">

@@ -3,16 +3,16 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { ArrowLeft, PawPrint, Bell } from "lucide-react"
+import { Label } from "@/components/ui/label"
+import { ArrowLeft, Bell, Dog, Cat, Bird } from "lucide-react"
 import type { Service, SelectedTimeSlot, CustomerInfo, Pet } from "@/types/schedule"
-import type { RecurringConfig } from "./booking-type-selection"
+import type { BookingType, RecurringConfig } from "./booking-type-selection"
+import { Checkbox } from "@/components/ui/checkbox"
 
 type NotificationPreference = "1_hour" | "1_day" | "1_week"
 
-type PetSelectionProps = {
+interface PetSelectionProps {
   pets: Pet[]
   customerInfo: CustomerInfo
   selectedServices: Service[]
@@ -21,9 +21,47 @@ type PetSelectionProps = {
   isDirectBooking: boolean
   onPetSelect: (pet: Pet, notifications: NotificationPreference[]) => void
   onBack: () => void
-  bookingType?: "one-time" | "recurring"
-  recurringConfig?: RecurringConfig | null
+  bookingType: BookingType | null
+  recurringConfig: RecurringConfig | null
   showPrices: boolean
+  multiDayTimeSlot: { start: Date; end: Date } | null
+}
+
+const formatMultiDayRange = (start: Date, end: Date) => {
+  const options: Intl.DateTimeFormatOptions = {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }
+  return `${start.toLocaleString("en-US", options)} - ${end.toLocaleString("en-US", options)}`
+}
+
+const calculateMultiDayCost = (start: Date, end: Date, service: Service): number => {
+  if (!service) return 0
+  const durationMs = end.getTime() - start.getTime()
+  const rate = Number(service.customer_cost)
+
+  const unit = service.duration_unit.toLowerCase()
+  if (unit.startsWith("day")) {
+    const durationInDays = Math.ceil(durationMs / (1000 * 60 * 60 * 24))
+    return durationInDays * rate
+  } else if (unit.startsWith("hour")) {
+    const durationInHours = Math.ceil(durationMs / (1000 * 60 * 60))
+    return durationInHours * rate
+  }
+
+  return rate
+}
+
+const PetIcon = ({ type }: { type: string }) => {
+  const petType = type.toLowerCase()
+  if (petType.includes("dog")) return <Dog className="w-8 h-8 text-gray-500" />
+  if (petType.includes("cat")) return <Cat className="w-8 h-8 text-gray-500" />
+  if (petType.includes("bird")) return <Bird className="w-8 h-8 text-gray-500" />
+  return <Dog className="w-8 h-8 text-gray-500" /> // Default icon
 }
 
 export function PetSelection({
@@ -38,6 +76,7 @@ export function PetSelection({
   bookingType,
   recurringConfig,
   showPrices,
+  multiDayTimeSlot,
 }: PetSelectionProps) {
   const [selectedPetId, setSelectedPetId] = useState<string | null>(pets.length > 0 ? pets[0].pet_id : null)
   const [selectedNotifications, setSelectedNotifications] = useState<NotificationPreference[]>([])
@@ -59,153 +98,171 @@ export function PetSelection({
     }
   }
 
-  const totalCost = selectedServices.reduce((sum, service) => sum + Number(service.customer_cost), 0)
-  const totalDuration = selectedServices.reduce((sum, service) => {
-    let durationInMinutes = service.duration_number
-    if (service.duration_unit === "Hours") {
-      durationInMinutes = service.duration_number * 60
-    } else if (service.duration_unit === "Days") {
-      durationInMinutes = service.duration_number * 24 * 60
-    }
-    return sum + durationInMinutes
-  }, 0)
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount)
+  const formatDateTime = () => {
+    if (!selectedTimeSlot?.date) return ""
+    const [year, month, day] = selectedTimeSlot.date.split("-").map(Number)
+    const localDate = new Date(year, month - 1, day)
+    return localDate.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    })
   }
 
-  const formatDuration = (minutes: number) => {
-    const hours = Math.floor(minutes / 60)
-    const mins = minutes % 60
-    if (hours > 0 && mins > 0) {
-      return `${hours}h ${mins}m`
-    } else if (hours > 0) {
-      return `${hours}h`
-    } else {
-      return `${mins}m`
-    }
+  const calculateTotalCost = () => {
+    return selectedServices.reduce((total, service) => total + Number(service.customer_cost), 0)
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      <Button variant="ghost" onClick={onBack} className="text-gray-600 hover:text-gray-900 body-font">
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back to Contact Info
-      </Button>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Pet Selection */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl header-font text-[#E75837] flex items-center gap-2">
-              <PawPrint className="w-5 h-5" />
-              Select Your Pet
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {pets.length > 0 ? (
-              <RadioGroup value={selectedPetId || ""} onValueChange={setSelectedPetId} className="space-y-4">
-                {pets.map((pet) => (
-                  <Label
-                    key={pet.pet_id}
-                    htmlFor={pet.pet_id}
-                    className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all ${
-                      selectedPetId === pet.pet_id ? "border-[#E75837] bg-orange-50" : "border-gray-200"
-                    }`}
-                  >
-                    <RadioGroupItem value={pet.pet_id} id={pet.pet_id} className="mr-4" />
-                    <div>
-                      <p className="font-semibold body-font">{pet.pet_name}</p>
-                      <p className="text-sm text-gray-600 body-font">
-                        {pet.breed} ({pet.pet_type})
-                      </p>
-                    </div>
-                  </Label>
-                ))}
-              </RadioGroup>
-            ) : (
-              <p className="text-gray-600 body-font">No pets found for this account.</p>
-            )}
-
-            {isDirectBooking && (
-              <div className="mt-8">
-                <h3 className="text-lg font-medium header-font text-gray-900 mb-4 flex items-center gap-2">
-                  <Bell className="w-5 h-5 text-gray-500" />
-                  Notification Preferences
-                </h3>
-                <div className="space-y-3">
-                  {(["1_hour", "1_day", "1_week"] as NotificationPreference[]).map((pref) => (
-                    <div key={pref} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={pref}
-                        checked={selectedNotifications.includes(pref)}
-                        onCheckedChange={() => handleNotificationChange(pref)}
-                      />
-                      <Label htmlFor={pref} className="body-font">
-                        Remind me {pref.replace("_", " ")} before
-                      </Label>
-                    </div>
-                  ))}
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Booking Summary */}
+      <Card className="shadow-lg border-0 rounded-2xl">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl header-font">Booking Summary</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <span className="text-gray-500 body-font">Professional:</span>
+              <p className="font-medium header-font">{professionalName}</p>
+            </div>
+            <div>
+              <span className="text-gray-500 body-font">Customer:</span>
+              <p className="font-medium header-font">
+                {customerInfo.firstName} {customerInfo.lastName}
+              </p>
+            </div>
+            <div>
+              <span className="text-gray-500 body-font">Services:</span>
+              <p className="font-medium header-font">{selectedServices.map((s) => s.name).join(", ")}</p>
+            </div>
+            {bookingType === "multi-day" && multiDayTimeSlot ? (
+              <>
+                <div className="md:col-span-2">
+                  <span className="text-gray-500 body-font">Stay Duration:</span>
+                  <p className="font-medium header-font">
+                    {formatMultiDayRange(multiDayTimeSlot.start, multiDayTimeSlot.end)}
+                  </p>
                 </div>
-              </div>
+                {showPrices && selectedServices.length > 0 && (
+                  <div>
+                    <span className="text-gray-500 body-font">Estimated Cost:</span>
+                    <p className="font-medium header-font">
+                      $
+                      {calculateMultiDayCost(multiDayTimeSlot.start, multiDayTimeSlot.end, selectedServices[0]).toFixed(
+                        2,
+                      )}
+                    </p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div>
+                  <span className="text-gray-500 body-font">Date & Time:</span>
+                  <p className="font-medium header-font">
+                    {formatDateTime()} at {selectedTimeSlot.startTime}
+                  </p>
+                </div>
+                {showPrices && (
+                  <div>
+                    <span className="text-gray-500 body-font">Total Cost:</span>
+                    <p className="font-medium header-font">${calculateTotalCost()}</p>
+                  </div>
+                )}
+              </>
             )}
+          </div>
+        </CardContent>
+      </Card>
 
-            <Button onClick={handleSubmit} className="w-full mt-8 bg-[#E75837] hover:bg-[#d14a2a] text-white body-font">
-              {isDirectBooking ? "Confirm Booking" : "Submit Request"}
-            </Button>
-          </CardContent>
-        </Card>
+      {/* Pet Selection */}
+      <Card className="shadow-lg border-0 rounded-2xl">
+        <CardHeader>
+          <CardTitle className="text-xl header-font">Select Your Pet</CardTitle>
+          {pets.length === 0 && (
+            <p className="text-gray-600 body-font">No pets found for this customer. Please add a pet first.</p>
+          )}
+        </CardHeader>
+        <CardContent>
+          {pets.length > 0 && (
+            <RadioGroup value={selectedPetId ?? ""} onValueChange={setSelectedPetId} className="space-y-4">
+              {pets.map((pet) => (
+                <Label
+                  key={pet.pet_id}
+                  htmlFor={pet.pet_id}
+                  className={`flex items-center gap-4 p-4 border rounded-lg cursor-pointer transition-all ${
+                    selectedPetId === pet.pet_id ? "border-[#E75837] bg-orange-50" : "border-gray-200"
+                  }`}
+                >
+                  <RadioGroupItem value={pet.pet_id} id={pet.pet_id} />
+                  <PetIcon type={pet.pet_type} />
+                  <div className="flex-grow">
+                    <p className="font-semibold header-font">{pet.pet_name}</p>
+                    <p className="text-sm text-gray-600 body-font">
+                      {pet.breed} ({pet.pet_type})
+                    </p>
+                  </div>
+                </Label>
+              ))}
+            </RadioGroup>
+          )}
+        </CardContent>
+      </Card>
 
-        {/* Booking Summary */}
-        <Card>
+      {/* Notification Preferences */}
+      {isDirectBooking && (
+        <Card className="shadow-lg border-0 rounded-2xl">
           <CardHeader>
-            <CardTitle className="text-xl header-font text-[#E75837]">Booking Summary</CardTitle>
+            <CardTitle className="text-xl header-font flex items-center gap-2">
+              <Bell className="w-5 h-5" /> Notification Preferences
+            </CardTitle>
+            <p className="text-gray-600 body-font">Get reminders for your upcoming appointment.</p>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-gray-600 body-font">Customer</span>
-                <span className="font-medium body-font">
-                  {customerInfo.firstName} {customerInfo.lastName}
-                </span>
+            {[
+              { id: "1_hour", label: "1 hour before" },
+              { id: "1_day", label: "1 day before" },
+              { id: "1_week", label: "1 week before" },
+            ].map((item) => (
+              <div key={item.id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={item.id}
+                  checked={selectedNotifications.includes(item.id as NotificationPreference)}
+                  onCheckedChange={() => handleNotificationChange(item.id as NotificationPreference)}
+                />
+                <label
+                  htmlFor={item.id}
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 body-font"
+                >
+                  {item.label}
+                </label>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600 body-font">Date</span>
-                <span className="font-medium body-font">{selectedTimeSlot.date}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600 body-font">Time</span>
-                <span className="font-medium body-font">{selectedTimeSlot.startTime}</span>
-              </div>
-            </div>
-            <div className="border-t pt-4 space-y-2">
-              <h4 className="font-semibold header-font">Selected Services</h4>
-              {selectedServices.map((service) => (
-                <div key={service.name} className="flex justify-between">
-                  <span className="text-gray-600 body-font">{service.name}</span>
-                  {showPrices && (
-                    <span className="font-medium body-font">{formatCurrency(Number(service.customer_cost))}</span>
-                  )}
-                </div>
-              ))}
-            </div>
-            <div className="border-t pt-4">
-              {showPrices && (
-                <div className="flex justify-between items-center font-semibold mb-2">
-                  <span className="header-font">Total</span>
-                  <span className="header-font">{formatCurrency(totalCost)}</span>
-                </div>
-              )}
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-600 body-font">Total Duration</span>
-                <span className="text-gray-600 body-font">{formatDuration(totalDuration)}</span>
-              </div>
-            </div>
+            ))}
           </CardContent>
         </Card>
+      )}
+
+      {/* Action Buttons */}
+      <div className="flex justify-between pt-4">
+        <Button
+          type="button"
+          onClick={onBack}
+          variant="outline"
+          className="flex items-center gap-2 px-6 py-2 rounded-lg border-gray-300 hover:bg-gray-50 bg-transparent"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Your Info
+        </Button>
+
+        <Button
+          onClick={handleSubmit}
+          disabled={!selectedPetId}
+          className="px-6 py-2 bg-[#E75837] hover:bg-[#d14a2a] text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+        >
+          {isDirectBooking ? "Confirm Booking" : "Submit Request"}
+        </Button>
       </div>
     </div>
   )

@@ -23,6 +23,36 @@ interface CustomerFormProps {
   bookingType: BookingType | null
   recurringConfig: RecurringConfig | null
   showPrices: boolean
+  multiDayTimeSlot: { start: Date; end: Date } | null
+}
+
+const formatMultiDayRange = (start: Date, end: Date) => {
+  const options: Intl.DateTimeFormatOptions = {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }
+  return `${start.toLocaleString("en-US", options)} - ${end.toLocaleString("en-US", options)}`
+}
+
+const calculateMultiDayCost = (start: Date, end: Date, service: Service): number => {
+  if (!service) return 0
+  const durationMs = end.getTime() - start.getTime()
+  const rate = Number(service.customer_cost)
+
+  const unit = service.duration_unit.toLowerCase()
+  if (unit.startsWith("day")) {
+    const durationInDays = Math.ceil(durationMs / (1000 * 60 * 60 * 24))
+    return durationInDays * rate
+  } else if (unit.startsWith("hour")) {
+    const durationInHours = Math.ceil(durationMs / (1000 * 60 * 60))
+    return durationInHours * rate
+  }
+
+  return rate
 }
 
 export function CustomerForm({
@@ -36,6 +66,7 @@ export function CustomerForm({
   bookingType,
   recurringConfig,
   showPrices,
+  multiDayTimeSlot,
 }: CustomerFormProps) {
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     firstName: "",
@@ -93,6 +124,7 @@ export function CustomerForm({
           selected_time: selectedTimeSlot.startTime,
           booking_type: bookingType,
           recurring_config: recurringConfig,
+          multi_day_slot: multiDayTimeSlot,
         },
       }
 
@@ -190,25 +222,51 @@ export function CustomerForm({
               <p className="font-medium header-font">{professionalName}</p>
             </div>
             <div>
-              <span className="text-gray-500 body-font">Date & Time:</span>
-              <p className="font-medium header-font">
-                {formatDateTime()} at {selectedTimeSlot.startTime}
-              </p>
-            </div>
-            <div>
               <span className="text-gray-500 body-font">Services:</span>
               <p className="font-medium header-font">{selectedServices.map((s) => s.name).join(", ")}</p>
             </div>
-            <div>
-              <span className="text-gray-500 body-font">Duration:</span>
-              <p className="font-medium header-font">{calculateTotalDuration()}</p>
-            </div>
-            {showPrices && (
-              <div>
-                <span className="text-gray-500 body-font">Total Cost:</span>
-                <p className="font-medium header-font">${calculateTotalCost()}</p>
-              </div>
+
+            {bookingType === "multi-day" && multiDayTimeSlot ? (
+              <>
+                <div className="md:col-span-2">
+                  <span className="text-gray-500 body-font">Stay Duration:</span>
+                  <p className="font-medium header-font">
+                    {formatMultiDayRange(multiDayTimeSlot.start, multiDayTimeSlot.end)}
+                  </p>
+                </div>
+                {showPrices && selectedServices.length > 0 && (
+                  <div>
+                    <span className="text-gray-500 body-font">Estimated Cost:</span>
+                    <p className="font-medium header-font">
+                      $
+                      {calculateMultiDayCost(multiDayTimeSlot.start, multiDayTimeSlot.end, selectedServices[0]).toFixed(
+                        2,
+                      )}
+                    </p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div>
+                  <span className="text-gray-500 body-font">Date & Time:</span>
+                  <p className="font-medium header-font">
+                    {formatDateTime()} at {selectedTimeSlot.startTime}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-gray-500 body-font">Duration:</span>
+                  <p className="font-medium header-font">{calculateTotalDuration()}</p>
+                </div>
+                {showPrices && (
+                  <div>
+                    <span className="text-gray-500 body-font">Total Cost:</span>
+                    <p className="font-medium header-font">${calculateTotalCost()}</p>
+                  </div>
+                )}
+              </>
             )}
+
             {bookingType === "recurring" && recurringConfig && (
               <div>
                 <span className="text-gray-500 body-font">Recurring:</span>
