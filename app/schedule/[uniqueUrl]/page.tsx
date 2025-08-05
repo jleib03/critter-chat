@@ -682,7 +682,7 @@ export default function SchedulePage() {
 
         // Add user's booking choice (one-time vs recurring)
         user_booking_type: bookingType, // "one-time" or "recurring"
-        all_day: isMultiDay ? "yes" : "no", // Add the new field
+        all_day: isMultiDay, // Changed from isMultiDay ? "yes" : "no" to just isMultiDay (true/false)
         is_recurring_booking: bookingType === "recurring",
 
         // Enhanced recurring details
