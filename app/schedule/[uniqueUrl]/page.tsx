@@ -485,6 +485,30 @@ export default function SchedulePage() {
     })
   }
 
+  const handleContinueFromServices = () => {
+    if (selectedServices.length === 0) return
+
+    let totalDurationMinutes = 0
+    selectedServices.forEach((service) => {
+      let durationInMinutes = service.duration_number
+      const unit = service.duration_unit.toLowerCase()
+      if (unit.startsWith("hour")) {
+        durationInMinutes = service.duration_number * 60
+      } else if (unit.startsWith("day")) {
+        durationInMinutes = service.duration_number * 24 * 60
+      }
+      totalDurationMinutes += durationInMinutes
+    })
+
+    const twelveHoursInMinutes = 12 * 60
+
+    if (totalDurationMinutes > twelveHoursInMinutes) {
+      handleBookingTypeSelect("multi-day")
+    } else {
+      setShowBookingTypeSelection(true)
+    }
+  }
+
   const handleBookingTypeSelect = (type: BookingType, config?: RecurringConfig) => {
     setBookingType(type)
     setShowBookingTypeSelection(false)
@@ -682,7 +706,7 @@ export default function SchedulePage() {
 
         // Add user's booking choice (one-time vs recurring)
         user_booking_type: bookingType, // "one-time" or "recurring"
-        all_day: bookingType === "multi-day", // Send true for multi-day bookings, false otherwise
+        all_day: bookingType === "multi-day",
         is_recurring_booking: bookingType === "recurring",
 
         // Enhanced recurring details
@@ -1124,7 +1148,7 @@ export default function SchedulePage() {
           />
         ) : showBookingTypeSelection && selectedServices.length > 0 ? (
           <BookingTypeSelection
-            selectedService={selectedServices[0]}
+            selectedServices={selectedServices}
             onBookingTypeSelect={handleBookingTypeSelect}
             onBack={handleBackToServices}
           />
@@ -1138,7 +1162,7 @@ export default function SchedulePage() {
                   servicesByCategory={webhookData.services.services_by_category}
                   selectedServices={selectedServices}
                   onServiceSelect={handleServiceSelect}
-                  onContinue={selectedServices.length > 0 ? () => setShowBookingTypeSelection(true) : undefined}
+                  onContinue={selectedServices.length > 0 ? handleContinueFromServices : undefined}
                   summaryOnly={false}
                   showPrices={showPrices}
                 />
@@ -1146,7 +1170,7 @@ export default function SchedulePage() {
             )}
 
             {/* Calendar view */}
-            {selectedServices.length > 0 && bookingType && (
+            {selectedServices.length > 0 && bookingType && !showMultiDayForm && (
               <div className="space-y-6">
                 {/* Selected Services Summary */}
                 <div className="bg-white rounded-2xl shadow-lg border p-6">
