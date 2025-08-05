@@ -370,13 +370,31 @@ export default function ProfessionalSetupPage() {
             ...(config.capacity_rules ?? {}),
           }
 
-          // Blocked Times
+          // Blocked Times - Fix the field mapping
           if (Array.isArray(config.blocked_times)) {
             blockedTimesLocal = config.blocked_times.map((bt: any) => ({
-              ...bt,
-              date: bt.blocked_date || bt.date,
+              blocked_time_id: bt.blocked_time_id,
+              employee_id: bt.employee_id,
+              date: bt.date, // Use the date field directly from webhook
+              start_time: bt.start_time,
+              end_time: bt.end_time,
+              reason: bt.reason || "",
+              is_recurring: bt.is_recurring || false,
+              is_all_day: bt.is_all_day || false,
+              recurrence_pattern: bt.recurrence_pattern,
             }))
+
+            console.log("Processed blocked times:", blockedTimesLocal)
+            console.log("Blocked times count:", blockedTimesLocal.length)
           }
+
+          // Debug: Log all unique dates in blocked times
+          const uniqueDates = [...new Set(blockedTimesLocal.map((bt) => bt.date))].sort()
+          console.log("All blocked time dates found:", uniqueDates)
+          console.log(
+            "Looking for August 5th entries:",
+            blockedTimesLocal.filter((bt) => bt.date === "2025-08-05"),
+          )
 
           // EMPLOYEES - Handle both scenarios
           if (Array.isArray(config.employees) && config.employees.length > 0) {
