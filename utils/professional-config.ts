@@ -32,7 +32,7 @@ export const isTimeSlotBlocked = (
   startTime: string,
   endTime: string,
   blockedTimes: any[],
-  employeeId?: string,
+  employeeId?: string, // If provided, check for this employee + global blocks. If not, check for global blocks only.
 ): boolean => {
   if (!blockedTimes || blockedTimes.length === 0) return false
 
@@ -41,8 +41,23 @@ export const isTimeSlotBlocked = (
   const dateObj = new Date(date)
 
   return blockedTimes.some((block) => {
-    // If this is an employee-specific block and doesn't match the employee, skip
-    if (block.employeeId && employeeId && block.employeeId !== employeeId) return false
+    // Determine if the block is relevant based on whether we're checking for a specific employee
+    const isGlobalBlock = !block.employeeId
+    const isForThisEmployee = employeeId && block.employeeId === employeeId
+
+    if (employeeId) {
+      // When checking for a specific employee, we care about global blocks and their own blocks.
+      // If the block is not global and not for this employee, we can ignore it.
+      if (!isGlobalBlock && !isForThisEmployee) {
+        return false
+      }
+    } else {
+      // When checking globally (no employeeId specified), we only care about global blocks.
+      // If the block is employee-specific, we ignore it.
+      if (!isGlobalBlock) {
+        return false
+      }
+    }
 
     // Check if the date matches
     let dateMatches = block.date === date
