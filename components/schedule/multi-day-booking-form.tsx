@@ -158,7 +158,7 @@ export function MultiDayBookingForm({
         <Button
           onClick={handleCheckAvailability}
           disabled={isLoading}
-          className="w-full bg-[#745E25] hover:bg-[#5d4b1e]"
+          className="w-full bg-[#E75837] hover:bg-[#d04e30]"
         >
           {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
           {isLoading ? "Checking..." : "Check Availability"}
