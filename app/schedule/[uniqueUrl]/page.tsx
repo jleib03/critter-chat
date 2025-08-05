@@ -376,7 +376,7 @@ export default function SchedulePage() {
     })
 
     // Find all service entries
-    const serviceEntries = rawData.filter((entry) => entry.name && entry.duration_unit && entry.service_id)
+    const serviceEntries = rawData.filter((entry) => entry.name && entry.duration_unit)
 
     // Parse services and group by category
     const servicesByCategory: { [category: string]: Service[] } = {}
@@ -386,7 +386,7 @@ export default function SchedulePage() {
         servicesByCategory[category] = []
       }
       servicesByCategory[category].push({
-        service_id: service.service_id,
+        service_id: service.service_id || `fallback_${service.name.replace(/\s+/g, "_").toLowerCase()}`,
         name: service.name,
         description: service.description || "",
         duration_unit: service.duration_unit,
