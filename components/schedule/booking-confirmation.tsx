@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { Service, SelectedTimeSlot, CustomerInfo, Pet } from "@/types/schedule"
-import type { RecurringConfig, BookingType } from "./booking-type-selection"
+import type { BookingType, RecurringConfig } from "./booking-type-selection"
 
 type BookingConfirmationProps = {
   selectedServices: Service[]
@@ -12,40 +12,11 @@ type BookingConfirmationProps = {
   selectedPet: Pet
   professionalName: string
   onNewBooking: () => void
-  bookingType?: BookingType
+  bookingType?: BookingType | "one-time"
   recurringConfig?: RecurringConfig | null
-  isDirectBooking: boolean
   multiDayTimeSlot?: { start: Date; end: Date } | null
+  isDirectBooking: boolean
   showPrices: boolean
-}
-
-const formatMultiDayRange = (start: Date, end: Date) => {
-  const options: Intl.DateTimeFormatOptions = {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  }
-  return `${start.toLocaleString("en-US", options)} - ${end.toLocaleString("en-US", options)}`
-}
-
-const calculateMultiDayCost = (start: Date, end: Date, service: Service): number => {
-  if (!service) return 0
-  const durationMs = end.getTime() - start.getTime()
-  const rate = Number(service.customer_cost)
-
-  const unit = service.duration_unit.toLowerCase()
-  if (unit.startsWith("day")) {
-    const durationInDays = Math.ceil(durationMs / (1000 * 60 * 60 * 24))
-    return durationInDays * rate
-  } else if (unit.startsWith("hour")) {
-    const durationInHours = Math.ceil(durationMs / (1000 * 60 * 60))
-    return durationInHours * rate
-  }
-
-  return rate
 }
 
 export function BookingConfirmation({
@@ -57,10 +28,54 @@ export function BookingConfirmation({
   onNewBooking,
   bookingType,
   recurringConfig,
-  isDirectBooking,
   multiDayTimeSlot,
+  isDirectBooking,
   showPrices,
 }: BookingConfirmationProps) {
+  const formatMultiDayDateTime = (date: Date) => {
+    if (!date) return ""
+    return new Date(date).toLocaleString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    })
+  }
+
+  const calculateMultiDayInfo = () => {
+    if (!multiDayTimeSlot || !selectedServices.length) {
+      return { durationLabel: "", totalCost: 0 }
+    }
+    const service = selectedServices[0]
+    const rate = Number(service.customer_cost)
+    const unit = service.duration_unit.toLowerCase()
+    const diffMs = new Date(multiDayTimeSlot.end).getTime() - new Date(multiDayTimeSlot.start).getTime()
+
+    let billableUnits = 0
+    let durationLabel = ""
+
+    if (unit.startsWith("day")) {
+      billableUnits = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+      const nights = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+      durationLabel = `${nights} Night${nights !== 1 ? "s" : ""} / ${billableUnits} Day${billableUnits !== 1 ? "s" : ""}`
+    } else if (unit.startsWith("hour")) {
+      billableUnits = Math.ceil(diffMs / (1000 * 60 * 60))
+      durationLabel = `${billableUnits} Hour${billableUnits !== 1 ? "s" : ""}`
+    } else {
+      billableUnits = 1
+      durationLabel = "1 Stay"
+    }
+
+    return {
+      durationLabel,
+      totalCost: billableUnits * rate,
+    }
+  }
+
+  const multiDayInfo = calculateMultiDayInfo()
+
   return (
     <Card className="shadow-lg border-0 rounded-2xl">
       <CardHeader className="text-center pb-4">
@@ -86,20 +101,17 @@ export function BookingConfirmation({
           {bookingType === "multi-day" && multiDayTimeSlot ? (
             <>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Stay Duration:</span>
-                <span className="font-medium text-right">
-                  {formatMultiDayRange(multiDayTimeSlot.start, multiDayTimeSlot.end)}
-                </span>
+                <span className="text-gray-600">Drop-off:</span>
+                <span className="font-medium">{formatMultiDayDateTime(multiDayTimeSlot.start)}</span>
               </div>
-              {showPrices && selectedServices.length > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Pick-up:</span>
+                <span className="font-medium">{formatMultiDayDateTime(multiDayTimeSlot.end)}</span>
+              </div>
+              {showPrices && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Estimated Cost:</span>
-                  <span className="font-medium">
-                    $
-                    {calculateMultiDayCost(multiDayTimeSlot.start, multiDayTimeSlot.end, selectedServices[0]).toFixed(
-                      2,
-                    )}
-                  </span>
+                  <span className="text-gray-600">Total Cost:</span>
+                  <span className="font-medium">${multiDayInfo.totalCost.toFixed(2)}</span>
                 </div>
               )}
             </>

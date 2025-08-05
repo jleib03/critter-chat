@@ -22,37 +22,8 @@ interface CustomerFormProps {
   onBack: () => void
   bookingType: BookingType | null
   recurringConfig: RecurringConfig | null
+  multiDayTimeSlot?: { start: Date; end: Date } | null
   showPrices: boolean
-  multiDayTimeSlot: { start: Date; end: Date } | null
-}
-
-const formatMultiDayRange = (start: Date, end: Date) => {
-  const options: Intl.DateTimeFormatOptions = {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  }
-  return `${start.toLocaleString("en-US", options)} - ${end.toLocaleString("en-US", options)}`
-}
-
-const calculateMultiDayCost = (start: Date, end: Date, service: Service): number => {
-  if (!service) return 0
-  const durationMs = end.getTime() - start.getTime()
-  const rate = Number(service.customer_cost)
-
-  const unit = service.duration_unit.toLowerCase()
-  if (unit.startsWith("day")) {
-    const durationInDays = Math.ceil(durationMs / (1000 * 60 * 60 * 24))
-    return durationInDays * rate
-  } else if (unit.startsWith("hour")) {
-    const durationInHours = Math.ceil(durationMs / (1000 * 60 * 60))
-    return durationInHours * rate
-  }
-
-  return rate
 }
 
 export function CustomerForm({
@@ -65,8 +36,8 @@ export function CustomerForm({
   onBack,
   bookingType,
   recurringConfig,
-  showPrices,
   multiDayTimeSlot,
+  showPrices,
 }: CustomerFormProps) {
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     firstName: "",
@@ -208,6 +179,50 @@ export function CustomerForm({
     return `${totalMinutes}m`
   }
 
+  const formatMultiDayDateTime = (date: Date) => {
+    if (!date) return ""
+    return new Date(date).toLocaleString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    })
+  }
+
+  const calculateMultiDayInfo = () => {
+    if (!multiDayTimeSlot || !selectedServices.length) {
+      return { durationLabel: "", totalCost: 0 }
+    }
+    const service = selectedServices[0]
+    const rate = Number(service.customer_cost)
+    const unit = service.duration_unit.toLowerCase()
+    const diffMs = new Date(multiDayTimeSlot.end).getTime() - new Date(multiDayTimeSlot.start).getTime()
+
+    let billableUnits = 0
+    let durationLabel = ""
+
+    if (unit.startsWith("day")) {
+      billableUnits = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+      const nights = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+      durationLabel = `${nights} Night${nights !== 1 ? "s" : ""} / ${billableUnits} Day${billableUnits !== 1 ? "s" : ""}`
+    } else if (unit.startsWith("hour")) {
+      billableUnits = Math.ceil(diffMs / (1000 * 60 * 60))
+      durationLabel = `${billableUnits} Hour${billableUnits !== 1 ? "s" : ""}`
+    } else {
+      billableUnits = 1
+      durationLabel = "1 Stay"
+    }
+
+    return {
+      durationLabel,
+      totalCost: billableUnits * rate,
+    }
+  }
+
+  const multiDayInfo = calculateMultiDayInfo()
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Booking Summary */}
@@ -216,72 +231,77 @@ export function CustomerForm({
           <CardTitle className="text-xl header-font">Booking Summary</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-gray-500 body-font">Professional:</span>
-              <p className="font-medium header-font">{professionalName}</p>
-            </div>
-            <div>
-              <span className="text-gray-500 body-font">Services:</span>
-              <p className="font-medium header-font">{selectedServices.map((s) => s.name).join(", ")}</p>
-            </div>
-
-            {bookingType === "multi-day" && multiDayTimeSlot ? (
-              <>
-                <div className="md:col-span-2">
-                  <span className="text-gray-500 body-font">Stay Duration:</span>
-                  <p className="font-medium header-font">
-                    {formatMultiDayRange(multiDayTimeSlot.start, multiDayTimeSlot.end)}
-                  </p>
-                </div>
-                {showPrices && selectedServices.length > 0 && (
-                  <div>
-                    <span className="text-gray-500 body-font">Estimated Cost:</span>
-                    <p className="font-medium header-font">
-                      $
-                      {calculateMultiDayCost(multiDayTimeSlot.start, multiDayTimeSlot.end, selectedServices[0]).toFixed(
-                        2,
-                      )}
-                    </p>
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-                <div>
-                  <span className="text-gray-500 body-font">Date & Time:</span>
-                  <p className="font-medium header-font">
-                    {formatDateTime()} at {selectedTimeSlot.startTime}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-gray-500 body-font">Duration:</span>
-                  <p className="font-medium header-font">{calculateTotalDuration()}</p>
-                </div>
-                {showPrices && (
-                  <div>
-                    <span className="text-gray-500 body-font">Total Cost:</span>
-                    <p className="font-medium header-font">${calculateTotalCost()}</p>
-                  </div>
-                )}
-              </>
-            )}
-
-            {bookingType === "recurring" && recurringConfig && (
+          {bookingType === "multi-day" && multiDayTimeSlot ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="text-gray-500 body-font">Recurring:</span>
-                <p className="font-medium header-font text-blue-600">
-                  Every {recurringConfig.frequency} {recurringConfig.unit}
-                  {recurringConfig.frequency > 1 ? "s" : ""} until{" "}
-                  {new Date(recurringConfig.endDate).toLocaleDateString("en-US", {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
+                <span className="text-gray-500 body-font">Professional:</span>
+                <p className="font-medium header-font">{professionalName}</p>
+              </div>
+              <div>
+                <span className="text-gray-500 body-font">Service:</span>
+                <p className="font-medium header-font">{selectedServices.map((s) => s.name).join(", ")}</p>
+              </div>
+              <div>
+                <span className="text-gray-500 body-font">Drop-off:</span>
+                <p className="font-medium header-font">{formatMultiDayDateTime(multiDayTimeSlot.start)}</p>
+              </div>
+              <div>
+                <span className="text-gray-500 body-font">Pick-up:</span>
+                <p className="font-medium header-font">{formatMultiDayDateTime(multiDayTimeSlot.end)}</p>
+              </div>
+              <div>
+                <span className="text-gray-500 body-font">Duration:</span>
+                <p className="font-medium header-font">{multiDayInfo.durationLabel}</p>
+              </div>
+              {showPrices && (
+                <div>
+                  <span className="text-gray-500 body-font">Estimated Cost:</span>
+                  <p className="font-medium header-font">${multiDayInfo.totalCost.toFixed(2)}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-gray-500 body-font">Professional:</span>
+                <p className="font-medium header-font">{professionalName}</p>
+              </div>
+              <div>
+                <span className="text-gray-500 body-font">Date & Time:</span>
+                <p className="font-medium header-font">
+                  {formatDateTime()} at {selectedTimeSlot.startTime}
                 </p>
               </div>
-            )}
-          </div>
+              <div>
+                <span className="text-gray-500 body-font">Services:</span>
+                <p className="font-medium header-font">{selectedServices.map((s) => s.name).join(", ")}</p>
+              </div>
+              <div>
+                <span className="text-gray-500 body-font">Duration:</span>
+                <p className="font-medium header-font">{calculateTotalDuration()}</p>
+              </div>
+              {showPrices && (
+                <div>
+                  <span className="text-gray-500 body-font">Total Cost:</span>
+                  <p className="font-medium header-font">${calculateTotalCost()}</p>
+                </div>
+              )}
+              {bookingType === "recurring" && recurringConfig && (
+                <div>
+                  <span className="text-gray-500 body-font">Recurring:</span>
+                  <p className="font-medium header-font text-blue-600">
+                    Every {recurringConfig.frequency} {recurringConfig.unit}
+                    {recurringConfig.frequency > 1 ? "s" : ""} until{" "}
+                    {new Date(recurringConfig.endDate).toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -396,7 +416,7 @@ export function CustomerForm({
                 className="flex items-center gap-2 px-6 py-2 rounded-lg border-gray-300 hover:bg-gray-50 bg-transparent"
               >
                 <ArrowLeft className="w-4 h-4" />
-                Back to Schedule
+                Back
               </Button>
 
               <Button
