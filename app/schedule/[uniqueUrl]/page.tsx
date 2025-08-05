@@ -18,6 +18,8 @@ import {
 } from "@/components/schedule/booking-type-selection"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { MultiDayBookingForm } from "@/components/schedule/multi-day-booking-form"
+import { calculateMultiDayAvailability } from "@/utils/professional-config"
 
 type NotificationPreference = "1_hour" | "1_day" | "1_week"
 
@@ -58,6 +60,9 @@ export default function SchedulePage() {
   const [showBookingDisabledModal, setShowBookingDisabledModal] = useState(false)
   const [showBookingDisabled, setShowBookingDisabled] = useState(false)
   const [showPrices, setShowPrices] = useState(true)
+
+  const [showMultiDayForm, setShowMultiDayForm] = useState(false)
+  const [multiDayTimeSlot, setMultiDayTimeSlot] = useState<{ start: Date; end: Date } | null>(null)
 
   // Helper function to determine if this is a direct booking
   const determineBookingType = () => {
@@ -529,13 +534,44 @@ export default function SchedulePage() {
 
   const handleBookingTypeSelect = (type: BookingType, config?: RecurringConfig) => {
     setBookingType(type)
-    setRecurringConfig(config || null)
     setShowBookingTypeSelection(false)
+    if (type === "recurring") {
+      setRecurringConfig(config || null)
+    } else if (type === "multi-day") {
+      setShowMultiDayForm(true)
+    }
   }
 
-  const handleBackToBookingType = () => {
+  const handleMultiDayAvailabilityCheck = async (start: Date, end: Date) => {
+    if (!professionalConfig || !webhookData) {
+      return { available: false, reason: "Configuration not loaded." }
+    }
+    return calculateMultiDayAvailability(
+      professionalConfig,
+      webhookData.bookings.all_booking_data,
+      start,
+      end,
+      selectedServices[0], // Assuming one service for multi-day
+    )
+  }
+
+  const handleMultiDayBookingConfirm = (start: Date, end: Date) => {
+    // Create a synthetic "time slot" to fit into the existing flow
+    const syntheticSlot: SelectedTimeSlot = {
+      date: start.toISOString().split("T")[0],
+      startTime: start.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true }),
+      endTime: end.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true }),
+      dayOfWeek: start.toLocaleDateString("en-US", { weekday: "long" }),
+    }
+    setMultiDayTimeSlot({ start, end })
+    setSelectedTimeSlot(syntheticSlot)
+    setShowMultiDayForm(false)
+    setShowCustomerForm(true)
+  }
+
+  const handleBackFromMultiDay = () => {
+    setShowMultiDayForm(false)
     setShowBookingTypeSelection(true)
-    setSelectedTimeSlot(null)
   }
 
   const handleBackToServices = () => {
@@ -581,12 +617,11 @@ export default function SchedulePage() {
     try {
       const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16"
       const userTimezoneData = JSON.parse(userTimezoneRef.current!)
+      const isMultiDay = bookingType === "multi-day" && multiDayTimeSlot
 
-      const startDateTimeUTC = convertLocalTimeToUTC(
-        selectedTimeSlot!.date,
-        selectedTimeSlot!.startTime,
-        userTimezoneData.timezone,
-      )
+      const startDateTimeUTC = isMultiDay
+        ? multiDayTimeSlot.start.toISOString()
+        : convertLocalTimeToUTC(selectedTimeSlot!.date, selectedTimeSlot!.startTime, userTimezoneData.timezone)
 
       // Calculate total duration and cost for all selected services
       let totalDurationMinutes = 0
@@ -605,7 +640,9 @@ export default function SchedulePage() {
         totalCost += Number(service.customer_cost)
       })
 
-      const endDateTimeUTC = calculateEndDateTimeUTC(startDateTimeUTC, totalDurationMinutes, "Minutes")
+      const endDateTimeUTC = isMultiDay
+        ? multiDayTimeSlot.end.toISOString()
+        : calculateEndDateTimeUTC(startDateTimeUTC, totalDurationMinutes, "Minutes")
 
       const endTimeLocal = new Date(endDateTimeUTC).toLocaleTimeString("en-US", {
         hour: "numeric",
@@ -692,6 +729,8 @@ export default function SchedulePage() {
 
         // Add user's booking choice (one-time vs recurring)
         user_booking_type: bookingType, // "one-time" or "recurring"
+        all_day: isMultiDay ? "yes" : "no", // Add the new field
+        is_recurring_booking: bookingType === "recurring",
 
         // Enhanced recurring details
         ...(bookingType === "recurring" &&
@@ -1120,6 +1159,13 @@ export default function SchedulePage() {
             bookingType={bookingType}
             recurringConfig={recurringConfig}
             showPrices={showPrices}
+          />
+        ) : showMultiDayForm && selectedServices.length > 0 ? (
+          <MultiDayBookingForm
+            selectedService={selectedServices[0]}
+            onAvailabilityCheck={handleMultiDayAvailabilityCheck}
+            onBookingConfirm={handleMultiDayBookingConfirm}
+            onBack={handleBackFromMultiDay}
           />
         ) : showBookingTypeSelection && selectedServices.length > 0 ? (
           <BookingTypeSelection

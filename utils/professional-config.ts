@@ -1,5 +1,6 @@
 import type { ProfessionalConfig, Employee, WorkingDay } from "@/types/professional-config"
 import type { BookingData } from "@/types/schedule"
+import type { Service } from "@/types/service"
 
 // Helper: convert "HH:MM:SS", "HH:MM" or "H:MM AM/PM" to minutes past midnight
 export const timeToMinutes = (timeStr: string): number => {
@@ -252,4 +253,72 @@ export const saveProfessionalConfig = (config: ProfessionalConfig): boolean => {
     console.error("Error saving professional configuration:", error)
     return false
   }
+}
+
+// New function for multi-day availability
+export const calculateMultiDayAvailability = (
+  config: ProfessionalConfig | null,
+  existingBookings: BookingData[],
+  startDate: Date,
+  endDate: Date,
+  service: Service,
+): { available: boolean; reason: string } => {
+  if (!config) {
+    return { available: false, reason: "Professional configuration not available." }
+  }
+
+  const { employees, capacityRules, blockedTimes } = config
+  const activeEmployees = employees.filter((emp) => emp.isActive)
+
+  if (activeEmployees.length === 0) {
+    return { available: false, reason: "No active employees available for this period." }
+  }
+
+  // Iterate through each day in the selected range
+  for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+    const currentDateStr = d.toISOString().split("T")[0]
+    const dayName = d.toLocaleDateString("en-US", { weekday: "long" })
+
+    // 1. Find employees working on this day
+    const employeesWorkingToday = activeEmployees.filter((emp) => {
+      const workingDay = emp.workingDays.find((wd) => wd.day === dayName)
+      return workingDay?.isWorking
+    })
+
+    if (employeesWorkingToday.length === 0) {
+      return { available: false, reason: `No employees are working on ${currentDateStr}.` }
+    }
+
+    // 2. Check for global blocked times on this day
+    const isDayBlocked = blockedTimes.some(
+      (block) => !block.employeeId && block.date === currentDateStr && block.isAllDay,
+    )
+    if (isDayBlocked) {
+      return { available: false, reason: `The date ${currentDateStr} is blocked for all staff.` }
+    }
+
+    // 3. Check concurrent multi-day bookings
+    const concurrentBookingsOnDay = existingBookings.filter((booking) => {
+      // This check assumes multi-day bookings can be identified.
+      // A future improvement would be a specific flag like `booking.all_day === 'yes'`.
+      const bookingStart = new Date(booking.start!)
+      const bookingEnd = new Date(booking.end!)
+      const isMultiDayLike = bookingEnd.getTime() - bookingStart.getTime() > 12 * 60 * 60 * 1000
+
+      return isMultiDayLike && bookingStart < new Date(d.getTime() + 24 * 60 * 60 * 1000) && bookingEnd > d
+    })
+
+    // 4. Check capacity
+    const totalCapacity = capacityRules.maxConcurrentBookings
+    const availableCapacity = totalCapacity - concurrentBookingsOnDay.length
+
+    if (availableCapacity <= 0) {
+      return {
+        available: false,
+        reason: `Not enough capacity on ${currentDateStr}. All ${totalCapacity} spaces are booked.`,
+      }
+    }
+  }
+
+  return { available: true, reason: "The selected dates are available for booking." }
 }

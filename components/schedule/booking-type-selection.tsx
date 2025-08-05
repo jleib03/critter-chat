@@ -3,10 +3,10 @@
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Calendar, Repeat, ArrowLeft, ArrowRight, Clock, CalendarDays } from "lucide-react"
+import { Calendar, Repeat, ArrowLeft, ArrowRight, Clock, CalendarDays, BedDouble } from "lucide-react"
 import type { Service } from "@/types/schedule"
 
-export type BookingType = "one-time" | "recurring"
+export type BookingType = "one-time" | "recurring" | "multi-day"
 
 export type RecurringConfig = {
   daysOfWeek: string[] // e.g., ["Monday", "Wednesday", "Friday"]
@@ -43,11 +43,13 @@ export function BookingTypeSelection({ selectedService, onBookingTypeSelect, onB
         originalEndDate: recurringConfig.endDate,
       }
       onBookingTypeSelect("recurring", configWithOriginals)
+    } else if (selectedType === "multi-day") {
+      onBookingTypeSelect("multi-day")
     }
   }
 
   const isFormValid = () => {
-    if (selectedType === "one-time") return true
+    if (selectedType === "one-time" || selectedType === "multi-day") return true
     if (selectedType === "recurring") {
       return recurringConfig.daysOfWeek.length > 0 && recurringConfig.endDate !== ""
     }
@@ -141,6 +143,41 @@ export function BookingTypeSelection({ selectedService, onBookingTypeSelect, onB
                 </div>
               </div>
               {selectedType === "recurring" && (
+                <div className="w-6 h-6 bg-[#E75837] rounded-full flex items-center justify-center">
+                  <div className="w-2 h-2 bg-white rounded-full"></div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Multi-Day / Overnight Booking Option */}
+        <Card
+          className={`cursor-pointer transition-all ${
+            selectedType === "multi-day" ? "ring-2 ring-[#E75837] bg-[#fff8f6]" : "hover:bg-gray-50"
+          }`}
+          onClick={() => setSelectedType("multi-day")}
+        >
+          <CardContent className="p-6">
+            <div className="flex items-start space-x-4">
+              <div
+                className={`p-3 rounded-full ${
+                  selectedType === "multi-day" ? "bg-[#E75837] text-white" : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                <BedDouble className="w-6 h-6" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold mb-2 header-font">Multi-Day / Overnight</h3>
+                <p className="text-gray-600 body-font">
+                  Schedule a stay for multiple days, perfect for boarding or extended care.
+                </p>
+                <div className="mt-3 flex items-center text-sm text-gray-500">
+                  <CalendarDays className="w-4 h-4 mr-1" />
+                  Select a start and end date for the entire stay.
+                </div>
+              </div>
+              {selectedType === "multi-day" && (
                 <div className="w-6 h-6 bg-[#E75837] rounded-full flex items-center justify-center">
                   <div className="w-2 h-2 bg-white rounded-full"></div>
                 </div>
