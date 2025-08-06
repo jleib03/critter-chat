@@ -9,7 +9,7 @@ import ConfigurationStep from "../../../components/custom-agent/configuration-st
 import TestingStep from "../../../components/custom-agent/testing-step"
 import ImplementationStep from "../../../components/custom-agent/implementation-step"
 import SuccessStep from "../../../components/custom-agent/success-step"
-import { Loader2, MessageSquare, CheckCircle2 } from 'lucide-react'
+import { Loader2, MessageSquare, CheckCircle2 } from "lucide-react"
 import { getWebhookEndpoint, logWebhookUsage } from "../../../types/webhook-endpoints"
 
 export default function CustomAgentSetupPage() {
@@ -87,8 +87,8 @@ export default function CustomAgentSetupPage() {
   // Function to load existing customization settings
   const loadExistingCustomization = async (professionalId: string) => {
     try {
-      const webhookUrl = getWebhookEndpoint("GENERAL_PURPOSE")
-      logWebhookUsage("GENERAL_PURPOSE", "get_widget_customization")
+      const webhookUrl = getWebhookEndpoint("CUSTOM_AGENT")
+      logWebhookUsage("CUSTOM_AGENT", "get_widget_customization")
 
       const response = await fetch(webhookUrl, {
         method: "POST",
@@ -136,8 +136,8 @@ export default function CustomAgentSetupPage() {
     if (!professionalId) return false
 
     try {
-      const webhookUrl = getWebhookEndpoint("GENERAL_PURPOSE")
-      logWebhookUsage("GENERAL_PURPOSE", "save_widget_customization")
+      const webhookUrl = getWebhookEndpoint("CUSTOM_AGENT")
+      logWebhookUsage("CUSTOM_AGENT", "save_widget_customization")
 
       const response = await fetch(webhookUrl, {
         method: "POST",
@@ -206,8 +206,8 @@ export default function CustomAgentSetupPage() {
     setError(null)
 
     try {
-      const webhookUrl = getWebhookEndpoint("GENERAL_PURPOSE")
-      logWebhookUsage("GENERAL_PURPOSE", "check_enrollment")
+      const webhookUrl = getWebhookEndpoint("CUSTOM_AGENT")
+      logWebhookUsage("CUSTOM_AGENT", "check_enrollment")
 
       const response = await fetch(webhookUrl, {
         method: "POST",
@@ -265,8 +265,8 @@ export default function CustomAgentSetupPage() {
     setError(null)
 
     try {
-      const webhookUrl = getWebhookEndpoint("GENERAL_PURPOSE")
-      logWebhookUsage("GENERAL_PURPOSE", "toggle_enrollment")
+      const webhookUrl = getWebhookEndpoint("CUSTOM_AGENT")
+      logWebhookUsage("CUSTOM_AGENT", "toggle_enrollment")
 
       const response = await fetch(webhookUrl, {
         method: "POST",
@@ -328,8 +328,8 @@ export default function CustomAgentSetupPage() {
     setError(null)
 
     try {
-      const webhookUrl = getWebhookEndpoint("GENERAL_PURPOSE")
-      logWebhookUsage("GENERAL_PURPOSE", "save_agent_config")
+      const webhookUrl = getWebhookEndpoint("CUSTOM_AGENT")
+      logWebhookUsage("CUSTOM_AGENT", "save_agent_config")
 
       const response = await fetch(webhookUrl, {
         method: "POST",
@@ -397,8 +397,8 @@ export default function CustomAgentSetupPage() {
     setIsTestingActive(true)
 
     try {
-      const webhookUrl = getWebhookEndpoint("GENERAL_PURPOSE")
-      logWebhookUsage("GENERAL_PURPOSE", "support_conversation")
+      const webhookUrl = getWebhookEndpoint("CUSTOM_AGENT")
+      logWebhookUsage("CUSTOM_AGENT", "support_conversation")
 
       const response = await fetch(webhookUrl, {
         method: "POST",

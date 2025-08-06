@@ -3,8 +3,7 @@ import { useParams, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import NewCustomerIntake from "../../../components/new-customer-intake"
 import Header from "../../../components/header"
-import { Loader2 } from 'lucide-react'
-import { getWebhookEndpoint, logWebhookUsage } from "../../../types/webhook-endpoints"
+import { Loader2 } from "lucide-react"
 
 export default function ProfessionalSpecificPage() {
   const params = useParams()
@@ -15,7 +14,7 @@ export default function ProfessionalSpecificPage() {
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 
-  const WEBHOOK_URL = getWebhookEndpoint("NEW_CUSTOMER_ONBOARDING")
+  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/a306584e-8637-4284-8a41-ecd5d24dc255"
 
   // Handler to go back to landing page
   const handleBackToLanding = () => {
@@ -27,7 +26,6 @@ export default function ProfessionalSpecificPage() {
     const fetchProfessionalName = async () => {
       try {
         setLoading(true)
-        logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "get_professional_name")
         console.log("Fetching professional info for intake URL:", uniqueUrl)
 
         const response = await fetch(WEBHOOK_URL, {

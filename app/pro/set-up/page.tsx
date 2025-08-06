@@ -1,12 +1,11 @@
 "use client"
 import { useState } from "react"
-import { Loader2, Copy, Check, Settings, MessageSquare, Calendar, ArrowRight, Eye, Globe, LinkIcon } from 'lucide-react'
+import { Loader2, Copy, Check, Settings, MessageSquare, Calendar, ArrowRight, Eye, Globe, LinkIcon } from "lucide-react"
 import Header from "../../../components/header"
 import PasswordProtection from "../../../components/password-protection"
 import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { getWebhookEndpoint, logWebhookUsage } from "@/types/webhook-endpoints"
 
 export default function ProfessionalSetupPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -31,6 +30,8 @@ export default function ProfessionalSetupPage() {
   const [urlSuccess, setUrlSuccess] = useState("")
   const [createdCustomUrl, setCreatedCustomUrl] = useState("")
 
+  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
+  const CUSTOM_URL_WEBHOOK = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
   const router = useRouter()
 
   // If not authenticated, show password protection
@@ -67,9 +68,6 @@ export default function ProfessionalSetupPage() {
     setError("")
 
     try {
-      const webhookUrl = getWebhookEndpoint("CHAT_CONFIG")
-      logWebhookUsage("CHAT_CONFIG", "get-url")
-
       const payload = {
         action: "get-url",
         businessName: businessName.trim(),
@@ -79,7 +77,7 @@ export default function ProfessionalSetupPage() {
 
       console.log("Sending request to get professional ID:", payload)
 
-      const response = await fetch(webhookUrl, {
+      const response = await fetch(WEBHOOK_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -94,17 +92,19 @@ export default function ProfessionalSetupPage() {
       const data = await response.json()
       console.log("Received response:", data)
 
-      let professionalIdResult = null
+      // Handle the response format: [{"id":"151"}]
+      let professionalId = null
+
       if (Array.isArray(data) && data.length > 0 && data[0].id) {
-        professionalIdResult = data[0].id
+        professionalId = data[0].id
       } else if (data.professionalId) {
-        professionalIdResult = data.professionalId
+        professionalId = data.professionalId
       } else if (data.id) {
-        professionalIdResult = data.id
+        professionalId = data.id
       }
 
-      if (professionalIdResult) {
-        setProfessionalId(professionalIdResult)
+      if (professionalId) {
+        setProfessionalId(professionalId)
         setShowModal(false)
         setShowResults(true)
       } else {
@@ -124,6 +124,7 @@ export default function ProfessionalSetupPage() {
       return
     }
 
+    // Basic URL validation
     const urlPattern = /^[a-zA-Z0-9-_]+$/
     if (!urlPattern.test(customUrl.trim())) {
       setUrlError("URL can only contain letters, numbers, hyphens, and underscores")
@@ -135,9 +136,6 @@ export default function ProfessionalSetupPage() {
     setUrlSuccess("")
 
     try {
-      const webhookUrl = getWebhookEndpoint("CHAT_CONFIG")
-      logWebhookUsage("CHAT_CONFIG", "create-url")
-
       const payload = {
         action: "create-url",
         professionalId: professionalId,
@@ -148,7 +146,7 @@ export default function ProfessionalSetupPage() {
 
       console.log("Sending request to create custom URL:", payload)
 
-      const response = await fetch(webhookUrl, {
+      const response = await fetch(CUSTOM_URL_WEBHOOK, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -163,6 +161,7 @@ export default function ProfessionalSetupPage() {
       const data = await response.json()
       console.log("Received response:", data)
 
+      // Handle the new response format: [{"status":"success","message":"URL created successfully","url_id":5,"professional_id":"152","unique_url":"sully","date_modified":"2025-07-18T22:09:00.742Z"}]
       let isSuccess = false
       let responseMessage = ""
       let createdUrl = ""
@@ -177,6 +176,7 @@ export default function ProfessionalSetupPage() {
           responseMessage = firstItem.message || "Failed to create custom URL"
         }
       } else if (data.success) {
+        // Fallback for old response format
         isSuccess = true
         responseMessage = data.message || "URL created successfully"
         createdUrl = customUrl.trim()
@@ -213,6 +213,8 @@ export default function ProfessionalSetupPage() {
     }
   }
 
+  const landingUrl = `https://booking.critter.pet/${professionalId}`
+
   const handleScheduleSetupClick = () => {
     setShowScheduleModal(true)
     setScheduleError("")
@@ -230,6 +232,8 @@ export default function ProfessionalSetupPage() {
       setScheduleError("Please enter your Professional ID")
       return
     }
+
+    // Navigate directly to schedule setup page
     router.push(`/schedule/set-up/${scheduleProfessionalId.trim()}`)
   }
 
@@ -250,6 +254,8 @@ export default function ProfessionalSetupPage() {
       setPreviewError("Please enter your unique URL")
       return
     }
+
+    // Navigate directly to the professional landing page using unique URL
     window.open(`https://booking.critter.pet/${previewUniqueUrl.trim()}`, "_blank")
   }
 
@@ -270,6 +276,7 @@ export default function ProfessionalSetupPage() {
                 <p className="text-xl text-gray-700 max-w-3xl mx-auto body-font">
                   Tools and resources to enhance your Critter professional experience
                 </p>
+                {/* Add this new callout */}
                 <div className="mt-6 max-w-2xl mx-auto">
                   <div className="bg-[#E75837]/10 border border-[#E75837]/30 rounded-lg p-4">
                     <p className="text-[#E75837] body-font text-center">
@@ -285,6 +292,7 @@ export default function ProfessionalSetupPage() {
 
               {/* Feature Tiles Section */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                {/* Critter Landing Page Setup Tile - Clickable */}
                 <div
                   onClick={handleSetupClick}
                   className="bg-white rounded-xl shadow-md p-6 text-center transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer border border-transparent hover:border-[#E75837]/20"
@@ -302,6 +310,7 @@ export default function ProfessionalSetupPage() {
                   </span>
                 </div>
 
+                {/* Custom Support Agent Tile - Coming Soon */}
                 <div
                   onClick={() => router.push("/pro/custom-agent")}
                   className="bg-white rounded-xl shadow-md p-6 text-center transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer border border-transparent hover:border-[#94ABD6]/20"
@@ -318,6 +327,7 @@ export default function ProfessionalSetupPage() {
                   </span>
                 </div>
 
+                {/* Schedule Setup Tile - Replaces Under Construction */}
                 <div
                   onClick={() => setShowScheduleModal(true)}
                   className="bg-white rounded-xl shadow-md p-6 text-center transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer border border-transparent hover:border-[#745E25]/20"
@@ -335,6 +345,7 @@ export default function ProfessionalSetupPage() {
                 </div>
               </div>
 
+              {/* Preview Landing Page Button */}
               <div className="text-center mb-12">
                 <button
                   onClick={handlePreviewClick}
@@ -351,6 +362,7 @@ export default function ProfessionalSetupPage() {
           ) : (
             /* Results Section */
             <div className="space-y-8">
+              {/* Success Header */}
               <div className="text-center">
                 <div className="w-16 h-16 bg-[#E75837] rounded-full flex items-center justify-center mx-auto mb-6">
                   <Settings className="h-8 w-8 text-white" />
@@ -361,6 +373,7 @@ export default function ProfessionalSetupPage() {
                 </p>
               </div>
 
+              {/* Professional ID */}
               <div className="bg-white rounded-xl shadow-md p-6">
                 <h2 className="text-xl font-bold mb-4 header-font">Your Professional ID</h2>
                 <div className="bg-gray-50 rounded-lg p-4 flex items-center justify-between">
@@ -381,6 +394,7 @@ export default function ProfessionalSetupPage() {
                 </p>
               </div>
 
+              {/* Custom URL Creation Section */}
               <div className="bg-white rounded-xl shadow-md p-6">
                 <h2 className="text-xl font-bold mb-4 header-font flex items-center">
                   <LinkIcon className="h-5 w-5 mr-2" />
@@ -416,6 +430,8 @@ export default function ProfessionalSetupPage() {
                   {urlSuccess && (
                     <>
                       <div className="text-sm text-green-600 body-font">{urlSuccess}</div>
+
+                      {/* Show the landing page link after successful custom URL creation */}
                       <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
                         <h3 className="text-lg font-bold mb-2 text-green-800 header-font">
                           Your Landing Page is Ready!
@@ -464,6 +480,7 @@ export default function ProfessionalSetupPage() {
                 </div>
               </div>
 
+              {/* Reset Button */}
               <div className="text-center">
                 <button
                   onClick={() => {

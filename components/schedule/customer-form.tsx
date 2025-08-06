@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { ArrowLeft, User, Mail, Phone, MessageSquare } from 'lucide-react'
+import { ArrowLeft, User, Mail, Phone, MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,7 +11,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { Service, SelectedTimeSlot, CustomerInfo, PetResponse } from "@/types/schedule"
 import type { BookingType, RecurringConfig } from "./booking-type-selection"
-import { getWebhookEndpoint, logWebhookUsage } from "@/types/webhook-endpoints"
 
 interface CustomerFormProps {
   selectedServices: Service[]
@@ -63,17 +62,20 @@ export function CustomerForm({
     setError(null)
 
     try {
+      // Validate required fields
       if (!customerInfo.firstName.trim() || !customerInfo.lastName.trim() || !customerInfo.email.trim()) {
         throw new Error("Please fill in all required fields")
       }
 
+      // Email validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
       if (!emailRegex.test(customerInfo.email.trim())) {
         throw new Error("Please enter a valid email address")
       }
 
-      const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG")
-      logWebhookUsage("PROFESSIONAL_CONFIG", "get_customer_pets")
+      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16"
+
+      console.log("Sending webhook to:", webhookUrl)
 
       const payload = {
         professional_id: professionalId,
@@ -114,8 +116,10 @@ export function CustomerForm({
       const result = await response.json()
       console.log("Customer pets response:", result)
 
+      // Parse the response to extract pets
       let pets: any[] = []
       if (Array.isArray(result)) {
+        // Look for pets in the response array
         const petsData = result.find((item) => item.pets || (Array.isArray(item) && item.length > 0))
         if (petsData?.pets) {
           pets = petsData.pets
@@ -140,6 +144,7 @@ export function CustomerForm({
 
   const formatDateTime = () => {
     if (!selectedTimeSlot?.date) return ""
+    // Fix: Create date in local timezone to prevent day-off errors
     const [year, month, day] = selectedTimeSlot.date.split("-").map(Number)
     const localDate = new Date(year, month - 1, day)
     return localDate.toLocaleDateString("en-US", {
@@ -220,6 +225,7 @@ export function CustomerForm({
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {/* Booking Summary */}
       <Card className="shadow-lg border-0 rounded-2xl">
         <CardHeader className="pb-4">
           <CardTitle className="text-xl header-font">Booking Summary</CardTitle>
@@ -299,6 +305,7 @@ export function CustomerForm({
         </CardContent>
       </Card>
 
+      {/* Customer Information Form */}
       <Card className="shadow-lg border-0 rounded-2xl">
         <CardHeader className="pb-4">
           <CardTitle className="text-xl header-font">Your Information</CardTitle>
