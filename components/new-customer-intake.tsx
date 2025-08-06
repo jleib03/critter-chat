@@ -17,7 +17,6 @@ type UserInfo = {
 type NewCustomerIntakeProps = {
   onCancel: () => void
   onComplete: () => void
-  webhookUrl: string
   userInfo: UserInfo
   initialSessionId?: string
   initialUserId?: string
@@ -85,7 +84,6 @@ const isAddOnService = (category: string, serviceName: string): boolean => {
 export default function NewCustomerIntake({
   onCancel,
   onComplete,
-  webhookUrl,
   userInfo: initialUserInfo,
   initialSessionId,
   initialUserId,

@@ -3,7 +3,8 @@ import { useParams, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import NewCustomerIntake from "../../../components/new-customer-intake"
 import Header from "../../../components/header"
-import { Loader2 } from "lucide-react"
+import { Loader2 } from 'lucide-react'
+import { getWebhookEndpoint, logWebhookUsage } from "../../../types/webhook-endpoints"
 
 export default function ProfessionalSpecificPage() {
   const params = useParams()
@@ -13,8 +14,6 @@ export default function ProfessionalSpecificPage() {
   const [professionalId, setProfessionalId] = useState<string>("")
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
-
-  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/a306584e-8637-4284-8a41-ecd5d24dc255"
 
   // Handler to go back to landing page
   const handleBackToLanding = () => {
@@ -27,8 +26,10 @@ export default function ProfessionalSpecificPage() {
       try {
         setLoading(true)
         console.log("Fetching professional info for intake URL:", uniqueUrl)
+        const webhookUrl = getWebhookEndpoint("NEW_CUSTOMER_ONBOARDING")
+        logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "get_professional_name_by_url")
 
-        const response = await fetch(WEBHOOK_URL, {
+        const response = await fetch(webhookUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -170,7 +171,7 @@ export default function ProfessionalSpecificPage() {
     if (uniqueUrl) {
       fetchProfessionalName()
     }
-  }, [uniqueUrl, WEBHOOK_URL])
+  }, [uniqueUrl])
 
   return (
     <div className="min-h-screen bg-[#FBF8F3] flex flex-col">
@@ -201,7 +202,6 @@ export default function ProfessionalSpecificPage() {
                 <NewCustomerIntake
                   onCancel={handleBackToLanding}
                   onComplete={handleBackToLanding}
-                  webhookUrl={WEBHOOK_URL}
                   initialProfessionalId={professionalId || uniqueUrl}
                   initialProfessionalName={professionalName}
                   skipProfessionalStep={true}
