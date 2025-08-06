@@ -3,7 +3,8 @@ import { useParams, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import NewCustomerIntake from "../../../components/new-customer-intake"
 import Header from "../../../components/header"
-import { Loader2 } from "lucide-react"
+import { Loader2 } from 'lucide-react'
+import { getWebhookEndpoint } from "../../../types/webhook-endpoints"
 
 export default function ProfessionalSpecificPage() {
   const params = useParams()
@@ -14,7 +15,7 @@ export default function ProfessionalSpecificPage() {
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 
-  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/a306584e-8637-4284-8a41-ecd5d24dc255"
+  const WEBHOOK_URL = getWebhookEndpoint("GENERAL_PURPOSE")
 
   // Handler to go back to landing page
   const handleBackToLanding = () => {

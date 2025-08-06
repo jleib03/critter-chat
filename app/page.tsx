@@ -4,7 +4,7 @@ import Header from "../components/header"
 import LandingPage from "../components/landing-page"
 import BookingPage from "../components/booking-page"
 import { useRouter } from "next/navigation"
-import { logWebhookUsage } from "../types/webhook-endpoints"
+import { getWebhookEndpoint, logWebhookUsage } from "../types/webhook-endpoints"
 
 import NewCustomerIntake from "../components/new-customer-intake"
 
@@ -22,7 +22,7 @@ export default function Page() {
   const router = useRouter()
 
   // Use centralized webhook system
-  const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/a306584e-8637-4284-8a41-ecd5d24dc255"
+  const WEBHOOK_URL = getWebhookEndpoint("GENERAL_PURPOSE")
 
   // Handler to start onboarding with a session ID and userId
   const handleStartOnboarding = (currentSessionId: string | null, currentUserId: string | null) => {
@@ -40,7 +40,7 @@ export default function Page() {
 
   const handleNewCustomer = () => {
     // For new customers, go directly to onboarding without requiring user info upfront
-    logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "new_customer_flow_started")
+    logWebhookUsage("GENERAL_PURPOSE", "new_customer_flow_started")
     setCurrentView("intake")
   }
 
