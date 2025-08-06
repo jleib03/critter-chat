@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ArrowLeft, PawPrint, Bell, Sparkles, PlusCircle } from 'lucide-react'
+import { ArrowLeft, PawPrint, Bell, Sparkles } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -249,39 +249,48 @@ export function PetSelection({
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="space-y-3 mb-4">
-            {pets.map((pet) => {
-              const isSelected = selectedPets.some((p) => p.pet_id === pet.pet_id)
-              return (
+          {pets.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {pets.map((pet) => (
                 <div
                   key={pet.pet_id}
                   onClick={() => handlePetToggle(pet)}
-                  className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-all ${
-                    isSelected ? "border-[#E75837] bg-orange-50 ring-2 ring-[#E75837]" : "border-gray-200 hover:bg-gray-50"
+                  className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                    selectedPets.some((p) => p.pet_id === pet.pet_id)
+                      ? "border-[#E75837] bg-orange-50 ring-2 ring-[#E75837]"
+                      : "border-gray-200 bg-white hover:border-gray-300"
                   }`}
                 >
-                  <div className="flex items-center space-x-4">
-                    <Checkbox
-                      id={`pet-${pet.pet_id}`}
-                      checked={isSelected}
-                      onCheckedChange={() => handlePetToggle(pet)}
-                      className="data-[state=checked]:bg-[#E75837] data-[state=checked]:border-[#E75837]"
-                      aria-label={`Select ${pet.pet_name}`}
-                    />
-                    <div>
-                      <label htmlFor={`pet-${pet.pet_id}`} className="font-medium text-gray-800 cursor-pointer">
-                        {pet.pet_name}
-                      </label>
-                      <p className="text-sm text-gray-500">
-                        {pet.breed}, {pet.age} years old
-                      </p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="bg-gray-100 p-3 rounded-full">
+                        <PawPrint className="w-6 h-6 text-gray-500" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-800 header-font">{pet.pet_name}</p>
+                        <p className="text-sm text-gray-500 body-font">
+                          {pet.breed} ({pet.pet_type})
+                        </p>
+                      </div>
                     </div>
+                    <Checkbox
+                      checked={selectedPets.some((p) => p.pet_id === pet.pet_id)}
+                      className="data-[state=checked]:bg-[#E75837] data-[state=checked]:border-[#E75837]"
+                    />
                   </div>
-                  <PawPrint className={`w-6 h-6 ${isSelected ? "text-[#E75837]" : "text-gray-300"}`} />
                 </div>
-              )
-            })}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 px-4 bg-gray-50 rounded-xl">
+              <Sparkles className="w-10 h-10 text-[#E75837] mx-auto mb-3" />
+              <p className="font-semibold text-gray-800 header-font">You're a new customer!</p>
+              <p className="text-gray-600 body-font mt-1">
+                Your pet's information will be added to your profile automatically.
+              </p>
+            </div>
+          )}
+
           {isDirectBooking && (
             <div className="space-y-4 pt-4 border-t">
               <h3 className="text-lg font-medium text-gray-800 header-font flex items-center gap-2">
@@ -305,11 +314,6 @@ export function PetSelection({
               </div>
             </div>
           )}
-
-          <Button variant="outline" className="w-full" onClick={() => {}}>
-            <PlusCircle className="w-4 h-4 mr-2" />
-            Add a New Pet
-          </Button>
 
           <div className="flex justify-between pt-6">
             <Button
