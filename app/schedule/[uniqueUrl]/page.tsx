@@ -11,6 +11,7 @@ import { PetSelection } from "@/components/schedule/pet-selection"
 import { BookingConfirmation } from "@/components/schedule/booking-confirmation"
 import { loadProfessionalConfig, saveProfessionalConfig } from "@/utils/professional-config"
 import type { ProfessionalConfig } from "@/types/professional-config"
+import { getWebhookEndpoint, logWebhookUsage } from "@/types/webhook-endpoints"
 import {
   BookingTypeSelection,
   type BookingType,
@@ -250,7 +251,8 @@ export default function SchedulePage() {
       userTimezoneRef.current = JSON.stringify(detectUserTimezone())
       loadProfessionalConfiguration()
 
-      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16"
+      const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG")
+      logWebhookUsage("PROFESSIONAL_CONFIG", "initialize_schedule")
 
       console.log("Initializing schedule with session:", sessionIdRef.current)
 
@@ -612,7 +614,7 @@ export default function SchedulePage() {
     setCreatingBooking(true)
 
     try {
-      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16"
+      const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG")
       const userTimezoneData = JSON.parse(userTimezoneRef.current!)
       const isMultiDay = bookingType === "multi-day" && multiDayTimeSlot
 
@@ -792,6 +794,7 @@ export default function SchedulePage() {
         }),
       }
 
+      logWebhookUsage("PROFESSIONAL_CONFIG", "create_booking")
       console.log("Sending enhanced booking data with detailed recurring information:", bookingData)
 
       const response = await fetch(webhookUrl, {
@@ -857,6 +860,7 @@ export default function SchedulePage() {
               }),
           }
 
+          logWebhookUsage("PROFESSIONAL_CONFIG", "send_confirmation_emails")
           console.log("Sending confirmation email webhook with enhanced recurring details:", confirmationWebhookData)
 
           const confirmationResponse = await fetch(webhookUrl, {

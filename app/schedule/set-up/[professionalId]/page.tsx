@@ -314,8 +314,8 @@ export default function ProfessionalSetupPage() {
       setLoading(true)
       setError(null)
 
-      const webhookUrl = getWebhookEndpoint("SCHEDULE_CONFIG")
-      logWebhookUsage("SCHEDULE_CONFIG", "get_professional_config")
+      const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG")
+      logWebhookUsage("PROFESSIONAL_CONFIG", "get_professional_config")
 
       const payload: GetConfigWebhookPayload = {
         action: "get_professional_config",
@@ -550,8 +550,8 @@ export default function ProfessionalSetupPage() {
 
       const { changes, changedTabs } = detectChanges()
 
-      const webhookUrl = getWebhookEndpoint("SCHEDULE_CONFIG")
-      logWebhookUsage("SCHEDULE_CONFIG", "save_professional_config")
+      const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG")
+      logWebhookUsage("PROFESSIONAL_CONFIG", "save_professional_config")
 
       const payload: SaveConfigWebhookPayload = {
         action: "save_professional_config",
