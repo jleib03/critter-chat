@@ -22,7 +22,7 @@ export default function Page() {
   const router = useRouter()
 
   // Use centralized webhook system
-  const WEBHOOK_URL = getWebhookEndpoint("GENERAL_PURPOSE")
+  const WEBHOOK_URL = getWebhookEndpoint("NEW_CUSTOMER_ONBOARDING")
 
   // Handler to start onboarding with a session ID and userId
   const handleStartOnboarding = (currentSessionId: string | null, currentUserId: string | null) => {
@@ -40,7 +40,7 @@ export default function Page() {
 
   const handleNewCustomer = () => {
     // For new customers, go directly to onboarding without requiring user info upfront
-    logWebhookUsage("GENERAL_PURPOSE", "new_customer_flow_started")
+    logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "new_customer_flow_started")
     setCurrentView("intake")
   }
 
