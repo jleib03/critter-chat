@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
-import { cn } from "@/lib/utils"
 import { Loader2, Trash2, Plus, Users, Clock, Shield, Calendar, AlertCircle, Smartphone, CheckCircle } from 'lucide-react'
 import type {
   GetConfigWebhookPayload,
@@ -48,10 +47,29 @@ const DEFAULT_BOOKING_PREFERENCES = {
   custom_instructions: "",
 }
 
+const employeeColors = [
+  "#3b82f6", // blue-500
+  "#22c55e", // green-500
+  "#f97316", // orange-500
+  "#8b5cf6", // violet-500
+  "#ec4899", // pink-500
+  "#f59e0b", // amber-500
+  "#10b981", // emerald-500
+  "#6366f1", // indigo-500
+]
+
 export default function ProfessionalSetupPage() {
   const params = useParams()
   const professionalId = params.professionalId as string
   const { toast } = useToast()
+
+  const employeeColorMap = useMemo(() => {
+    const map = new Map<string, string>()
+    employees.forEach((emp, index) => {
+      map.set(emp.employee_id, employeeColors[index % employeeColors.length])
+    })
+    return map
+  }, [employees])
 
   // State management
   const [loading, setLoading] = useState(true)
@@ -82,83 +100,6 @@ export default function ProfessionalSetupPage() {
     is_recurring: false,
     is_all_day: false,
   })
-
-  // Color coordination for employees
-  const employeeColorClasses = useMemo(() => {
-    const colors = [
-      "border-l-blue-400",
-      "border-l-green-400",
-      "border-l-yellow-400",
-      "border-l-purple-400",
-      "border-l-pink-400",
-      "border-l-indigo-400",
-      "border-l-teal-400",
-      "border-l-red-400",
-    ]
-    const colorMap = new Map<string, string>()
-    employees.forEach((employee, index) => {
-      colorMap.set(employee.employee_id, colors[index % colors.length])
-    })
-    return colorMap
-  }, [employees])
-
-  const employeeBgColorClasses = useMemo(() => {
-    const colors = [
-      "bg-blue-400",
-      "bg-green-400",
-      "bg-yellow-400",
-      "bg-purple-400",
-      "bg-pink-400",
-      "bg-indigo-400",
-      "bg-teal-400",
-      "bg-red-400",
-    ]
-    const colorMap = new Map<string, string>()
-    employees.forEach((employee, index) => {
-      colorMap.set(employee.employee_id, colors[index % colors.length])
-    })
-    return colorMap
-  }, [employees])
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-12 h-12 bg-[#E75837] rounded-xl flex items-center justify-center mx-auto">
-            <Loader2 className="w-6 h-6 animate-spin text-white" />
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 header-font">Loading Configuration</h2>
-            <p className="text-gray-600 body-font">Setting up your professional dashboard</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-        <div className="text-center max-w-lg mx-auto">
-          <div className="bg-white rounded-2xl shadow-lg border p-8 space-y-4">
-            <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mx-auto">
-              <AlertCircle className="w-6 h-6 text-red-600" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 header-font">Configuration Error</h2>
-              <p className="text-gray-600 body-font mt-2">{error}</p>
-            </div>
-            <Button
-              onClick={loadConfiguration}
-              className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-6 py-2 rounded-lg font-medium transition-colors"
-            >
-              Try Again
-            </Button>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   // Generate session ID
   const generateSessionId = () => {
@@ -762,6 +703,46 @@ export default function ProfessionalSetupPage() {
     setBookingPreferences((prev) => ({ ...prev, ...updates }))
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 bg-[#E75837] rounded-xl flex items-center justify-center mx-auto">
+            <Loader2 className="w-6 h-6 animate-spin text-white" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 header-font">Loading Configuration</h2>
+            <p className="text-gray-600 body-font">Setting up your professional dashboard</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="text-center max-w-lg mx-auto">
+          <div className="bg-white rounded-2xl shadow-lg border p-8 space-y-4">
+            <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mx-auto">
+              <AlertCircle className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 header-font">Configuration Error</h2>
+              <p className="text-gray-600 body-font mt-2">{error}</p>
+            </div>
+            <Button
+              onClick={loadConfiguration}
+              className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-6 py-2 rounded-lg font-medium transition-colors"
+            >
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto p-6 space-y-6">
@@ -1293,22 +1274,19 @@ export default function ProfessionalSetupPage() {
                     </Card>
                   ) : (
                     blockedTimes.map((blockedTime) => {
-                      const borderColorClass = blockedTime.employee_id
-                        ? employeeColorClasses.get(blockedTime.employee_id)
-                        : ""
-                      const bgColorClass = blockedTime.employee_id
-                        ? employeeBgColorClasses.get(blockedTime.employee_id)
-                        : ""
+                      const employee = employees.find((emp) => emp.employee_id === blockedTime.employee_id)
+                      const color = employee ? employeeColorMap.get(employee.employee_id) : "#64748b" // default slate-500
 
                       return (
                         <Card
                           key={blockedTime.blocked_time_id}
-                          className={cn("shadow-sm border rounded-xl", borderColorClass && "border-l-4", borderColorClass)}
+                          className="shadow-sm border rounded-xl overflow-hidden"
+                          style={{ borderLeft: `5px solid ${color}` }}
                         >
                           <CardContent className="pt-6">
                             <div className="flex items-center justify-between">
                               <div className="space-y-2">
-                                <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-4 flex-wrap">
                                   <div className="flex items-center gap-2">
                                     <Calendar className="w-4 h-4 text-gray-500" />
                                     <span className="font-medium body-font">
@@ -1342,15 +1320,20 @@ export default function ProfessionalSetupPage() {
                                       Recurring
                                     </Badge>
                                   )}
-                                  {blockedTime.employee_id ? (
-                                    <Badge variant="outline" className="text-xs flex items-center gap-2">
-                                      <div className={cn("w-2 h-2 rounded-full", bgColorClass)} />
-                                      {employees.find((emp) => emp.employee_id === blockedTime.employee_id)?.name ||
-                                        "Specific Team Member"}
+                                  {employee ? (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs"
+                                      style={{
+                                        borderColor: color,
+                                        color: color,
+                                        backgroundColor: `${color}1A`,
+                                      }}
+                                    >
+                                      {employee.name || "Specific Team Member"}
                                     </Badge>
                                   ) : (
-                                    <Badge variant="secondary" className="text-xs flex items-center gap-2">
-                                      <Users className="w-3 h-3" />
+                                    <Badge variant="outline" className="text-xs">
                                       All Team Members
                                     </Badge>
                                   )}
