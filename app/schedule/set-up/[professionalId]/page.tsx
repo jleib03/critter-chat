@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -11,18 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
-import {
-  Loader2,
-  Trash2,
-  Plus,
-  Users,
-  Clock,
-  Shield,
-  Calendar,
-  AlertCircle,
-  Smartphone,
-  CheckCircle,
-} from "lucide-react"
+import { Loader2, Trash2, Plus, Users, Clock, Shield, Calendar, AlertCircle, Smartphone, CheckCircle } from 'lucide-react'
 import type {
   GetConfigWebhookPayload,
   SaveConfigWebhookPayload,
@@ -58,6 +47,17 @@ const DEFAULT_BOOKING_PREFERENCES = {
   custom_instructions: "",
 }
 
+const employeeColors = [
+  "#3b82f6", // blue-500
+  "#22c55e", // green-500
+  "#f97316", // orange-500
+  "#8b5cf6", // violet-500
+  "#ec4899", // pink-500
+  "#f59e0b", // amber-500
+  "#10b981", // emerald-500
+  "#6366f1", // indigo-500
+]
+
 export default function ProfessionalSetupPage() {
   const params = useParams()
   const professionalId = params.professionalId as string
@@ -92,6 +92,14 @@ export default function ProfessionalSetupPage() {
     is_recurring: false,
     is_all_day: false,
   })
+
+  const employeeColorMap = useMemo(() => {
+    const map = new Map<string, string>()
+    employees.forEach((emp, index) => {
+      map.set(emp.employee_id, employeeColors[index % employeeColors.length])
+    })
+    return map
+  }, [employees])
 
   // Generate session ID
   const generateSessionId = () => {
@@ -1265,63 +1273,85 @@ export default function ProfessionalSetupPage() {
                       </CardContent>
                     </Card>
                   ) : (
-                    blockedTimes.map((blockedTime) => (
-                      <Card key={blockedTime.blocked_time_id} className="shadow-sm border rounded-xl">
-                        <CardContent className="pt-6">
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-2">
-                                  <Calendar className="w-4 h-4 text-gray-500" />
-                                  <span className="font-medium body-font">
-                                    {(() => {
-                                      const [year, month, day] = blockedTime.date.split("-").map(Number)
-                                      const localDate = new Date(year, month - 1, day)
-                                      return localDate.toLocaleDateString("en-US", {
-                                        weekday: "long",
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                      })
-                                    })()}
-                                  </span>
+                    blockedTimes.map((blockedTime) => {
+                      const employee = employees.find((emp) => emp.employee_id === blockedTime.employee_id)
+                      const color = employee ? employeeColorMap.get(employee.employee_id) : "#64748b" // default slate-500
+
+                      return (
+                        <Card
+                          key={blockedTime.blocked_time_id}
+                          className="shadow-sm border rounded-xl overflow-hidden"
+                          style={{ borderLeft: `5px solid ${color}` }}
+                        >
+                          <CardContent className="pt-6">
+                            <div className="flex items-center justify-between">
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-4 flex-wrap">
+                                  <div className="flex items-center gap-2">
+                                    <Calendar className="w-4 h-4 text-gray-500" />
+                                    <span className="font-medium body-font">
+                                      {(() => {
+                                        const [year, month, day] = blockedTime.date.split("-").map(Number)
+                                        const localDate = new Date(year, month - 1, day)
+                                        return localDate.toLocaleDateString("en-US", {
+                                          weekday: "long",
+                                          year: "numeric",
+                                          month: "long",
+                                          day: "numeric",
+                                        })
+                                      })()}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Clock className="w-4 h-4 text-gray-500" />
+                                    <span className="body-font">
+                                      {blockedTime.is_all_day
+                                        ? "All Day"
+                                        : `${formatTimeToAMPM(blockedTime.start_time)} - ${formatTimeToAMPM(
+                                            blockedTime.end_time,
+                                          )}`}
+                                    </span>
+                                  </div>
                                 </div>
+                                <p className="text-gray-600 body-font">{formatReason(blockedTime.reason)}</p>
                                 <div className="flex items-center gap-2">
-                                  <Clock className="w-4 h-4 text-gray-500" />
-                                  <span className="body-font">
-                                    {blockedTime.is_all_day
-                                      ? "All Day"
-                                      : `${formatTimeToAMPM(blockedTime.start_time)} - ${formatTimeToAMPM(blockedTime.end_time)}`}
-                                  </span>
+                                  {blockedTime.is_recurring && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      Recurring
+                                    </Badge>
+                                  )}
+                                  {employee ? (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs"
+                                      style={{
+                                        borderColor: color,
+                                        color: color,
+                                        backgroundColor: `${color}1A`,
+                                      }}
+                                    >
+                                      {employee.name || "Specific Team Member"}
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="text-xs">
+                                      All Team Members
+                                    </Badge>
+                                  )}
                                 </div>
                               </div>
-                              <p className="text-gray-600 body-font">{formatReason(blockedTime.reason)}</p>
-                              <div className="flex items-center gap-2">
-                                {blockedTime.is_recurring && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    Recurring
-                                  </Badge>
-                                )}
-                                {blockedTime.employee_id && (
-                                  <Badge variant="outline" className="text-xs">
-                                    {employees.find((emp) => emp.employee_id === blockedTime.employee_id)?.name ||
-                                      "Specific Team Member"}
-                                  </Badge>
-                                )}
-                              </div>
+                              <Button
+                                onClick={() => removeBlockedTime(blockedTime.blocked_time_id)}
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
                             </div>
-                            <Button
-                              onClick={() => removeBlockedTime(blockedTime.blocked_time_id)}
-                              variant="outline"
-                              size="sm"
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
+                          </CardContent>
+                        </Card>
+                      )
+                    })
                   )}
                 </div>
               </div>
