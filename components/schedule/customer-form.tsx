@@ -63,12 +63,10 @@ export function CustomerForm({
     setError(null)
 
     try {
-      // Validate required fields
       if (!customerInfo.firstName.trim() || !customerInfo.lastName.trim() || !customerInfo.email.trim()) {
         throw new Error("Please fill in all required fields")
       }
 
-      // Email validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
       if (!emailRegex.test(customerInfo.email.trim())) {
         throw new Error("Please enter a valid email address")
@@ -76,8 +74,6 @@ export function CustomerForm({
 
       const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG")
       logWebhookUsage("PROFESSIONAL_CONFIG", "get_customer_pets")
-
-      console.log("Sending webhook to:", webhookUrl)
 
       const payload = {
         professional_id: professionalId,
@@ -118,10 +114,8 @@ export function CustomerForm({
       const result = await response.json()
       console.log("Customer pets response:", result)
 
-      // Parse the response to extract pets
       let pets: any[] = []
       if (Array.isArray(result)) {
-        // Look for pets in the response array
         const petsData = result.find((item) => item.pets || (Array.isArray(item) && item.length > 0))
         if (petsData?.pets) {
           pets = petsData.pets
@@ -146,7 +140,6 @@ export function CustomerForm({
 
   const formatDateTime = () => {
     if (!selectedTimeSlot?.date) return ""
-    // Fix: Create date in local timezone to prevent day-off errors
     const [year, month, day] = selectedTimeSlot.date.split("-").map(Number)
     const localDate = new Date(year, month - 1, day)
     return localDate.toLocaleDateString("en-US", {
@@ -227,7 +220,6 @@ export function CustomerForm({
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Booking Summary */}
       <Card className="shadow-lg border-0 rounded-2xl">
         <CardHeader className="pb-4">
           <CardTitle className="text-xl header-font">Booking Summary</CardTitle>
@@ -307,7 +299,6 @@ export function CustomerForm({
         </CardContent>
       </Card>
 
-      {/* Customer Information Form */}
       <Card className="shadow-lg border-0 rounded-2xl">
         <CardHeader className="pb-4">
           <CardTitle className="text-xl header-font">Your Information</CardTitle>

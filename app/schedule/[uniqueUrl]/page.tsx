@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect, useState, useRef, useMemo } from "react"
+import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { useParams } from "next/navigation"
 import { Loader2, Clock, Calendar } from 'lucide-react'
-import type { Service, SelectedTimeSlot, CustomerInfo, Pet, PetResponse, ParsedWebhookData } from "@/types/schedule"
+import type { Service, SelectedTimeSlot, CustomerInfo, Pet, PetResponse, ParsedWebhookData, BookingData, ProfessionalInfo } from "@/types/schedule"
 import { ServiceSelectorBar } from "@/components/schedule/service-selector-bar"
 import { WeeklyCalendar } from "@/components/schedule/weekly-calendar"
 import { CustomerForm } from "@/components/schedule/customer-form"
@@ -21,16 +21,54 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { MultiDayBookingForm } from "@/components/schedule/multi-day-booking-form"
 import { calculateMultiDayAvailability } from "@/utils/professional-config"
+import { ServiceSelection } from "@/components/schedule/service-selection"
+import { DateTimePanel } from "@/components/date-time-panel"
+import Header from "@/components/header"
 
+type ScheduleStep = "service" | "bookingType" | "dateTime" | "multiDay" | "customerForm" | "petSelection" | "confirmation"
 type NotificationPreference = "1_hour" | "1_day" | "1_week"
+
+interface BookingDetails {
+  selectedServices: Service[]
+  selectedTimeSlot: SelectedTimeSlot | null
+  customerInfo: CustomerInfo | null
+  selectedPets: Pet[]
+  bookingId: string | null
+  isDirectBooking: boolean
+  notificationPreferences: NotificationPreference[]
+  bookingType: BookingType | null
+  recurringConfig: RecurringConfig | null
+  multiDayTimeSlot: { start: Date; end: Date } | null
+}
 
 export default function SchedulePage() {
   const params = useParams()
   const uniqueUrl = params.uniqueUrl as string
 
+  const [currentStep, setCurrentStep] = useState<ScheduleStep>("service")
+  const [professionalInfo, setProfessionalInfo] = useState<ProfessionalInfo | null>(null)
+  const [professionalConfig, setProfessionalConfig] = useState<ProfessionalConfig | null>(null)
+  const [services, setServices] = useState<Service[]>([])
+  const [existingBookings, setExistingBookings] = useState<BookingData[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [sessionId, setSessionId] = useState("")
+
+  const [bookingDetails, setBookingDetails] = useState<BookingDetails>({
+    selectedServices: [],
+    selectedTimeSlot: null,
+    customerInfo: null,
+    selectedPets: [],
+    bookingId: null,
+    isDirectBooking: false,
+    notificationPreferences: ["1_day"],
+    bookingType: null,
+    recurringConfig: null,
+    multiDayTimeSlot: null,
+  })
+
   const [webhookData, setWebhookData] = useState<ParsedWebhookData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [selectedServices, setSelectedServices] = useState<Service[]>([])
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<SelectedTimeSlot | null>(null)
   const sessionIdRef = useRef<string | null>(null)
@@ -44,7 +82,6 @@ export default function SchedulePage() {
   const [pets, setPets] = useState<Pet[]>([])
   const [selectedPets, setSelectedPets] = useState<Pet[]>([])
   const [selectedNotifications, setSelectedNotifications] = useState<NotificationPreference[]>([])
-  const [professionalConfig, setProfessionalConfig] = useState<ProfessionalConfig | null>(null)
   const [professionalId, setProfessionalId] = useState<string>("")
 
   const [showBookingTypeSelection, setShowBookingTypeSelection] = useState(false)
@@ -242,7 +279,7 @@ export default function SchedulePage() {
   }
 
   // Update the initializeSchedule function to parse the new webhook format
-  const initializeSchedule = async () => {
+  const initializeScheduleOld = async () => {
     try {
       setLoading(true)
       setError(null)
@@ -478,14 +515,68 @@ export default function SchedulePage() {
   // Memoize professional config to prevent unnecessary re-renders
   const memoizedProfessionalConfig = useMemo(() => professionalConfig, [professionalConfig])
 
-  useEffect(() => {
-    if (uniqueUrl) {
-      console.log("useEffect - Initializing schedule for uniqueUrl:", uniqueUrl) // ADDED LOG
-      initializeSchedule()
+  const initializeSchedule = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    const currentSessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
+    setSessionId(currentSessionId)
+    console.log("Initializing schedule with session:", currentSessionId)
+
+    try {
+      const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG")
+      logWebhookUsage("PROFESSIONAL_CONFIG", "schedule_initialization")
+
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "schedule_initialization",
+          unique_url: uniqueUrl,
+          session_id: currentSessionId,
+        }),
+      })
+
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+
+      const data = await response.json()
+      console.log("Schedule initialization data:", data)
+
+      const professionalData = data.find((d: any) => d.professional_info)?.professional_info
+      const servicesData = data.find((d: any) => d.services)?.services || []
+      const bookingsData = data.find((d: any) => d.bookings)?.bookings || []
+      const configData = data.find((d: any) => d.config)?.config
+
+      if (!professionalData) throw new Error("Professional information not found.")
+
+      setProfessionalInfo(professionalData)
+      setServices(servicesData)
+      setExistingBookings(bookingsData)
+      setProfessionalConfig(configData)
+
+      setBookingDetails((prev) => ({
+        ...prev,
+        isDirectBooking: configData?.bookingPreferences?.booking_system === "direct_booking",
+      }))
+    } catch (err) {
+      console.error("Error initializing schedule:", err)
+      setError(err instanceof Error ? err.message : "Failed to load schedule data.")
+    } finally {
+      setIsLoading(false)
     }
   }, [uniqueUrl])
 
-  const handleServiceSelect = (service: Service) => {
+  useEffect(() => {
+    initializeSchedule()
+  }, [initializeSchedule])
+
+  useEffect(() => {
+    if (uniqueUrl) {
+      console.log("useEffect - Initializing schedule for uniqueUrl:", uniqueUrl) // ADDED LOG
+      //initializeSchedule()
+    }
+  }, [uniqueUrl])
+
+  const handleServiceSelectOld = (service: Service) => {
     console.log("handleServiceSelect called with:", service.name)
     setSelectedTimeSlot(null)
 
@@ -505,6 +596,16 @@ export default function SchedulePage() {
         return newServices
       }
     })
+  }
+
+  const handleServiceSelect = (selected: Service[]) => {
+    setBookingDetails((prev) => ({ ...prev, selectedServices: selected }))
+    const hasMultiDayService = selected.some(s => s.duration_unit.toLowerCase() === 'days')
+    if (selected.length > 1 && hasMultiDayService) {
+        setCurrentStep("multiDay")
+    } else {
+        setCurrentStep("bookingType")
+    }
   }
 
   const handleContinueFromServices = () => {
@@ -531,13 +632,23 @@ export default function SchedulePage() {
     }
   }
 
-  const handleBookingTypeSelect = (type: BookingType, config?: RecurringConfig) => {
+  const handleBookingTypeSelectOld = (type: BookingType, config?: RecurringConfig) => {
     setBookingType(type)
     setShowBookingTypeSelection(false)
     if (type === "recurring") {
       setRecurringConfig(config || null)
     } else if (type === "multi-day") {
       setShowMultiDayForm(true)
+    }
+  }
+
+  const handleBookingTypeSelect = (type: BookingType, config: RecurringConfig | null) => {
+    setBookingDetails(prev => ({ ...prev, bookingType: type, recurringConfig: config }))
+    const hasMultiDayService = bookingDetails.selectedServices.some(s => s.duration_unit.toLowerCase() === 'days')
+    if (type === 'multi-day' || hasMultiDayService) {
+        setCurrentStep("multiDay")
+    } else {
+        setCurrentStep("dateTime")
     }
   }
 
@@ -580,7 +691,7 @@ export default function SchedulePage() {
     setRecurringConfig(null)
   }
 
-  const handleTimeSlotSelect = (slot: SelectedTimeSlot) => {
+  const handleTimeSlotSelectOld = (slot: SelectedTimeSlot) => {
     if (selectedServices.length === 0) {
       alert("Please select at least one service before selecting a time slot.")
       return
@@ -601,14 +712,33 @@ export default function SchedulePage() {
     setShowCustomerForm(true)
   }
 
-  const handlePetsReceived = (customerInfo: CustomerInfo, petResponse: PetResponse) => {
+  const handleDateTimeSelect = (slot: SelectedTimeSlot) => {
+    setBookingDetails((prev) => ({ ...prev, selectedTimeSlot: slot }))
+    setCurrentStep("customerForm")
+  }
+
+  const handleMultiDaySelect = (start: Date, end: Date) => {
+    setBookingDetails(prev => ({ ...prev, multiDayTimeSlot: { start, end } }))
+    setCurrentStep("customerForm")
+  }
+
+  const handlePetsReceivedOld = (customerInfo: CustomerInfo, petResponse: PetResponse) => {
     setCustomerInfo(customerInfo)
     setPets(petResponse.pets || [])
     setShowCustomerForm(false)
     setShowPetSelection(true)
   }
 
-  const handlePetSelect = async (pets: Pet[], notifications: NotificationPreference[]) => {
+  const handleCustomerInfoSubmit = (customer: CustomerInfo, petResponse: PetResponse) => {
+    setBookingDetails((prev) => ({
+      ...prev,
+      customerInfo: customer,
+      selectedPets: petResponse.pets,
+    }))
+    setCurrentStep("petSelection")
+  }
+
+  const handlePetSelectOld = async (pets: Pet[], notifications: NotificationPreference[]) => {
     setSelectedPets(pets)
     setSelectedNotifications(notifications)
     setCreatingBooking(true)
@@ -894,9 +1024,372 @@ export default function SchedulePage() {
     }
   }
 
-  const handleBackToCustomerForm = () => {
+  const handleBookingSubmit = async (petsToBook: Pet[], notificationPreferences: NotificationPreference[]) => {
+    if (!professionalInfo || !bookingDetails.customerInfo) {
+      setError("Missing required booking information.")
+      return
+    }
+    setIsLoading(true)
+    try {
+      const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG")
+      logWebhookUsage("PROFESSIONAL_CONFIG", "create_booking")
+
+      const payload = {
+        action: "create_booking",
+        session_id: sessionId,
+        professional_id: professionalInfo.professional_id,
+        customer_info: bookingDetails.customerInfo,
+        selected_pets: petsToBook,
+        selected_services: bookingDetails.selectedServices,
+        time_slot: bookingDetails.selectedTimeSlot,
+        multi_day_slot: bookingDetails.multiDayTimeSlot,
+        booking_type: bookingDetails.bookingType,
+        recurring_config: bookingDetails.recurringConfig,
+        notification_preferences: notificationPreferences,
+        is_direct_booking: bookingDetails.isDirectBooking,
+        timestamp: new Date().toISOString(),
+      }
+      console.log("Submitting booking with payload:", payload)
+
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) throw new Error(`Booking failed! Status: ${response.status}`)
+
+      const result = await response.json()
+      console.log("Booking submission result:", result)
+      const bookingId = result.find((r: any) => r.booking_id)?.booking_id
+      if (!bookingId) throw new Error("Booking ID not found in response.")
+
+      setBookingDetails((prev) => ({ ...prev, bookingId }))
+      setCurrentStep("confirmation")
+    } catch (err) {
+      console.error("Error submitting booking:", err)
+      setError(err instanceof Error ? err.message : "Could not complete booking.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handlePetSelectOld = async (pets: Pet[], notifications: NotificationPreference[]) => {
+    setSelectedPets(pets)
+    setSelectedNotifications(notifications)
+    setCreatingBooking(true)
+
+    try {
+      const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG")
+      const userTimezoneData = JSON.parse(userTimezoneRef.current!)
+      const isMultiDay = bookingType === "multi-day" && multiDayTimeSlot
+
+      const startDateTimeUTC = isMultiDay
+        ? multiDayTimeSlot.start.toISOString()
+        : convertLocalTimeToUTC(selectedTimeSlot!.date, selectedTimeSlot!.startTime, userTimezoneData.timezone)
+
+      // Calculate total duration and cost for all selected services
+      let totalDurationMinutes = 0
+      let totalCost = 0
+
+      selectedServices.forEach((service) => {
+        let durationInMinutes = service.duration_number
+
+        if (service.duration_unit === "Hours") {
+          durationInMinutes = service.duration_number * 60
+        } else if (service.duration_unit === "Days") {
+          durationInMinutes = service.duration_number * 24 * 60
+        }
+
+        totalDurationMinutes += durationInMinutes
+        totalCost += Number(service.customer_cost)
+      })
+
+      const endDateTimeUTC = isMultiDay
+        ? multiDayTimeSlot.end.toISOString()
+        : calculateEndDateTimeUTC(startDateTimeUTC, totalDurationMinutes, "Minutes")
+
+      const endTimeLocal = new Date(endDateTimeUTC).toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: userTimezoneData.timezone,
+      })
+
+      // Enhanced recurring details for webhook
+      let enhancedRecurringDetails = null
+      if (bookingType === "recurring" && recurringConfig) {
+        const recurringDates = generateRecurringDates(selectedTimeSlot!.date, recurringConfig)
+
+        enhancedRecurringDetails = {
+          // Add the original user selections
+          selected_days_of_week: recurringConfig.daysOfWeek || recurringConfig.selectedDays || [],
+          selected_end_date: recurringConfig.endDate || recurringConfig.originalEndDate,
+          recurring_start_date: selectedTimeSlot!.date,
+
+          // Basic recurring config - use the actual recurringConfig values
+          frequency: recurringConfig.frequency || 1,
+          unit: recurringConfig.unit || "week",
+          end_date: recurringConfig.endDate,
+          total_appointments: recurringConfig.totalAppointments || recurringDates.length,
+
+          // Enhanced details
+          pattern_description: `Every ${recurringConfig.frequency || 1} ${recurringConfig.unit || "week"}${
+            (recurringConfig.frequency || 1) > 1 ? "s" : ""
+          }`,
+          start_date: selectedTimeSlot!.date,
+          start_time: selectedTimeSlot!.startTime,
+          end_time: endTimeLocal,
+
+          // All occurrence dates with details
+          all_occurrences: recurringDates,
+
+          // Summary information
+          total_occurrences: recurringDates.length,
+          days_of_week_included: [...new Set(recurringDates.map((d) => d.day_of_week))],
+          date_range: {
+            first_appointment: recurringDates[0]?.date,
+            last_appointment: recurringDates[recurringDates.length - 1]?.date,
+          },
+
+          // Time details for each occurrence
+          recurring_schedule: {
+            same_time_each_occurrence: true,
+            start_time_local: selectedTimeSlot!.startTime,
+            end_time_local: endTimeLocal,
+            duration_minutes: totalDurationMinutes,
+            timezone: userTimezoneData.timezone,
+          },
+
+          // Additional useful information
+          booking_pattern: {
+            frequency_number: recurringConfig.frequency || 1,
+            frequency_unit: recurringConfig.unit || "week",
+            pattern_type:
+              (recurringConfig.frequency || 1) === 1
+                ? `${recurringConfig.unit || "week"}ly`
+                : `every_${recurringConfig.frequency || 1}_${recurringConfig.unit || "week"}s`,
+          },
+        }
+
+        console.log("Enhanced recurring details with proper config:", enhancedRecurringDetails)
+      }
+
+      const bookingData = {
+        action: "create_booking",
+        uniqueUrl: uniqueUrl,
+        professional_id: professionalId,
+        session_id: sessionIdRef.current,
+        timestamp: new Date().toISOString(),
+        user_timezone: userTimezoneData,
+
+        // Add booking_system from professional's preferences
+        booking_system: bookingPreferences?.booking_system || "direct_booking",
+
+        // Keep booking_type for the system's booking behavior (direct vs request)
+        booking_type: determineBookingType(),
+
+        // Add user's booking choice (one-time vs recurring)
+        user_booking_type: bookingType, // "one-time" or "recurring"
+        all_day: bookingType === "multi-day",
+        is_recurring_booking: bookingType === "recurring",
+
+        // Enhanced recurring details
+        ...(bookingType === "recurring" &&
+          enhancedRecurringDetails && {
+            recurring_details: enhancedRecurringDetails,
+            is_recurring_booking: true,
+          }),
+
+        booking_details: {
+          service_ids: selectedServices.map((service) => service.service_id),
+          service_names: selectedServices.map((service) => service.name),
+          service_descriptions: selectedServices.map((service) => service.description),
+          service_durations: selectedServices.map((service) => service.duration_number),
+          service_duration_units: selectedServices.map((service) => service.duration_unit),
+          service_costs: selectedServices.map((service) => service.customer_cost),
+          service_currencies: selectedServices.map((service) => service.customer_cost_currency),
+
+          total_duration_minutes: totalDurationMinutes,
+          total_cost: totalCost,
+
+          start_utc: startDateTimeUTC,
+          end_utc: endDateTimeUTC,
+
+          date_local: selectedTimeSlot!.date,
+          start_time_local: selectedTimeSlot!.startTime,
+          end_time_local: endTimeLocal,
+          day_of_week: selectedTimeSlot!.dayOfWeek,
+
+          timezone: userTimezoneData.timezone,
+          timezone_offset: userTimezoneData.offset,
+        },
+        customer_info: {
+          first_name: customerInfo.firstName.trim(),
+          last_name: customerInfo.lastName.trim(),
+          email: customerInfo.email.trim().toLowerCase(),
+        },
+        pets_info: pets.map((pet) => ({
+          pet_id: pet.pet_id,
+          pet_name: pet.pet_name,
+          pet_type: pet.pet_type,
+          breed: pet.breed,
+          age: pet.age,
+          weight: pet.weight,
+          special_notes: pet.special_notes,
+        })),
+        // Only include notification preferences for direct bookings
+        ...(isDirectBooking && {
+          notification_preferences: {
+            selected_notifications: notifications,
+            notification_details: notifications
+              .map((n) => {
+                switch (n) {
+                  case "1_hour":
+                    return { type: "1_hour", label: "1 hour before", enabled: true }
+                  case "1_day":
+                    return { type: "1_day", label: "1 day before", enabled: true }
+                  case "1_week":
+                    return { type: "1_week", label: "1 week before", enabled: true }
+                  default:
+                    return null
+                }
+              })
+              .filter(Boolean),
+          },
+        }),
+      }
+
+      logWebhookUsage("PROFESSIONAL_CONFIG", "create_booking")
+      console.log("Sending enhanced booking data with detailed recurring information:", bookingData)
+
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(bookingData),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      console.log("Booking created:", result)
+
+      if (result && result[0] && result[0].output === "Booking Successfully Created") {
+        // Send confirmation email webhook with enhanced recurring details
+        try {
+          const confirmationWebhookData = {
+            action: "send_confirmation_emails",
+            uniqueUrl: uniqueUrl,
+            professional_id: professionalId,
+            session_id: sessionIdRef.current,
+            timestamp: new Date().toISOString(),
+            customer_info: {
+              first_name: customerInfo.firstName.trim(),
+              last_name: customerInfo.lastName.trim(),
+              email: customerInfo.email.trim().toLowerCase(),
+            },
+            services_selected: selectedServices.map((service) => ({
+              service_id: service.service_id,
+              name: service.name,
+              description: service.description,
+              duration_number: service.duration_number,
+              duration_unit: service.duration_unit,
+              customer_cost: service.customer_cost,
+              customer_cost_currency: service.customer_cost_currency,
+            })),
+            booking_details: {
+              date: selectedTimeSlot!.date,
+              start_time: selectedTimeSlot!.startTime,
+              end_time: endTimeLocal,
+              day_of_week: selectedTimeSlot!.dayOfWeek,
+              timezone: userTimezoneData.timezone,
+              timezone_offset: userTimezoneData.offset,
+            },
+            pets_info: pets.map((pet) => ({
+              pet_id: pet.pet_id,
+              pet_name: pet.pet_name,
+              pet_type: pet.pet_type,
+              breed: pet.breed,
+              age: pet.age,
+              weight: pet.weight,
+              special_notes: pet.special_notes,
+            })),
+            is_recurring: bookingType === "recurring",
+            // Include enhanced recurring details in confirmation email
+            ...(bookingType === "recurring" &&
+              enhancedRecurringDetails && {
+                recurring_details: enhancedRecurringDetails,
+              }),
+          }
+
+          logWebhookUsage("PROFESSIONAL_CONFIG", "send_confirmation_emails")
+          console.log("Sending confirmation email webhook with enhanced recurring details:", confirmationWebhookData)
+
+          const confirmationResponse = await fetch(webhookUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(confirmationWebhookData),
+          })
+
+          if (confirmationResponse.ok) {
+            console.log("Confirmation email webhook sent successfully")
+          } else {
+            console.warn("Confirmation email webhook failed, but continuing with booking confirmation")
+          }
+        } catch (confirmationError) {
+          console.warn("Error sending confirmation email webhook:", confirmationError)
+          // Continue with showing confirmation even if email webhook fails
+        }
+
+        setShowPetSelection(false)
+        setCreatingBooking(false)
+        setShowConfirmation(true)
+      } else {
+        throw new Error("Booking creation failed")
+      }
+    } catch (err) {
+      console.error("Error creating booking:", err)
+      setCreatingBooking(false)
+      setError("Failed to create booking. Please try again.")
+    }
+  }
+
+  const handlePetSelect = (pets: Pet[], notificationPreferences: NotificationPreference[]) => {
+    setBookingDetails((prev) => ({ ...prev, selectedPets: pets, notificationPreferences }))
+    if (bookingDetails.isDirectBooking) {
+      handleBookingSubmit(pets, notificationPreferences)
+    } else {
+      setCurrentStep("confirmation")
+    }
+  }
+
+  const handleBackOld = () => {
     setShowPetSelection(false)
     setShowCustomerForm(true)
+  }
+
+  const handleBack = () => {
+    switch (currentStep) {
+      case "confirmation": setCurrentStep("petSelection"); break
+      case "petSelection": setCurrentStep("customerForm"); break
+      case "customerForm": 
+        if (bookingDetails.bookingType === 'multi-day' || bookingDetails.selectedServices.some(s => s.duration_unit.toLowerCase() === 'days')) {
+            setCurrentStep("multiDay")
+        } else {
+            setCurrentStep("dateTime")
+        }
+        break
+      case "dateTime": setCurrentStep("bookingType"); break
+      case "multiDay": setCurrentStep("bookingType"); break
+      case "bookingType": setCurrentStep("service"); break
+      case "service": break
+    }
   }
 
   const handleBackToSchedule = () => {
@@ -924,6 +1417,107 @@ export default function SchedulePage() {
 
     console.log("Starting new booking - refreshing schedule data...")
     await initializeSchedule()
+  }
+
+  const renderStep = () => {
+    if (isLoading && !professionalInfo) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+          <Loader2 className="w-12 h-12 animate-spin text-[#E75837]" />
+          <p className="mt-4 text-lg text-gray-600 body-font">Loading schedule...</p>
+        </div>
+      )
+    }
+
+    if (error) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+          <h2 className="text-2xl font-bold text-red-600 header-font">Oops! Something went wrong.</h2>
+          <p className="mt-2 text-gray-700 body-font">We couldn't load the booking information for this professional.</p>
+          <p className="mt-4 text-sm text-gray-500 bg-red-50 p-3 rounded-md">Error: {error}</p>
+          <button onClick={initializeSchedule} className="mt-6 px-6 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#d14a2a] transition-colors">
+            Try Again
+          </button>
+        </div>
+      )
+    }
+
+    if (!professionalInfo) return null
+
+    switch (currentStep) {
+      case "service":
+        return <ServiceSelection services={services} onSelect={handleServiceSelect} professionalName={professionalInfo.business_name} />
+      case "bookingType":
+        return <BookingTypeSelection onSelect={handleBookingTypeSelect} onBack={handleBack} />
+      case "dateTime":
+        return (
+          <DateTimePanel
+            onSelect={handleDateTimeSelect}
+            onBack={handleBack}
+            professionalId={professionalInfo.professional_id}
+            professionalConfig={professionalConfig}
+            existingBookings={existingBookings}
+            duration={bookingDetails.selectedServices.reduce((acc, s) => acc + s.duration_number, 0)}
+          />
+        )
+      case "multiDay":
+        return (
+            <MultiDayBookingForm
+                onSelect={handleMultiDaySelect}
+                onBack={handleBack}
+                professionalConfig={professionalConfig}
+                existingBookings={existingBookings}
+                service={bookingDetails.selectedServices[0]}
+            />
+        )
+      case "customerForm":
+        if (!bookingDetails.selectedTimeSlot && !bookingDetails.multiDayTimeSlot) return <p>Please select a time slot first.</p>
+        return (
+          <CustomerForm
+            selectedServices={bookingDetails.selectedServices}
+            selectedTimeSlot={bookingDetails.selectedTimeSlot!}
+            professionalId={professionalInfo.professional_id}
+            professionalName={professionalInfo.business_name}
+            sessionId={sessionId}
+            onPetsReceived={handleCustomerInfoSubmit}
+            onBack={handleBack}
+            bookingType={bookingDetails.bookingType}
+            recurringConfig={bookingDetails.recurringConfig}
+            multiDayTimeSlot={bookingDetails.multiDayTimeSlot}
+            showPrices={professionalConfig?.bookingPreferences.show_prices ?? true}
+          />
+        )
+      case "petSelection":
+        if (!bookingDetails.customerInfo || (!bookingDetails.selectedTimeSlot && !bookingDetails.multiDayTimeSlot)) return <p>Please complete previous steps.</p>
+        return (
+          <PetSelection
+            pets={bookingDetails.selectedPets}
+            customerInfo={bookingDetails.customerInfo}
+            selectedServices={bookingDetails.selectedServices}
+            selectedTimeSlot={bookingDetails.selectedTimeSlot!}
+            professionalName={professionalInfo.business_name}
+            isDirectBooking={bookingDetails.isDirectBooking}
+            onPetSelect={handlePetSelect}
+            onBack={handleBack}
+            bookingType={bookingDetails.bookingType}
+            recurringConfig={bookingDetails.recurringConfig}
+            multiDayTimeSlot={bookingDetails.multiDayTimeSlot}
+            showPrices={professionalConfig?.bookingPreferences.show_prices ?? true}
+          />
+        )
+      case "confirmation":
+        if (!bookingDetails.customerInfo || (!bookingDetails.selectedTimeSlot && !bookingDetails.multiDayTimeSlot)) return <p>Booking details are incomplete.</p>
+        return (
+          <BookingConfirmation
+            bookingDetails={bookingDetails}
+            professionalName={professionalInfo.business_name}
+            isDirectBooking={bookingDetails.isDirectBooking}
+            showPrices={professionalConfig?.bookingPreferences.show_prices ?? true}
+          />
+        )
+      default:
+        return <p>Unknown step.</p>
+    }
   }
 
   if (loading) {
@@ -1112,199 +1706,11 @@ export default function SchedulePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto p-6 space-y-6">
-        {/* Clean Header */}
-        <div className="bg-white rounded-2xl shadow-lg border p-8">
-          <div className="max-w-4xl">
-            <h1 className="text-3xl font-bold text-[#E75837] mb-3 header-font">
-              Book with {webhookData.professional_info.professional_name}
-            </h1>
-            <p className="text-lg text-gray-600 body-font mb-4">
-              Select your service and preferred time to {isDirectBooking ? "book instantly" : "request an appointment"}
-            </p>
-
-            {/* Simple timezone indicator */}
-            {userTimezoneRef.current && (
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-lg text-sm text-gray-600 body-font">
-                <Clock className="w-4 h-4" />
-                <span>{JSON.parse(userTimezoneRef.current).timezone}</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {showBookingDisabled ? (
-          <div className="max-w-md mx-auto">
-            <Card className="shadow-lg border-0 rounded-2xl">
-              <CardHeader className="text-center pb-4">
-                <CardTitle className="text-xl header-font">Online Booking Unavailable</CardTitle>
-              </CardHeader>
-              <CardContent className="text-center space-y-4">
-                <p className="text-gray-600 body-font">
-                  {webhookData?.professional_info.professional_name} hasn't enabled online booking. Please contact them
-                  directly through the Critter app.
-                </p>
-                <Button
-                  onClick={() => window.open("https://critter.app", "_blank")}
-                  className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-6 py-2 rounded-lg font-medium transition-colors"
-                >
-                  Open Critter App
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        ) : showConfirmation ? (
-          <BookingConfirmation
-            selectedTimeSlot={selectedTimeSlot!}
-            customerInfo={customerInfo}
-            selectedPets={selectedPets}
-            professionalName={webhookData.professional_info.professional_name}
-            onNewBooking={handleNewBooking}
-            bookingType={bookingType}
-            recurringConfig={recurringConfig}
-            selectedServices={selectedServices}
-            isDirectBooking={isDirectBooking}
-            multiDayTimeSlot={multiDayTimeSlot}
-            showPrices={showPrices}
-          />
-        ) : showPetSelection ? (
-          <PetSelection
-            pets={pets}
-            customerInfo={customerInfo}
-            selectedServices={selectedServices}
-            selectedTimeSlot={selectedTimeSlot!}
-            professionalName={webhookData.professional_info.professional_name}
-            isDirectBooking={isDirectBooking}
-            onPetSelect={handlePetSelect}
-            onBack={handleBackToCustomerForm}
-            bookingType={bookingType}
-            recurringConfig={recurringConfig}
-            showPrices={showPrices}
-            multiDayTimeSlot={multiDayTimeSlot}
-          />
-        ) : showCustomerForm && selectedServices.length > 0 && selectedTimeSlot ? (
-          <CustomerForm
-            selectedServices={selectedServices}
-            selectedTimeSlot={selectedTimeSlot}
-            professionalId={professionalId || uniqueUrl}
-            professionalName={webhookData.professional_info.professional_name}
-            sessionId={sessionIdRef.current!}
-            onPetsReceived={handlePetsReceived}
-            onBack={handleBackToSchedule}
-            bookingType={bookingType}
-            recurringConfig={recurringConfig}
-            showPrices={showPrices}
-            multiDayTimeSlot={multiDayTimeSlot}
-          />
-        ) : showMultiDayForm && selectedServices.length > 0 ? (
-          <MultiDayBookingForm
-            selectedService={selectedServices[0]}
-            onAvailabilityCheck={handleMultiDayAvailabilityCheck}
-            onBookingConfirm={handleMultiDayBookingConfirm}
-            onBack={handleBackFromMultiDay}
-          />
-        ) : showBookingTypeSelection && selectedServices.length > 0 ? (
-          <BookingTypeSelection
-            selectedServices={selectedServices}
-            onBookingTypeSelect={handleBookingTypeSelect}
-            onBack={handleBackToServices}
-          />
-        ) : (
-          // Main booking interface
-          <div className="space-y-6">
-            {/* Service Selection */}
-            {!bookingType && (
-              <div className="bg-white rounded-2xl shadow-lg border p-6">
-                <ServiceSelectorBar
-                  servicesByCategory={webhookData.services.services_by_category}
-                  selectedServices={selectedServices}
-                  onServiceSelect={handleServiceSelect}
-                  onContinue={selectedServices.length > 0 ? handleContinueFromServices : undefined}
-                  summaryOnly={false}
-                  showPrices={showPrices}
-                />
-              </div>
-            )}
-
-            {/* Calendar view */}
-            {selectedServices.length > 0 && bookingType && !showMultiDayForm && (
-              <div className="space-y-6">
-                {/* Selected Services Summary */}
-                <div className="bg-white rounded-2xl shadow-lg border p-6">
-                  <ServiceSelectorBar
-                    servicesByCategory={webhookData.services.services_by_category}
-                    selectedServices={selectedServices}
-                    onServiceSelect={handleServiceSelect}
-                    summaryOnly={true}
-                    showPrices={showPrices}
-                  />
-                </div>
-
-                {/* Calendar */}
-                <div className="bg-white rounded-2xl shadow-lg border p-6">
-                  <WeeklyCalendar
-                    workingDays={webhookData.schedule.working_days}
-                    bookingData={webhookData.bookings.all_booking_data}
-                    selectedServices={selectedServices}
-                    onTimeSlotSelect={handleTimeSlotSelect}
-                    selectedTimeSlot={selectedTimeSlot}
-                    professionalId={professionalId || uniqueUrl}
-                    professionalConfig={memoizedProfessionalConfig}
-                    bookingType={bookingType}
-                    recurringConfig={recurringConfig}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Clean Booking Disabled Modal */}
-        {showBookingDisabledModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-              <div className="text-center space-y-4">
-                <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mx-auto">
-                  <svg className="w-6 h-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 header-font">Online Booking Unavailable</h3>
-                  <p className="text-gray-600 body-font mt-2">
-                    {webhookData?.professional_info.professional_name} hasn't enabled online booking. Please contact
-                    them directly through the Critter app.
-                  </p>
-                </div>
-                <div className="flex gap-3">
-                  <Button
-                    onClick={() => setShowBookingDisabledModal(false)}
-                    variant="outline"
-                    className="flex-1 rounded-lg"
-                  >
-                    Close
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      window.open("https://critter.app", "_blank")
-                      setShowBookingDisabledModal(false)
-                    }}
-                    className="flex-1 bg-[#E75837] hover:bg-[#d14a2a] text-white rounded-lg font-medium transition-colors"
-                  >
-                    Open Critter App
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+    <div className="min-h-screen bg-[#FBF8F3]">
+      <Header />
+      <main className="container mx-auto px-4 py-8">
+        {renderStep()}
+      </main>
     </div>
   )
 }
