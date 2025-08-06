@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Phone, Mail, UserPlus, MessageCircle, ArrowRight, Loader2 } from 'lucide-react'
+import { Calendar, Clock, MapPin, Phone, Mail, UserPlus, MessageCircle, ArrowRight, Loader2 } from "lucide-react"
 import Header from "../../components/header"
 import LiveChatWidget from "../../components/live-chat-widget"
 import { loadChatConfig } from "../../utils/chat-config"
@@ -52,9 +52,11 @@ export default function ProfessionalLandingPage() {
   const isValidChatConfig = (config: any): boolean => {
     if (!config) return false
 
+    // Check if it's an empty object or has no meaningful properties
     const keys = Object.keys(config)
     if (keys.length === 0) return false
 
+    // Check if all values are empty/null/undefined
     const hasValidValues = keys.some((key) => {
       const value = config[key]
       return value !== null && value !== undefined && value !== ""
@@ -68,8 +70,10 @@ export default function ProfessionalLandingPage() {
     const loadData = async () => {
       console.log("🔍 Loading data for unique URL:", uniqueUrl)
 
+      // Load professional landing data (with caching)
       await loadProfessionalData(false)
 
+      // Load chat configuration
       setIsChatConfigLoading(true)
       try {
         console.log("💬 Loading chat configuration...")
@@ -105,6 +109,7 @@ export default function ProfessionalLandingPage() {
     return professionalData.working_hours[today] || { open: "9:00 AM", close: "6:00 PM", isOpen: true }
   }
 
+  // Show loading state while data is being fetched
   if (isProfessionalDataLoading) {
     return (
       <div className="min-h-screen bg-[#FBF8F3]">
@@ -119,6 +124,7 @@ export default function ProfessionalLandingPage() {
     )
   }
 
+  // Show error state if data couldn't be loaded
   if (!professionalData) {
     return (
       <div className="min-h-screen bg-[#FBF8F3]">
@@ -146,9 +152,11 @@ export default function ProfessionalLandingPage() {
       <Header />
 
       <main className="pt-8">
+        {/* Hero Section */}
         <div className="bg-white border-b border-gray-200">
           <div className="max-w-6xl mx-auto px-4 py-12">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Professional Info */}
               <div className="lg:col-span-2">
                 <div className="flex items-start gap-4 mb-6">
                   <div className="w-20 h-20 bg-[#E75837] rounded-full flex items-center justify-center">
@@ -162,6 +170,10 @@ export default function ProfessionalLandingPage() {
 
                 <p className="text-gray-700 leading-relaxed mb-6 body-font">{professionalData.description}</p>
 
+                {/* Quick Info */}
+                {/* Remove Quick Info Grid */}
+
+                {/* Contact Info */}
                 <div className="flex flex-wrap gap-4 mb-6">
                   <a
                     href={`tel:${professionalData.contact.phone}`}
@@ -190,6 +202,7 @@ export default function ProfessionalLandingPage() {
                   )}
                 </div>
 
+                {/* Specialties - Moved up from services section */}
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-3 header-font">Specialties</h3>
                   <div className="flex flex-wrap gap-2">
@@ -204,9 +217,11 @@ export default function ProfessionalLandingPage() {
                   </div>
                 </div>
 
+                {/* Service Information - Moved from above */}
                 <div className="mt-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-3 header-font">Service Information</h3>
                   <div className="space-y-3">
+                    {/* Service Areas */}
                     <div className="flex items-start gap-3 text-gray-600">
                       <MapPin className="w-5 h-5 text-[#E75837] mt-0.5 flex-shrink-0" />
                       <div className="min-w-0 flex-1">
@@ -217,6 +232,7 @@ export default function ProfessionalLandingPage() {
                       </div>
                     </div>
 
+                    {/* Hours */}
                     <div className="flex items-start gap-3 text-gray-600">
                       <Clock className="w-5 h-5 text-[#E75837] mt-0.5 flex-shrink-0" />
                       <div className="min-w-0 flex-1">
@@ -230,6 +246,7 @@ export default function ProfessionalLandingPage() {
                 </div>
               </div>
 
+              {/* Action Cards */}
               <div className="space-y-4">
                 <div className="bg-gradient-to-br from-[#E75837] to-[#d04e30] rounded-xl p-6 text-white">
                   <h3 className="text-xl font-bold mb-2 header-font">Book an Appointment</h3>
@@ -257,6 +274,7 @@ export default function ProfessionalLandingPage() {
                   </Link>
                 </div>
 
+                {/* Conditionally render chat card only if chat is enabled */}
                 {isChatEnabled && (
                   <div className="bg-gradient-to-br from-[#94ABD6] to-[#7a90ba] rounded-xl p-6 text-white">
                     <h3 className="text-xl font-bold mb-2 header-font">Have Questions?</h3>
@@ -273,8 +291,10 @@ export default function ProfessionalLandingPage() {
           </div>
         </div>
 
+        {/* Services & Details Section */}
         <div className="max-w-6xl mx-auto px-4 py-12">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+            {/* Services - Now grouped by type with smart icons */}
             <div className="w-full min-w-0">
               <h2 className="text-2xl font-bold text-gray-900 mb-6 header-font">Our Services</h2>
               <div className="space-y-4 w-full min-h-[200px]">
@@ -284,6 +304,7 @@ export default function ProfessionalLandingPage() {
 
                   return (
                     <div key={group.type} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                      {/* Group Header - No longer clickable */}
                       <div className="flex items-center gap-3 p-6 border-b border-gray-100">
                         <IconComponent className={`w-5 h-5 ${iconColor}`} />
                         <div>
@@ -294,6 +315,7 @@ export default function ProfessionalLandingPage() {
                         </div>
                       </div>
 
+                      {/* Group Services - Always visible */}
                       <div>
                         {group.services.map((service, index) => (
                           <div key={service.id} className="p-4 border-b border-gray-50 last:border-b-0">
@@ -321,9 +343,11 @@ export default function ProfessionalLandingPage() {
               </div>
             </div>
 
+            {/* Hours & Certifications */}
             <div className="w-full min-w-0">
               <h2 className="text-2xl font-bold text-gray-900 mb-6 header-font">Hours & Information</h2>
 
+              {/* Working Hours */}
               <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 header-font">Working Hours</h3>
                 <div className="space-y-2">
@@ -341,6 +365,7 @@ export default function ProfessionalLandingPage() {
           </div>
         </div>
 
+        {/* Call to Action Section */}
         <div className="bg-gray-50 border-t border-gray-200">
           <div className="max-w-6xl mx-auto px-4 py-12 text-center">
             <h2 className="text-3xl font-bold text-gray-900 mb-4 title-font">
@@ -368,6 +393,7 @@ export default function ProfessionalLandingPage() {
           </div>
         </div>
 
+        {/* Live Chat Widget - Only render if chat is enabled */}
         {isChatEnabled && chatConfig && (
           <LiveChatWidget
             uniqueUrl={uniqueUrl}

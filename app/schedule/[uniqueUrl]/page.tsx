@@ -65,21 +65,24 @@ const [showPrices, setShowPrices] = useState(true)
 const [showMultiDayForm, setShowMultiDayForm] = useState(false)
 const [multiDayTimeSlot, setMultiDayTimeSlot] = useState<{ start: Date; end: Date } | null>(null)
 
+// Helper function to determine if this is a direct booking
 const determineBookingType = () => {
   if (bookingPreferences?.allow_direct_booking === true) {
     return "direct"
   } else if (bookingPreferences?.allow_direct_booking === false && bookingPreferences?.require_approval === true) {
     return "request"
   }
-  return "direct"
+  return "direct" // default fallback
 }
 
 const isDirectBooking = determineBookingType() === "direct"
 
+// Generate a unique session ID
 const generateSessionId = () => {
   return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 }
 
+// Detect user's timezone - simplified to avoid parsing issues
 const detectUserTimezone = () => {
   try {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -112,6 +115,7 @@ const detectUserTimezone = () => {
   }
 }
 
+// Load professional configuration
 const loadProfessionalConfiguration = () => {
   try {
     const config = loadProfessionalConfig(uniqueUrl)
@@ -122,6 +126,7 @@ const loadProfessionalConfiguration = () => {
   }
 }
 
+// Helper function to convert local time to UTC
 const convertLocalTimeToUTC = (dateStr: string, timeStr: string, userTimezone: string) => {
   try {
     const [time, period] = timeStr.split(" ")
@@ -134,11 +139,17 @@ const convertLocalTimeToUTC = (dateStr: string, timeStr: string, userTimezone: s
       hour24 = 0
     }
 
+    // Fix: Parse date string properly to avoid timezone shifts
     const [year, month, day] = dateStr.split("-").map(Number)
+
+    // Create date in user's local timezone
     const localDate = new Date(year, month - 1, day, hour24, minutes, 0, 0)
+
     return localDate.toISOString()
   } catch (error) {
     console.error("Error converting time to UTC:", error)
+
+    // Fallback logic
     const [time, period] = timeStr.split(" ")
     const [hours, minutes] = time.split(":").map(Number)
     let hour24 = hours
@@ -147,12 +158,15 @@ const convertLocalTimeToUTC = (dateStr: string, timeStr: string, userTimezone: s
     } else if (period === "AM" && hours === 12) {
       hour24 = 0
     }
+
+    // Fix: Use proper date parsing
     const [year, month, day] = dateStr.split("-").map(Number)
     const date = new Date(year, month - 1, day, hour24, minutes, 0, 0)
     return date.toISOString()
   }
 }
 
+// Helper function to calculate end datetime in UTC
 const calculateEndDateTimeUTC = (startDateTimeUTC: string, durationNumber: number, durationUnit: string) => {
   const startDate = new Date(startDateTimeUTC)
   let durationInMinutes = durationNumber
@@ -167,6 +181,7 @@ const calculateEndDateTimeUTC = (startDateTimeUTC: string, durationNumber: numbe
   return endDate.toISOString()
 }
 
+// Helper function to generate recurring dates based on config
 const generateRecurringDates = (startDate: string, config: RecurringConfig) => {
   const dates = []
   const start = new Date(startDate)
@@ -191,6 +206,7 @@ const generateRecurringDates = (startDate: string, config: RecurringConfig) => {
       }),
     })
 
+    // Calculate next occurrence based on frequency and unit
     if (config.unit === "day") {
       currentDate.setDate(currentDate.getDate() + config.frequency)
     } else if (config.unit === "week") {
@@ -206,6 +222,7 @@ const generateRecurringDates = (startDate: string, config: RecurringConfig) => {
   return dates
 }
 
+// Helper function to parse working days from the main schedule entry
 const parseWorkingDaysFromSchedule = (schedule: any): any[] => {
   if (!schedule) return []
   const days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
@@ -224,6 +241,7 @@ const parseWorkingDaysFromSchedule = (schedule: any): any[] => {
   })
 }
 
+// Update the initializeSchedule function to parse the new webhook format
 const initializeSchedule = async () => {
   try {
     setLoading(true)
@@ -235,6 +253,8 @@ const initializeSchedule = async () => {
 
     const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG")
     logWebhookUsage("PROFESSIONAL_CONFIG", "initialize_schedule")
+
+    console.log("Initializing schedule with session:", sessionIdRef.current)
 
     const response = await fetch(webhookUrl, {
       method: "POST",
@@ -257,29 +277,37 @@ const initializeSchedule = async () => {
     const rawData = await response.json()
     console.log("Raw webhook data:", rawData)
 
+    // Parse the new webhook format
     const parsedData = parseWebhookData(rawData)
     setWebhookData(parsedData)
     setShowPrices(parsedData.show_prices)
 
+    // Store the professional ID from the response
     const pId = parsedData.professional_info?.professional_id
     if (pId) {
       setProfessionalId(pId)
     }
 
+    // Set booking preferences from parsed data
     if (parsedData.booking_preferences) {
       setBookingPreferences(parsedData.booking_preferences)
+
+      // Check if online booking is disabled
       if (parsedData.booking_preferences.online_booking_enabled === false) {
+        console.log("Online booking is disabled - setting showBookingDisabled to true")
         setShowBookingDisabled(true)
       } else {
         setShowBookingDisabled(false)
       }
     } else {
+      console.log("No booking preferences found")
       setShowBookingDisabled(false)
     }
 
+    // Create professional config from webhook data
     if (parsedData.config) {
       const configForProfessionalConfig: ProfessionalConfig = {
-        professionalId: pId || uniqueUrl,
+        professionalId: pId || uniqueUrl, // Use pId directly to avoid race condition
         businessName: parsedData.config.business_name || "Professional",
         employees: parsedData.config.employees
           ? parsedData.config.employees.map((emp: any) => ({
@@ -319,9 +347,13 @@ const initializeSchedule = async () => {
           : [],
         lastUpdated: new Date().toISOString(),
       }
+
+      console.log("Setting professional config with blocked times:", configForProfessionalConfig.blockedTimes)
       setProfessionalConfig(configForProfessionalConfig)
-      saveProfessionalConfig(configForProfessionalConfig)
+      saveProfessionalConfig(configForProfessionalConfig) // Persist the config to local storage
     }
+
+    console.log("Schedule data loaded successfully")
   } catch (err) {
     console.error("Error initializing schedule:", err)
     setError("Failed to load scheduling data. Please try again.")
@@ -330,29 +362,45 @@ const initializeSchedule = async () => {
   }
 }
 
+// Add the parseWebhookData function
 const parseWebhookData = (rawData: any[]): ParsedWebhookData => {
+  // Find the first entry with working hours (schedule data)
   const scheduleEntry = rawData.find((entry) => entry.monday_start)
-  const bookingEntries = rawData.filter((entry) => entry.booking_id && entry.start)
+
+  // A more robust way to identify booking entries
+  const bookingEntries = rawData.filter(
+    (entry) => entry.booking_id && entry.start, // Simplified filter
+  )
 
   if (bookingEntries.length === 0) {
-    console.warn("⚠️ No valid booking entries found.")
+    console.warn(
+      "⚠️ No valid booking entries with an ID and start time were found in the webhook data. The schedule may appear fully open even if bookings exist.",
+    )
   }
 
+  // Fallback for booking_date_formatted
   bookingEntries.forEach((booking) => {
     if (!booking.booking_date_formatted && booking.start) {
       try {
+        // Create date in user's local timezone from UTC string
         const localDate = new Date(booking.start)
         const year = localDate.getFullYear()
         const month = String(localDate.getMonth() + 1).padStart(2, "0")
         const day = String(localDate.getDate()).padStart(2, "0")
         booking.booking_date_formatted = `${year}-${month}-${day}`
+        console.log(
+          `Fallback: Generated booking_date_formatted '${booking.booking_date_formatted}' for booking ${booking.booking_id}`,
+        )
       } catch (e) {
         console.error(`Could not parse date for booking ${booking.booking_id}`, e)
       }
     }
   })
 
+  // Find all service entries
   const serviceEntries = rawData.filter((entry) => entry.name && entry.duration_unit)
+
+  // Parse services and group by category
   const servicesByCategory: { [category: string]: Service[] } = {}
   serviceEntries.forEach((service) => {
     const category = getCategoryFromService(service.name)
@@ -370,6 +418,7 @@ const parseWebhookData = (rawData: any[]): ParsedWebhookData => {
     })
   })
 
+  // Add this after parsing other data - REPLACE the existing booking preferences parsing
   let bookingPrefs = rawData.find(
     (entry) =>
       entry.booking_system !== undefined ||
@@ -377,6 +426,7 @@ const parseWebhookData = (rawData: any[]): ParsedWebhookData => {
       entry.allow_direct_booking !== undefined,
   )
 
+  // If bookingPrefs is undefined, try to find it in the webhook_response
   const configEntry = rawData.find((entry) => entry.webhook_response)
   if (!bookingPrefs && configEntry?.webhook_response?.config_data) {
     bookingPrefs = configEntry.webhook_response.config_data
@@ -384,6 +434,7 @@ const parseWebhookData = (rawData: any[]): ParsedWebhookData => {
 
   const priceSettingEntry = rawData.find((entry) => entry.hasOwnProperty("show_prices"))
   const showPrices = priceSettingEntry ? priceSettingEntry.show_prices : true
+
   const workingDays = parseWorkingDaysFromSchedule(scheduleEntry)
 
   return {
@@ -414,6 +465,7 @@ const parseWebhookData = (rawData: any[]): ParsedWebhookData => {
   }
 }
 
+// Helper function to categorize services
 const getCategoryFromService = (serviceName: string): string => {
   const lower = serviceName.toLowerCase()
   if (lower.includes("add on") || lower.includes("addon")) return "Add-Ons"
@@ -423,22 +475,34 @@ const getCategoryFromService = (serviceName: string): string => {
   return "Other Services"
 }
 
+// Memoize professional config to prevent unnecessary re-renders
 const memoizedProfessionalConfig = useMemo(() => professionalConfig, [professionalConfig])
 
 useEffect(() => {
   if (uniqueUrl) {
+    console.log("useEffect - Initializing schedule for uniqueUrl:", uniqueUrl) // ADDED LOG
     initializeSchedule()
   }
 }, [uniqueUrl])
 
 const handleServiceSelect = (service: Service) => {
+  console.log("handleServiceSelect called with:", service.name)
   setSelectedTimeSlot(null)
+
   setSelectedServices((prevServices) => {
+    console.log("Previous services:", prevServices)
     const isAlreadySelected = prevServices.find((s) => s.name === service.name)
+
     if (isAlreadySelected) {
-      return prevServices.filter((s) => s.name !== service.name)
+      console.log("Removing service:", service.name)
+      const newServices = prevServices.filter((s) => s.name !== service.name)
+      console.log("New services after removal:", newServices)
+      return newServices
     } else {
-      return [...prevServices, service]
+      console.log("Adding service:", service.name)
+      const newServices = [...prevServices, service]
+      console.log("New services after addition:", newServices)
+      return newServices
     }
   })
 }
@@ -458,7 +522,9 @@ const handleContinueFromServices = () => {
     totalDurationMinutes += durationInMinutes
   })
 
-  if (totalDurationMinutes > 12 * 60) {
+  const twelveHoursInMinutes = 12 * 60
+
+  if (totalDurationMinutes > twelveHoursInMinutes) {
     handleBookingTypeSelect("multi-day")
   } else {
     setShowBookingTypeSelection(true)
@@ -484,11 +550,12 @@ const handleMultiDayAvailabilityCheck = async (start: Date, end: Date) => {
     webhookData.bookings.all_booking_data,
     start,
     end,
-    selectedServices[0],
+    selectedServices[0], // Assuming one service for multi-day
   )
 }
 
 const handleMultiDayBookingConfirm = (start: Date, end: Date) => {
+  // Create a synthetic "time slot" to fit into the existing flow
   const syntheticSlot: SelectedTimeSlot = {
     date: start.toISOString().split("T")[0],
     startTime: start.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true }),
@@ -519,11 +586,17 @@ const handleTimeSlotSelect = (slot: SelectedTimeSlot) => {
     return
   }
 
+  console.log("Current booking preferences:", bookingPreferences)
+  console.log("Online booking enabled:", bookingPreferences?.online_booking_enabled)
+
+  // Check if online booking is disabled
   if (bookingPreferences && bookingPreferences.online_booking_enabled === false) {
+    console.log("Online booking is disabled - showing modal")
     setShowBookingDisabledModal(true)
     return
   }
 
+  console.log("Proceeding with booking flow")
   setSelectedTimeSlot(slot)
   setShowCustomerForm(true)
 }
@@ -550,16 +623,19 @@ const handlePetSelect = async (pets: Pet[], notifications: NotificationPreferenc
       ? multiDayTimeSlot.start.toISOString()
       : convertLocalTimeToUTC(selectedTimeSlot!.date, selectedTimeSlot!.startTime, userTimezoneData.timezone)
 
+    // Calculate total duration and cost for all selected services
     let totalDurationMinutes = 0
     let totalCost = 0
 
     selectedServices.forEach((service) => {
       let durationInMinutes = service.duration_number
+
       if (service.duration_unit === "Hours") {
         durationInMinutes = service.duration_number * 60
       } else if (service.duration_unit === "Days") {
         durationInMinutes = service.duration_number * 24 * 60
       }
+
       totalDurationMinutes += durationInMinutes
       totalCost += Number(service.customer_cost)
     })
@@ -575,30 +651,43 @@ const handlePetSelect = async (pets: Pet[], notifications: NotificationPreferenc
       timeZone: userTimezoneData.timezone,
     })
 
+    // Enhanced recurring details for webhook
     let enhancedRecurringDetails = null
     if (bookingType === "recurring" && recurringConfig) {
       const recurringDates = generateRecurringDates(selectedTimeSlot!.date, recurringConfig)
+
       enhancedRecurringDetails = {
+        // Add the original user selections
         selected_days_of_week: recurringConfig.daysOfWeek || recurringConfig.selectedDays || [],
         selected_end_date: recurringConfig.endDate || recurringConfig.originalEndDate,
         recurring_start_date: selectedTimeSlot!.date,
+
+        // Basic recurring config - use the actual recurringConfig values
         frequency: recurringConfig.frequency || 1,
         unit: recurringConfig.unit || "week",
         end_date: recurringConfig.endDate,
         total_appointments: recurringConfig.totalAppointments || recurringDates.length,
+
+        // Enhanced details
         pattern_description: `Every ${recurringConfig.frequency || 1} ${recurringConfig.unit || "week"}${
           (recurringConfig.frequency || 1) > 1 ? "s" : ""
         }`,
         start_date: selectedTimeSlot!.date,
         start_time: selectedTimeSlot!.startTime,
         end_time: endTimeLocal,
+
+        // All occurrence dates with details
         all_occurrences: recurringDates,
+
+        // Summary information
         total_occurrences: recurringDates.length,
         days_of_week_included: [...new Set(recurringDates.map((d) => d.day_of_week))],
         date_range: {
           first_appointment: recurringDates[0]?.date,
           last_appointment: recurringDates[recurringDates.length - 1]?.date,
         },
+
+        // Time details for each occurrence
         recurring_schedule: {
           same_time_each_occurrence: true,
           start_time_local: selectedTimeSlot!.startTime,
@@ -606,6 +695,8 @@ const handlePetSelect = async (pets: Pet[], notifications: NotificationPreferenc
           duration_minutes: totalDurationMinutes,
           timezone: userTimezoneData.timezone,
         },
+
+        // Additional useful information
         booking_pattern: {
           frequency_number: recurringConfig.frequency || 1,
           frequency_unit: recurringConfig.unit || "week",
@@ -615,6 +706,8 @@ const handlePetSelect = async (pets: Pet[], notifications: NotificationPreferenc
               : `every_${recurringConfig.frequency || 1}_${recurringConfig.unit || "week"}s`,
         },
       }
+
+      console.log("Enhanced recurring details with proper config:", enhancedRecurringDetails)
     }
 
     const bookingData = {
@@ -624,32 +717,45 @@ const handlePetSelect = async (pets: Pet[], notifications: NotificationPreferenc
       session_id: sessionIdRef.current,
       timestamp: new Date().toISOString(),
       user_timezone: userTimezoneData,
+
+      // Add booking_system from professional's preferences
       booking_system: bookingPreferences?.booking_system || "direct_booking",
+
+      // Keep booking_type for the system's booking behavior (direct vs request)
       booking_type: determineBookingType(),
-      user_booking_type: bookingType,
+
+      // Add user's booking choice (one-time vs recurring)
+      user_booking_type: bookingType, // "one-time" or "recurring"
       all_day: bookingType === "multi-day",
       is_recurring_booking: bookingType === "recurring",
+
+      // Enhanced recurring details
       ...(bookingType === "recurring" &&
         enhancedRecurringDetails && {
           recurring_details: enhancedRecurringDetails,
           is_recurring_booking: true,
         }),
+
       booking_details: {
-        service_ids: selectedServices.map((s) => s.service_id),
-        service_names: selectedServices.map((s) => s.name),
-        service_descriptions: selectedServices.map((s) => s.description),
-        service_durations: selectedServices.map((s) => s.duration_number),
-        service_duration_units: selectedServices.map((s) => s.duration_unit),
-        service_costs: selectedServices.map((s) => s.customer_cost),
-        service_currencies: selectedServices.map((s) => s.customer_cost_currency),
+        service_ids: selectedServices.map((service) => service.service_id),
+        service_names: selectedServices.map((service) => service.name),
+        service_descriptions: selectedServices.map((service) => service.description),
+        service_durations: selectedServices.map((service) => service.duration_number),
+        service_duration_units: selectedServices.map((service) => service.duration_unit),
+        service_costs: selectedServices.map((service) => service.customer_cost),
+        service_currencies: selectedServices.map((service) => service.customer_cost_currency),
+
         total_duration_minutes: totalDurationMinutes,
         total_cost: totalCost,
+
         start_utc: startDateTimeUTC,
         end_utc: endDateTimeUTC,
+
         date_local: selectedTimeSlot!.date,
         start_time_local: selectedTimeSlot!.startTime,
         end_time_local: endTimeLocal,
         day_of_week: selectedTimeSlot!.dayOfWeek,
+
         timezone: userTimezoneData.timezone,
         timezone_offset: userTimezoneData.offset,
       },
@@ -667,16 +773,21 @@ const handlePetSelect = async (pets: Pet[], notifications: NotificationPreferenc
         weight: pet.weight,
         special_notes: pet.special_notes,
       })),
+      // Only include notification preferences for direct bookings
       ...(isDirectBooking && {
         notification_preferences: {
           selected_notifications: notifications,
           notification_details: notifications
             .map((n) => {
               switch (n) {
-                case "1_hour": return { type: "1_hour", label: "1 hour before", enabled: true }
-                case "1_day": return { type: "1_day", label: "1 day before", enabled: true }
-                case "1_week": return { type: "1_week", label: "1 week before", enabled: true }
-                default: return null
+                case "1_hour":
+                  return { type: "1_hour", label: "1 hour before", enabled: true }
+                case "1_day":
+                  return { type: "1_day", label: "1 day before", enabled: true }
+                case "1_week":
+                  return { type: "1_week", label: "1 week before", enabled: true }
+                default:
+                  return null
               }
             })
             .filter(Boolean),
@@ -684,9 +795,13 @@ const handlePetSelect = async (pets: Pet[], notifications: NotificationPreferenc
       }),
     }
 
+    console.log("Sending enhanced booking data with detailed recurring information:", bookingData)
+
     const response = await fetch(webhookUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(bookingData),
     })
 
@@ -695,64 +810,30 @@ const handlePetSelect = async (pets: Pet[], notifications: NotificationPreferenc
     }
 
     const result = await response.json()
+    console.log("Booking created:", result)
 
     if (result && result[0] && result[0].output === "Booking Successfully Created") {
+      // Send confirmation email webhook with enhanced recurring details
       try {
-        const confirmationWebhookData = {
-          action: "send_confirmation_emails",
-          uniqueUrl: uniqueUrl,
-          professional_id: professionalId,
-          session_id: sessionIdRef.current,
-          timestamp: new Date().toISOString(),
-          customer_info: {
-            first_name: customerInfo.firstName.trim(),
-            last_name: customerInfo.lastName.trim(),
-            email: customerInfo.email.trim().toLowerCase(),
-          },
-          services_selected: selectedServices.map((s) => ({
-            service_id: s.service_id,
-            name: s.name,
-            description: s.description,
-            duration_number: s.duration_number,
-            duration_unit: s.duration_unit,
-            customer_cost: s.customer_cost,
-            customer_cost_currency: s.customer_cost_currency,
-          })),
-          booking_details: {
-            date: selectedTimeSlot!.date,
-            start_time: selectedTimeSlot!.startTime,
-            end_time: endTimeLocal,
-            day_of_week: selectedTimeSlot!.dayOfWeek,
-            timezone: userTimezoneData.timezone,
-            timezone_offset: userTimezoneData.offset,
-          },
-          pets_info: pets.map((pet) => ({
-            pet_id: pet.pet_id,
-            pet_name: pet.pet_name,
-            pet_type: pet.pet_type,
-            breed: pet.breed,
-            age: pet.age,
-            weight: pet.weight,
-            special_notes: pet.special_notes,
-          })),
-          is_recurring: bookingType === "recurring",
-          ...(bookingType === "recurring" &&
-            enhancedRecurringDetails && {
-              recurring_details: enhancedRecurringDetails,
-            }),
-        }
+        logWebhookUsage("PROFESSIONAL_CONFIG", "send_confirmation_emails")
+        console.log("Sending confirmation email webhook with enhanced recurring details:", confirmationWebhookData)
 
         const confirmationResponse = await fetch(webhookUrl, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify(confirmationWebhookData),
         })
 
-        if (!confirmationResponse.ok) {
-          console.warn("Confirmation email webhook failed.")
+        if (confirmationResponse.ok) {
+          console.log("Confirmation email webhook sent successfully")
+        } else {
+          console.warn("Confirmation email webhook failed, but continuing with booking confirmation")
         }
       } catch (confirmationError) {
         console.warn("Error sending confirmation email webhook:", confirmationError)
+        // Continue with showing confirmation even if email webhook fails
       }
 
       setShowPetSelection(false)
@@ -795,6 +876,8 @@ const handleNewBooking = async () => {
   setShowBookingTypeSelection(false)
   setBookingType(null)
   setRecurringConfig(null)
+
+  console.log("Starting new booking - refreshing schedule data...")
   await initializeSchedule()
 }
 
@@ -986,6 +1069,7 @@ if (creatingBooking) {
 return (
   <div className="min-h-screen bg-gray-50">
     <div className="max-w-6xl mx-auto p-6 space-y-6">
+      {/* Clean Header */}
       <div className="bg-white rounded-2xl shadow-lg border p-8">
         <div className="max-w-4xl">
           <h1 className="text-3xl font-bold text-[#E75837] mb-3 header-font">
@@ -995,6 +1079,7 @@ return (
             Select your service and preferred time to {isDirectBooking ? "book instantly" : "request an appointment"}
           </p>
 
+          {/* Simple timezone indicator */}
           {userTimezoneRef.current && (
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-lg text-sm text-gray-600 body-font">
               <Clock className="w-4 h-4" />
@@ -1081,7 +1166,9 @@ return (
           onBack={handleBackToServices}
         />
       ) : (
+        // Main booking interface
         <div className="space-y-6">
+          {/* Service Selection */}
           {!bookingType && (
             <div className="bg-white rounded-2xl shadow-lg border p-6">
               <ServiceSelectorBar
@@ -1095,8 +1182,10 @@ return (
             </div>
           )}
 
+          {/* Calendar view */}
           {selectedServices.length > 0 && bookingType && !showMultiDayForm && (
             <div className="space-y-6">
+              {/* Selected Services Summary */}
               <div className="bg-white rounded-2xl shadow-lg border p-6">
                 <ServiceSelectorBar
                   servicesByCategory={webhookData.services.services_by_category}
@@ -1107,6 +1196,7 @@ return (
                 />
               </div>
 
+              {/* Calendar */}
               <div className="bg-white rounded-2xl shadow-lg border p-6">
                 <WeeklyCalendar
                   workingDays={webhookData.schedule.working_days}
@@ -1125,6 +1215,7 @@ return (
         </div>
       )}
 
+      {/* Clean Booking Disabled Modal */}
       {showBookingDisabledModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
