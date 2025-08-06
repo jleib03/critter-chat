@@ -1,68 +1,42 @@
-import type { ChatAgentConfig } from "../types/chat-config"
-import { getWebhookEndpoint, logWebhookUsage } from "../types/webhook-endpoints"
+import { getWebhookEndpoint, logWebhookUsage } from "@/types/webhook-endpoints";
+import type { ChatAgentConfig } from "../types/chat-config";
+
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const cache = new Map<string, { data: ChatAgentConfig; timestamp: number }>();
 
 export async function loadChatConfig(uniqueUrl: string): Promise<ChatAgentConfig | null> {
+  const cachedItem = cache.get(uniqueUrl);
+  if (cachedItem && Date.now() - cachedItem.timestamp < CACHE_DURATION) {
+    console.log("✅ Using cached chat config for:", uniqueUrl);
+    return cachedItem.data;
+  }
+
   try {
-    const webhookUrl = getWebhookEndpoint("CHAT_CONFIG")
-    logWebhookUsage("CHAT_CONFIG", "get_chat_config")
-
-    console.log(`🚀 Loading chat configuration for URL: ${uniqueUrl}`)
-    console.log(`🔗 Using webhook URL: ${webhookUrl}`)
-
-    const payload = {
-      action: "get_chat_config",
-      uniqueUrl: uniqueUrl,
-      timestamp: new Date().toISOString(),
-    }
-
-    console.log(`📤 Sending payload:`, JSON.stringify(payload, null, 2))
+    const webhookUrl = getWebhookEndpoint("CHAT_CONFIG");
+    logWebhookUsage("CHAT_CONFIG", "load_chat_config");
 
     const response = await fetch(webhookUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    })
-
-    console.log(`📡 Response status: ${response.status}`)
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "get_chat_config", uniqueUrl }),
+    });
 
     if (!response.ok) {
-      console.error(`❌ HTTP error! status: ${response.status}`)
-      return null
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const data = await response.json()
-    console.log(`📥 Raw chat config response:`, JSON.stringify(data, null, 2))
+    const data = await response.json();
+    
+    const configData = Array.isArray(data) ? data.find(item => item.chat_config) : data;
+    const config = configData ? (configData.chat_config || configData) : null;
 
-    // Parse the response - expecting an array with chat config data
-    if (Array.isArray(data) && data.length > 0) {
-      const firstRecord = data[0]
-      console.log(`🔍 Parsing chat config from first record:`, JSON.stringify(firstRecord, null, 2))
-
-      // Check if the first record has the chat configuration fields directly
-      if (
-        firstRecord &&
-        (firstRecord.chat_name || firstRecord.chat_welcome_message || firstRecord.widget_primary_color)
-      ) {
-        console.log(`✅ Valid chat configuration found`)
-        return {
-          professional_id: firstRecord.professional_id || "",
-          chat_name: firstRecord.chat_name || "Critter Support",
-          chat_welcome_message:
-            firstRecord.chat_welcome_message ||
-            "Hello! I'm your Critter professional's virtual assistant. How can I help you today?",
-          widget_primary_color: firstRecord.widget_primary_color || "#94ABD6",
-          widget_position: firstRecord.widget_position || "bottom-right",
-          widget_size: firstRecord.widget_size || "medium",
-        }
-      }
+    if (config) {
+      cache.set(uniqueUrl, { data: config, timestamp: Date.now() });
     }
-
-    console.log(`⚠️ No valid chat configuration found in response`)
-    return null
+    
+    return config;
   } catch (error) {
-    console.error(`❌ Error loading chat configuration:`, error)
-    return null
+    console.error("💥 Failed to load chat config from webhook:", error);
+    return null;
   }
 }
