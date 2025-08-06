@@ -1,5 +1,5 @@
 // Utility for loading professional landing page data - always fresh, no caching
-const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/803d260b-1b17-4abf-8079-2d40225c29b0"
+const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook-test/94a7e18e-149c-4a66-a16b-db77f15756a2"
 
 export interface ServiceItem {
   id: string

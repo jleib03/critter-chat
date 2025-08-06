@@ -58,6 +58,18 @@
   /* Chat container sizing variables - reduce height */
   --chat-height: 500px;
   --chat-max-height: calc(100vh - 350px);
+
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 255, 255, 255;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
 }
 
 /* Fix for scrolling issues */
@@ -71,6 +83,7 @@ body {
   padding: 0;
   height: 100%;
   overflow-x: hidden;
+  background: linear-gradient(to bottom, transparent, rgb(var(--background-end-rgb))) rgb(var(--background-start-rgb));
 }
 
 /* Ensure the app takes up the full height */
@@ -358,6 +371,11 @@ h6,
 /* Ensure content doesn't get cut off at the bottom */
 .page-content {
   margin-bottom: 4rem;
+}
+
+/* Example of a custom component style */
+.custom-button {
+  @apply bg-blue-500 text-white font-bold py-2 px-4 rounded;
 }
 
 @layer base {

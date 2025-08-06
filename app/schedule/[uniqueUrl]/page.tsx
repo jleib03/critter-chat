@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useMemo } from "react"
 import { useParams } from "next/navigation"
-import { Loader2, Clock, Calendar } from "lucide-react"
+import { Loader2, Clock, Calendar } from 'lucide-react'
 import type { Service, SelectedTimeSlot, CustomerInfo, Pet, PetResponse, ParsedWebhookData } from "@/types/schedule"
 import { ServiceSelectorBar } from "@/components/schedule/service-selector-bar"
 import { WeeklyCalendar } from "@/components/schedule/weekly-calendar"
@@ -18,6 +18,8 @@ import {
 } from "@/components/schedule/booking-type-selection"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { MultiDayBookingForm } from "@/components/schedule/multi-day-booking-form"
+import { calculateMultiDayAvailability } from "@/utils/professional-config"
 
 type NotificationPreference = "1_hour" | "1_day" | "1_week"
 
@@ -39,7 +41,7 @@ export default function SchedulePage() {
   const [creatingBooking, setCreatingBooking] = useState(false)
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({ firstName: "", lastName: "", email: "" })
   const [pets, setPets] = useState<Pet[]>([])
-  const [selectedPet, setSelectedPet] = useState<Pet | null>(null)
+  const [selectedPets, setSelectedPets] = useState<Pet[]>([])
   const [selectedNotifications, setSelectedNotifications] = useState<NotificationPreference[]>([])
   const [professionalConfig, setProfessionalConfig] = useState<ProfessionalConfig | null>(null)
   const [professionalId, setProfessionalId] = useState<string>("")
@@ -58,6 +60,9 @@ export default function SchedulePage() {
   const [showBookingDisabledModal, setShowBookingDisabledModal] = useState(false)
   const [showBookingDisabled, setShowBookingDisabled] = useState(false)
   const [showPrices, setShowPrices] = useState(true)
+
+  const [showMultiDayForm, setShowMultiDayForm] = useState(false)
+  const [multiDayTimeSlot, setMultiDayTimeSlot] = useState<{ start: Date; end: Date } | null>(null)
 
   // Helper function to determine if this is a direct booking
   const determineBookingType = () => {
@@ -216,6 +221,25 @@ export default function SchedulePage() {
     return dates
   }
 
+  // Helper function to parse working days from the main schedule entry
+  const parseWorkingDaysFromSchedule = (schedule: any): any[] => {
+    if (!schedule) return []
+    const days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+    return days.map((day) => {
+      const capitalizedDay = day.charAt(0).toUpperCase() + day.slice(1)
+      const isWorking = !!schedule[`${day}_working`]
+      const startTime = schedule[`${day}_start`]
+      const endTime = schedule[`${day}_end`]
+
+      return {
+        day: capitalizedDay,
+        start: startTime ? startTime.substring(0, 5) : "09:00",
+        end: endTime ? endTime.substring(0, 5) : "17:00",
+        isWorking: isWorking,
+      }
+    })
+  }
+
   // Update the initializeSchedule function to parse the new webhook format
   const initializeSchedule = async () => {
     try {
@@ -226,7 +250,7 @@ export default function SchedulePage() {
       userTimezoneRef.current = JSON.stringify(detectUserTimezone())
       loadProfessionalConfiguration()
 
-      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
+      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16"
 
       console.log("Initializing schedule with session:", sessionIdRef.current)
 
@@ -316,6 +340,7 @@ export default function SchedulePage() {
                 employeeId: bt.employee_id || undefined,
                 isRecurring: bt.is_recurring || false,
                 recurrencePattern: bt.recurrence_pattern || undefined,
+                isAllDay: bt.is_all_day || (bt.start_time === "00:00:00" && bt.end_time === "23:59:00"),
               }))
             : [],
           lastUpdated: new Date().toISOString(),
@@ -373,57 +398,6 @@ export default function SchedulePage() {
     // Find all service entries
     const serviceEntries = rawData.filter((entry) => entry.name && entry.duration_unit)
 
-    // Find webhook response with config
-    const configEntry = rawData.find((entry) => entry.webhook_response?.success)
-
-    // Parse working days from schedule entry
-    const workingDays = scheduleEntry
-      ? [
-          {
-            day: "Monday",
-            start: scheduleEntry.monday_start,
-            end: scheduleEntry.monday_end,
-            isWorking: !!scheduleEntry.monday_working,
-          },
-          {
-            day: "Tuesday",
-            start: scheduleEntry.tuesday_start,
-            end: scheduleEntry.tuesday_end,
-            isWorking: !!scheduleEntry.tuesday_working,
-          },
-          {
-            day: "Wednesday",
-            start: scheduleEntry.wednesday_start,
-            end: scheduleEntry.wednesday_end,
-            isWorking: !!scheduleEntry.wednesday_working,
-          },
-          {
-            day: "Thursday",
-            start: scheduleEntry.thursday_start,
-            end: scheduleEntry.thursday_end,
-            isWorking: !!scheduleEntry.thursday_working,
-          },
-          {
-            day: "Friday",
-            start: scheduleEntry.friday_start,
-            end: scheduleEntry.friday_end,
-            isWorking: !!scheduleEntry.friday_working,
-          },
-          {
-            day: "Saturday",
-            start: scheduleEntry.saturday_start,
-            end: scheduleEntry.saturday_end,
-            isWorking: !!scheduleEntry.saturday_working,
-          },
-          {
-            day: "Sunday",
-            start: scheduleEntry.sunday_start,
-            end: scheduleEntry.sunday_end,
-            isWorking: !!scheduleEntry.sunday_working,
-          },
-        ]
-      : []
-
     // Parse services and group by category
     const servicesByCategory: { [category: string]: Service[] } = {}
     serviceEntries.forEach((service) => {
@@ -432,6 +406,7 @@ export default function SchedulePage() {
         servicesByCategory[category] = []
       }
       servicesByCategory[category].push({
+        service_id: service.service_id || `fallback_${service.name.replace(/\s+/g, "_").toLowerCase()}`,
         name: service.name,
         description: service.description || "",
         duration_unit: service.duration_unit,
@@ -450,12 +425,15 @@ export default function SchedulePage() {
     )
 
     // If bookingPrefs is undefined, try to find it in the webhook_response
+    const configEntry = rawData.find((entry) => entry.webhook_response)
     if (!bookingPrefs && configEntry?.webhook_response?.config_data) {
       bookingPrefs = configEntry.webhook_response.config_data
     }
 
     const priceSettingEntry = rawData.find((entry) => entry.hasOwnProperty("show_prices"))
     const showPrices = priceSettingEntry ? priceSettingEntry.show_prices : true
+
+    const workingDays = parseWorkingDaysFromSchedule(scheduleEntry)
 
     return {
       professional_info: {
@@ -527,15 +505,70 @@ export default function SchedulePage() {
     })
   }
 
-  const handleBookingTypeSelect = (type: BookingType, config?: RecurringConfig) => {
-    setBookingType(type)
-    setRecurringConfig(config || null)
-    setShowBookingTypeSelection(false)
+  const handleContinueFromServices = () => {
+    if (selectedServices.length === 0) return
+
+    let totalDurationMinutes = 0
+    selectedServices.forEach((service) => {
+      let durationInMinutes = service.duration_number
+      const unit = service.duration_unit.toLowerCase()
+      if (unit.startsWith("hour")) {
+        durationInMinutes = service.duration_number * 60
+      } else if (unit.startsWith("day")) {
+        durationInMinutes = service.duration_number * 24 * 60
+      }
+      totalDurationMinutes += durationInMinutes
+    })
+
+    const twelveHoursInMinutes = 12 * 60
+
+    if (totalDurationMinutes > twelveHoursInMinutes) {
+      handleBookingTypeSelect("multi-day")
+    } else {
+      setShowBookingTypeSelection(true)
+    }
   }
 
-  const handleBackToBookingType = () => {
+  const handleBookingTypeSelect = (type: BookingType, config?: RecurringConfig) => {
+    setBookingType(type)
+    setShowBookingTypeSelection(false)
+    if (type === "recurring") {
+      setRecurringConfig(config || null)
+    } else if (type === "multi-day") {
+      setShowMultiDayForm(true)
+    }
+  }
+
+  const handleMultiDayAvailabilityCheck = async (start: Date, end: Date) => {
+    if (!professionalConfig || !webhookData) {
+      return { available: false, reason: "Configuration not loaded." }
+    }
+    return calculateMultiDayAvailability(
+      professionalConfig,
+      webhookData.bookings.all_booking_data,
+      start,
+      end,
+      selectedServices[0], // Assuming one service for multi-day
+    )
+  }
+
+  const handleMultiDayBookingConfirm = (start: Date, end: Date) => {
+    // Create a synthetic "time slot" to fit into the existing flow
+    const syntheticSlot: SelectedTimeSlot = {
+      date: start.toISOString().split("T")[0],
+      startTime: start.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true }),
+      endTime: end.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true }),
+      dayOfWeek: start.toLocaleDateString("en-US", { weekday: "long" }),
+    }
+    setMultiDayTimeSlot({ start, end })
+    setSelectedTimeSlot(syntheticSlot)
+    setShowMultiDayForm(false)
+    setShowCustomerForm(true)
+  }
+
+  const handleBackFromMultiDay = () => {
+    setShowMultiDayForm(false)
     setShowBookingTypeSelection(true)
-    setSelectedTimeSlot(null)
   }
 
   const handleBackToServices = () => {
@@ -573,20 +606,19 @@ export default function SchedulePage() {
     setShowPetSelection(true)
   }
 
-  const handlePetSelect = async (pet: Pet, notifications: NotificationPreference[]) => {
-    setSelectedPet(pet)
+  const handlePetSelect = async (pets: Pet[], notifications: NotificationPreference[]) => {
+    setSelectedPets(pets)
     setSelectedNotifications(notifications)
     setCreatingBooking(true)
 
     try {
-      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook/5671c1dd-48f6-47a9-85ac-4e20cf261520"
+      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16"
       const userTimezoneData = JSON.parse(userTimezoneRef.current!)
+      const isMultiDay = bookingType === "multi-day" && multiDayTimeSlot
 
-      const startDateTimeUTC = convertLocalTimeToUTC(
-        selectedTimeSlot!.date,
-        selectedTimeSlot!.startTime,
-        userTimezoneData.timezone,
-      )
+      const startDateTimeUTC = isMultiDay
+        ? multiDayTimeSlot.start.toISOString()
+        : convertLocalTimeToUTC(selectedTimeSlot!.date, selectedTimeSlot!.startTime, userTimezoneData.timezone)
 
       // Calculate total duration and cost for all selected services
       let totalDurationMinutes = 0
@@ -605,7 +637,9 @@ export default function SchedulePage() {
         totalCost += Number(service.customer_cost)
       })
 
-      const endDateTimeUTC = calculateEndDateTimeUTC(startDateTimeUTC, totalDurationMinutes, "Minutes")
+      const endDateTimeUTC = isMultiDay
+        ? multiDayTimeSlot.end.toISOString()
+        : calculateEndDateTimeUTC(startDateTimeUTC, totalDurationMinutes, "Minutes")
 
       const endTimeLocal = new Date(endDateTimeUTC).toLocaleTimeString("en-US", {
         hour: "numeric",
@@ -632,7 +666,9 @@ export default function SchedulePage() {
           total_appointments: recurringConfig.totalAppointments || recurringDates.length,
 
           // Enhanced details
-          pattern_description: `Every ${recurringConfig.frequency || 1} ${recurringConfig.unit || "week"}${(recurringConfig.frequency || 1) > 1 ? "s" : ""}`,
+          pattern_description: `Every ${recurringConfig.frequency || 1} ${recurringConfig.unit || "week"}${
+            (recurringConfig.frequency || 1) > 1 ? "s" : ""
+          }`,
           start_date: selectedTimeSlot!.date,
           start_time: selectedTimeSlot!.startTime,
           end_time: endTimeLocal,
@@ -665,7 +701,6 @@ export default function SchedulePage() {
               (recurringConfig.frequency || 1) === 1
                 ? `${recurringConfig.unit || "week"}ly`
                 : `every_${recurringConfig.frequency || 1}_${recurringConfig.unit || "week"}s`,
-            human_readable: `Every ${recurringConfig.frequency || 1} ${recurringConfig.unit || "week"}${(recurringConfig.frequency || 1) > 1 ? "s" : ""}`,
           },
         }
 
@@ -688,6 +723,8 @@ export default function SchedulePage() {
 
         // Add user's booking choice (one-time vs recurring)
         user_booking_type: bookingType, // "one-time" or "recurring"
+        all_day: bookingType === "multi-day",
+        is_recurring_booking: bookingType === "recurring",
 
         // Enhanced recurring details
         ...(bookingType === "recurring" &&
@@ -697,6 +734,7 @@ export default function SchedulePage() {
           }),
 
         booking_details: {
+          service_ids: selectedServices.map((service) => service.service_id),
           service_names: selectedServices.map((service) => service.name),
           service_descriptions: selectedServices.map((service) => service.description),
           service_durations: selectedServices.map((service) => service.duration_number),
@@ -723,7 +761,7 @@ export default function SchedulePage() {
           last_name: customerInfo.lastName.trim(),
           email: customerInfo.email.trim().toLowerCase(),
         },
-        pet_info: {
+        pets_info: pets.map((pet) => ({
           pet_id: pet.pet_id,
           pet_name: pet.pet_name,
           pet_type: pet.pet_type,
@@ -731,7 +769,7 @@ export default function SchedulePage() {
           age: pet.age,
           weight: pet.weight,
           special_notes: pet.special_notes,
-        },
+        })),
         // Only include notification preferences for direct bookings
         ...(isDirectBooking && {
           notification_preferences: {
@@ -786,6 +824,7 @@ export default function SchedulePage() {
               email: customerInfo.email.trim().toLowerCase(),
             },
             services_selected: selectedServices.map((service) => ({
+              service_id: service.service_id,
               name: service.name,
               description: service.description,
               duration_number: service.duration_number,
@@ -801,7 +840,7 @@ export default function SchedulePage() {
               timezone: userTimezoneData.timezone,
               timezone_offset: userTimezoneData.offset,
             },
-            pet_info: {
+            pets_info: pets.map((pet) => ({
               pet_id: pet.pet_id,
               pet_name: pet.pet_name,
               pet_type: pet.pet_type,
@@ -809,7 +848,7 @@ export default function SchedulePage() {
               age: pet.age,
               weight: pet.weight,
               special_notes: pet.special_notes,
-            },
+            })),
             is_recurring: bookingType === "recurring",
             // Include enhanced recurring details in confirmation email
             ...(bookingType === "recurring" &&
@@ -859,6 +898,9 @@ export default function SchedulePage() {
   const handleBackToSchedule = () => {
     setShowCustomerForm(false)
     setSelectedTimeSlot(null)
+    if (bookingType === "multi-day") {
+      setShowMultiDayForm(true)
+    }
   }
 
   const handleNewBooking = async () => {
@@ -870,7 +912,7 @@ export default function SchedulePage() {
     setCreatingBooking(false)
     setCustomerInfo({ firstName: "", lastName: "", email: "" })
     setPets([])
-    setSelectedPet(null)
+    setSelectedPets([])
     setSelectedNotifications([])
     setShowBookingTypeSelection(false)
     setBookingType(null)
@@ -969,30 +1011,60 @@ export default function SchedulePage() {
                 <span className="text-gray-600">Services:</span>
                 <span className="font-medium">{selectedServices.map((s) => s.name).join(", ")}</span>
               </div>
+              {bookingType === "multi-day" && multiDayTimeSlot ? (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Drop-off:</span>
+                    <span className="font-medium">
+                      {new Date(multiDayTimeSlot.start).toLocaleString("en-US", {
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Pick-up:</span>
+                    <span className="font-medium">
+                      {new Date(multiDayTimeSlot.end).toLocaleString("en-US", {
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Date:</span>
+                    <span className="font-medium">
+                      {(() => {
+                        if (!selectedTimeSlot?.date) return ""
+                        const [year, month, day] = selectedTimeSlot.date.split("-").map(Number)
+                        const localDate = new Date(year, month - 1, day)
+                        return localDate.toLocaleDateString("en-US", {
+                          month: "long",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      })()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Time:</span>
+                    <span className="font-medium">{selectedTimeSlot?.startTime}</span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Date:</span>
-                <span className="font-medium">
-                  {(() => {
-                    if (!selectedTimeSlot?.date) return ""
-                    // Fix: Create date in local timezone to prevent day-off errors
-                    const [year, month, day] = selectedTimeSlot.date.split("-").map(Number)
-                    const localDate = new Date(year, month - 1, day)
-                    return localDate.toLocaleDateString("en-US", {
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    })
-                  })()}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Time:</span>
-                <span className="font-medium">{selectedTimeSlot?.startTime}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Pet:</span>
-                <span className="font-medium">
-                  {selectedPet?.pet_name} ({selectedPet?.pet_type})
+                <span className="text-gray-600">Pet(s):</span>
+                <span className="font-medium text-right">
+                  {selectedPets.map(p => p.pet_name).join(', ')}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
@@ -1082,13 +1154,15 @@ export default function SchedulePage() {
           <BookingConfirmation
             selectedTimeSlot={selectedTimeSlot!}
             customerInfo={customerInfo}
-            selectedPet={selectedPet!}
+            selectedPets={selectedPets}
             professionalName={webhookData.professional_info.professional_name}
             onNewBooking={handleNewBooking}
             bookingType={bookingType}
             recurringConfig={recurringConfig}
             selectedServices={selectedServices}
             isDirectBooking={isDirectBooking}
+            multiDayTimeSlot={multiDayTimeSlot}
+            showPrices={showPrices}
           />
         ) : showPetSelection ? (
           <PetSelection
@@ -1103,6 +1177,7 @@ export default function SchedulePage() {
             bookingType={bookingType}
             recurringConfig={recurringConfig}
             showPrices={showPrices}
+            multiDayTimeSlot={multiDayTimeSlot}
           />
         ) : showCustomerForm && selectedServices.length > 0 && selectedTimeSlot ? (
           <CustomerForm
@@ -1116,10 +1191,18 @@ export default function SchedulePage() {
             bookingType={bookingType}
             recurringConfig={recurringConfig}
             showPrices={showPrices}
+            multiDayTimeSlot={multiDayTimeSlot}
+          />
+        ) : showMultiDayForm && selectedServices.length > 0 ? (
+          <MultiDayBookingForm
+            selectedService={selectedServices[0]}
+            onAvailabilityCheck={handleMultiDayAvailabilityCheck}
+            onBookingConfirm={handleMultiDayBookingConfirm}
+            onBack={handleBackFromMultiDay}
           />
         ) : showBookingTypeSelection && selectedServices.length > 0 ? (
           <BookingTypeSelection
-            selectedService={selectedServices[0]}
+            selectedServices={selectedServices}
             onBookingTypeSelect={handleBookingTypeSelect}
             onBack={handleBackToServices}
           />
@@ -1133,7 +1216,7 @@ export default function SchedulePage() {
                   servicesByCategory={webhookData.services.services_by_category}
                   selectedServices={selectedServices}
                   onServiceSelect={handleServiceSelect}
-                  onContinue={selectedServices.length > 0 ? () => setShowBookingTypeSelection(true) : undefined}
+                  onContinue={selectedServices.length > 0 ? handleContinueFromServices : undefined}
                   summaryOnly={false}
                   showPrices={showPrices}
                 />
@@ -1141,7 +1224,7 @@ export default function SchedulePage() {
             )}
 
             {/* Calendar view */}
-            {selectedServices.length > 0 && bookingType && (
+            {selectedServices.length > 0 && bookingType && !showMultiDayForm && (
               <div className="space-y-6">
                 {/* Selected Services Summary */}
                 <div className="bg-white rounded-2xl shadow-lg border p-6">

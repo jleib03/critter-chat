@@ -1,12 +1,12 @@
-import { Loader2 } from "lucide-react"
-
-export default function Loading() {
+const LoadingPage = () => {
   return (
-    <div className="min-h-screen bg-[#FBF8F3] flex items-center justify-center">
-      <div className="text-center">
-        <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-[#E75837]" />
-        <p className="text-gray-600 body-font">Loading professional information...</p>
+    <div className="flex items-center justify-center h-screen bg-gray-100">
+      <div className="bg-white shadow-md rounded-md p-8">
+        <h1 className="text-2xl font-semibold text-blue-500 mb-4">Loading...</h1>
+        <p className="text-gray-700">Please wait while we load this page.</p>
       </div>
     </div>
   )
 }
+
+export default LoadingPage
