@@ -44,7 +44,7 @@ const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({ firstName: "", 
 const [pets, setPets] = useState<Pet[]>([])
 const [selectedPets, setSelectedPets] = useState<Pet[]>([])
 const [selectedNotifications, setSelectedNotifications] = useState<NotificationPreference[]>([])
-const [professionalConfig, setProfessionalConfig] = useState<ProfessionalConfig | null>(null)
+const [professionalConfig, setProfessionalConfig = useState<ProfessionalConfig | null>(null)
 const [professionalId, setProfessionalId] = useState<string>("")
 
 const [showBookingTypeSelection, setShowBookingTypeSelection] = useState(false)
@@ -815,6 +815,10 @@ const handlePetSelect = async (pets: Pet[], notifications: NotificationPreferenc
     if (result && result[0] && result[0].output === "Booking Successfully Created") {
       // Send confirmation email webhook with enhanced recurring details
       try {
+        const confirmationWebhookData = {
+          ...bookingData,
+          action: "send_confirmation_emails",
+        }
         logWebhookUsage("PROFESSIONAL_CONFIG", "send_confirmation_emails")
         console.log("Sending confirmation email webhook with enhanced recurring details:", confirmationWebhookData)
 
