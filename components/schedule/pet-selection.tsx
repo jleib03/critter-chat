@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ArrowLeft, PawPrint, Bell, Sparkles } from "lucide-react"
+import { ArrowLeft, PawPrint, Bell, Sparkles } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -18,7 +18,7 @@ interface PetSelectionProps {
   selectedTimeSlot: SelectedTimeSlot
   professionalName: string
   isDirectBooking: boolean
-  onPetSelect: (pet: Pet, notifications: NotificationPreference[]) => void
+  onPetSelect: (pets: Pet[], notifications: NotificationPreference[]) => void
   onBack: () => void
   bookingType: BookingType | null
   recurringConfig: RecurringConfig | null
@@ -40,8 +40,19 @@ export function PetSelection({
   multiDayTimeSlot,
   showPrices,
 }: PetSelectionProps) {
-  const [selectedPet, setSelectedPet] = useState<Pet | null>(pets.length === 1 ? pets[0] : null)
+  const [selectedPets, setSelectedPets] = useState<Pet[]>(pets.length === 1 ? [pets[0]] : [])
   const [selectedNotifications, setSelectedNotifications] = useState<NotificationPreference[]>(["1_day"])
+
+  const handlePetToggle = (pet: Pet) => {
+    setSelectedPets((prev) => {
+      const isSelected = prev.some((p) => p.pet_id === pet.pet_id)
+      if (isSelected) {
+        return prev.filter((p) => p.pet_id !== pet.pet_id)
+      } else {
+        return [...prev, pet]
+      }
+    })
+  }
 
   const handleNotificationChange = (preference: NotificationPreference) => {
     setSelectedNotifications((prev) =>
@@ -50,8 +61,8 @@ export function PetSelection({
   }
 
   const handleSubmit = () => {
-    if (selectedPet) {
-      onPetSelect(selectedPet, selectedNotifications)
+    if (selectedPets.length > 0) {
+      onPetSelect(selectedPets, selectedNotifications)
     } else if (pets.length === 0) {
       // Allow submission if there are no existing pets (new customer)
       const newPetPlaceholder: Pet = {
@@ -63,7 +74,7 @@ export function PetSelection({
         weight: "Unknown",
         special_notes: "",
       }
-      onPetSelect(newPetPlaceholder, selectedNotifications)
+      onPetSelect([newPetPlaceholder], selectedNotifications)
     }
   }
 
@@ -243,23 +254,29 @@ export function PetSelection({
               {pets.map((pet) => (
                 <div
                   key={pet.pet_id}
-                  onClick={() => setSelectedPet(pet)}
+                  onClick={() => handlePetToggle(pet)}
                   className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                    selectedPet?.pet_id === pet.pet_id
+                    selectedPets.some((p) => p.pet_id === pet.pet_id)
                       ? "border-[#E75837] bg-orange-50 ring-2 ring-[#E75837]"
                       : "border-gray-200 bg-white hover:border-gray-300"
                   }`}
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="bg-gray-100 p-3 rounded-full">
-                      <PawPrint className="w-6 h-6 text-gray-500" />
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="bg-gray-100 p-3 rounded-full">
+                        <PawPrint className="w-6 h-6 text-gray-500" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-800 header-font">{pet.pet_name}</p>
+                        <p className="text-sm text-gray-500 body-font">
+                          {pet.breed} ({pet.pet_type})
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-semibold text-gray-800 header-font">{pet.pet_name}</p>
-                      <p className="text-sm text-gray-500 body-font">
-                        {pet.breed} ({pet.pet_type})
-                      </p>
-                    </div>
+                    <Checkbox
+                      checked={selectedPets.some((p) => p.pet_id === pet.pet_id)}
+                      className="data-[state=checked]:bg-[#E75837] data-[state=checked]:border-[#E75837]"
+                    />
                   </div>
                 </div>
               ))}
@@ -310,7 +327,7 @@ export function PetSelection({
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={!selectedPet && pets.length > 0}
+              disabled={selectedPets.length === 0 && pets.length > 0}
               className="px-6 py-2 bg-[#E75837] hover:bg-[#d14a2a] text-white rounded-lg font-medium transition-colors"
             >
               {isDirectBooking ? "Confirm Booking" : "Submit Request"}

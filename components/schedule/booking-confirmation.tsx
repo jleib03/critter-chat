@@ -9,7 +9,7 @@ type BookingConfirmationProps = {
   selectedServices: Service[]
   selectedTimeSlot: SelectedTimeSlot
   customerInfo: CustomerInfo
-  selectedPet: Pet
+  selectedPets: Pet[]
   professionalName: string
   onNewBooking: () => void
   bookingType?: BookingType | "one-time"
@@ -23,7 +23,7 @@ export function BookingConfirmation({
   selectedServices,
   selectedTimeSlot,
   customerInfo,
-  selectedPet,
+  selectedPets,
   professionalName,
   onNewBooking,
   bookingType,
@@ -131,9 +131,9 @@ export function BookingConfirmation({
           )}
 
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Pet:</span>
-            <span className="font-medium">
-              {selectedPet.pet_name} ({selectedPet.pet_type})
+            <span className="text-gray-600">Pet(s):</span>
+            <span className="font-medium text-right">
+              {selectedPets.map((pet) => pet.pet_name).join(", ")}
             </span>
           </div>
           <div className="flex justify-between text-sm">

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useMemo } from "react"
 import { useParams } from "next/navigation"
-import { Loader2, Clock, Calendar } from "lucide-react"
+import { Loader2, Clock, Calendar } from 'lucide-react'
 import type { Service, SelectedTimeSlot, CustomerInfo, Pet, PetResponse, ParsedWebhookData } from "@/types/schedule"
 import { ServiceSelectorBar } from "@/components/schedule/service-selector-bar"
 import { WeeklyCalendar } from "@/components/schedule/weekly-calendar"
@@ -41,7 +41,7 @@ export default function SchedulePage() {
   const [creatingBooking, setCreatingBooking] = useState(false)
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({ firstName: "", lastName: "", email: "" })
   const [pets, setPets] = useState<Pet[]>([])
-  const [selectedPet, setSelectedPet] = useState<Pet | null>(null)
+  const [selectedPets, setSelectedPets] = useState<Pet[]>([])
   const [selectedNotifications, setSelectedNotifications] = useState<NotificationPreference[]>([])
   const [professionalConfig, setProfessionalConfig] = useState<ProfessionalConfig | null>(null)
   const [professionalId, setProfessionalId] = useState<string>("")
@@ -606,8 +606,8 @@ export default function SchedulePage() {
     setShowPetSelection(true)
   }
 
-  const handlePetSelect = async (pet: Pet, notifications: NotificationPreference[]) => {
-    setSelectedPet(pet)
+  const handlePetSelect = async (pets: Pet[], notifications: NotificationPreference[]) => {
+    setSelectedPets(pets)
     setSelectedNotifications(notifications)
     setCreatingBooking(true)
 
@@ -701,9 +701,6 @@ export default function SchedulePage() {
               (recurringConfig.frequency || 1) === 1
                 ? `${recurringConfig.unit || "week"}ly`
                 : `every_${recurringConfig.frequency || 1}_${recurringConfig.unit || "week"}s`,
-            human_readable: `Every ${recurringConfig.frequency || 1} ${recurringConfig.unit || "week"}${
-              (recurringConfig.frequency || 1) > 1 ? "s" : ""
-            }`,
           },
         }
 
@@ -764,7 +761,7 @@ export default function SchedulePage() {
           last_name: customerInfo.lastName.trim(),
           email: customerInfo.email.trim().toLowerCase(),
         },
-        pet_info: {
+        pets_info: pets.map((pet) => ({
           pet_id: pet.pet_id,
           pet_name: pet.pet_name,
           pet_type: pet.pet_type,
@@ -772,7 +769,7 @@ export default function SchedulePage() {
           age: pet.age,
           weight: pet.weight,
           special_notes: pet.special_notes,
-        },
+        })),
         // Only include notification preferences for direct bookings
         ...(isDirectBooking && {
           notification_preferences: {
@@ -843,7 +840,7 @@ export default function SchedulePage() {
               timezone: userTimezoneData.timezone,
               timezone_offset: userTimezoneData.offset,
             },
-            pet_info: {
+            pets_info: pets.map((pet) => ({
               pet_id: pet.pet_id,
               pet_name: pet.pet_name,
               pet_type: pet.pet_type,
@@ -851,7 +848,7 @@ export default function SchedulePage() {
               age: pet.age,
               weight: pet.weight,
               special_notes: pet.special_notes,
-            },
+            })),
             is_recurring: bookingType === "recurring",
             // Include enhanced recurring details in confirmation email
             ...(bookingType === "recurring" &&
@@ -915,7 +912,7 @@ export default function SchedulePage() {
     setCreatingBooking(false)
     setCustomerInfo({ firstName: "", lastName: "", email: "" })
     setPets([])
-    setSelectedPet(null)
+    setSelectedPets([])
     setSelectedNotifications([])
     setShowBookingTypeSelection(false)
     setBookingType(null)
@@ -1065,9 +1062,9 @@ export default function SchedulePage() {
                 </>
               )}
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Pet:</span>
-                <span className="font-medium">
-                  {selectedPet?.pet_name} ({selectedPet?.pet_type})
+                <span className="text-gray-600">Pet(s):</span>
+                <span className="font-medium text-right">
+                  {selectedPets.map(p => p.pet_name).join(', ')}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
@@ -1157,7 +1154,7 @@ export default function SchedulePage() {
           <BookingConfirmation
             selectedTimeSlot={selectedTimeSlot!}
             customerInfo={customerInfo}
-            selectedPet={selectedPet!}
+            selectedPets={selectedPets}
             professionalName={webhookData.professional_info.professional_name}
             onNewBooking={handleNewBooking}
             bookingType={bookingType}
