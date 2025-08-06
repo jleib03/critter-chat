@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { ArrowLeft, User, Mail, Phone, MessageSquare } from "lucide-react"
+import { ArrowLeft, User, Mail, Phone, MessageSquare } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { Service, SelectedTimeSlot, CustomerInfo, PetResponse } from "@/types/schedule"
 import type { BookingType, RecurringConfig } from "./booking-type-selection"
+import { getWebhookEndpoint, logWebhookUsage } from "@/types/webhook-endpoints"
 
 interface CustomerFormProps {
   selectedServices: Service[]
@@ -73,7 +74,8 @@ export function CustomerForm({
         throw new Error("Please enter a valid email address")
       }
 
-      const webhookUrl = "https://jleib03.app.n8n.cloud/webhook-test/4ae0fb3d-17dc-482f-be27-1c7ab5c31b16"
+      const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG")
+      logWebhookUsage("PROFESSIONAL_CONFIG", "get_customer_pets")
 
       console.log("Sending webhook to:", webhookUrl)
 
