@@ -63,14 +63,6 @@ export default function ProfessionalSetupPage() {
   const professionalId = params.professionalId as string
   const { toast } = useToast()
 
-  const employeeColorMap = useMemo(() => {
-    const map = new Map<string, string>()
-    employees.forEach((emp, index) => {
-      map.set(emp.employee_id, employeeColors[index % employeeColors.length])
-    })
-    return map
-  }, [employees])
-
   // State management
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -100,6 +92,15 @@ export default function ProfessionalSetupPage() {
     is_recurring: false,
     is_all_day: false,
   })
+
+  // Memoized color map for employees
+  const employeeColorMap = useMemo(() => {
+    const map = new Map<string, string>()
+    employees.forEach((emp, index) => {
+      map.set(emp.employee_id, employeeColors[index % employeeColors.length])
+    })
+    return map
+  }, [employees])
 
   // Generate session ID
   const generateSessionId = () => {
