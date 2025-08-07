@@ -87,17 +87,15 @@ export default function RequestScheduling({ onSubmit, onBack }: RequestSchedulin
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
-          <div className="md:col-span-3">
-            <Label className="font-medium text-gray-700 mb-2 block">Preferred Date</Label>
-            <div className="flex justify-center md:justify-start">
-                <Calendar
-                mode="single"
-                selected={date}
-                onSelect={setDate}
-                className="rounded-md border"
-                disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() - 1))}
-                />
-            </div>
+          <div className="md:col-span-3 flex flex-col items-center md:items-start">
+            <Label className="font-medium text-gray-700 mb-2">Preferred Date</Label>
+            <Calendar
+              mode="single"
+              selected={date}
+              onSelect={setDate}
+              className="rounded-md border"
+              disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() - 1))}
+            />
           </div>
           
           <div className="md:col-span-2 space-y-6">
