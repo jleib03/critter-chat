@@ -3,6 +3,7 @@
 import { useState, useRef } from "react"
 import OnboardingForm from "./onboarding-form"
 import ServiceSelection from "./service-selection"
+import RequestScheduling from "./request-scheduling"
 import Confirmation from "./confirmation"
 
 type NewCustomerOnboardingProps = {
@@ -80,10 +81,11 @@ export default function NewCustomerOnboarding({
   initialProfessionalId,
   skipProfessionalStep = false,
 }: NewCustomerOnboardingProps) {
-  const [currentStep, setCurrentStep] = useState<"form" | "services" | "confirmation" | "success">("form")
+  const [currentStep, setCurrentStep] = useState<"form" | "services" | "scheduling" | "confirmation" | "success">("form")
   const [formData, setFormData] = useState<any>(null)
   const [servicesData, setServicesData] = useState<any>(null)
   const [serviceSelectionData, setServiceSelectionData] = useState<any>(null)
+  const [schedulingData, setSchedulingData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const USER_ID = useRef(initialUserId || "user_id_" + Math.random().toString(36).substring(2, 15))
 
@@ -249,6 +251,11 @@ export default function NewCustomerOnboarding({
 
   const handleServiceSelection = (data: any) => {
     setServiceSelectionData(data)
+    setCurrentStep("scheduling")
+  }
+
+  const handleSchedulingSubmit = (data: any) => {
+    setSchedulingData(data)
     setCurrentStep("confirmation")
   }
 
@@ -270,6 +277,7 @@ export default function NewCustomerOnboarding({
             },
         formData: formData,
         serviceData: serviceSelectionData,
+        schedulingData: schedulingData,
         professionalID: initialProfessionalId,
         type: "new_customer_final_submission",
         source: "critter_booking_site",
@@ -297,6 +305,10 @@ export default function NewCustomerOnboarding({
 
   const handleBackToServices = () => {
     setCurrentStep("services")
+  }
+
+  const handleBackToScheduling = () => {
+    setCurrentStep("scheduling")
   }
 
   if (isLoading) {
@@ -328,13 +340,20 @@ export default function NewCustomerOnboarding({
           onBack={() => setCurrentStep("form")}
         />
       )}
+      {currentStep === "scheduling" && (
+        <RequestScheduling
+          onSubmit={handleSchedulingSubmit}
+          onBack={handleBackToServices}
+        />
+      )}
       {currentStep === "confirmation" && (
         <Confirmation
           onSubmit={handleConfirmationSubmit}
           onCancel={onCancel}
-          onBack={handleBackToServices}
+          onBack={handleBackToScheduling}
           formData={formData}
           serviceData={serviceSelectionData}
+          schedulingData={schedulingData}
         />
       )}
       {currentStep === "success" && (
