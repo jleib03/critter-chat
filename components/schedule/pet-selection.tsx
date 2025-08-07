@@ -72,7 +72,7 @@ export function PetSelection({
         breed: "Unknown",
         age: "Unknown",
         weight: "Unknown",
-        special_notes: "",
+        special_notes": "",
       }
       onPetSelect([newPetPlaceholder], selectedNotifications)
     }
@@ -168,7 +168,7 @@ export function PetSelection({
 
     return {
       durationLabel,
-      totalCost: billableUnits * rate,
+      totalCost: Math.ceil(billableUnits) * rate,
     }
   }
 
