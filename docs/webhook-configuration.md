@@ -77,7 +77,6 @@ The system includes built-in error handling:
 - Development: Webhook usage is logged to console for debugging
 - Production: Logging is disabled for performance
 - Environment variables can be different per environment
-\`\`\`
 
 This comprehensive webhook management system provides:
 

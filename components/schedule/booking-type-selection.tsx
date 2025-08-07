@@ -1,30 +1,29 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Calendar, Repeat, ArrowLeft, ArrowRight, Clock, CalendarDays } from "lucide-react"
 import type { Service } from "@/types/schedule"
 
-export type BookingType = "one-time" | "recurring"
+export type BookingType = "one-time" | "recurring" | "multi-day"
 
 export type RecurringConfig = {
-  daysOfWeek: string[] // e.g., ["Monday", "Wednesday", "Friday"]
+  daysOfWeek: string[]
   endDate: string
-  // Add these fields to preserve the original user selections
-  selectedDays: string[] // Keep the original day selections
-  originalEndDate: string // Keep the original end date
+  selectedDays: string[]
+  originalEndDate: string
 }
 
 type BookingTypeSelectionProps = {
-  selectedService: Service
+  selectedServices: Service[]
   onBookingTypeSelect: (type: BookingType, recurringConfig?: RecurringConfig) => void
   onBack: () => void
 }
 
 const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
-export function BookingTypeSelection({ selectedService, onBookingTypeSelect, onBack }: BookingTypeSelectionProps) {
+export function BookingTypeSelection({ selectedServices, onBookingTypeSelect, onBack }: BookingTypeSelectionProps) {
   const [selectedType, setSelectedType] = useState<BookingType | null>(null)
   const [recurringConfig, setRecurringConfig] = useState<RecurringConfig>({
     daysOfWeek: [],
@@ -32,6 +31,35 @@ export function BookingTypeSelection({ selectedService, onBookingTypeSelect, onB
     selectedDays: [],
     originalEndDate: "",
   })
+
+  const { serviceNames, totalDurationString } = useMemo(() => {
+    const totalMinutes = selectedServices.reduce((acc, service) => {
+      let durationInMinutes = service.duration_number
+      const unit = service.duration_unit.toLowerCase()
+      if (unit.startsWith("hour")) {
+        durationInMinutes = service.duration_number * 60
+      } else if (unit.startsWith("day")) {
+        durationInMinutes = service.duration_number * 24 * 60
+      }
+      return acc + durationInMinutes
+    }, 0)
+
+    const hours = Math.floor(totalMinutes / 60)
+    const minutes = totalMinutes % 60
+
+    let durationString = ""
+    if (hours > 0) {
+      durationString += `${hours} hour${hours > 1 ? "s" : ""} `
+    }
+    if (minutes > 0) {
+      durationString += `${minutes} minute${minutes > 1 ? "s" : ""}`
+    }
+
+    return {
+      serviceNames: selectedServices.map((s) => s.name).join(", "),
+      totalDurationString: durationString.trim() || "0 minutes",
+    }
+  }, [selectedServices])
 
   const handleContinue = () => {
     if (selectedType === "one-time") {
@@ -63,11 +91,10 @@ export function BookingTypeSelection({ selectedService, onBookingTypeSelect, onB
     }))
   }
 
-  // Generate minimum end date (at least 1 week from today)
   const getMinEndDate = () => {
     const today = new Date()
     const minDate = new Date(today)
-    minDate.setDate(today.getDate() + 7) // At least 1 week from now
+    minDate.setDate(today.getDate() + 7)
     return minDate.toISOString().split("T")[0]
   }
 
@@ -76,12 +103,11 @@ export function BookingTypeSelection({ selectedService, onBookingTypeSelect, onB
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-[#E75837] mb-2 header-font">Booking Type</h2>
         <p className="text-gray-600 body-font">
-          How would you like to schedule <span className="font-medium">{selectedService.name}</span>?
+          How would you like to schedule <span className="font-medium">{serviceNames}</span>?
         </p>
       </div>
 
       <div className="space-y-4 mb-8">
-        {/* One-time booking option */}
         <Card
           className={`cursor-pointer transition-all ${
             selectedType === "one-time" ? "ring-2 ring-[#E75837] bg-[#fff8f6]" : "hover:bg-gray-50"
@@ -99,10 +125,10 @@ export function BookingTypeSelection({ selectedService, onBookingTypeSelect, onB
               </div>
               <div className="flex-1">
                 <h3 className="text-lg font-semibold mb-2 header-font">One-time Service</h3>
-                <p className="text-gray-600 body-font">Schedule a single appointment for {selectedService.name}.</p>
+                <p className="text-gray-600 body-font">Schedule a single appointment for {serviceNames}.</p>
                 <div className="mt-3 flex items-center text-sm text-gray-500">
                   <Clock className="w-4 h-4 mr-1" />
-                  Duration: {selectedService.duration_number} {selectedService.duration_unit.toLowerCase()}
+                  Total Duration: {totalDurationString}
                 </div>
               </div>
               {selectedType === "one-time" && (
@@ -114,7 +140,6 @@ export function BookingTypeSelection({ selectedService, onBookingTypeSelect, onB
           </CardContent>
         </Card>
 
-        {/* Recurring booking option */}
         <Card
           className={`cursor-pointer transition-all ${
             selectedType === "recurring" ? "ring-2 ring-[#E75837] bg-[#fff8f6]" : "hover:bg-gray-50"
@@ -132,9 +157,7 @@ export function BookingTypeSelection({ selectedService, onBookingTypeSelect, onB
               </div>
               <div className="flex-1">
                 <h3 className="text-lg font-semibold mb-2 header-font">Recurring Service</h3>
-                <p className="text-gray-600 body-font">
-                  Schedule regular weekly appointments for {selectedService.name}.
-                </p>
+                <p className="text-gray-600 body-font">Schedule regular weekly appointments for {serviceNames}.</p>
                 <div className="mt-3 flex items-center text-sm text-gray-500">
                   <CalendarDays className="w-4 h-4 mr-1" />
                   Perfect for ongoing pet care needs
@@ -150,7 +173,6 @@ export function BookingTypeSelection({ selectedService, onBookingTypeSelect, onB
         </Card>
       </div>
 
-      {/* Recurring booking configuration */}
       {selectedType === "recurring" && (
         <Card className="mb-8 border-[#E75837]/20">
           <CardHeader>
@@ -204,7 +226,6 @@ export function BookingTypeSelection({ selectedService, onBookingTypeSelect, onB
               </div>
             </div>
 
-            {/* Preview of recurring schedule */}
             {recurringConfig.daysOfWeek.length > 0 && recurringConfig.endDate && (
               <div className="bg-gray-50 rounded-lg p-4">
                 <h4 className="text-sm font-medium text-gray-700 mb-2 header-font">Schedule Preview</h4>
@@ -215,7 +236,9 @@ export function BookingTypeSelection({ selectedService, onBookingTypeSelect, onB
                       ? recurringConfig.daysOfWeek[0]
                       : recurringConfig.daysOfWeek.length === 2
                         ? `${recurringConfig.daysOfWeek[0]} and ${recurringConfig.daysOfWeek[1]}`
-                        : `${recurringConfig.daysOfWeek.slice(0, -1).join(", ")}, and ${recurringConfig.daysOfWeek.slice(-1)}`}
+                        : `${recurringConfig.daysOfWeek.slice(0, -1).join(", ")}, and ${recurringConfig.daysOfWeek.slice(
+                            -1,
+                          )}`}
                   </span>{" "}
                   until{" "}
                   <span className="font-medium">
@@ -236,7 +259,6 @@ export function BookingTypeSelection({ selectedService, onBookingTypeSelect, onB
         </Card>
       )}
 
-      {/* Navigation buttons */}
       <div className="flex justify-between">
         <Button variant="outline" onClick={onBack} className="flex items-center body-font bg-transparent">
           <ArrowLeft className="w-4 h-4 mr-2" />

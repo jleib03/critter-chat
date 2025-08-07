@@ -1,5 +1,6 @@
+import { getWebhookEndpoint, logWebhookUsage } from "../types/webhook-endpoints"
+
 // Utility for loading professional landing page data - always fresh, no caching
-const WEBHOOK_URL = "https://jleib03.app.n8n.cloud/webhook/803d260b-1b17-4abf-8079-2d40225c29b0"
 
 export interface ServiceItem {
   id: string
@@ -198,9 +199,11 @@ export async function loadProfessionalLandingData(
   forceRefresh = false,
 ): Promise<ProfessionalLandingData | null> {
   try {
+    const webhookUrl = getWebhookEndpoint("CHAT_CONFIG");
+    logWebhookUsage("CHAT_CONFIG", "external_page_initialization");
+
     console.log("🚀 Loading professional landing data for URL:", uniqueUrl)
-    console.log("🌐 Always fetching fresh data from webhook...")
-    console.log("🔗 Using webhook URL:", WEBHOOK_URL)
+    console.log("🔗 Using webhook URL:", webhookUrl)
 
     const payload = {
       action: "external_page_initialization",
@@ -209,7 +212,7 @@ export async function loadProfessionalLandingData(
 
     console.log("📤 Sending payload:", JSON.stringify(payload, null, 2))
 
-    const response = await fetch(WEBHOOK_URL, {
+    const response = await fetch(webhookUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -1,5 +1,6 @@
 import type { ProfessionalConfig, Employee, WorkingDay } from "@/types/professional-config"
 import type { BookingData } from "@/types/schedule"
+import type { Service } from "@/types/service"
 
 // Helper: convert "HH:MM:SS", "HH:MM" or "H:MM AM/PM" to minutes past midnight
 export const timeToMinutes = (timeStr: string): number => {
@@ -37,16 +38,27 @@ export const isTimeSlotBlocked = (
 
   const slotStartMinutes = timeToMinutes(startTime)
   const slotEndMinutes = timeToMinutes(endTime)
-  const dateObj = new Date(date)
+  const dateObj = new Date(`${date}T00:00:00`) // Use a specific time to avoid timezone issues
 
   return blockedTimes.some((block) => {
-    // If this is an employee-specific block and doesn't match the employee, skip
-    if (block.employeeId && employeeId && block.employeeId !== employeeId) return false
+    // Determine if the block is relevant to the check
+    if (employeeId) {
+      // If checking for a specific employee, the block is relevant if it's global (no employeeId)
+      // or if it's specifically for this employee.
+      if (block.employeeId && block.employeeId.toString() !== employeeId.toString()) {
+        return false // It's for a different employee, so we ignore it.
+      }
+    } else {
+      // If checking globally (no employeeId), we only care about global blocks.
+      if (block.employeeId) {
+        return false // It's an employee-specific block, so we ignore it.
+      }
+    }
 
     // Check if the date matches
     let dateMatches = block.date === date
-    if (block.isRecurring) {
-      const blockedDate = new Date(block.date)
+    if (!dateMatches && block.isRecurring) {
+      const blockedDate = new Date(`${block.date}T00:00:00`)
       if (block.recurrencePattern === "weekly") {
         dateMatches = dateObj.getDay() === blockedDate.getDay()
       }
@@ -80,14 +92,11 @@ export const calculateAvailableSlots = (
   existingBookingsCount: number
   reason: string
 } => {
-  console.log(`[calculateAvailableSlots] Checking slot: ${date} ${startTime}-${endTime} (${dayName})`)
-
   const slotStartMinutes = timeToMinutes(startTime)
   const slotEndMinutes = timeToMinutes(endTime)
 
   // --- Default behavior if no config is provided ---
   if (!config) {
-    console.log("[calculateAvailableSlots] No professional config provided. Using default logic.")
     const workingDay = workingDays.find((wd) => wd.day === dayName && wd.isWorking)
     if (!workingDay) {
       return {
@@ -116,8 +125,8 @@ export const calculateAvailableSlots = (
       if (booking.booking_date_formatted !== date || !booking.start || !booking.end) return false
       const bookingStart = new Date(booking.start)
       const bookingEnd = new Date(booking.end)
-      const bookingStartMinutes = bookingStart.getHours() * 60 + bookingStart.getMinutes()
-      const bookingEndMinutes = bookingEnd.getHours() * 60 + bookingEnd.getMinutes()
+      const bookingStartMinutes = bookingStart.getUTCHours() * 60 + bookingStart.getUTCMinutes()
+      const bookingEndMinutes = bookingEnd.getUTCHours() * 60 + bookingEnd.getUTCMinutes()
       return slotStartMinutes < bookingEndMinutes && slotEndMinutes > bookingStartMinutes
     })
 
@@ -132,13 +141,6 @@ export const calculateAvailableSlots = (
   }
 
   // --- Advanced calculation with ProfessionalConfig ---
-  console.log("[calculateAvailableSlots] Using professional config:", {
-    employees: config.employees.length,
-    rules: config.capacityRules,
-    blocks: config.blockedTimes.length,
-  })
-  console.log("[calculateAvailableSlots] Input bookings for check:", existingBookings)
-
   const { employees, capacityRules, blockedTimes } = config
 
   // Layer 1: Find employees scheduled to work at this time
@@ -161,9 +163,8 @@ export const calculateAvailableSlots = (
     }
   }
 
-  // Layer 2: Check for employee-specific blocked times (global blocks are pre-filtered)
+  // Layer 2: Filter out employees who are blocked (personally or globally)
   const employeesAfterBlocks = employeesWorkingThisSlot.filter((emp) => {
-    // Only check employee-specific blocks since global blocks are already filtered out
     const isEmployeeBlocked = isTimeSlotBlocked(date, startTime, endTime, blockedTimes, emp.id)
     return !isEmployeeBlocked
   })
@@ -181,9 +182,6 @@ export const calculateAvailableSlots = (
   // Layer 3: Apply capacity rules
   const baseCapacity = employeesAfterBlocks.length
   const finalCapacity = Math.min(baseCapacity, capacityRules.maxConcurrentBookings)
-  console.log(
-    `[calculateAvailableSlots] Capacity check: ${employeesAfterBlocks.length} employees working -> final capacity of ${finalCapacity}`,
-  )
 
   // Layer 4: Subtract existing bookings, accounting for buffer time
   const bufferMinutes = capacityRules.bufferTimeBetweenBookings || 0
@@ -191,20 +189,15 @@ export const calculateAvailableSlots = (
     if (booking.booking_date_formatted !== date || !booking.start || !booking.end) return false
     const bookingStart = new Date(booking.start)
     const bookingEnd = new Date(booking.end)
-    const bookingStartMinutes = bookingStart.getHours() * 60 + bookingStart.getMinutes()
-    const bookingEndMinutes = bookingEnd.getHours() * 60 + bookingEnd.getMinutes()
+    // IMPORTANT: Use UTC hours/minutes for comparison as dates are in UTC
+    const bookingStartMinutes = bookingStart.getUTCHours() * 60 + bookingStart.getUTCMinutes()
+    const bookingEndMinutes = bookingEnd.getUTCHours() * 60 + bookingEnd.getUTCMinutes()
     const effectiveBookingStart = bookingStartMinutes - bufferMinutes
     const effectiveBookingEnd = bookingEndMinutes + bufferMinutes
     return slotStartMinutes < effectiveBookingEnd && slotEndMinutes > effectiveBookingStart
   })
 
-  console.log(`[calculateAvailableSlots] Found ${overlappingBookings.length} overlapping bookings (including buffer).`)
-
   const availableSlots = finalCapacity - overlappingBookings.length
-
-  console.log(
-    `[calculateAvailableSlots] Final calculation: capacity (${finalCapacity}) - bookings (${overlappingBookings.length}) = ${availableSlots} available`,
-  )
 
   if (availableSlots <= 0) {
     return {
@@ -246,10 +239,90 @@ export const saveProfessionalConfig = (config: ProfessionalConfig): boolean => {
       return false
     }
     localStorage.setItem(`professional_config_${config.professionalId}`, JSON.stringify(config))
-    console.log(`[saveProfessionalConfig] Configuration saved for ${config.professionalId}.`)
     return true
   } catch (error) {
     console.error("Error saving professional configuration:", error)
     return false
   }
+}
+
+// Corrected function for multi-day availability
+export const calculateMultiDayAvailability = (
+  config: ProfessionalConfig | null,
+  existingBookings: BookingData[],
+  startDate: Date,
+  endDate: Date,
+  service: Service,
+): { available: boolean; reason: string } => {
+  if (!config) {
+    return { available: false, reason: "Professional configuration not available." }
+  }
+
+  const { employees, capacityRules, blockedTimes } = config
+  const activeEmployees = employees.filter((emp) => emp.isActive)
+
+  if (activeEmployees.length === 0) {
+    return { available: false, reason: "No active employees available for this period." }
+  }
+
+  for (let d = new Date(startDate); d < endDate; d.setDate(d.getDate() + 1)) {
+    const currentDateStr = d.toISOString().split("T")[0]
+    const dayName = d.toLocaleDateString("en-US", { weekday: "long" })
+
+    // 1. Find employees scheduled to work on this day.
+    const employeesWorkingToday = activeEmployees.filter((emp) => {
+      const workingDay = emp.workingDays.find((wd) => wd.day === dayName)
+      return workingDay?.isWorking
+    })
+
+    if (employeesWorkingToday.length === 0) {
+      return { available: false, reason: `No employees are working on ${currentDateStr}.` }
+    }
+
+    // 2. Filter out employees who have a specific all-day block.
+    const employeesAvailableAfterBlocks = employeesWorkingToday.filter((emp) => {
+      const isEmployeeBlocked = blockedTimes.some((block) => {
+        const isAllDayBlock = block.isAllDay || (block.startTime === "00:00:00" && block.endTime === "23:59:00")
+        return block.employeeId === emp.id && block.date === currentDateStr && isAllDayBlock
+      })
+      return !isEmployeeBlocked
+    })
+
+    if (employeesAvailableAfterBlocks.length === 0 && employeesWorkingToday.length > 0) {
+      return { available: false, reason: `All available staff are blocked on ${currentDateStr}.` }
+    }
+
+    // 3. Check for a global (non-employee-specific) all-day block.
+    const isDayBlockedGlobally = blockedTimes.some((block) => {
+      const isAllDayBlock = block.isAllDay || (block.startTime === "00:00:00" && block.endTime === "23:59:00")
+      return !block.employeeId && block.date === currentDateStr && isAllDayBlock
+    })
+
+    if (isDayBlockedGlobally) {
+      return { available: false, reason: `The date ${currentDateStr} is blocked for all staff.` }
+    }
+
+    // 4. Determine capacity based on employees who are actually available.
+    const dayCapacity = Math.min(employeesAvailableAfterBlocks.length, capacityRules.maxConcurrentBookings)
+
+    // 5. Count concurrent multi-day bookings that overlap with the current day.
+    const concurrentBookingsOnDay = existingBookings.filter((booking) => {
+      if (!booking.all_day || !booking.start || !booking.end) return false
+      const bookingStart = new Date(booking.start)
+      const bookingEnd = new Date(booking.end)
+      return bookingStart.getTime() <= d.getTime() && bookingEnd.getTime() > d.getTime()
+    })
+
+    // 6. Check if capacity is exceeded.
+    const availableCapacity = dayCapacity - concurrentBookingsOnDay.length
+
+    if (availableCapacity <= 0) {
+      return {
+        available: false,
+        reason: `Not enough capacity on ${currentDateStr}. All ${dayCapacity} spaces are booked.`,
+      }
+    }
+  }
+
+  return { available: true, reason: "The selected dates are available for booking." }
 }

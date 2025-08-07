@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { getWebhookEndpoint, logWebhookUsage } from "../types/webhook-endpoints"
 import OnboardingForm from "./onboarding-form"
 import ServiceSelection from "./service-selection"
+import RequestScheduling from "./request-scheduling"
 import Confirmation from "./confirmation"
 import type { OnboardingFormData } from "../types/booking"
 
@@ -17,7 +18,6 @@ type UserInfo = {
 type NewCustomerIntakeProps = {
   onCancel: () => void
   onComplete: () => void
-  webhookUrl: string
   userInfo: UserInfo
   initialSessionId?: string
   initialUserId?: string
@@ -85,7 +85,6 @@ const isAddOnService = (category: string, serviceName: string): boolean => {
 export default function NewCustomerIntake({
   onCancel,
   onComplete,
-  webhookUrl,
   userInfo: initialUserInfo,
   initialSessionId,
   initialUserId,
@@ -95,10 +94,11 @@ export default function NewCustomerIntake({
 }: NewCustomerIntakeProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [currentStep, setCurrentStep] = useState<"form" | "services" | "confirmation" | "success">("form")
+  const [currentStep, setCurrentStep] = useState<"form" | "services" | "scheduling" | "confirmation" | "submitting" | "success">("form")
   const [formData, setFormData] = useState<any>(null)
   const [servicesData, setServicesData] = useState<any>(null)
   const [serviceSelectionData, setServiceSelectionData] = useState<any>(null)
+  const [schedulingData, setSchedulingData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
@@ -329,10 +329,16 @@ export default function NewCustomerIntake({
 
   const handleServiceSelection = (data: any) => {
     setServiceSelectionData(data)
+    setCurrentStep("scheduling")
+  }
+
+  const handleSchedulingSubmit = (data: any) => {
+    setSchedulingData(data)
     setCurrentStep("confirmation")
   }
 
   const handleConfirmationSubmit = async (data: any) => {
+    setCurrentStep("submitting") // Show submitting screen
     logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "final_intake_submission")
 
     const payload = {
@@ -351,7 +357,9 @@ export default function NewCustomerIntake({
               selectedAction: "new_customer_intake",
             },
         formData: formData,
+        petData: formData?.pets || [], // Include pet information in webhook
         serviceData: serviceSelectionData,
+        schedulingData: schedulingData,
         professionalID: initialProfessionalId, // Use the actual professional_id from the lookup
         type: "new_customer_final_intake_submission",
         source: "critter_booking_site",
@@ -371,14 +379,20 @@ export default function NewCustomerIntake({
         setCurrentStep("success")
       } else {
         console.error("Webhook request failed:", response.status)
+        setCurrentStep("confirmation") // Go back to confirmation on error
       }
     } catch (error) {
       console.error("Error sending webhook request:", error)
+      setCurrentStep("confirmation") // Go back to confirmation on error
     }
   }
 
   const handleBackToServices = () => {
     setCurrentStep("services")
+  }
+
+  const handleBackToScheduling = () => {
+    setCurrentStep("scheduling")
   }
 
   const handleSubmit = async (data: OnboardingFormData) => {
@@ -400,6 +414,7 @@ export default function NewCustomerIntake({
           action: "new_customer_onboarding",
           professionalId: initialProfessionalId, // Use the actual professional_id from the lookup
           formData: dataToSubmit,
+          petData: dataToSubmit.pets || [], // Include pet information
         }),
       })
 
@@ -483,14 +498,30 @@ export default function NewCustomerIntake({
           onBack={() => setCurrentStep("form")}
         />
       )}
+      {currentStep === "scheduling" && (
+        <RequestScheduling
+          onSubmit={handleSchedulingSubmit}
+          onBack={handleBackToServices}
+        />
+      )}
       {currentStep === "confirmation" && (
         <Confirmation
           onSubmit={handleConfirmationSubmit}
           onCancel={onCancel}
-          onBack={handleBackToServices}
+          onBack={handleBackToScheduling}
           formData={formData}
           serviceData={serviceSelectionData}
+          schedulingData={schedulingData}
         />
+      )}
+      {currentStep === "submitting" && (
+        <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#E75837] mx-auto mb-4"></div>
+            <h3 className="text-lg font-medium header-font">Submitting Your Request...</h3>
+            <p className="text-gray-600 body-font">Please wait while we process your intake and booking request.</p>
+          </div>
+        </div>
       )}
       {currentStep === "success" && (
         <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">

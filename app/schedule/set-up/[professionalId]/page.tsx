@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -11,18 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
-import {
-  Loader2,
-  Trash2,
-  Plus,
-  Users,
-  Clock,
-  Shield,
-  Calendar,
-  AlertCircle,
-  Smartphone,
-  CheckCircle,
-} from "lucide-react"
+import { Loader2, Trash2, Plus, Users, Clock, Shield, Calendar, AlertCircle, Smartphone, CheckCircle } from 'lucide-react'
 import type {
   GetConfigWebhookPayload,
   SaveConfigWebhookPayload,
@@ -58,6 +47,17 @@ const DEFAULT_BOOKING_PREFERENCES = {
   custom_instructions: "",
 }
 
+const employeeColors = [
+  "#3b82f6", // blue-500
+  "#22c55e", // green-500
+  "#f97316", // orange-500
+  "#8b5cf6", // violet-500
+  "#ec4899", // pink-500
+  "#f59e0b", // amber-500
+  "#10b981", // emerald-500
+  "#6366f1", // indigo-500
+]
+
 export default function ProfessionalSetupPage() {
   const params = useParams()
   const professionalId = params.professionalId as string
@@ -91,7 +91,18 @@ export default function ProfessionalSetupPage() {
     reason: "",
     is_recurring: false,
     is_all_day: false,
+    recurrence_pattern: "weekly",
+    recurrence_end_date: "",
   })
+
+  // Memoized color map for employees
+  const employeeColorMap = useMemo(() => {
+    const map = new Map<string, string>()
+    employees.forEach((emp, index) => {
+      map.set(emp.employee_id, employeeColors[index % employeeColors.length])
+    })
+    return map
+  }, [employees])
 
   // Generate session ID
   const generateSessionId = () => {
@@ -370,31 +381,13 @@ export default function ProfessionalSetupPage() {
             ...(config.capacity_rules ?? {}),
           }
 
-          // Blocked Times - Fix the field mapping
+          // Blocked Times
           if (Array.isArray(config.blocked_times)) {
             blockedTimesLocal = config.blocked_times.map((bt: any) => ({
-              blocked_time_id: bt.blocked_time_id,
-              employee_id: bt.employee_id,
-              date: bt.date, // Use the date field directly from webhook
-              start_time: bt.start_time,
-              end_time: bt.end_time,
-              reason: bt.reason || "",
-              is_recurring: bt.is_recurring || false,
-              is_all_day: bt.is_all_day || false,
-              recurrence_pattern: bt.recurrence_pattern,
+              ...bt,
+              date: bt.blocked_date || bt.date,
             }))
-
-            console.log("Processed blocked times:", blockedTimesLocal)
-            console.log("Blocked times count:", blockedTimesLocal.length)
           }
-
-          // Debug: Log all unique dates in blocked times
-          const uniqueDates = [...new Set(blockedTimesLocal.map((bt) => bt.date))].sort()
-          console.log("All blocked time dates found:", uniqueDates)
-          console.log(
-            "Looking for August 5th entries:",
-            blockedTimesLocal.filter((bt) => bt.date === "2025-08-05"),
-          )
 
           // EMPLOYEES - Handle both scenarios
           if (Array.isArray(config.employees) && config.employees.length > 0) {
@@ -645,15 +638,18 @@ export default function ProfessionalSetupPage() {
       return
     }
 
-    // Use the createLocalDate function to avoid timezone issues
-    const start = createLocalDate(startDate)
-    const end = createLocalDate(endDate)
+    if (newBlockedTime.is_recurring && !newBlockedTime.recurrence_end_date) {
+      toast({
+        title: "End date required for recurring blocks",
+        description: "Please select when the recurring block should end.",
+        variant: "destructive",
+      })
+      return
+    }
 
     const allNewEntries: WebhookBlockedTime[] = []
 
-    // Determine which employees to create blocks for.
-    // If employee_id is null (from selecting "All Team Members"), target all employees.
-    // Otherwise, filter for the specific employee.
+    // Determine which employees to create blocks for
     const targetEmployees = !newBlockedTime.employee_id
       ? employees
       : employees.filter((emp) => emp.employee_id === newBlockedTime.employee_id)
@@ -667,27 +663,57 @@ export default function ProfessionalSetupPage() {
       return
     }
 
-    // Iterate over each day in the selected date range
-    const currentDate = new Date(start)
-    while (currentDate <= end) {
-      // For each day, iterate over each target employee and create a block
-      for (const employee of targetEmployees) {
-        const blockedTime: WebhookBlockedTime = {
-          blocked_time_id: `block_${Date.now()}_${employee.employee_id}_${currentDate.getTime()}`,
-          employee_id: employee.employee_id, // Assign the specific employee ID
-          date: currentDate.toISOString().split("T")[0], // Format as YYYY-MM-DD
-          start_time: newBlockedTime.is_all_day ? "00:00" : newBlockedTime.start_time || "09:00",
-          end_time: newBlockedTime.is_all_day ? "23:59" : newBlockedTime.end_time || "17:00",
-          reason: newBlockedTime.reason || "",
-          is_recurring: newBlockedTime.is_recurring ?? false,
-          is_all_day: newBlockedTime.is_all_day ?? false,
-          recurrence_pattern: newBlockedTime.is_recurring ? newBlockedTime.recurrence_pattern : undefined,
-        }
-        allNewEntries.push(blockedTime)
-      }
+    if (newBlockedTime.is_recurring) {
+      // Handle recurring blocks
+      const start = createLocalDate(startDate)
+      const recurrenceEnd = createLocalDate(newBlockedTime.recurrence_end_date!)
+      const pattern = newBlockedTime.recurrence_pattern || "weekly"
+      
+      let currentDate = new Date(start)
+      const increment = pattern === "weekly" ? 7 : pattern === "monthly" ? 30 : 7
 
-      // Move to next day
-      currentDate.setDate(currentDate.getDate() + 1)
+      while (currentDate <= recurrenceEnd) {
+        for (const employee of targetEmployees) {
+          const blockedTime: WebhookBlockedTime = {
+            blocked_time_id: `block_${Date.now()}_${employee.employee_id}_${currentDate.getTime()}_${Math.random().toString(36).substr(2, 4)}`,
+            employee_id: employee.employee_id,
+            date: currentDate.toISOString().split("T")[0],
+            start_time: newBlockedTime.is_all_day ? "00:00" : newBlockedTime.start_time || "09:00",
+            end_time: newBlockedTime.is_all_day ? "23:59" : newBlockedTime.end_time || "17:00",
+            reason: newBlockedTime.reason || "",
+            is_recurring: true,
+            is_all_day: newBlockedTime.is_all_day ?? false,
+            recurrence_pattern: pattern as "weekly" | "monthly",
+          }
+          allNewEntries.push(blockedTime)
+        }
+        
+        // Move to next occurrence
+        currentDate.setDate(currentDate.getDate() + increment)
+      }
+    } else {
+      // Handle single or date range blocks (existing logic)
+      const start = createLocalDate(startDate)
+      const end = createLocalDate(endDate)
+
+      const currentDate = new Date(start)
+      while (currentDate <= end) {
+        for (const employee of targetEmployees) {
+          const blockedTime: WebhookBlockedTime = {
+            blocked_time_id: `block_${Date.now()}_${employee.employee_id}_${currentDate.getTime()}`,
+            employee_id: employee.employee_id,
+            date: currentDate.toISOString().split("T")[0],
+            start_time: newBlockedTime.is_all_day ? "00:00" : newBlockedTime.start_time || "09:00",
+            end_time: newBlockedTime.is_all_day ? "23:59" : newBlockedTime.end_time || "17:00",
+            reason: newBlockedTime.reason || "",
+            is_recurring: false,
+            is_all_day: newBlockedTime.is_all_day ?? false,
+          }
+          allNewEntries.push(blockedTime)
+        }
+
+        currentDate.setDate(currentDate.getDate() + 1)
+      }
     }
 
     setBlockedTimes((prev) => [...prev, ...allNewEntries])
@@ -701,7 +727,9 @@ export default function ProfessionalSetupPage() {
       reason: "",
       is_recurring: false,
       is_all_day: false,
-      employee_id: null, // Reset dropdown to "All Team Members"
+      recurrence_pattern: "weekly",
+      recurrence_end_date: "",
+      employee_id: null,
     })
   }
 
@@ -1258,9 +1286,41 @@ export default function ProfessionalSetupPage() {
                         </div>
                       </div>
 
+                      {newBlockedTime.is_recurring && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                          <div>
+                            <Label className="body-font font-medium">Repeat Every</Label>
+                            <Select
+                              value={newBlockedTime.recurrence_pattern || "weekly"}
+                              onValueChange={(value) =>
+                                setNewBlockedTime({ ...newBlockedTime, recurrence_pattern: value as "weekly" | "monthly" })
+                              }
+                            >
+                              <SelectTrigger className="mt-1 rounded-lg">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="weekly">Week</SelectItem>
+                                <SelectItem value="monthly">Month</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="body-font font-medium">End Recurring On</Label>
+                            <Input
+                              type="date"
+                              value={newBlockedTime.recurrence_end_date}
+                              onChange={(e) => setNewBlockedTime({ ...newBlockedTime, recurrence_end_date: e.target.value })}
+                              className="mt-1 rounded-lg"
+                              min={newBlockedTime.start_date}
+                            />
+                          </div>
+                        </div>
+                      )}
+
                       <Button
                         onClick={addBlockedTime}
-                        disabled={!newBlockedTime.start_date}
+                        disabled={!newBlockedTime.start_date || (newBlockedTime.is_recurring && !newBlockedTime.recurrence_end_date)}
                         className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-6 py-2 rounded-lg font-medium transition-colors"
                       >
                         <Plus className="w-4 h-4 mr-2" />
@@ -1283,63 +1343,85 @@ export default function ProfessionalSetupPage() {
                       </CardContent>
                     </Card>
                   ) : (
-                    blockedTimes.map((blockedTime) => (
-                      <Card key={blockedTime.blocked_time_id} className="shadow-sm border rounded-xl">
-                        <CardContent className="pt-6">
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-2">
-                                  <Calendar className="w-4 h-4 text-gray-500" />
-                                  <span className="font-medium body-font">
-                                    {(() => {
-                                      const [year, month, day] = blockedTime.date.split("-").map(Number)
-                                      const localDate = new Date(year, month - 1, day)
-                                      return localDate.toLocaleDateString("en-US", {
-                                        weekday: "long",
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                      })
-                                    })()}
-                                  </span>
+                    blockedTimes.map((blockedTime) => {
+                      const employee = employees.find((emp) => emp.employee_id === blockedTime.employee_id)
+                      const color = employee ? employeeColorMap.get(employee.employee_id) : "#64748b" // default slate-500
+
+                      return (
+                        <Card
+                          key={blockedTime.blocked_time_id}
+                          className="shadow-sm border rounded-xl overflow-hidden"
+                          style={{ borderLeft: `5px solid ${color}` }}
+                        >
+                          <CardContent className="pt-6">
+                            <div className="flex items-center justify-between">
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-4 flex-wrap">
+                                  <div className="flex items-center gap-2">
+                                    <Calendar className="w-4 h-4 text-gray-500" />
+                                    <span className="font-medium body-font">
+                                      {(() => {
+                                        const [year, month, day] = blockedTime.date.split("-").map(Number)
+                                        const localDate = new Date(year, month - 1, day)
+                                        return localDate.toLocaleDateString("en-US", {
+                                          weekday: "long",
+                                          year: "numeric",
+                                          month: "long",
+                                          day: "numeric",
+                                        })
+                                      })()}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Clock className="w-4 h-4 text-gray-500" />
+                                    <span className="body-font">
+                                      {blockedTime.is_all_day
+                                        ? "All Day"
+                                        : `${formatTimeToAMPM(blockedTime.start_time)} - ${formatTimeToAMPM(
+                                            blockedTime.end_time,
+                                          )}`}
+                                    </span>
+                                  </div>
                                 </div>
+                                <p className="text-gray-600 body-font">{formatReason(blockedTime.reason)}</p>
                                 <div className="flex items-center gap-2">
-                                  <Clock className="w-4 h-4 text-gray-500" />
-                                  <span className="body-font">
-                                    {blockedTime.is_all_day
-                                      ? "All Day"
-                                      : `${formatTimeToAMPM(blockedTime.start_time)} - ${formatTimeToAMPM(blockedTime.end_time)}`}
-                                  </span>
+                                  {blockedTime.is_recurring && (
+                                    <Badge variant="secondary" className="text-xs bg-[#E75837] text-white border-[#E75837]">
+                                      Recurring
+                                    </Badge>
+                                  )}
+                                  {employee ? (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs"
+                                      style={{
+                                        borderColor: color,
+                                        color: color,
+                                        backgroundColor: `${color}1A`,
+                                      }}
+                                    >
+                                      {employee.name || "Specific Team Member"}
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="text-xs">
+                                      All Team Members
+                                    </Badge>
+                                  )}
                                 </div>
                               </div>
-                              <p className="text-gray-600 body-font">{formatReason(blockedTime.reason)}</p>
-                              <div className="flex items-center gap-2">
-                                {blockedTime.is_recurring && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    Recurring
-                                  </Badge>
-                                )}
-                                {blockedTime.employee_id && (
-                                  <Badge variant="outline" className="text-xs">
-                                    {employees.find((emp) => emp.employee_id === blockedTime.employee_id)?.name ||
-                                      "Specific Team Member"}
-                                  </Badge>
-                                )}
-                              </div>
+                              <Button
+                                onClick={() => removeBlockedTime(blockedTime.blocked_time_id)}
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
                             </div>
-                            <Button
-                              onClick={() => removeBlockedTime(blockedTime.blocked_time_id)}
-                              variant="outline"
-                              size="sm"
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
+                          </CardContent>
+                        </Card>
+                      )
+                    })
                   )}
                 </div>
               </div>

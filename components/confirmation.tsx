@@ -1,203 +1,193 @@
 "use client"
-import { useState } from "react"
-import { Check, ArrowLeft } from "lucide-react"
 
-type ConfirmationProps = {
-  onSubmit: (data: any) => void
-  onCancel: () => void
-  onBack?: () => void
-  formData: any
-  serviceData?: any
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { CheckCircle, ArrowLeft } from 'lucide-react'
+
+// Helper to format date
+const formatDate = (date: Date | string | undefined) => {
+  if (!date) return "Not specified"
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  return dateObj.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  })
 }
 
-export default function Confirmation({ onSubmit, onCancel, onBack, formData, serviceData }: ConfirmationProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false)
+// Helper to format time
+const formatTime = (time: string) => {
+  if (!time) return "Not specified"
+  const [hours, minutes] = time.split(":")
+  const ampm = parseInt(hours) >= 12 ? "PM" : "AM"
+  const formattedHours = parseInt(hours) % 12 || 12
+  return `${formattedHours}:${minutes} ${ampm}`
+}
 
-  const handleSubmit = async () => {
-    setIsSubmitting(true)
-    try {
-      await onSubmit({
-        confirmed: true,
-        timestamp: new Date().toISOString(),
-      })
-    } catch (error) {
-      console.error("Error submitting confirmation:", error)
-    } finally {
-      setIsSubmitting(false)
-    }
+export default function Confirmation({
+  onSubmit,
+  onCancel,
+  onBack,
+  formData,
+  serviceData,
+  schedulingData,
+  title,
+  message,
+  buttonText,
+  onButtonClick,
+}) {
+  const selectedServices = serviceData?.services?.filter((s) => s.selected) || []
+
+  // Generic confirmation for password reset, etc.
+  if (title && message) {
+    return (
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader className="items-center">
+          <CheckCircle className="w-12 h-12 text-green-500 mb-4" />
+          <CardTitle className="text-2xl header-font">{title}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-gray-600 body-font text-center">{message}</p>
+        </CardContent>
+        <CardFooter>
+          <Button onClick={onButtonClick} className="w-full bg-[#E75837] hover:bg-[#d04e30] text-white">
+            {buttonText}
+          </Button>
+        </CardFooter>
+      </Card>
+    )
   }
 
-  const formatDateTime = (date: string, time: string, timezone: string) => {
-    if (!date || !time) return "Not specified"
-
-    const formattedTime = time.split(":").map(Number)
-    const hours = formattedTime[0]
-    const minutes = formattedTime[1]
-    const period = hours >= 12 ? "PM" : "AM"
-    const displayHours = hours % 12 || 12
-    const timeString = `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`
-
-    const displayTimezone = timezone.replace(/_/g, " ")
-
-    return `${date} at ${timeString} (${displayTimezone})`
-  }
-
+  // Detailed confirmation for new customer intake
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
-      <div className="text-center mb-6">
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Check className="w-8 h-8 text-green-600" />
-        </div>
-        <h2 className="text-2xl font-bold text-[#E75837] mb-2 header-font">Review Your Onboarding Request</h2>
-        <p className="text-gray-600 body-font">
-          Please review all information below before submitting your onboarding and booking request.
+    <Card className="w-full max-w-3xl mx-auto">
+      <CardHeader>
+        <CardTitle className="text-2xl header-font text-center">Confirm Your Request</CardTitle>
+        <p className="text-gray-600 body-font text-center">
+          Please review the details below before submitting your request.
         </p>
-      </div>
-
-      <div className="space-y-6">
-        {/* Personal Information */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <h3 className="text-lg font-medium mb-3 header-font">Personal Information</h3>
-          {formData && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <span className="text-sm text-gray-500 body-font">Name:</span>
-                <p className="font-medium header-font">
-                  {formData.firstName} {formData.lastName}
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Customer Info */}
+        {formData && (
+          <div className="p-4 border rounded-lg">
+            <h3 className="font-semibold header-font mb-2">Your Information</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm body-font">
+              <p>
+                <strong>Name:</strong> {formData.firstName} {formData.lastName}
+              </p>
+              <p>
+                <strong>Email:</strong> {formData.email}
+              </p>
+              {formData.phone && (
+                <p>
+                  <strong>Phone:</strong> {formData.phone}
                 </p>
-              </div>
-              <div>
-                <span className="text-sm text-gray-500 body-font">Email:</span>
-                <p className="font-medium header-font">{formData.email}</p>
-              </div>
-              <div>
-                <span className="text-sm text-gray-500 body-font">Phone:</span>
-                <p className="font-medium header-font">{formData.phone}</p>
-              </div>
-              <div>
-                <span className="text-sm text-gray-500 body-font">Address:</span>
-                <p className="font-medium header-font">
-                  {formData.address}, {formData.city}, {formData.state} {formData.zipCode}
+              )}
+              {formData.address && (
+                <p className="sm:col-span-2">
+                  <strong>Address:</strong> {formData.address}
                 </p>
-              </div>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Pet Information */}
-        {formData?.pets && formData.pets.length > 0 && (
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h3 className="text-lg font-medium mb-3 header-font">Pet Information</h3>
+        {formData && formData.pets && formData.pets.length > 0 && (
+          <div className="p-4 border rounded-lg">
+            <h3 className="font-semibold header-font mb-2">Pet Information</h3>
             <div className="space-y-3">
-              {formData.pets.map((pet: any, index: number) => (
-                <div key={index} className="bg-white p-3 rounded border">
-                  <h4 className="font-medium header-font mb-2">{pet.name}</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                    <div>
-                      <span className="text-gray-500 body-font">Type:</span>
-                      <p className="body-font">{pet.type}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 body-font">Breed:</span>
-                      <p className="body-font">{pet.breed}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 body-font">Age:</span>
-                      <p className="body-font">{pet.age}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 body-font">Spayed/Neutered:</span>
-                      <p className="body-font">{pet.isSpayedOrNeutered ? "Yes" : "No"}</p>
-                    </div>
+              {formData.pets.map((pet, index) => (
+                <div key={index} className="bg-gray-50 p-3 rounded-lg">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm body-font">
+                    <p>
+                      <strong>Name:</strong> {pet.name}
+                    </p>
+                    <p>
+                      <strong>Type:</strong> {pet.type}
+                    </p>
+                    {pet.breed && (
+                      <p>
+                        <strong>Breed:</strong> {pet.breed}
+                      </p>
+                    )}
+                    {pet.age && (
+                      <p>
+                        <strong>Age:</strong> {pet.age}
+                      </p>
+                    )}
+                    {pet.weight && (
+                      <p>
+                        <strong>Weight:</strong> {pet.weight}
+                      </p>
+                    )}
+                    {pet.specialNotes && (
+                      <p className="sm:col-span-2">
+                        <strong>Special Notes:</strong> {pet.specialNotes}
+                      </p>
+                    )}
                   </div>
-                  {pet.notes && (
-                    <div className="mt-2">
-                      <span className="text-gray-500 body-font text-sm">Notes:</span>
-                      <p className="body-font text-sm">{pet.notes}</p>
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Service Selection */}
-        {serviceData && (
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h3 className="text-lg font-medium mb-3 header-font">Selected Services</h3>
-            <div className="space-y-2">
-              <div>
-                <span className="text-sm text-gray-500 body-font">Services:</span>
-                <p className="font-medium header-font">{serviceData.services?.join(", ") || "None selected"}</p>
-              </div>
-              <div>
-                <span className="text-sm text-gray-500 body-font">Date & Time:</span>
-                <p className="font-medium header-font">
-                  {formatDateTime(serviceData.date, serviceData.time, serviceData.timezone)}
-                </p>
-              </div>
-              {serviceData.isRecurring && (
-                <div>
-                  <span className="text-sm text-gray-500 body-font">Recurring:</span>
-                  <p className="font-medium header-font">
-                    {serviceData.recurringFrequency} until {serviceData.recurringEndDate}
+        {/* Service Info */}
+        {selectedServices.length > 0 && (
+          <div className="p-4 border rounded-lg">
+            <h3 className="font-semibold header-font mb-2">Selected Services</h3>
+            <ul className="list-disc list-inside space-y-1 text-sm body-font">
+              {selectedServices.map((service) => (
+                <li key={service.id}>
+                  {service.name} ({service.duration}, {service.price})
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Scheduling Info */}
+        {schedulingData && (
+          <div className="p-4 border rounded-lg">
+            <h3 className="font-semibold header-font mb-2">Requested Schedule</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm body-font">
+              <p>
+                <strong>Booking Type:</strong>{" "}
+                <span className="capitalize">{schedulingData.bookingType.replace("-", " ")}</span>
+              </p>
+              <p>
+                <strong>Preferred Date:</strong> {formatDate(schedulingData.date)}
+              </p>
+              <p>
+                <strong>Preferred Time:</strong> {formatTime(schedulingData.time)}
+              </p>
+              {schedulingData.bookingType === "recurring" && (
+                <>
+                  <p>
+                    <strong>Recurring Days:</strong> {schedulingData.recurringDays?.join(", ") || "Not specified"}
                   </p>
-                </div>
-              )}
-              {serviceData.isMultiDay && (
-                <div>
-                  <span className="text-sm text-gray-500 body-font">Multi-day until:</span>
-                  <p className="font-medium header-font">{serviceData.endDate}</p>
-                </div>
-              )}
-              {serviceData.notes && (
-                <div>
-                  <span className="text-sm text-gray-500 body-font">Notes:</span>
-                  <p className="font-medium header-font">{serviceData.notes}</p>
-                </div>
+                  <p>
+                    <strong>Recurring End Date:</strong> {formatDate(schedulingData.recurringEndDate)}
+                  </p>
+                </>
               )}
             </div>
           </div>
         )}
-      </div>
-
-      <div className="mt-8 flex justify-between">
-        <div className="flex space-x-3">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors body-font"
-            disabled={isSubmitting}
-          >
-            Cancel
-          </button>
-          {onBack && (
-            <button
-              onClick={onBack}
-              className="flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors body-font"
-              disabled={isSubmitting}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Services
-            </button>
-          )}
-        </div>
-
-        <button
-          onClick={handleSubmit}
-          disabled={isSubmitting}
-          className="px-6 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#d04e30] transition-colors body-font flex items-center"
-        >
-          {isSubmitting ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              Submitting...
-            </>
-          ) : (
-            "Submit Onboarding & Booking Request"
-          )}
-        </button>
-      </div>
-    </div>
+      </CardContent>
+      <CardFooter className="flex justify-between">
+        <Button variant="outline" onClick={onBack} className="bg-transparent">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back
+        </Button>
+        <Button onClick={onSubmit} className="bg-[#E75837] hover:bg-[#d04e30] text-white">
+          <CheckCircle className="w-4 h-4 mr-2" />
+          Submit Request
+        </Button>
+      </CardFooter>
+    </Card>
   )
 }

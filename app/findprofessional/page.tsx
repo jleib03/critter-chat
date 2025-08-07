@@ -100,11 +100,8 @@ export default function FindProfessionalPage() {
                 <Construction className="h-8 w-8 text-[#94ABD6]" />
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-center mb-4 header-font">Coming Soon!</h1>
-            <p className="text-gray-600 text-center mb-6 body-font">
-              We're working hard to bring you a professional matching service. Sign up for our newsletter to be the
-              first to know when it launches.
-            </p>
+            <h1 className="text-2xl font-bold text-center mb-4 header-font">Find a Professional</h1>
+            <p className="text-gray-600 text-center mb-6 body-font">This is the page to find a professional.</p>
 
             {submitStatus === "success" ? (
               <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 flex items-center">

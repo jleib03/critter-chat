@@ -32,6 +32,7 @@ export type BlockedTime = {
   employeeId?: string // If specific to an employee, otherwise affects all
   isRecurring: boolean
   recurrencePattern?: "weekly" | "monthly"
+  isAllDay?: boolean // Add this for full-day blocks
 }
 
 export type ProfessionalConfig = {
