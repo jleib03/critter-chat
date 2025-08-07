@@ -91,6 +91,8 @@ export default function ProfessionalSetupPage() {
     reason: "",
     is_recurring: false,
     is_all_day: false,
+    recurrence_pattern: "weekly",
+    recurrence_end_date: "",
   })
 
   // Memoized color map for employees
@@ -636,15 +638,18 @@ export default function ProfessionalSetupPage() {
       return
     }
 
-    // Use the createLocalDate function to avoid timezone issues
-    const start = createLocalDate(startDate)
-    const end = createLocalDate(endDate)
+    if (newBlockedTime.is_recurring && !newBlockedTime.recurrence_end_date) {
+      toast({
+        title: "End date required for recurring blocks",
+        description: "Please select when the recurring block should end.",
+        variant: "destructive",
+      })
+      return
+    }
 
     const allNewEntries: WebhookBlockedTime[] = []
 
-    // Determine which employees to create blocks for.
-    // If employee_id is null (from selecting "All Team Members"), target all employees.
-    // Otherwise, filter for the specific employee.
+    // Determine which employees to create blocks for
     const targetEmployees = !newBlockedTime.employee_id
       ? employees
       : employees.filter((emp) => emp.employee_id === newBlockedTime.employee_id)
@@ -658,27 +663,57 @@ export default function ProfessionalSetupPage() {
       return
     }
 
-    // Iterate over each day in the selected date range
-    const currentDate = new Date(start)
-    while (currentDate <= end) {
-      // For each day, iterate over each target employee and create a block
-      for (const employee of targetEmployees) {
-        const blockedTime: WebhookBlockedTime = {
-          blocked_time_id: `block_${Date.now()}_${employee.employee_id}_${currentDate.getTime()}`,
-          employee_id: employee.employee_id, // Assign the specific employee ID
-          date: currentDate.toISOString().split("T")[0], // Format as YYYY-MM-DD
-          start_time: newBlockedTime.is_all_day ? "00:00" : newBlockedTime.start_time || "09:00",
-          end_time: newBlockedTime.is_all_day ? "23:59" : newBlockedTime.end_time || "17:00",
-          reason: newBlockedTime.reason || "",
-          is_recurring: newBlockedTime.is_recurring ?? false,
-          is_all_day: newBlockedTime.is_all_day ?? false,
-          recurrence_pattern: newBlockedTime.is_recurring ? newBlockedTime.recurrence_pattern : undefined,
-        }
-        allNewEntries.push(blockedTime)
-      }
+    if (newBlockedTime.is_recurring) {
+      // Handle recurring blocks
+      const start = createLocalDate(startDate)
+      const recurrenceEnd = createLocalDate(newBlockedTime.recurrence_end_date!)
+      const pattern = newBlockedTime.recurrence_pattern || "weekly"
+      
+      let currentDate = new Date(start)
+      const increment = pattern === "weekly" ? 7 : pattern === "monthly" ? 30 : 7
 
-      // Move to next day
-      currentDate.setDate(currentDate.getDate() + 1)
+      while (currentDate <= recurrenceEnd) {
+        for (const employee of targetEmployees) {
+          const blockedTime: WebhookBlockedTime = {
+            blocked_time_id: `block_${Date.now()}_${employee.employee_id}_${currentDate.getTime()}_${Math.random().toString(36).substr(2, 4)}`,
+            employee_id: employee.employee_id,
+            date: currentDate.toISOString().split("T")[0],
+            start_time: newBlockedTime.is_all_day ? "00:00" : newBlockedTime.start_time || "09:00",
+            end_time: newBlockedTime.is_all_day ? "23:59" : newBlockedTime.end_time || "17:00",
+            reason: newBlockedTime.reason || "",
+            is_recurring: true,
+            is_all_day: newBlockedTime.is_all_day ?? false,
+            recurrence_pattern: pattern as "weekly" | "monthly",
+          }
+          allNewEntries.push(blockedTime)
+        }
+        
+        // Move to next occurrence
+        currentDate.setDate(currentDate.getDate() + increment)
+      }
+    } else {
+      // Handle single or date range blocks (existing logic)
+      const start = createLocalDate(startDate)
+      const end = createLocalDate(endDate)
+
+      const currentDate = new Date(start)
+      while (currentDate <= end) {
+        for (const employee of targetEmployees) {
+          const blockedTime: WebhookBlockedTime = {
+            blocked_time_id: `block_${Date.now()}_${employee.employee_id}_${currentDate.getTime()}`,
+            employee_id: employee.employee_id,
+            date: currentDate.toISOString().split("T")[0],
+            start_time: newBlockedTime.is_all_day ? "00:00" : newBlockedTime.start_time || "09:00",
+            end_time: newBlockedTime.is_all_day ? "23:59" : newBlockedTime.end_time || "17:00",
+            reason: newBlockedTime.reason || "",
+            is_recurring: false,
+            is_all_day: newBlockedTime.is_all_day ?? false,
+          }
+          allNewEntries.push(blockedTime)
+        }
+
+        currentDate.setDate(currentDate.getDate() + 1)
+      }
     }
 
     setBlockedTimes((prev) => [...prev, ...allNewEntries])
@@ -692,7 +727,9 @@ export default function ProfessionalSetupPage() {
       reason: "",
       is_recurring: false,
       is_all_day: false,
-      employee_id: null, // Reset dropdown to "All Team Members"
+      recurrence_pattern: "weekly",
+      recurrence_end_date: "",
+      employee_id: null,
     })
   }
 
@@ -1249,9 +1286,41 @@ export default function ProfessionalSetupPage() {
                         </div>
                       </div>
 
+                      {newBlockedTime.is_recurring && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                          <div>
+                            <Label className="body-font font-medium">Repeat Every</Label>
+                            <Select
+                              value={newBlockedTime.recurrence_pattern || "weekly"}
+                              onValueChange={(value) =>
+                                setNewBlockedTime({ ...newBlockedTime, recurrence_pattern: value as "weekly" | "monthly" })
+                              }
+                            >
+                              <SelectTrigger className="mt-1 rounded-lg">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="weekly">Week</SelectItem>
+                                <SelectItem value="monthly">Month</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="body-font font-medium">End Recurring On</Label>
+                            <Input
+                              type="date"
+                              value={newBlockedTime.recurrence_end_date}
+                              onChange={(e) => setNewBlockedTime({ ...newBlockedTime, recurrence_end_date: e.target.value })}
+                              className="mt-1 rounded-lg"
+                              min={newBlockedTime.start_date}
+                            />
+                          </div>
+                        </div>
+                      )}
+
                       <Button
                         onClick={addBlockedTime}
-                        disabled={!newBlockedTime.start_date}
+                        disabled={!newBlockedTime.start_date || (newBlockedTime.is_recurring && !newBlockedTime.recurrence_end_date)}
                         className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-6 py-2 rounded-lg font-medium transition-colors"
                       >
                         <Plus className="w-4 h-4 mr-2" />
