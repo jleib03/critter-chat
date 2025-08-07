@@ -1317,7 +1317,7 @@ export default function ProfessionalSetupPage() {
                                 <p className="text-gray-600 body-font">{formatReason(blockedTime.reason)}</p>
                                 <div className="flex items-center gap-2">
                                   {blockedTime.is_recurring && (
-                                    <Badge variant="secondary" className="text-xs">
+                                    <Badge variant="secondary" className="text-xs bg-[#E75837] text-white border-[#E75837]">
                                       Recurring
                                     </Badge>
                                   )}
