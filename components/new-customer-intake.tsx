@@ -94,7 +94,7 @@ export default function NewCustomerIntake({
 }: NewCustomerIntakeProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [currentStep, setCurrentStep] = useState<"form" | "services" | "scheduling" | "confirmation" | "success">("form")
+  const [currentStep, setCurrentStep] = useState<"form" | "services" | "scheduling" | "confirmation" | "submitting" | "success">("form")
   const [formData, setFormData] = useState<any>(null)
   const [servicesData, setServicesData] = useState<any>(null)
   const [serviceSelectionData, setServiceSelectionData] = useState<any>(null)
@@ -338,6 +338,7 @@ export default function NewCustomerIntake({
   }
 
   const handleConfirmationSubmit = async (data: any) => {
+    setCurrentStep("submitting") // Show submitting screen
     logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "final_intake_submission")
 
     const payload = {
@@ -378,9 +379,11 @@ export default function NewCustomerIntake({
         setCurrentStep("success")
       } else {
         console.error("Webhook request failed:", response.status)
+        setCurrentStep("confirmation") // Go back to confirmation on error
       }
     } catch (error) {
       console.error("Error sending webhook request:", error)
+      setCurrentStep("confirmation") // Go back to confirmation on error
     }
   }
 
@@ -510,6 +513,15 @@ export default function NewCustomerIntake({
           serviceData={serviceSelectionData}
           schedulingData={schedulingData}
         />
+      )}
+      {currentStep === "submitting" && (
+        <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#E75837] mx-auto mb-4"></div>
+            <h3 className="text-lg font-medium header-font">Submitting Your Request...</h3>
+            <p className="text-gray-600 body-font">Please wait while we process your intake and booking request.</p>
+          </div>
+        </div>
       )}
       {currentStep === "success" && (
         <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
