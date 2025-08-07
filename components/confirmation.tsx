@@ -85,6 +85,52 @@ export default function Confirmation({
                   <strong>Phone:</strong> {formData.phone}
                 </p>
               )}
+              {formData.address && (
+                <p className="sm:col-span-2">
+                  <strong>Address:</strong> {formData.address}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Pet Information */}
+        {formData && formData.pets && formData.pets.length > 0 && (
+          <div className="p-4 border rounded-lg">
+            <h3 className="font-semibold header-font mb-2">Pet Information</h3>
+            <div className="space-y-3">
+              {formData.pets.map((pet, index) => (
+                <div key={index} className="bg-gray-50 p-3 rounded-lg">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm body-font">
+                    <p>
+                      <strong>Name:</strong> {pet.name}
+                    </p>
+                    <p>
+                      <strong>Type:</strong> {pet.type}
+                    </p>
+                    {pet.breed && (
+                      <p>
+                        <strong>Breed:</strong> {pet.breed}
+                      </p>
+                    )}
+                    {pet.age && (
+                      <p>
+                        <strong>Age:</strong> {pet.age}
+                      </p>
+                    )}
+                    {pet.weight && (
+                      <p>
+                        <strong>Weight:</strong> {pet.weight}
+                      </p>
+                    )}
+                    {pet.specialNotes && (
+                      <p className="sm:col-span-2">
+                        <strong>Special Notes:</strong> {pet.specialNotes}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}

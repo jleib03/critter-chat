@@ -356,6 +356,7 @@ export default function NewCustomerIntake({
               selectedAction: "new_customer_intake",
             },
         formData: formData,
+        petData: formData?.pets || [], // Include pet information in webhook
         serviceData: serviceSelectionData,
         schedulingData: schedulingData,
         professionalID: initialProfessionalId, // Use the actual professional_id from the lookup
@@ -410,6 +411,7 @@ export default function NewCustomerIntake({
           action: "new_customer_onboarding",
           professionalId: initialProfessionalId, // Use the actual professional_id from the lookup
           formData: dataToSubmit,
+          petData: dataToSubmit.pets || [], // Include pet information
         }),
       })
 
