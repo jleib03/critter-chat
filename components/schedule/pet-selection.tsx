@@ -72,7 +72,7 @@ export function PetSelection({
         breed: "Unknown",
         age: "Unknown",
         weight: "Unknown",
-        special_notes": "",
+        special_notes: "",
       }
       onPetSelect([newPetPlaceholder], selectedNotifications)
     }
@@ -136,39 +136,41 @@ export function PetSelection({
 
     let billableUnits = 0
     let durationLabel = ""
+    const nights = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)))
+    const totalDays = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
 
-    // Calculate billable units based on the service's duration configuration
-    if (service.duration_unit.toLowerCase().includes("hour")) {
-      const totalHours = Math.ceil(diffMs / (1000 * 60 * 60))
-      const serviceDurationHours = service.duration_number
+    const serviceUnit = service.duration_unit.toLowerCase()
+    const serviceDuration = service.duration_number
 
-      // If service is priced per 24-hour period (or other multi-hour blocks)
-      if (serviceDurationHours >= 24) {
-        billableUnits = Math.ceil(totalHours / serviceDurationHours)
-        const nights = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-        durationLabel = `${nights} Night${nights !== 1 ? "s" : ""} / ${billableUnits} Day${billableUnits !== 1 ? "s" : ""}`
+    if (serviceUnit.includes("day")) {
+      // Priced per day or block of days
+      const serviceDurationMs = serviceDuration * 24 * 60 * 60 * 1000
+      billableUnits = Math.ceil(diffMs / serviceDurationMs)
+      durationLabel = `${nights} Night${nights !== 1 ? "s" : ""} / ${totalDays} Day${totalDays !== 1 ? "s" : ""}`
+    } else if (serviceUnit.includes("hour")) {
+      // Priced per hour or block of hours (e.g., a 24-hour block)
+      const serviceDurationMs = serviceDuration * 60 * 60 * 1000
+      billableUnits = Math.ceil(diffMs / serviceDurationMs)
+      if (serviceDuration >= 24) {
+        durationLabel = `${nights} Night${nights !== 1 ? "s" : ""} / ${totalDays} Day${totalDays !== 1 ? "s" : ""}`
       } else {
-        // Service is priced per individual hour
-        billableUnits = totalHours
-        durationLabel = `${billableUnits} Hour${billableUnits !== 1 ? "s" : ""}`
+        const totalHours = Math.ceil(diffMs / (1000 * 60 * 60))
+        durationLabel = `${totalHours} Hour${totalHours !== 1 ? "s" : ""}`
       }
-    } else if (service.duration_unit.toLowerCase().includes("day")) {
-      billableUnits = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
-      const nights = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-      durationLabel = `${nights} Night${nights !== 1 ? "s" : ""} / ${billableUnits} Day${billableUnits !== 1 ? "s" : ""}`
-    } else if (service.duration_unit.toLowerCase().includes("minute")) {
+    } else if (serviceUnit.includes("minute")) {
+      const serviceDurationMs = serviceDuration * 60 * 1000
+      billableUnits = Math.ceil(diffMs / serviceDurationMs)
       const totalMinutes = Math.ceil(diffMs / (1000 * 60))
-      billableUnits = totalMinutes / service.duration_number
-      durationLabel = `${billableUnits} Visits`
+      durationLabel = `${totalMinutes} minutes`
     } else {
-      // Fallback for other duration units
+      // Fallback for unknown units, charge as a single stay
       billableUnits = 1
       durationLabel = "1 Stay"
     }
 
     return {
       durationLabel,
-      totalCost: Math.ceil(billableUnits) * rate,
+      totalCost: billableUnits * rate,
     }
   }
 
