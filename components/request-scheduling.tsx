@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Calendar } from "@/components/ui/calendar"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, ArrowRight } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Clock } from 'lucide-react'
 
 type SchedulingData = {
   bookingType: "one-time" | "recurring"
@@ -57,36 +57,44 @@ export default function RequestScheduling({ onSubmit, onBack }: RequestSchedulin
     return true
   }
 
+  const formatTimeForDisplay = (time: string) => {
+    const [hour, minute] = time.split(':');
+    const parsedHour = parseInt(hour, 10);
+    const ampm = parsedHour >= 12 ? 'PM' : 'AM';
+    const formattedHour = parsedHour % 12 || 12;
+    return `${formattedHour}:${minute} ${ampm}`;
+  }
+
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <Card className="w-full max-w-3xl mx-auto border-gray-300">
       <CardHeader>
-        <CardTitle className="header-font text-2xl">Request a Date and Time</CardTitle>
+        <CardTitle className="header-font text-3xl">Request a Date and Time</CardTitle>
         <p className="body-font text-gray-600">
           Please provide your preferred date and time for the service. This is a request and will be confirmed by the professional.
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
         <div>
-          <Label className="body-font font-medium">Booking Type</Label>
-          <div className="flex gap-2 mt-2">
+          <Label className="body-font font-medium text-sm">Booking Type</Label>
+          <div className="flex gap-2 mt-2 border border-gray-200 rounded-lg p-1">
             <Button
-              variant={bookingType === "one-time" ? "default" : "outline"}
+              variant={bookingType === "one-time" ? "default" : "ghost"}
               onClick={() => setBookingType("one-time")}
-              className={`flex-1 ${bookingType === 'one-time' ? 'bg-[#E75837] text-white hover:bg-[#d04e30]' : 'bg-transparent'}`}
+              className={`flex-1 rounded-md ${bookingType === 'one-time' ? 'bg-[#E75837] text-white hover:bg-[#d04e30]' : 'bg-transparent text-black hover:bg-gray-100'}`}
             >
               One-Time
             </Button>
             <Button
-              variant={bookingType === "recurring" ? "default" : "outline"}
+              variant={bookingType === "recurring" ? "default" : "ghost"}
               onClick={() => setBookingType("recurring")}
-              className={`flex-1 ${bookingType === 'recurring' ? 'bg-[#E75837] text-white hover:bg-[#d04e30]' : 'bg-transparent'}`}
+              className={`flex-1 rounded-md ${bookingType === 'recurring' ? 'bg-[#E75837] text-white hover:bg-[#d04e30]' : 'bg-transparent text-black hover:bg-gray-100'}`}
             >
               Recurring
             </Button>
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 gap-8">
           <div className="flex flex-col items-center">
             <Label htmlFor="date" className="body-font font-medium mb-2">Preferred Date</Label>
             <Calendar
@@ -98,15 +106,20 @@ export default function RequestScheduling({ onSubmit, onBack }: RequestSchedulin
             />
           </div>
           <div className="space-y-4">
-            <div>
-              <Label htmlFor="time" className="body-font font-medium">Preferred Time</Label>
-              <Input
-                id="time"
-                type="time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                className="mt-1"
-              />
+             <div className="flex flex-col items-center">
+                <Label htmlFor="time" className="body-font font-medium mb-2">Preferred Time</Label>
+                <div className="relative w-full">
+                    <Input
+                        id="time"
+                        type="time"
+                        value={time}
+                        onChange={(e) => setTime(e.target.value)}
+                        className="mt-1 w-full pl-4 pr-10 py-6 bg-gray-50 border-gray-200 rounded-lg"
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
+                        {formatTimeForDisplay(time)} <Clock className="ml-2 h-5 w-5" />
+                    </div>
+                </div>
             </div>
             {bookingType === "recurring" && (
               <div className="space-y-4 pt-4 border-t">
@@ -142,7 +155,7 @@ export default function RequestScheduling({ onSubmit, onBack }: RequestSchedulin
           </div>
         </div>
 
-        <div className="flex justify-between pt-6 border-t">
+        <div className="flex justify-between pt-6 border-t mt-6">
           <Button variant="outline" onClick={onBack} className="bg-transparent">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back

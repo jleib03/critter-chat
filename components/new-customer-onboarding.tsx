@@ -1,10 +1,30 @@
 "use client"
 
 import { useState, useRef } from "react"
-import OnboardingForm from "./onboarding-form"
-import ServiceSelection from "./service-selection"
-import RequestScheduling from "./request-scheduling"
-import Confirmation from "./confirmation"
+import NewCustomerSelection from "@/components/new-customer-selection"
+import ServiceSelection from "@/components/service-selection"
+import UserInfoForm from "@/components/user-info-form"
+import Confirmation from "@/components/confirmation"
+import RequestScheduling from "@/components/request-scheduling"
+import { type Service } from "@/types/booking"
+import { type Professional } from "@/types/professional-config"
+
+type UserData = {
+  name: string
+  email: string
+  phone: string
+  address: string
+  notes: string
+  pets: { name: string; breed: string; age: string }[]
+}
+
+type SchedulingData = {
+  bookingType: "one-time" | "recurring"
+  date: Date | undefined
+  time: string
+  recurringEndDate?: string
+  recurringDays?: string[]
+}
 
 type NewCustomerOnboardingProps = {
   onCancel: () => void
@@ -81,13 +101,22 @@ export default function NewCustomerOnboarding({
   initialProfessionalId,
   skipProfessionalStep = false,
 }: NewCustomerOnboardingProps) {
-  const [currentStep, setCurrentStep] = useState<"form" | "services" | "scheduling" | "confirmation" | "success">("form")
+  const [step, setStep] = useState(0)
+  const [selectedProfessional, setSelectedProfessional] = useState<any | null>(null)
+  const [selectedServices, setSelectedServices] = useState<any[]>([])
+  const [userData, setUserData] = useState<any | null>(null)
+  const [schedulingInfo, setSchedulingInfo] = useState<any | null>(null)
   const [formData, setFormData] = useState<any>(null)
   const [servicesData, setServicesData] = useState<any>(null)
   const [serviceSelectionData, setServiceSelectionData] = useState<any>(null)
   const [schedulingData, setSchedulingData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const USER_ID = useRef(initialUserId || "user_id_" + Math.random().toString(36).substring(2, 15))
+
+  const handleProfessionalSelect = (professional: any) => {
+    setSelectedProfessional(professional)
+    setStep(1)
+  }
 
   const handleFormSubmit = async (data: any) => {
     setFormData(data)
@@ -259,6 +288,11 @@ export default function NewCustomerOnboarding({
     setCurrentStep("confirmation")
   }
 
+  const handleUserInfoSubmit = (data: any) => {
+    setUserData(data)
+    setStep(4)
+  }
+
   const handleConfirmationSubmit = async (data: any) => {
     const payload = {
       message: {
@@ -303,12 +337,54 @@ export default function NewCustomerOnboarding({
     }
   }
 
-  const handleBackToServices = () => {
-    setCurrentStep("services")
+  const handleBack = () => {
+    if (step > 0) {
+      setStep(step - 1)
+    }
   }
 
-  const handleBackToScheduling = () => {
-    setCurrentStep("scheduling")
+  const handleEdit = (targetStep: number) => {
+    setStep(targetStep)
+  }
+
+  const renderStep = () => {
+    switch (step) {
+      case 0:
+        return <NewCustomerSelection onProfessionalSelect={handleProfessionalSelect} />
+      case 1:
+        if (selectedProfessional) {
+          return (
+            <ServiceSelection
+              services={selectedProfessional.services}
+              onSubmit={handleServiceSelection}
+              onBack={handleBack}
+              professionalId={selectedProfessional.id}
+            />
+          )
+        }
+        return null
+      case 2:
+        return <RequestScheduling onSubmit={handleSchedulingSubmit} onBack={handleBack} />
+      case 3:
+        return <UserInfoForm onSubmit={handleUserInfoSubmit} onBack={handleBack} />
+      case 4:
+        if (userData && selectedServices.length > 0 && selectedProfessional && schedulingInfo) {
+          return (
+            <Confirmation
+              customerInfo={userData}
+              petInfo={userData.pets}
+              services={selectedServices}
+              schedulingInfo={schedulingInfo}
+              professionalId={selectedProfessional.id}
+              onEdit={handleEdit}
+              webhookUrl={webhookUrl}
+            />
+          )
+        }
+        return <div>Loading...</div>
+      default:
+        return <div>Error</div>
+    }
   }
 
   if (isLoading) {
@@ -324,82 +400,8 @@ export default function NewCustomerOnboarding({
   }
 
   return (
-    <div>
-      {currentStep === "form" && (
-        <OnboardingForm
-          onSubmit={handleFormSubmit}
-          onCancel={onCancel}
-          skipProfessionalStep={skipProfessionalStep}
-          professionalId={initialProfessionalId}
-        />
-      )}
-      {currentStep === "services" && servicesData && (
-        <ServiceSelection
-          services={servicesData}
-          onSubmit={handleServiceSelection}
-          onBack={() => setCurrentStep("form")}
-        />
-      )}
-      {currentStep === "scheduling" && (
-        <RequestScheduling
-          onSubmit={handleSchedulingSubmit}
-          onBack={handleBackToServices}
-        />
-      )}
-      {currentStep === "confirmation" && (
-        <Confirmation
-          onSubmit={handleConfirmationSubmit}
-          onCancel={onCancel}
-          onBack={handleBackToScheduling}
-          formData={formData}
-          serviceData={serviceSelectionData}
-          schedulingData={schedulingData}
-        />
-      )}
-      {currentStep === "success" && (
-        <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
-          <div className="text-center">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h2 className="text-3xl font-bold text-[#E75837] mb-4 header-font">Request Submitted Successfully!</h2>
-            <p className="text-lg text-gray-700 mb-6 body-font">
-              Your onboarding and booking request has been sent to your Critter professional.
-            </p>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <p className="text-blue-800 body-font">
-                📧 <strong className="header-font">Check your email!</strong> You should receive a confirmation email
-                shortly with next steps and your professional's contact information.
-              </p>
-            </div>
-            <div className="space-y-3 text-gray-600 body-font mb-8">
-              <p>What happens next:</p>
-              <ul className="text-left max-w-md mx-auto space-y-2">
-                <li className="flex items-start">
-                  <span className="text-[#E75837] mr-2">1.</span>
-                  Your professional will review your request
-                </li>
-                <li className="flex items-start">
-                  <span className="text-[#E75837] mr-2">2.</span>
-                  They'll contact you to confirm details and schedule
-                </li>
-                <li className="flex items-start">
-                  <span className="text-[#E75837] mr-2">3.</span>
-                  You'll receive booking confirmation once approved
-                </li>
-              </ul>
-            </div>
-            <button
-              onClick={onComplete}
-              className="bg-[#E75837] text-white px-8 py-3 rounded-lg hover:bg-[#d04e30] transition-colors body-font font-medium"
-            >
-              Return to Home
-            </button>
-          </div>
-        </div>
-      )}
+    <div className="container mx-auto p-4 md:p-8">
+      {renderStep()}
     </div>
   )
 }
