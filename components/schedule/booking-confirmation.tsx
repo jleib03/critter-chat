@@ -108,12 +108,6 @@ export function BookingConfirmation({
                 <span className="text-gray-600">Pick-up:</span>
                 <span className="font-medium">{formatMultiDayDateTime(multiDayTimeSlot.end)}</span>
               </div>
-              {showPrices && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Total Cost:</span>
-                  <span className="font-medium">${multiDayInfo.totalCost.toFixed(2)}</span>
-                </div>
-              )}
             </>
           ) : (
             <>

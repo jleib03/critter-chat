@@ -206,12 +206,6 @@ export function PetSelection({
                 <span className="text-gray-500 body-font">Duration:</span>
                 <p className="font-medium header-font">{multiDayInfo.durationLabel}</p>
               </div>
-              {showPrices && (
-                <div>
-                  <span className="text-gray-500 body-font">Estimated Cost:</span>
-                  <p className="font-medium header-font">${multiDayInfo.totalCost.toFixed(2)}</p>
-                </div>
-              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
