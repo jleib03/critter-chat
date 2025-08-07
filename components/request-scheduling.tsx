@@ -86,9 +86,9 @@ export default function RequestScheduling({ onSubmit, onBack }: RequestSchedulin
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
-          <div className="md:col-span-3 flex flex-col items-center md:items-start">
-            <Label className="font-medium text-gray-700 mb-2">Preferred Date</Label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="flex flex-col items-center md:items-start">
+            <Label className="font-medium text-gray-700 mb-2 self-start">Preferred Date</Label>
             <Calendar
               mode="single"
               selected={date}
@@ -98,7 +98,7 @@ export default function RequestScheduling({ onSubmit, onBack }: RequestSchedulin
             />
           </div>
           
-          <div className="md:col-span-2 space-y-6">
+          <div className="space-y-6">
             <div>
               <Label htmlFor="time" className="font-medium text-gray-700">Preferred Time</Label>
               <Input
