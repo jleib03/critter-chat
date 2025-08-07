@@ -126,47 +126,51 @@ export function PetSelection({
     })
   }
 
-const calculateMultiDayInfo = () => {
-  if (!multiDayTimeSlot || !selectedServices.length) {
-    return { durationLabel: "", totalCost: 0 }
-  }
-  const service = selectedServices[0]
-  const rate = Number(service.customer_cost)
-  const diffMs = new Date(multiDayTimeSlot.end).getTime() - new Date(multiDayTimeSlot.start).getTime()
+  const calculateMultiDayInfo = () => {
+    if (!multiDayTimeSlot || !selectedServices.length) {
+      return { durationLabel: "", totalCost: 0 }
+    }
+    const service = selectedServices[0]
+    const rate = Number(service.customer_cost)
+    const diffMs = new Date(multiDayTimeSlot.end).getTime() - new Date(multiDayTimeSlot.start).getTime()
 
-  let billableUnits = 0
-  let durationLabel = ""
+    let billableUnits = 0
+    let durationLabel = ""
 
-  // Calculate billable units based on the service's duration configuration
-  if (service.duration_unit.toLowerCase().includes("hour")) {
-    const totalHours = Math.ceil(diffMs / (1000 * 60 * 60))
-    const serviceDurationHours = service.duration_number
-    
-    // If service is priced per 24-hour period (or other multi-hour blocks)
-    if (serviceDurationHours >= 24) {
-      billableUnits = Math.ceil(totalHours / serviceDurationHours)
+    // Calculate billable units based on the service's duration configuration
+    if (service.duration_unit.toLowerCase().includes("hour")) {
+      const totalHours = Math.ceil(diffMs / (1000 * 60 * 60))
+      const serviceDurationHours = service.duration_number
+
+      // If service is priced per 24-hour period (or other multi-hour blocks)
+      if (serviceDurationHours >= 24) {
+        billableUnits = Math.ceil(totalHours / serviceDurationHours)
+        const nights = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+        durationLabel = `${nights} Night${nights !== 1 ? "s" : ""} / ${billableUnits} Day${billableUnits !== 1 ? "s" : ""}`
+      } else {
+        // Service is priced per individual hour
+        billableUnits = totalHours
+        durationLabel = `${billableUnits} Hour${billableUnits !== 1 ? "s" : ""}`
+      }
+    } else if (service.duration_unit.toLowerCase().includes("day")) {
+      billableUnits = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
       const nights = Math.floor(diffMs / (1000 * 60 * 60 * 24))
       durationLabel = `${nights} Night${nights !== 1 ? "s" : ""} / ${billableUnits} Day${billableUnits !== 1 ? "s" : ""}`
+    } else if (service.duration_unit.toLowerCase().includes("minute")) {
+      const totalMinutes = Math.ceil(diffMs / (1000 * 60))
+      billableUnits = totalMinutes / service.duration_number
+      durationLabel = `${billableUnits} Visits`
     } else {
-      // Service is priced per individual hour
-      billableUnits = totalHours
-      durationLabel = `${billableUnits} Hour${billableUnits !== 1 ? "s" : ""}`
+      // Fallback for other duration units
+      billableUnits = 1
+      durationLabel = "1 Stay"
     }
-  } else if (service.duration_unit.toLowerCase().includes("day")) {
-    billableUnits = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
-    const nights = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-    durationLabel = `${nights} Night${nights !== 1 ? "s" : ""} / ${billableUnits} Day${billableUnits !== 1 ? "s" : ""}`
-  } else {
-    // Fallback for other duration units
-    billableUnits = 1
-    durationLabel = "1 Stay"
-  }
 
-  return {
-    durationLabel,
-    totalCost: billableUnits * rate,
+    return {
+      durationLabel,
+      totalCost: billableUnits * rate,
+    }
   }
-}
 
   const multiDayInfo = calculateMultiDayInfo()
 
