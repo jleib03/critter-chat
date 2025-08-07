@@ -7,32 +7,12 @@ import OnboardingForm from "./onboarding-form"
 import ServiceSelection from "./service-selection"
 import RequestScheduling from "./request-scheduling"
 import Confirmation from "./confirmation"
-import UserInfoForm from "./user-info-form"
-import { type Service } from "@/types/booking"
-import { type Professional } from "@/types/professional-config"
 import type { OnboardingFormData } from "../types/booking"
 
 type UserInfo = {
   email: string
   firstName: string
   lastName: string
-}
-
-type UserData = {
-  name: string
-  email: string
-  phone: string
-  address: string
-  notes: string
-  pets: { name: string; breed: string; age: string }[]
-}
-
-type SchedulingData = {
-  bookingType: "one-time" | "recurring"
-  date: Date | undefined
-  time: string
-  recurringEndDate?: string
-  recurringDays?: string[]
 }
 
 type NewCustomerIntakeProps = {
@@ -44,7 +24,6 @@ type NewCustomerIntakeProps = {
   initialProfessionalId?: string
   initialProfessionalName?: string
   skipProfessionalStep?: boolean
-  professional: Professional
 }
 
 // More conservative function to determine if a service is an add-on
@@ -112,17 +91,14 @@ export default function NewCustomerIntake({
   initialProfessionalId,
   initialProfessionalName,
   skipProfessionalStep,
-  professional,
 }: NewCustomerIntakeProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [step, setStep] = useState(1)
-  const [selectedServices, setSelectedServices] = useState<Service[]>([])
-  const [userData, setUserData] = useState<UserData | null>(null)
-  const [schedulingInfo, setSchedulingInfo] = useState<SchedulingData | null>(null)
-  const [webhookUrl, setWebhookUrl] = useState<string | null>(null)
+  const [currentStep, setCurrentStep] = useState<"form" | "services" | "scheduling" | "confirmation" | "success">("form")
   const [formData, setFormData] = useState<any>(null)
   const [servicesData, setServicesData] = useState<any>(null)
+  const [serviceSelectionData, setServiceSelectionData] = useState<any>(null)
+  const [schedulingData, setSchedulingData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
@@ -132,13 +108,7 @@ export default function NewCustomerIntake({
     initialProfessionalName || null,
   )
 
-  useEffect(() => {
-    const url = searchParams.get('webhookUrl')
-    if (url) {
-      setWebhookUrl(decodeURIComponent(url))
-    }
-  }, [searchParams])
-
+  // If we have a professional ID but no name, fetch the name
   useEffect(() => {
     const fetchProfessionalName = async () => {
       if (initialProfessionalId && !initialProfessionalName) {
@@ -190,31 +160,6 @@ export default function NewCustomerIntake({
 
     fetchProfessionalName()
   }, [initialProfessionalId, initialProfessionalName])
-
-  const handleServiceSubmit = (services: Service[]) => {
-    setSelectedServices(services)
-    setStep(2)
-  }
-
-  const handleScheduleSubmit = (data: SchedulingData) => {
-    setSchedulingInfo(data)
-    setStep(3)
-  }
-
-  const handleUserInfoSubmit = (data: UserData) => {
-    setUserData(data)
-    setStep(4)
-  }
-
-  const handleBack = () => {
-    if (step > 1) {
-      setStep(step - 1)
-    }
-  }
-
-  const handleEdit = (targetStep: number) => {
-    setStep(targetStep)
-  }
 
   const handleFormSubmit = async (data: any) => {
     // Merge the user info from landing page with additional form data
@@ -371,7 +316,7 @@ export default function NewCustomerIntake({
           ])
         }
 
-        setStep(2)
+        setCurrentStep("services")
       } else {
         console.error("Webhook request failed:", response.status)
       }
@@ -383,13 +328,13 @@ export default function NewCustomerIntake({
   }
 
   const handleServiceSelection = (data: any) => {
-    setSelectedServices(data)
-    setStep(3)
+    setServiceSelectionData(data)
+    setCurrentStep("scheduling")
   }
 
   const handleSchedulingSubmit = (data: any) => {
-    setSchedulingInfo(data)
-    setStep(4)
+    setSchedulingData(data)
+    setCurrentStep("confirmation")
   }
 
   const handleConfirmationSubmit = async (data: any) => {
@@ -411,8 +356,8 @@ export default function NewCustomerIntake({
               selectedAction: "new_customer_intake",
             },
         formData: formData,
-        serviceData: selectedServices,
-        schedulingData: schedulingInfo,
+        serviceData: serviceSelectionData,
+        schedulingData: schedulingData,
         professionalID: initialProfessionalId, // Use the actual professional_id from the lookup
         type: "new_customer_final_intake_submission",
         source: "critter_booking_site",
@@ -429,13 +374,21 @@ export default function NewCustomerIntake({
       })
 
       if (response.ok) {
-        setStep(5)
+        setCurrentStep("success")
       } else {
         console.error("Webhook request failed:", response.status)
       }
     } catch (error) {
       console.error("Error sending webhook request:", error)
     }
+  }
+
+  const handleBackToServices = () => {
+    setCurrentStep("services")
+  }
+
+  const handleBackToScheduling = () => {
+    setCurrentStep("scheduling")
   }
 
   const handleSubmit = async (data: OnboardingFormData) => {
@@ -482,87 +435,6 @@ export default function NewCustomerIntake({
     ? JSON.parse(decodeURIComponent(searchParams.get("userInfo") as string))
     : null
 
-  const renderStep = () => {
-    switch (step) {
-      case 1:
-        return (
-          <ServiceSelection
-            services={professional.services}
-            onSubmit={handleServiceSubmit}
-            onBack={() => {}} 
-            showBackButton={false}
-            professionalId={professional.id}
-          />
-        )
-      case 2:
-        return <RequestScheduling onSubmit={handleScheduleSubmit} onBack={handleBack} />
-      case 3:
-        return <UserInfoForm onSubmit={handleUserInfoSubmit} onBack={handleBack} />
-      case 4:
-        if (userData && selectedServices.length > 0 && schedulingInfo) {
-          return (
-            <Confirmation
-              customerInfo={userData}
-              petInfo={userData.pets}
-              services={selectedServices}
-              schedulingInfo={schedulingInfo}
-              professionalId={professional.id}
-              onEdit={handleEdit}
-              webhookUrl={webhookUrl || process.env.NEXT_PUBLIC_NEW_CUSTOMER_WEBHOOK_URL || ''}
-            />
-          )
-        }
-        return <div>Loading...</div>
-      case 5:
-        return (
-          <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
-            <div className="text-center">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h2 className="text-3xl font-bold text-[#E75837] mb-4 header-font">Request Submitted Successfully!</h2>
-              <p className="text-lg text-gray-700 mb-6 body-font">
-                Your intake and booking request has been sent to your Critter professional.
-              </p>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <p className="text-blue-800 body-font">
-                  📧 <strong className="header-font">Check your email!</strong> You should receive a confirmation email
-                  shortly with next steps and your professional's contact information.
-                </p>
-              </div>
-              <div className="space-y-3 text-gray-600 body-font mb-8">
-                <p>What happens next:</p>
-                <ul className="text-left max-w-md mx-auto space-y-2">
-                  <li className="flex items-start">
-                    <span className="text-[#E75837] mr-2">1.</span>
-                    Your professional will review your request
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-[#E75837] mr-2">2.</span>
-                    They'll contact you to confirm details and schedule
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-[#E75837] mr-2">3.</span>
-                    You'll receive booking confirmation once approved
-                  </li>
-                </ul>
-              </div>
-              <button
-                onClick={handleCancel}
-                className="bg-[#E75837] text-white px-8 py-3 rounded-lg hover:bg-[#d04e30] transition-colors body-font font-medium"
-              >
-                Return to Home
-              </button>
-            </div>
-          </div>
-        )
-      default:
-        return <div>Error</div>
-    }
-  }
-
   if (isLoading) {
     return (
       <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
@@ -604,7 +476,83 @@ export default function NewCustomerIntake({
           <p className="text-red-600 text-center">{error}</p>
         </div>
       )}
-      {renderStep()}
+      {currentStep === "form" && (
+        <OnboardingForm
+          onSubmit={handleFormSubmit}
+          onCancel={onCancel}
+          skipProfessionalStep={!!initialProfessionalId}
+          professionalId={initialProfessionalId}
+          professionalName={resolvedProfessionalName || initialProfessionalName}
+          userInfo={initialUserInfo && initialUserInfo.firstName ? initialUserInfo : null}
+        />
+      )}
+      {currentStep === "services" && servicesData && (
+        <ServiceSelection
+          services={servicesData}
+          onSubmit={handleServiceSelection}
+          onBack={() => setCurrentStep("form")}
+        />
+      )}
+      {currentStep === "scheduling" && (
+        <RequestScheduling
+          onSubmit={handleSchedulingSubmit}
+          onBack={handleBackToServices}
+        />
+      )}
+      {currentStep === "confirmation" && (
+        <Confirmation
+          onSubmit={handleConfirmationSubmit}
+          onCancel={onCancel}
+          onBack={handleBackToScheduling}
+          formData={formData}
+          serviceData={serviceSelectionData}
+          schedulingData={schedulingData}
+        />
+      )}
+      {currentStep === "success" && (
+        <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
+          <div className="text-center">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-3xl font-bold text-[#E75837] mb-4 header-font">Request Submitted Successfully!</h2>
+            <p className="text-lg text-gray-700 mb-6 body-font">
+              Your intake and booking request has been sent to your Critter professional.
+            </p>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <p className="text-blue-800 body-font">
+                📧 <strong className="header-font">Check your email!</strong> You should receive a confirmation email
+                shortly with next steps and your professional's contact information.
+              </p>
+            </div>
+            <div className="space-y-3 text-gray-600 body-font mb-8">
+              <p>What happens next:</p>
+              <ul className="text-left max-w-md mx-auto space-y-2">
+                <li className="flex items-start">
+                  <span className="text-[#E75837] mr-2">1.</span>
+                  Your professional will review your request
+                </li>
+                <li className="flex items-start">
+                  <span className="text-[#E75837] mr-2">2.</span>
+                  They'll contact you to confirm details and schedule
+                </li>
+                <li className="flex items-start">
+                  <span className="text-[#E75837] mr-2">3.</span>
+                  You'll receive booking confirmation once approved
+                </li>
+              </ul>
+            </div>
+            <button
+              onClick={handleCancel}
+              className="bg-[#E75837] text-white px-8 py-3 rounded-lg hover:bg-[#d04e30] transition-colors body-font font-medium"
+            >
+              Return to Home
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
