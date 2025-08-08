@@ -4,7 +4,7 @@ import { useState, useMemo } from "react"
 import type { BookingData, WorkingDay, Service, SelectedTimeSlot } from "@/types/schedule"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, Clock, ChevronDown, ChevronUp, Users } from "lucide-react"
+import { ChevronLeft, ChevronRight, Clock, ChevronDown, ChevronUp, Users } from 'lucide-react'
 import { calculateAvailableSlots, timeToMinutes, isTimeSlotBlocked } from "@/utils/professional-config"
 import type { ProfessionalConfig } from "@/types/professional-config"
 import type { BookingType, RecurringConfig } from "./booking-type-selection"
@@ -14,11 +14,13 @@ type WeeklyCalendarProps = {
   bookingData: BookingData[]
   selectedServices: Service[] | null
   onTimeSlotSelect: (slot: SelectedTimeSlot) => void
-  selectedTimeSlot: SelectedTimeSlot | null
+  selectedTimeSlots: SelectedTimeSlot[] // Changed from selectedTimeSlot
   professionalId: string
   professionalConfig: ProfessionalConfig | null
   bookingType?: BookingType
   recurringConfig?: RecurringConfig | null
+  isDropInService: boolean
+  onContinue?: () => void
 }
 
 export function WeeklyCalendar({
@@ -26,10 +28,12 @@ export function WeeklyCalendar({
   bookingData,
   selectedServices,
   onTimeSlotSelect,
-  selectedTimeSlot,
+  selectedTimeSlots,
   professionalConfig,
   bookingType,
   recurringConfig,
+  isDropInService,
+  onContinue,
 }: WeeklyCalendarProps) {
   const [currentWeekStart, setCurrentWeekStart] = useState(() => {
     const today = new Date()
@@ -281,8 +285,7 @@ export function WeeklyCalendar({
                 ) : (
                   <div className="space-y-2">
                     {displayedSlots.map((slot, slotIndex) => {
-                      const isSelected =
-                        selectedTimeSlot?.date === slot.date && selectedTimeSlot?.startTime === slot.startTime
+                      const isSelected = selectedTimeSlots.some(s => s.date === slot.date && s.startTime === slot.startTime)
                       const availabilityColor = slot.availableSlots <= 1 ? "text-orange-600" : "text-green-600"
                       const tooltipText = `Capacity: ${slot.availableSlots}/${slot.totalCapacity}. Reason: ${slot.reason}`
 
@@ -340,6 +343,16 @@ export function WeeklyCalendar({
           )
         })}
       </div>
+      {isDropInService && selectedTimeSlots.length > 0 && (
+        <div className="mt-6 text-center col-span-full">
+          <Button
+            onClick={onContinue}
+            className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-8 py-3 rounded-lg font-medium transition-colors"
+          >
+            Continue with {selectedTimeSlots.length} appointment{selectedTimeSlots.length > 1 ? "s" : ""}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

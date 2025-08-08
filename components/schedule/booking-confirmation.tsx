@@ -7,7 +7,7 @@ import type { BookingType, RecurringConfig } from "./booking-type-selection"
 
 type BookingConfirmationProps = {
   selectedServices: Service[]
-  selectedTimeSlot: SelectedTimeSlot
+  selectedTimeSlots: SelectedTimeSlot[] // Changed from selectedTimeSlot
   customerInfo: CustomerInfo
   selectedPets: Pet[]
   professionalName: string
@@ -21,7 +21,7 @@ type BookingConfirmationProps = {
 
 export function BookingConfirmation({
   selectedServices,
-  selectedTimeSlot,
+  selectedTimeSlots, // Changed
   customerInfo,
   selectedPets,
   professionalName,
@@ -111,16 +111,31 @@ export function BookingConfirmation({
             </>
           ) : (
             <>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Date:</span>
-                <span className="font-medium">
-                  {selectedTimeSlot.dayOfWeek}, {selectedTimeSlot.date}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Time:</span>
-                <span className="font-medium">{selectedTimeSlot.startTime}</span>
-              </div>
+              {selectedTimeSlots.length > 1 ? (
+                <div className="text-sm">
+                  <span className="text-gray-600">Appointments:</span>
+                  <ul className="list-disc list-inside font-medium text-right -mt-4">
+                    {selectedTimeSlots.map((slot, index) => (
+                      <li key={index}>
+                        {slot.dayOfWeek}, {slot.date} at {slot.startTime}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Date:</span>
+                    <span className="font-medium">
+                      {selectedTimeSlots[0].dayOfWeek}, {selectedTimeSlots[0].date}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Time:</span>
+                    <span className="font-medium">{selectedTimeSlots[0].startTime}</span>
+                  </div>
+                </>
+              )}
             </>
           )}
 
