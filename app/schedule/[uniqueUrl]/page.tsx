@@ -818,6 +818,9 @@ const handlePetSelect = async (pets: Pet[], notifications: NotificationPreferenc
           throw new Error("No time slot selected.")
         }
 
+        // Add this line to define isMultiDay
+        const isMultiDay = bookingType === "multi-day" && multiDayTimeSlot
+
         const startDateTimeUTC = isMultiDay
           ? multiDayTimeSlot.start.toISOString()
           : convertLocalTimeToUTC(selectedTimeSlot.date, selectedTimeSlot.startTime, userTimezoneData.timezone)
