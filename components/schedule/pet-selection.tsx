@@ -15,7 +15,10 @@ interface PetSelectionProps {
   pets: Pet[]
   customerInfo: CustomerInfo
   selectedServices: Service[]
-  selectedTimeSlot: SelectedTimeSlot
+  // Make single slot optional/nullable to support Drop-In multi-select
+  selectedTimeSlot?: SelectedTimeSlot | null
+  // New: multiple selected time windows for Drop-In flow
+  selectedTimeSlots?: SelectedTimeSlot[]
   professionalName: string
   isDirectBooking: boolean
   onPetSelect: (pets: Pet[], notifications: NotificationPreference[]) => void
@@ -31,6 +34,7 @@ export function PetSelection({
   customerInfo,
   selectedServices,
   selectedTimeSlot,
+  selectedTimeSlots = [],
   professionalName,
   isDirectBooking,
   onPetSelect,
@@ -78,9 +82,8 @@ export function PetSelection({
     }
   }
 
-  const formatDateTime = () => {
-    if (!selectedTimeSlot?.date) return ""
-    const [year, month, day] = selectedTimeSlot.date.split("-").map(Number)
+  const formatDate = (dateStr: string) => {
+    const [year, month, day] = dateStr.split("-").map(Number)
     const localDate = new Date(year, month - 1, day)
     return localDate.toLocaleDateString("en-US", {
       weekday: "long",
@@ -143,12 +146,10 @@ export function PetSelection({
     const serviceDuration = service.duration_number
 
     if (serviceUnit.includes("day")) {
-      // Priced per day or block of days
       const serviceDurationMs = serviceDuration * 24 * 60 * 60 * 1000
       billableUnits = Math.ceil(diffMs / serviceDurationMs)
       durationLabel = `${nights} Night${nights !== 1 ? "s" : ""} / ${totalDays} Day${totalDays !== 1 ? "s" : ""}`
     } else if (serviceUnit.includes("hour")) {
-      // Priced per hour or block of hours (e.g., a 24-hour block)
       const serviceDurationMs = serviceDuration * 60 * 60 * 1000
       billableUnits = Math.ceil(diffMs / serviceDurationMs)
       if (serviceDuration >= 24) {
@@ -163,7 +164,6 @@ export function PetSelection({
       const totalMinutes = Math.ceil(diffMs / (1000 * 60))
       durationLabel = `${totalMinutes} minutes`
     } else {
-      // Fallback for unknown units, charge as a single stay
       billableUnits = 1
       durationLabel = "1 Stay"
     }
@@ -175,6 +175,7 @@ export function PetSelection({
   }
 
   const multiDayInfo = calculateMultiDayInfo()
+  const hasMultipleWindows = Array.isArray(selectedTimeSlots) && selectedTimeSlots.length > 0
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -207,6 +208,42 @@ export function PetSelection({
                 <p className="font-medium header-font">{multiDayInfo.durationLabel}</p>
               </div>
             </div>
+          ) : hasMultipleWindows ? (
+            <div className="space-y-2 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <span className="text-gray-500 body-font">Professional:</span>
+                  <p className="font-medium header-font">{professionalName}</p>
+                </div>
+                <div>
+                  <span className="text-gray-500 body-font">Services:</span>
+                  <p className="font-medium header-font">{selectedServices.map((s) => s.name).join(", ")}</p>
+                </div>
+              </div>
+              <div className="mt-2">
+                <span className="text-gray-500 body-font">Selected Times:</span>
+                <ul className="mt-1 space-y-1">
+                  {selectedTimeSlots.map((slot, idx) => (
+                    <li key={`${slot.date}-${slot.startTime}-${idx}`} className="flex items-center justify-between">
+                      <span className="header-font">{formatDate(slot.date)}</span>
+                      <span className="font-medium header-font">{slot.startTime}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                <div>
+                  <span className="text-gray-500 body-font">Duration (per visit):</span>
+                  <p className="font-medium header-font">{calculateTotalDuration()}</p>
+                </div>
+                {showPrices && (
+                  <div>
+                    <span className="text-gray-500 body-font">Cost (per visit):</span>
+                    <p className="font-medium header-font">${calculateTotalCost()}</p>
+                  </div>
+                )}
+              </div>
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
@@ -216,7 +253,7 @@ export function PetSelection({
               <div>
                 <span className="text-gray-500 body-font">Date & Time:</span>
                 <p className="font-medium header-font">
-                  {formatDateTime()} at {selectedTimeSlot.startTime}
+                  {selectedTimeSlot?.date ? `${formatDate(selectedTimeSlot.date)} at ${selectedTimeSlot?.startTime ?? ""}` : ""}
                 </p>
               </div>
               <div>
