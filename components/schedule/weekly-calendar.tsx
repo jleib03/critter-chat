@@ -14,13 +14,16 @@ type WeeklyCalendarProps = {
   bookingData: BookingData[]
   selectedServices: Service[] | null
   onTimeSlotSelect: (slot: SelectedTimeSlot) => void
-  selectedTimeSlots: SelectedTimeSlot[] // Changed from selectedTimeSlot
+  // Original single-selection prop
+  selectedTimeSlot: SelectedTimeSlot | null
+  // New props for Drop-In multi-select
+  isDropInService?: boolean
+  selectedTimeSlots?: SelectedTimeSlot[]
+  onContinue?: () => void
   professionalId: string
   professionalConfig: ProfessionalConfig | null
   bookingType?: BookingType
   recurringConfig?: RecurringConfig | null
-  isDropInService: boolean
-  onContinue?: () => void
 }
 
 export function WeeklyCalendar({
@@ -28,12 +31,13 @@ export function WeeklyCalendar({
   bookingData,
   selectedServices,
   onTimeSlotSelect,
-  selectedTimeSlots,
+  selectedTimeSlot,
+  isDropInService = false,
+  selectedTimeSlots = [],
+  onContinue,
   professionalConfig,
   bookingType,
   recurringConfig,
-  isDropInService,
-  onContinue,
 }: WeeklyCalendarProps) {
   const [currentWeekStart, setCurrentWeekStart] = useState(() => {
     const today = new Date()
@@ -226,6 +230,11 @@ export function WeeklyCalendar({
                 {new Date(recurringConfig.endDate).toLocaleDateString()})
               </span>
             )}
+            {isDropInService && (
+              <span className="block text-xs text-gray-500 mt-1">
+                Drop-In: select up to 10 time blocks. Click "Continue" when done.
+              </span>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -285,7 +294,10 @@ export function WeeklyCalendar({
                 ) : (
                   <div className="space-y-2">
                     {displayedSlots.map((slot, slotIndex) => {
-                      const isSelected = selectedTimeSlots.some(s => s.date === slot.date && s.startTime === slot.startTime)
+                      const isSelected = isDropInService
+                        ? selectedTimeSlots.some((s) => s.date === slot.date && s.startTime === slot.startTime)
+                        : selectedTimeSlot?.date === slot.date && selectedTimeSlot?.startTime === slot.startTime
+
                       const availabilityColor = slot.availableSlots <= 1 ? "text-orange-600" : "text-green-600"
                       const tooltipText = `Capacity: ${slot.availableSlots}/${slot.totalCapacity}. Reason: ${slot.reason}`
 
@@ -343,8 +355,9 @@ export function WeeklyCalendar({
           )
         })}
       </div>
-      {isDropInService && selectedTimeSlots.length > 0 && (
-        <div className="mt-6 text-center col-span-full">
+
+      {isDropInService && selectedTimeSlots.length > 0 && onContinue && (
+        <div className="mt-2 text-center">
           <Button
             onClick={onContinue}
             className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-8 py-3 rounded-lg font-medium transition-colors"

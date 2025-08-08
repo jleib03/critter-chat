@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { ArrowLeft, User, Mail, Phone, MessageSquare } from 'lucide-react'
 import { Button } from "@/components/ui/button"
@@ -15,7 +14,10 @@ import { getWebhookEndpoint, logWebhookUsage } from "@/types/webhook-endpoints"
 
 interface CustomerFormProps {
   selectedServices: Service[]
-  selectedTimeSlots: SelectedTimeSlot[]
+  selectedTimeSlot: SelectedTimeSlot
+  // New: multi-select support for Drop-In
+  selectedTimeSlots?: SelectedTimeSlot[]
+  isDropInService?: boolean
   professionalId: string
   professionalName: string
   sessionId: string
@@ -29,7 +31,9 @@ interface CustomerFormProps {
 
 export function CustomerForm({
   selectedServices,
-  selectedTimeSlots,
+  selectedTimeSlot,
+  selectedTimeSlots = [],
+  isDropInService = false,
   professionalId,
   professionalName,
   sessionId,
@@ -40,7 +44,7 @@ export function CustomerForm({
   multiDayTimeSlot,
   showPrices,
 }: CustomerFormProps) {
-  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
+  const [customerInfo, setCustomerInfo] = useState<any>({
     firstName: "",
     lastName: "",
     email: "",
@@ -50,10 +54,8 @@ export function CustomerForm({
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const firstSlot = selectedTimeSlots[0]
-
-  const handleInputChange = (field: keyof CustomerInfo, value: string) => {
-    setCustomerInfo((prev) => ({
+  const handleInputChange = (field: keyof CustomerInfo | "phone" | "notes", value: string) => {
+    setCustomerInfo((prev: any) => ({
       ...prev,
       [field]: value,
     }))
@@ -65,19 +67,21 @@ export function CustomerForm({
     setError(null)
 
     try {
-      if (!customerInfo.firstName.trim() || !customerInfo.lastName.trim() || !customerInfo.email.trim()) {
+      // Validate required fields
+      if (!customerInfo.firstName?.trim() || !customerInfo.lastName?.trim() || !customerInfo.email?.trim()) {
         throw new Error("Please fill in all required fields")
       }
 
+      // Email validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
       if (!emailRegex.test(customerInfo.email.trim())) {
         throw new Error("Please enter a valid email address")
       }
 
-      const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG");
-      logWebhookUsage("PROFESSIONAL_CONFIG", "get_customer_pets");
+      const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG")
+      logWebhookUsage("PROFESSIONAL_CONFIG", "get_customer_pets")
 
-      console.log("Sending webhook to:", webhookUrl)
+      const firstSlot = isDropInService && selectedTimeSlots.length > 0 ? selectedTimeSlots[0] : selectedTimeSlot
 
       const payload = {
         professional_id: professionalId,
@@ -88,8 +92,8 @@ export function CustomerForm({
           first_name: customerInfo.firstName.trim(),
           last_name: customerInfo.lastName.trim(),
           email: customerInfo.email.trim().toLowerCase(),
-          phone: customerInfo.phone.trim(),
-          notes: customerInfo.notes.trim(),
+          phone: (customerInfo.phone || "").trim(),
+          notes: (customerInfo.notes || "").trim(),
         },
         booking_context: {
           selected_services: selectedServices.map((service) => service.name),
@@ -100,8 +104,6 @@ export function CustomerForm({
           multi_day_slot: multiDayTimeSlot,
         },
       }
-
-      console.log("Sending customer pets webhook with payload:", payload)
 
       const response = await fetch(webhookUrl, {
         method: "POST",
@@ -116,7 +118,6 @@ export function CustomerForm({
       }
 
       const result = await response.json()
-      console.log("Customer pets response:", result)
 
       let pets: any[] = []
       if (Array.isArray(result)) {
@@ -129,11 +130,17 @@ export function CustomerForm({
       }
 
       const petResponse: PetResponse = {
-        pets: pets,
-        success: true,
-      }
+        pets,
+      } as any
 
-      onPetsReceived(customerInfo, petResponse)
+      onPetsReceived(
+        {
+          firstName: customerInfo.firstName,
+          lastName: customerInfo.lastName,
+          email: customerInfo.email,
+        },
+        petResponse,
+      )
     } catch (err) {
       console.error("Error fetching customer pets:", err)
       setError(err instanceof Error ? err.message : "Failed to fetch customer information")
@@ -143,8 +150,9 @@ export function CustomerForm({
   }
 
   const formatDateTime = () => {
-    if (!firstSlot?.date) return ""
-    const [year, month, day] = firstSlot.date.split("-").map(Number)
+    const slot = isDropInService && selectedTimeSlots.length > 0 ? selectedTimeSlots[0] : selectedTimeSlot
+    if (!slot?.date) return ""
+    const [year, month, day] = slot.date.split("-").map(Number)
     const localDate = new Date(year, month - 1, day)
     return localDate.toLocaleDateString("en-US", {
       weekday: "long",
@@ -155,9 +163,8 @@ export function CustomerForm({
   }
 
   const calculateTotalCost = () => {
-    const costPerSlot = selectedServices.reduce((total, service) => total + Number(service.customer_cost), 0)
-    const totalCost = costPerSlot * selectedTimeSlots.length
-    return isNaN(totalCost) ? 0 : totalCost
+    // Preserve historical behavior: do NOT multiply by number of selected drop-ins
+    return selectedServices.reduce((total, service) => total + Number(service.customer_cost), 0)
   }
 
   const calculateTotalDuration = () => {
@@ -241,6 +248,7 @@ export function CustomerForm({
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {/* Booking Summary */}
       <Card className="shadow-lg border-0 rounded-2xl">
         <CardHeader className="pb-4">
           <CardTitle className="text-xl header-font">Booking Summary</CardTitle>
@@ -277,18 +285,21 @@ export function CustomerForm({
               </div>
               <div>
                 <span className="text-gray-500 body-font">Date & Time:</span>
-                {selectedTimeSlots.length > 1 ? (
+                {isDropInService && selectedTimeSlots.length > 1 ? (
                   <div>
                     <p className="font-medium header-font">{selectedTimeSlots.length} appointments selected</p>
-                    <ul className="text-xs list-disc list-inside text-gray-600">
+                    <ul className="text-xs list-disc list-inside text-gray-600 max-h-28 overflow-auto">
                       {selectedTimeSlots.map((slot, i) => (
-                        <li key={i}>{new Date(slot.date).toLocaleDateString("en-US", { month: "short", day: "numeric"})} at {slot.startTime}</li>
+                        <li key={`${slot.date}-${slot.startTime}-${i}`}>
+                          {new Date(slot.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })} at{" "}
+                          {slot.startTime}
+                        </li>
                       ))}
                     </ul>
                   </div>
                 ) : (
                   <p className="font-medium header-font">
-                    {formatDateTime()} at {firstSlot.startTime}
+                    {formatDateTime()} at {selectedTimeSlot.startTime}
                   </p>
                 )}
               </div>
@@ -297,13 +308,13 @@ export function CustomerForm({
                 <p className="font-medium header-font">{selectedServices.map((s) => s.name).join(", ")}</p>
               </div>
               <div>
-                <span className="text-gray-500 body-font">Duration (per appt):</span>
+                <span className="text-gray-500 body-font">Duration:</span>
                 <p className="font-medium header-font">{calculateTotalDuration()}</p>
               </div>
               {showPrices && (
                 <div>
                   <span className="text-gray-500 body-font">Total Cost:</span>
-                  <p className="font-medium header-font">${calculateTotalCost().toFixed(2)}</p>
+                  <p className="font-medium header-font">${calculateTotalCost()}</p>
                 </div>
               )}
               {bookingType === "recurring" && recurringConfig && (
@@ -325,6 +336,7 @@ export function CustomerForm({
         </CardContent>
       </Card>
 
+      {/* Customer Information Form */}
       <Card className="shadow-lg border-0 rounded-2xl">
         <CardHeader className="pb-4">
           <CardTitle className="text-xl header-font">Your Information</CardTitle>
@@ -344,7 +356,7 @@ export function CustomerForm({
                   First Name *
                 </Label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <Input
                     id="firstName"
                     type="text"
@@ -362,7 +374,7 @@ export function CustomerForm({
                   Last Name *
                 </Label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <Input
                     id="lastName"
                     type="text"
@@ -381,7 +393,7 @@ export function CustomerForm({
                 Email Address *
               </Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
                   id="email"
                   type="email"
@@ -399,7 +411,7 @@ export function CustomerForm({
                 Phone Number
               </Label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
                   id="phone"
                   type="tel"

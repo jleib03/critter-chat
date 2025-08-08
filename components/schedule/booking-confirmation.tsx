@@ -7,7 +7,10 @@ import type { BookingType, RecurringConfig } from "./booking-type-selection"
 
 type BookingConfirmationProps = {
   selectedServices: Service[]
-  selectedTimeSlots: SelectedTimeSlot[] // Changed from selectedTimeSlot
+  selectedTimeSlot: SelectedTimeSlot
+  // New: multi-select support for Drop-In
+  selectedTimeSlots?: SelectedTimeSlot[]
+  isDropInService?: boolean
   customerInfo: CustomerInfo
   selectedPets: Pet[]
   professionalName: string
@@ -21,7 +24,9 @@ type BookingConfirmationProps = {
 
 export function BookingConfirmation({
   selectedServices,
-  selectedTimeSlots, // Changed
+  selectedTimeSlot,
+  selectedTimeSlots = [],
+  isDropInService = false,
   customerInfo,
   selectedPets,
   professionalName,
@@ -30,7 +35,6 @@ export function BookingConfirmation({
   recurringConfig,
   multiDayTimeSlot,
   isDirectBooking,
-  showPrices,
 }: BookingConfirmationProps) {
   const formatMultiDayDateTime = (date: Date) => {
     if (!date) return ""
@@ -109,41 +113,35 @@ export function BookingConfirmation({
                 <span className="font-medium">{formatMultiDayDateTime(multiDayTimeSlot.end)}</span>
               </div>
             </>
+          ) : isDropInService && selectedTimeSlots.length > 1 ? (
+            <div className="text-sm">
+              <span className="text-gray-600">Appointments:</span>
+              <ul className="list-disc list-inside font-medium text-right -mt-4 max-h-40 overflow-auto">
+                {selectedTimeSlots.map((slot, index) => (
+                  <li key={`${slot.date}-${slot.startTime}-${index}`}>
+                    {slot.dayOfWeek}, {slot.date} at {slot.startTime}
+                  </li>
+                ))}
+              </ul>
+            </div>
           ) : (
             <>
-              {selectedTimeSlots.length > 1 ? (
-                <div className="text-sm">
-                  <span className="text-gray-600">Appointments:</span>
-                  <ul className="list-disc list-inside font-medium text-right -mt-4">
-                    {selectedTimeSlots.map((slot, index) => (
-                      <li key={index}>
-                        {slot.dayOfWeek}, {slot.date} at {slot.startTime}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : (
-                <>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Date:</span>
-                    <span className="font-medium">
-                      {selectedTimeSlots[0].dayOfWeek}, {selectedTimeSlots[0].date}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Time:</span>
-                    <span className="font-medium">{selectedTimeSlots[0].startTime}</span>
-                  </div>
-                </>
-              )}
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Date:</span>
+                <span className="font-medium">
+                  {selectedTimeSlot.dayOfWeek}, {selectedTimeSlot.date}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Time:</span>
+                <span className="font-medium">{selectedTimeSlot.startTime}</span>
+              </div>
             </>
           )}
 
           <div className="flex justify-between text-sm">
             <span className="text-gray-600">Pet(s):</span>
-            <span className="font-medium text-right">
-              {selectedPets.map((pet) => pet.pet_name).join(", ")}
-            </span>
+            <span className="font-medium text-right">{selectedPets.map((pet) => pet.pet_name).join(", ")}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-gray-600">Customer:</span>
