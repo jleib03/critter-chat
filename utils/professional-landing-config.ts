@@ -259,34 +259,54 @@ export async function loadProfessionalLandingData(
       const formattedServices: ServiceItem[] = []
       const serviceTypes = new Set<string>()
 
-      services.forEach((service: any) => {
-        if (service.service_name && service.available_to_customer) {
+      // Backward-compatible extractor for services
+      ;(services as any[]).forEach((s: any) => {
+        // Determine if service is available to customers
+        // If available_to_customer is not present, default to true to remain inclusive
+        const availableToCustomer =
+          typeof s?.available_to_customer === "boolean" ? s.available_to_customer : true
+
+        // Prefer new fields; fall back to legacy ones
+        const idRaw = s?.id ?? s?.service_id
+        const name = s?.name ?? s?.service_name
+        const description = s?.description ?? s?.service_description ?? ""
+        const durationNumber = s?.duration_number ?? null
+        const durationUnit = s?.duration_unit ?? null
+        const customerCost = s?.customer_cost ?? null
+        const customerCostCurrency = s?.customer_cost_currency ?? "USD"
+        const sortOrder = s?.service_sort_order ?? 999
+
+        // New grouping key from webhook; fall back to any legacy type fields or "General"
+        const rawType = s?.service_type_name ?? s?.service_type ?? s?.type ?? "General"
+        const type = typeof rawType === "string" && rawType.trim().length > 0 ? rawType : "General"
+
+        if (name && availableToCustomer) {
           const serviceItem: ServiceItem = {
-            id: service.service_id.toString(),
-            name: service.service_name,
-            description: service.service_description || "",
-            duration: formatDuration(service.duration_number, service.duration_unit),
-            cost: service.customer_cost ? `$${service.customer_cost}` : "",
-            type: service.service_type_name || "General",
-            type_display: getServiceTypeDisplayName(service.service_type_name || "General"),
-            sort_order: service.service_sort_order || 999,
+            id: String(idRaw ?? name), // ensure we always have an id-like value
+            name,
+            description,
+            duration: formatDuration(durationNumber, durationUnit),
+            cost: customerCost ? `$${customerCost}` : "",
+            type,
+            type_display: getServiceTypeDisplayName(type),
+            sort_order: Number(sortOrder),
           }
 
           formattedServices.push(serviceItem)
-          serviceTypes.add(service.service_type_name || "General")
+          serviceTypes.add(type)
         }
       })
 
       // Sort services by sort_order
       formattedServices.sort((a, b) => a.sort_order - b.sort_order)
 
-      // Group services by type
+      // Group services by type (service_type_name)
       const serviceGroups: ServiceGroup[] = []
       serviceTypes.forEach((type) => {
         const typeServices = formattedServices.filter((service) => service.type === type)
         if (typeServices.length > 0) {
           serviceGroups.push({
-            type: type,
+            type,
             type_display: getServiceTypeDisplayName(type),
             services: typeServices,
           })

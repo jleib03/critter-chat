@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+
 import { useState } from "react"
 import { ArrowLeft, User, Mail, Phone, MessageSquare } from 'lucide-react'
 import { Button } from "@/components/ui/button"
@@ -15,9 +16,6 @@ import { getWebhookEndpoint, logWebhookUsage } from "@/types/webhook-endpoints"
 interface CustomerFormProps {
   selectedServices: Service[]
   selectedTimeSlot: SelectedTimeSlot
-  // New: multi-select support for Drop-In
-  selectedTimeSlots?: SelectedTimeSlot[]
-  isDropInService?: boolean
   professionalId: string
   professionalName: string
   sessionId: string
@@ -32,8 +30,6 @@ interface CustomerFormProps {
 export function CustomerForm({
   selectedServices,
   selectedTimeSlot,
-  selectedTimeSlots = [],
-  isDropInService = false,
   professionalId,
   professionalName,
   sessionId,
@@ -44,7 +40,7 @@ export function CustomerForm({
   multiDayTimeSlot,
   showPrices,
 }: CustomerFormProps) {
-  const [customerInfo, setCustomerInfo] = useState<any>({
+  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     firstName: "",
     lastName: "",
     email: "",
@@ -54,8 +50,8 @@ export function CustomerForm({
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleInputChange = (field: keyof CustomerInfo | "phone" | "notes", value: string) => {
-    setCustomerInfo((prev: any) => ({
+  const handleInputChange = (field: keyof CustomerInfo, value: string) => {
+    setCustomerInfo((prev) => ({
       ...prev,
       [field]: value,
     }))
@@ -68,7 +64,7 @@ export function CustomerForm({
 
     try {
       // Validate required fields
-      if (!customerInfo.firstName?.trim() || !customerInfo.lastName?.trim() || !customerInfo.email?.trim()) {
+      if (!customerInfo.firstName.trim() || !customerInfo.lastName.trim() || !customerInfo.email.trim()) {
         throw new Error("Please fill in all required fields")
       }
 
@@ -78,10 +74,10 @@ export function CustomerForm({
         throw new Error("Please enter a valid email address")
       }
 
-      const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG")
-      logWebhookUsage("PROFESSIONAL_CONFIG", "get_customer_pets")
+      const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG");
+      logWebhookUsage("PROFESSIONAL_CONFIG", "get_customer_pets");
 
-      const firstSlot = isDropInService && selectedTimeSlots.length > 0 ? selectedTimeSlots[0] : selectedTimeSlot
+      console.log("Sending webhook to:", webhookUrl)
 
       const payload = {
         professional_id: professionalId,
@@ -92,18 +88,20 @@ export function CustomerForm({
           first_name: customerInfo.firstName.trim(),
           last_name: customerInfo.lastName.trim(),
           email: customerInfo.email.trim().toLowerCase(),
-          phone: (customerInfo.phone || "").trim(),
-          notes: (customerInfo.notes || "").trim(),
+          phone: customerInfo.phone.trim(),
+          notes: customerInfo.notes.trim(),
         },
         booking_context: {
           selected_services: selectedServices.map((service) => service.name),
-          selected_date: firstSlot.date,
-          selected_time: firstSlot.startTime,
+          selected_date: selectedTimeSlot.date,
+          selected_time: selectedTimeSlot.startTime,
           booking_type: bookingType,
           recurring_config: recurringConfig,
           multi_day_slot: multiDayTimeSlot,
         },
       }
+
+      console.log("Sending customer pets webhook with payload:", payload)
 
       const response = await fetch(webhookUrl, {
         method: "POST",
@@ -118,9 +116,12 @@ export function CustomerForm({
       }
 
       const result = await response.json()
+      console.log("Customer pets response:", result)
 
+      // Parse the response to extract pets
       let pets: any[] = []
       if (Array.isArray(result)) {
+        // Look for pets in the response array
         const petsData = result.find((item) => item.pets || (Array.isArray(item) && item.length > 0))
         if (petsData?.pets) {
           pets = petsData.pets
@@ -130,17 +131,11 @@ export function CustomerForm({
       }
 
       const petResponse: PetResponse = {
-        pets,
-      } as any
+        pets: pets,
+        success: true,
+      }
 
-      onPetsReceived(
-        {
-          firstName: customerInfo.firstName,
-          lastName: customerInfo.lastName,
-          email: customerInfo.email,
-        },
-        petResponse,
-      )
+      onPetsReceived(customerInfo, petResponse)
     } catch (err) {
       console.error("Error fetching customer pets:", err)
       setError(err instanceof Error ? err.message : "Failed to fetch customer information")
@@ -150,9 +145,9 @@ export function CustomerForm({
   }
 
   const formatDateTime = () => {
-    const slot = isDropInService && selectedTimeSlots.length > 0 ? selectedTimeSlots[0] : selectedTimeSlot
-    if (!slot?.date) return ""
-    const [year, month, day] = slot.date.split("-").map(Number)
+    if (!selectedTimeSlot?.date) return ""
+    // Fix: Create date in local timezone to prevent day-off errors
+    const [year, month, day] = selectedTimeSlot.date.split("-").map(Number)
     const localDate = new Date(year, month - 1, day)
     return localDate.toLocaleDateString("en-US", {
       weekday: "long",
@@ -163,7 +158,6 @@ export function CustomerForm({
   }
 
   const calculateTotalCost = () => {
-    // Preserve historical behavior: do NOT multiply by number of selected drop-ins
     return selectedServices.reduce((total, service) => total + Number(service.customer_cost), 0)
   }
 
@@ -216,10 +210,12 @@ export function CustomerForm({
     const serviceDuration = service.duration_number
 
     if (serviceUnit.includes("day")) {
+      // Priced per day or block of days
       const serviceDurationMs = serviceDuration * 24 * 60 * 60 * 1000
       billableUnits = Math.ceil(diffMs / serviceDurationMs)
       durationLabel = `${nights} Night${nights !== 1 ? "s" : ""} / ${totalDays} Day${totalDays !== 1 ? "s" : ""}`
     } else if (serviceUnit.includes("hour")) {
+      // Priced per hour or block of hours (e.g., a 24-hour block)
       const serviceDurationMs = serviceDuration * 60 * 60 * 1000
       billableUnits = Math.ceil(diffMs / serviceDurationMs)
       if (serviceDuration >= 24) {
@@ -234,6 +230,7 @@ export function CustomerForm({
       const totalMinutes = Math.ceil(diffMs / (1000 * 60))
       durationLabel = `${totalMinutes} minutes`
     } else {
+      // Fallback for unknown units, charge as a single stay
       billableUnits = 1
       durationLabel = "1 Stay"
     }
@@ -285,23 +282,9 @@ export function CustomerForm({
               </div>
               <div>
                 <span className="text-gray-500 body-font">Date & Time:</span>
-                {isDropInService && selectedTimeSlots.length > 1 ? (
-                  <div>
-                    <p className="font-medium header-font">{selectedTimeSlots.length} appointments selected</p>
-                    <ul className="text-xs list-disc list-inside text-gray-600 max-h-28 overflow-auto">
-                      {selectedTimeSlots.map((slot, i) => (
-                        <li key={`${slot.date}-${slot.startTime}-${i}`}>
-                          {new Date(slot.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })} at{" "}
-                          {slot.startTime}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : (
-                  <p className="font-medium header-font">
-                    {formatDateTime()} at {selectedTimeSlot.startTime}
-                  </p>
-                )}
+                <p className="font-medium header-font">
+                  {formatDateTime()} at {selectedTimeSlot.startTime}
+                </p>
               </div>
               <div>
                 <span className="text-gray-500 body-font">Services:</span>
@@ -356,7 +339,7 @@ export function CustomerForm({
                   First Name *
                 </Label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <Input
                     id="firstName"
                     type="text"
@@ -374,7 +357,7 @@ export function CustomerForm({
                   Last Name *
                 </Label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <Input
                     id="lastName"
                     type="text"
@@ -393,7 +376,7 @@ export function CustomerForm({
                 Email Address *
               </Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
                   id="email"
                   type="email"
@@ -411,7 +394,7 @@ export function CustomerForm({
                 Phone Number
               </Label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
                   id="phone"
                   type="tel"
