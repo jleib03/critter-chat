@@ -4,7 +4,7 @@ import { useState, useMemo } from "react"
 import type { BookingData, WorkingDay, Service, SelectedTimeSlot } from "@/types/schedule"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, Clock, ChevronDown, ChevronUp, Users } from "lucide-react"
+import { ChevronLeft, ChevronRight, Clock, ChevronDown, ChevronUp, Users } from 'lucide-react'
 import { calculateAvailableSlots, timeToMinutes, isTimeSlotBlocked } from "@/utils/professional-config"
 import type { ProfessionalConfig } from "@/types/professional-config"
 import type { BookingType, RecurringConfig } from "./booking-type-selection"
@@ -19,6 +19,10 @@ type WeeklyCalendarProps = {
   professionalConfig: ProfessionalConfig | null
   bookingType?: BookingType
   recurringConfig?: RecurringConfig | null
+  // New props for Drop-In multi-select
+  allowMultiSelect?: boolean
+  selectedTimeSlotsMulti?: SelectedTimeSlot[]
+  onMultiSelect?: (slots: SelectedTimeSlot[]) => void
 }
 
 export function WeeklyCalendar({
@@ -30,6 +34,9 @@ export function WeeklyCalendar({
   professionalConfig,
   bookingType,
   recurringConfig,
+  allowMultiSelect = false,
+  selectedTimeSlotsMulti = [],
+  onMultiSelect,
 }: WeeklyCalendarProps) {
   const [currentWeekStart, setCurrentWeekStart] = useState(() => {
     const today = new Date()
@@ -103,30 +110,27 @@ export function WeeklyCalendar({
     const currentDate = new Date(firstDate)
     const stopDate = new Date(recurringConfig.endDate)
 
-    // Move to the next occurrence to start checking from there
     currentDate.setDate(currentDate.getDate() + 7)
 
     while (currentDate <= stopDate) {
       if (recurringConfig.daysOfWeek.includes(getDayName(currentDate))) {
         recurringDates.push(new Date(currentDate))
       }
-      currentDate.setDate(currentDate.getDate() + 7) // Assuming weekly recurrence for now
+      currentDate.setDate(currentDate.getDate() + 7)
     }
 
     for (const recurringDate of recurringDates) {
       const recurringDateStr = formatDate(recurringDate)
-      const recurringDayName = getDayName(recurringDate)
       const availability = calculateAvailableSlots(
         professionalConfig,
         workingDays,
         recurringDateStr,
         startTime,
         endTime,
-        recurringDayName,
+        getDayName(recurringDate),
         bookingData,
       )
       if (availability.availableSlots <= 0) {
-        console.log(`Recurring slot invalid on ${recurringDateStr} at ${startTime}. Reason: ${availability.reason}`)
         return false
       }
     }
@@ -143,7 +147,7 @@ export function WeeklyCalendar({
     const dateStr = formatDate(date)
     const startMinutes = timeToMinutes(workingDay.start)
     const endMinutes = timeToMinutes(workingDay.end)
-    const interval = 15 // Generate slots every 15 minutes
+    const interval = 15
 
     for (let minutes = startMinutes; minutes + serviceDuration <= endMinutes; minutes += interval) {
       const slotStart = minutes
@@ -160,15 +164,11 @@ export function WeeklyCalendar({
       const startTimeFormatted = formatTime(slotStart)
       const endTimeFormatted = formatTime(slotEnd)
 
-      // Check if this time slot is blocked before calculating availability
       const isBlocked = professionalConfig?.blockedTimes
         ? isTimeSlotBlocked(dateStr, startTimeFormatted, endTimeFormatted, professionalConfig.blockedTimes)
         : false
 
-      // Skip blocked slots entirely
-      if (isBlocked) {
-        continue
-      }
+      if (isBlocked) continue
 
       const availability = calculateAvailableSlots(
         professionalConfig,
@@ -199,6 +199,9 @@ export function WeeklyCalendar({
     return slots
   }
 
+  const isMultiSelected = (slot: SelectedTimeSlot) =>
+    selectedTimeSlotsMulti?.some((s) => s.date === slot.date && s.startTime === slot.startTime)
+
   if (!selectedServices || selectedServices.length === 0) {
     return (
       <div className="text-center py-16">
@@ -216,13 +219,12 @@ export function WeeklyCalendar({
           <h2 className="text-2xl font-bold text-gray-900 header-font">Available Times</h2>
           <p className="text-gray-600 body-font">
             Select a time slot for <span className="font-medium">{selectedServices.map((s) => s.name).join(", ")}</span>
-            {bookingType === "recurring" && recurringConfig && (
-              <span className="text-sm text-[#E75837] ml-2 font-medium">
-                (Recurring weekly on {recurringConfig.daysOfWeek?.join(", ")} until{" "}
-                {new Date(recurringConfig.endDate).toLocaleDateString()})
-              </span>
-            )}
           </p>
+          {allowMultiSelect && (
+            <p className="text-xs text-[#E75837] mt-1 body-font">
+              You can select multiple time windows for this Drop-In service.
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => navigateWeek("prev")}>
@@ -248,20 +250,18 @@ export function WeeklyCalendar({
           const initialSlotCount = 8
           const hasMoreSlots = timeSlots.length > initialSlotCount
           const displayedSlots = isExpanded ? timeSlots : timeSlots.slice(0, initialSlotCount)
-          const isRecurringDay = bookingType === "recurring" && recurringConfig?.daysOfWeek?.includes(dayName)
 
           return (
             <Card
               key={dateStr}
-              className={`${isToday ? "ring-2 ring-[#E75837]" : isRecurringDay ? "ring-1 ring-blue-300 bg-blue-50" : ""} h-fit`}
+              className={`${isToday ? "ring-2 ring-[#E75837]" : ""} h-fit`}
             >
               <CardHeader className="pb-3 text-center">
                 <CardTitle className="space-y-1">
                   <div
-                    className={`text-sm font-semibold header-font ${isToday ? "text-[#E75837]" : isRecurringDay ? "text-blue-600" : "text-gray-900"}`}
+                    className={`text-sm font-semibold header-font ${isToday ? "text-[#E75837]" : "text-gray-900"}`}
                   >
                     {dayName}
-                    {isRecurringDay && <span className="text-xs block text-blue-500">Recurring</span>}
                   </div>
                   <div className="text-2xl font-bold text-gray-900">{date.getDate()}</div>
                   <div className="text-xs text-gray-500 font-normal">
@@ -282,13 +282,15 @@ export function WeeklyCalendar({
                   <div className="space-y-2">
                     {displayedSlots.map((slot, slotIndex) => {
                       const isSelected =
-                        selectedTimeSlot?.date === slot.date && selectedTimeSlot?.startTime === slot.startTime
-                      const availabilityColor = slot.availableSlots <= 1 ? "text-orange-600" : "text-green-600"
-                      const tooltipText = `Capacity: ${slot.availableSlots}/${slot.totalCapacity}. Reason: ${slot.reason}`
+                        allowMultiSelect
+                          ? isMultiSelected(slot)
+                          : selectedTimeSlot?.date === slot.date && selectedTimeSlot?.startTime === slot.startTime
+                      const availabilityColor = slot.availableSlots && slot.availableSlots <= 1 ? "text-orange-600" : "text-green-600"
+                      const tooltipText = `Capacity: ${slot.availableSlots ?? "-"}${slot.totalCapacity ? `/${slot.totalCapacity}` : ""}${slot.reason ? `. Reason: ${slot.reason}` : ""}`
 
                       return (
                         <Button
-                          key={slotIndex}
+                          key={`${slot.date}-${slot.startTime}-${slotIndex}`}
                           variant="outline"
                           size="sm"
                           className={`w-full text-xs py-3 h-auto min-h-[3.5rem] body-font transition-all ${
@@ -296,7 +298,16 @@ export function WeeklyCalendar({
                               ? "bg-[#E75837] text-white border-[#E75837] hover:bg-[#d14a2a] shadow-md"
                               : "hover:bg-gray-50 hover:border-gray-300"
                           }`}
-                          onClick={() => onTimeSlotSelect(slot)}
+                          onClick={() => {
+                            if (allowMultiSelect && onMultiSelect) {
+                              const next = isMultiSelected(slot)
+                                ? selectedTimeSlotsMulti.filter((s) => !(s.date === slot.date && s.startTime === slot.startTime))
+                                : [...(selectedTimeSlotsMulti || []), slot]
+                              onMultiSelect(next)
+                            } else {
+                              onTimeSlotSelect(slot)
+                            }
+                          }}
                           title={tooltipText}
                         >
                           <div className="flex flex-col items-center w-full">
@@ -305,9 +316,11 @@ export function WeeklyCalendar({
                               <div className="flex items-center gap-1">
                                 <Users className="w-2.5 h-2.5" />
                                 <span
-                                  className={`text-[10px] font-medium ${isSelected ? "text-white" : availabilityColor}`}
+                                  className={`text-[10px] font-medium ${
+                                    isSelected ? "text-white" : availabilityColor
+                                  }`}
                                 >
-                                  {slot.availableSlots}
+                                  {slot.availableSlots ?? ""}
                                 </span>
                               </div>
                             </div>
