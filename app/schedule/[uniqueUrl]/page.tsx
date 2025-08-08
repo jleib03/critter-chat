@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useMemo } from "react"
 import { useParams } from "next/navigation"
-import { Loader2, Clock, Calendar } from 'lucide-react'
+import { Loader2, Clock, Calendar } from "lucide-react"
 import type { Service, SelectedTimeSlot, CustomerInfo, Pet, PetResponse, ParsedWebhookData } from "@/types/schedule"
 import { ServiceSelectorBar } from "@/components/schedule/service-selector-bar"
 import { WeeklyCalendar } from "@/components/schedule/weekly-calendar"
@@ -39,8 +39,9 @@ export default function SchedulePage() {
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<SelectedTimeSlot | null>(null)
   // New: multiple time slots (Drop-In)
   const [selectedTimeSlots, setSelectedTimeSlots] = useState<SelectedTimeSlot[]>([])
-  const [sessionIdRef, setSessionIdRef] = useState<string | null>(null)
+  const sessionIdRef = useRef<string | null>(null)
   const userTimezoneRef = useRef<string | null>(null)
+  const dropInGroupIdRef = useRef<string | null>(null)
 
   const [showCustomerForm, setShowCustomerForm] = useState(false)
   const [showPetSelection, setShowPetSelection] = useState(false)
@@ -315,7 +316,7 @@ export default function SchedulePage() {
       setLoading(true)
       setError(null)
 
-      setSessionIdRef(generateSessionId())
+      sessionIdRef.current = generateSessionId()
       userTimezoneRef.current = JSON.stringify(detectUserTimezone())
       loadProfessionalConfiguration()
 
@@ -328,7 +329,7 @@ export default function SchedulePage() {
         body: JSON.stringify({
           action: "initialize_schedule",
           uniqueUrl: uniqueUrl,
-          session_id: sessionIdRef,
+          session_id: sessionIdRef.current,
           timestamp: new Date().toISOString(),
           user_timezone: JSON.parse(userTimezoneRef.current),
         }),
@@ -502,7 +503,9 @@ export default function SchedulePage() {
     if (allowMultiSelect) {
       setSelectedTimeSlots((prev) => {
         const exists = prev.some((s) => s.date === slot.date && s.startTime === slot.startTime)
-        const next = exists ? prev.filter((s) => !(s.date === slot.date && s.startTime === slot.startTime)) : [...prev, slot]
+        const next = exists
+          ? prev.filter((s) => !(s.date === slot.date && s.startTime === slot.startTime))
+          : [...prev, slot]
         return next
       })
       // Do NOT jump to customer form automatically in multi-select mode
@@ -533,11 +536,14 @@ export default function SchedulePage() {
       const isMultiDay = bookingType === "multi-day" && multiDayTimeSlot
 
       // Helper to send a single booking
-      const sendSingleBooking = async (
+      async function sendSingleBooking(
         slot: SelectedTimeSlot,
         totalDurationMinutesOverride?: number,
-        actionOverride: "create_booking" | "create_booking_dropin" = "create_booking"
-      ) => {
+        actionOverride: "create_booking" | "create_booking_dropin" = "create_booking",
+        index?: number,
+        total?: number,
+        groupId?: string,
+      ) {
         const startDateTimeUTC = isMultiDay
           ? multiDayTimeSlot!.start.toISOString()
           : convertLocalTimeToUTC(slot.date, slot.startTime, userTimezoneData.timezone)
@@ -578,9 +584,7 @@ export default function SchedulePage() {
             unit: recurringConfig.unit || "week",
             end_date: recurringConfig.endDate,
             total_appointments: recurringConfig.totalAppointments || recurringDates.length,
-            pattern_description: `Every ${recurringConfig.frequency || 1} ${recurringConfig.unit || "week"}${
-              (recurringConfig.frequency || 1) > 1 ? "s" : ""
-            }`,
+            pattern_description: `Every ${recurringConfig.frequency || 1} ${recurringConfig.unit || "week"}${(recurringConfig.frequency || 1) > 1 ? "s" : ""}`,
             start_date: slot.date,
             start_time: slot.startTime,
             end_time: endTimeLocal,
@@ -609,11 +613,17 @@ export default function SchedulePage() {
           }
         }
 
-        const bookingData = {
-          action: actionOverride, // CHANGED: use override for action
+        // Generate a per-request id only for Drop-In multi posts to ensure distinct traceability
+        const perRequestId =
+          actionOverride === "create_booking_dropin"
+            ? `req_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+            : undefined
+
+        const bookingData: any = {
+          action: actionOverride,
           uniqueUrl: uniqueUrl,
           professional_id: professionalId,
-          session_id: sessionIdRef,
+          session_id: sessionIdRef.current,
           timestamp: new Date().toISOString(),
           user_timezone: userTimezoneData,
           booking_system: bookingPreferences?.booking_system || "direct_booking",
@@ -680,6 +690,14 @@ export default function SchedulePage() {
           }),
         }
 
+        // Only for Drop-In posts: add clear, per-request metadata for grouping and traceability
+        if (actionOverride === "create_booking_dropin") {
+          bookingData.multi_booking_group_id = groupId
+          bookingData.multi_booking_index = index
+          bookingData.multi_booking_total = total
+          bookingData.request_id = perRequestId
+        }
+
         const response = await fetch(webhookUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -708,8 +726,19 @@ export default function SchedulePage() {
 
       // If Drop-In and multiple selected time windows -> send each as an individual booking
       if (allowMultiSelect && selectedDropIn && selectedTimeSlots.length > 0) {
+        if (!dropInGroupIdRef.current) {
+          dropInGroupIdRef.current = `dropin_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+        }
         for (const slot of selectedTimeSlots) {
-          const ok = await sendSingleBooking(slot, undefined, "create_booking_dropin")
+          const idx = selectedTimeSlots.findIndex((s) => s.date === slot.date && s.startTime === slot.startTime)
+          const ok = await sendSingleBooking(
+            slot,
+            undefined,
+            "create_booking_dropin",
+            idx + 1,
+            selectedTimeSlots.length,
+            dropInGroupIdRef.current!,
+          )
           if (!ok) throw new Error("One of the Drop-In bookings failed")
         }
       } else {
@@ -928,9 +957,7 @@ export default function SchedulePage() {
 
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Pet(s):</span>
-                <span className="font-medium text-right">
-                  {selectedPets.map(p => p.pet_name).join(', ')}
-                </span>
+                <span className="font-medium text-right">{selectedPets.map((p) => p.pet_name).join(", ")}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Customer:</span>
@@ -1034,7 +1061,7 @@ export default function SchedulePage() {
             pets={pets}
             customerInfo={customerInfo}
             selectedServices={selectedServices}
-            selectedTimeSlot={selectedTimeSlot!}
+            selectedTimeSlot={selectedTimeSlot || selectedTimeSlots[0]}
             professionalName={webhookData.professional_info.professional_name}
             isDirectBooking={isDirectBooking}
             onPetSelect={handlePetSelect}
@@ -1053,7 +1080,7 @@ export default function SchedulePage() {
             selectedTimeSlots={selectedTimeSlots}
             professionalId={professionalId || uniqueUrl}
             professionalName={webhookData.professional_info.professional_name}
-            sessionId={sessionIdRef}
+            sessionId={sessionIdRef.current!}
             onPetsReceived={handlePetsReceived}
             onBack={handleBackToSchedule}
             bookingType={bookingType}
