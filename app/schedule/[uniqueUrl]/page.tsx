@@ -39,7 +39,7 @@ export default function SchedulePage() {
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<SelectedTimeSlot | null>(null)
   // New: multiple time slots (Drop-In)
   const [selectedTimeSlots, setSelectedTimeSlots] = useState<SelectedTimeSlot[]>([])
-  const sessionIdRef = useRef<string | null>(null)
+  const [sessionIdRef, setSessionIdRef] = useState<string | null>(null)
   const userTimezoneRef = useRef<string | null>(null)
 
   const [showCustomerForm, setShowCustomerForm] = useState(false)
@@ -315,7 +315,7 @@ export default function SchedulePage() {
       setLoading(true)
       setError(null)
 
-      sessionIdRef.current = generateSessionId()
+      setSessionIdRef(generateSessionId())
       userTimezoneRef.current = JSON.stringify(detectUserTimezone())
       loadProfessionalConfiguration()
 
@@ -328,7 +328,7 @@ export default function SchedulePage() {
         body: JSON.stringify({
           action: "initialize_schedule",
           uniqueUrl: uniqueUrl,
-          session_id: sessionIdRef.current,
+          session_id: sessionIdRef,
           timestamp: new Date().toISOString(),
           user_timezone: JSON.parse(userTimezoneRef.current),
         }),
@@ -533,7 +533,11 @@ export default function SchedulePage() {
       const isMultiDay = bookingType === "multi-day" && multiDayTimeSlot
 
       // Helper to send a single booking
-      const sendSingleBooking = async (slot: SelectedTimeSlot, totalDurationMinutesOverride?: number) => {
+      const sendSingleBooking = async (
+        slot: SelectedTimeSlot,
+        totalDurationMinutesOverride?: number,
+        actionOverride: "create_booking" | "create_booking_dropin" = "create_booking"
+      ) => {
         const startDateTimeUTC = isMultiDay
           ? multiDayTimeSlot!.start.toISOString()
           : convertLocalTimeToUTC(slot.date, slot.startTime, userTimezoneData.timezone)
@@ -606,10 +610,10 @@ export default function SchedulePage() {
         }
 
         const bookingData = {
-          action: "create_booking",
+          action: actionOverride, // CHANGED: use override for action
           uniqueUrl: uniqueUrl,
           professional_id: professionalId,
-          session_id: sessionIdRef.current,
+          session_id: sessionIdRef,
           timestamp: new Date().toISOString(),
           user_timezone: userTimezoneData,
           booking_system: bookingPreferences?.booking_system || "direct_booking",
@@ -705,7 +709,7 @@ export default function SchedulePage() {
       // If Drop-In and multiple selected time windows -> send each as an individual booking
       if (allowMultiSelect && selectedDropIn && selectedTimeSlots.length > 0) {
         for (const slot of selectedTimeSlots) {
-          const ok = await sendSingleBooking(slot)
+          const ok = await sendSingleBooking(slot, undefined, "create_booking_dropin")
           if (!ok) throw new Error("One of the Drop-In bookings failed")
         }
       } else {
@@ -1049,7 +1053,7 @@ export default function SchedulePage() {
             selectedTimeSlots={selectedTimeSlots}
             professionalId={professionalId || uniqueUrl}
             professionalName={webhookData.professional_info.professional_name}
-            sessionId={sessionIdRef.current!}
+            sessionId={sessionIdRef}
             onPetsReceived={handlePetsReceived}
             onBack={handleBackToSchedule}
             bookingType={bookingType}
