@@ -813,7 +813,7 @@ const handlePetSelect = async (pets: Pet[], notifications: NotificationPreferenc
       } else {
         // Existing single booking logic
         logWebhookUsage("PROFESSIONAL_CONFIG", "create_booking")
-        const selectedTimeSlot = selectedTimeSlots[0]
+        const selectedTimeSlot = selectedTimeSlots.length > 0 ? selectedTimeSlots[0] : null
         if (!selectedTimeSlot) {
           throw new Error("No time slot selected.")
         }

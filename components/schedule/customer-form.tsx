@@ -15,7 +15,7 @@ import { getWebhookEndpoint, logWebhookUsage } from "@/types/webhook-endpoints"
 
 interface CustomerFormProps {
   selectedServices: Service[]
-  selectedTimeSlot: SelectedTimeSlot
+  selectedTimeSlots: SelectedTimeSlot[]
   professionalId: string
   professionalName: string
   sessionId: string
@@ -29,7 +29,7 @@ interface CustomerFormProps {
 
 export function CustomerForm({
   selectedServices,
-  selectedTimeSlot,
+  selectedTimeSlots,
   professionalId,
   professionalName,
   sessionId,
@@ -50,6 +50,8 @@ export function CustomerForm({
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const firstSlot = selectedTimeSlots[0]
+
   const handleInputChange = (field: keyof CustomerInfo, value: string) => {
     setCustomerInfo((prev) => ({
       ...prev,
@@ -63,12 +65,10 @@ export function CustomerForm({
     setError(null)
 
     try {
-      // Validate required fields
       if (!customerInfo.firstName.trim() || !customerInfo.lastName.trim() || !customerInfo.email.trim()) {
         throw new Error("Please fill in all required fields")
       }
 
-      // Email validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
       if (!emailRegex.test(customerInfo.email.trim())) {
         throw new Error("Please enter a valid email address")
@@ -93,8 +93,8 @@ export function CustomerForm({
         },
         booking_context: {
           selected_services: selectedServices.map((service) => service.name),
-          selected_date: selectedTimeSlot.date,
-          selected_time: selectedTimeSlot.startTime,
+          selected_date: firstSlot.date,
+          selected_time: firstSlot.startTime,
           booking_type: bookingType,
           recurring_config: recurringConfig,
           multi_day_slot: multiDayTimeSlot,
@@ -118,10 +118,8 @@ export function CustomerForm({
       const result = await response.json()
       console.log("Customer pets response:", result)
 
-      // Parse the response to extract pets
       let pets: any[] = []
       if (Array.isArray(result)) {
-        // Look for pets in the response array
         const petsData = result.find((item) => item.pets || (Array.isArray(item) && item.length > 0))
         if (petsData?.pets) {
           pets = petsData.pets
@@ -145,9 +143,8 @@ export function CustomerForm({
   }
 
   const formatDateTime = () => {
-    if (!selectedTimeSlot?.date) return ""
-    // Fix: Create date in local timezone to prevent day-off errors
-    const [year, month, day] = selectedTimeSlot.date.split("-").map(Number)
+    if (!firstSlot?.date) return ""
+    const [year, month, day] = firstSlot.date.split("-").map(Number)
     const localDate = new Date(year, month - 1, day)
     return localDate.toLocaleDateString("en-US", {
       weekday: "long",
@@ -158,7 +155,9 @@ export function CustomerForm({
   }
 
   const calculateTotalCost = () => {
-    return selectedServices.reduce((total, service) => total + Number(service.customer_cost), 0)
+    const costPerSlot = selectedServices.reduce((total, service) => total + Number(service.customer_cost), 0)
+    const totalCost = costPerSlot * selectedTimeSlots.length
+    return isNaN(totalCost) ? 0 : totalCost
   }
 
   const calculateTotalDuration = () => {
@@ -210,12 +209,10 @@ export function CustomerForm({
     const serviceDuration = service.duration_number
 
     if (serviceUnit.includes("day")) {
-      // Priced per day or block of days
       const serviceDurationMs = serviceDuration * 24 * 60 * 60 * 1000
       billableUnits = Math.ceil(diffMs / serviceDurationMs)
       durationLabel = `${nights} Night${nights !== 1 ? "s" : ""} / ${totalDays} Day${totalDays !== 1 ? "s" : ""}`
     } else if (serviceUnit.includes("hour")) {
-      // Priced per hour or block of hours (e.g., a 24-hour block)
       const serviceDurationMs = serviceDuration * 60 * 60 * 1000
       billableUnits = Math.ceil(diffMs / serviceDurationMs)
       if (serviceDuration >= 24) {
@@ -230,7 +227,6 @@ export function CustomerForm({
       const totalMinutes = Math.ceil(diffMs / (1000 * 60))
       durationLabel = `${totalMinutes} minutes`
     } else {
-      // Fallback for unknown units, charge as a single stay
       billableUnits = 1
       durationLabel = "1 Stay"
     }
@@ -245,7 +241,6 @@ export function CustomerForm({
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Booking Summary */}
       <Card className="shadow-lg border-0 rounded-2xl">
         <CardHeader className="pb-4">
           <CardTitle className="text-xl header-font">Booking Summary</CardTitle>
@@ -282,22 +277,33 @@ export function CustomerForm({
               </div>
               <div>
                 <span className="text-gray-500 body-font">Date & Time:</span>
-                <p className="font-medium header-font">
-                  {formatDateTime()} at {selectedTimeSlot.startTime}
-                </p>
+                {selectedTimeSlots.length > 1 ? (
+                  <div>
+                    <p className="font-medium header-font">{selectedTimeSlots.length} appointments selected</p>
+                    <ul className="text-xs list-disc list-inside text-gray-600">
+                      {selectedTimeSlots.map((slot, i) => (
+                        <li key={i}>{new Date(slot.date).toLocaleDateString("en-US", { month: "short", day: "numeric"})} at {slot.startTime}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <p className="font-medium header-font">
+                    {formatDateTime()} at {firstSlot.startTime}
+                  </p>
+                )}
               </div>
               <div>
                 <span className="text-gray-500 body-font">Services:</span>
                 <p className="font-medium header-font">{selectedServices.map((s) => s.name).join(", ")}</p>
               </div>
               <div>
-                <span className="text-gray-500 body-font">Duration:</span>
+                <span className="text-gray-500 body-font">Duration (per appt):</span>
                 <p className="font-medium header-font">{calculateTotalDuration()}</p>
               </div>
               {showPrices && (
                 <div>
                   <span className="text-gray-500 body-font">Total Cost:</span>
-                  <p className="font-medium header-font">${calculateTotalCost()}</p>
+                  <p className="font-medium header-font">${calculateTotalCost().toFixed(2)}</p>
                 </div>
               )}
               {bookingType === "recurring" && recurringConfig && (
@@ -319,7 +325,6 @@ export function CustomerForm({
         </CardContent>
       </Card>
 
-      {/* Customer Information Form */}
       <Card className="shadow-lg border-0 rounded-2xl">
         <CardHeader className="pb-4">
           <CardTitle className="text-xl header-font">Your Information</CardTitle>
