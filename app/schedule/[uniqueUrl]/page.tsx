@@ -649,362 +649,369 @@ setShowPetSelection(true)
 }
 
 const handlePetSelect = async (pets: Pet[], notifications: NotificationPreference[]) => {
-    setSelectedPets(pets)
-    setSelectedNotifications(notifications)
-    setCreatingBooking(true)
+setSelectedPets(pets)
+setSelectedNotifications(notifications)
+setCreatingBooking(true)
 
-    try {
-      const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG")
-      const userTimezoneData = JSON.parse(userTimezoneRef.current!)
+try {
+  const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG")
+  const userTimezoneData = JSON.parse(userTimezoneRef.current!)
 
-      if (isDropInService && selectedTimeSlots.length > 0) {
-        logWebhookUsage("PROFESSIONAL_CONFIG", "create_drop_in_booking")
+  if (isDropInService && selectedTimeSlots.length > 0) {
+    // Logic for "Drop-In" services: send one full request per time slot
+    logWebhookUsage("PROFESSIONAL_CONFIG", "create_drop_in_bookings_batch")
 
-        const bookingDataList = selectedTimeSlots.map((slot) => {
-          let totalDurationMinutes = 0
-          let totalCost = 0
-          selectedServices.forEach((service) => {
-            let durationInMinutes = service.duration_number
-            if (service.duration_unit === "Hours") {
-              durationInMinutes = service.duration_number * 60
-            } else if (service.duration_unit === "Days") {
-              durationInMinutes = service.duration_number * 24 * 60
-            }
-            totalDurationMinutes += durationInMinutes
-            totalCost += Number(service.customer_cost)
-          })
+    const bookingPromises = selectedTimeSlots.map((slot) => {
+      // For each slot, construct a full, independent booking payload
+      let totalDurationMinutes = 0
+      let totalCost = 0
+      selectedServices.forEach((service) => {
+        let durationInMinutes = service.duration_number
+        if (service.duration_unit === "Hours") {
+          durationInMinutes = service.duration_number * 60
+        } else if (service.duration_unit === "Days") {
+          durationInMinutes = service.duration_number * 24 * 60
+        }
+        totalDurationMinutes += durationInMinutes
+        totalCost += Number(service.customer_cost)
+      })
 
-          const startDateTimeUTC = convertLocalTimeToUTC(slot.date, slot.startTime, userTimezoneData.timezone)
-          const endDateTimeUTC = calculateEndDateTimeUTC(startDateTimeUTC, totalDurationMinutes, "Minutes")
-          const endTimeLocal = new Date(endDateTimeUTC).toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
-            timeZone: userTimezoneData.timezone,
-          })
+      const startDateTimeUTC = convertLocalTimeToUTC(slot.date, slot.startTime, userTimezoneData.timezone)
+      const endDateTimeUTC = calculateEndDateTimeUTC(startDateTimeUTC, totalDurationMinutes, "Minutes")
+      const endTimeLocal = new Date(endDateTimeUTC).toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: userTimezoneData.timezone,
+      })
 
-          let recurringDetailsPayload = null
-          if (bookingType === "recurring" && recurringConfig) {
-            const recurringDates = generateRecurringDates(slot.date, recurringConfig)
-            recurringDetailsPayload = {
-              selected_days_of_week: recurringConfig.daysOfWeek || recurringConfig.selectedDays || [],
-              selected_end_date: recurringConfig.endDate || recurringConfig.originalEndDate,
-              recurring_start_date: slot.date,
-              frequency: recurringConfig.frequency || 1,
-              unit: recurringConfig.unit || "week",
-              end_date: recurringConfig.endDate,
-              total_appointments: recurringConfig.totalAppointments || recurringDates.length,
-              pattern_description: `Every ${recurringConfig.frequency || 1} ${recurringConfig.unit || "week"}${
-                (recurringConfig.frequency || 1) > 1 ? "s" : ""
-              }`,
-              start_date: slot.date,
-              start_time: slot.startTime,
-              end_time: endTimeLocal,
-              all_occurrences: recurringDates,
-              total_occurrences: recurringDates.length,
-              days_of_week_included: [...new Set(recurringDates.map((d) => d.day_of_week))],
-              date_range: {
-                first_appointment: recurringDates[0]?.date,
-                last_appointment: recurringDates[recurringDates.length - 1]?.date,
-              },
-              recurring_schedule: {
-                same_time_each_occurrence: true,
-                start_time_local: slot.startTime,
-                end_time_local: endTimeLocal,
-                duration_minutes: totalDurationMinutes,
-                timezone: userTimezoneData.timezone,
-              },
-              booking_pattern: {
-                frequency_number: recurringConfig.frequency || 1,
-                frequency_unit: recurringConfig.unit || "week",
-                pattern_type:
-                  (recurringConfig.frequency || 1) === 1
-                    ? `${recurringConfig.unit || "week"}ly`
-                    : `every_${recurringConfig.frequency || 1}_${recurringConfig.unit || "week"}s`,
-              },
-            }
-          }
-
-          return {
-            booking_details: {
-              service_ids: selectedServices.map((service) => service.service_id),
-              service_names: selectedServices.map((service) => service.name),
-              total_duration_minutes: totalDurationMinutes,
-              total_cost: totalCost,
-              start_utc: startDateTimeUTC,
-              end_utc: endDateTimeUTC,
-              date_local: slot.date,
-              start_time_local: slot.startTime,
-              end_time_local: endTimeLocal,
-              day_of_week: slot.dayOfWeek,
-              timezone: userTimezoneData.timezone,
-              timezone_offset: userTimezoneData.offset,
-            },
-            ...(recurringDetailsPayload && { recurring_details: recurringDetailsPayload }),
-          }
-        })
-
-        const finalPayload = {
-          action: "create_drop_in_booking",
-          uniqueUrl: uniqueUrl,
-          professional_id: professionalId,
-          session_id: sessionIdRef.current,
-          timestamp: new Date().toISOString(),
-          user_timezone: userTimezoneData,
-          booking_system: bookingPreferences?.booking_system || "direct_booking",
-          booking_type: determineBookingType(),
-          user_booking_type: bookingType,
-          is_recurring_booking: bookingType === "recurring",
-          customer_info: {
-            first_name: customerInfo.firstName.trim(),
-            last_name: customerInfo.lastName.trim(),
-            email: customerInfo.email.trim().toLowerCase(),
+      let enhancedRecurringDetails = null
+      if (bookingType === "recurring" && recurringConfig) {
+        const recurringDates = generateRecurringDates(slot.date, recurringConfig)
+        enhancedRecurringDetails = {
+          selected_days_of_week: recurringConfig.daysOfWeek || recurringConfig.selectedDays || [],
+          selected_end_date: recurringConfig.endDate || recurringConfig.originalEndDate,
+          recurring_start_date: slot.date,
+          frequency: recurringConfig.frequency || 1,
+          unit: recurringConfig.unit || "week",
+          end_date: recurringConfig.endDate,
+          total_appointments: recurringConfig.totalAppointments || recurringDates.length,
+          pattern_description: `Every ${recurringConfig.frequency || 1} ${recurringConfig.unit || "week"}${
+            (recurringConfig.frequency || 1) > 1 ? "s" : ""
+          }`,
+          start_date: slot.date,
+          start_time: slot.startTime,
+          end_time: endTimeLocal,
+          all_occurrences: recurringDates,
+          total_occurrences: recurringDates.length,
+          days_of_week_included: [...new Set(recurringDates.map((d) => d.day_of_week))],
+          date_range: {
+            first_appointment: recurringDates[0]?.date,
+            last_appointment: recurringDates[recurringDates.length - 1]?.date,
           },
-          pets_info: pets.map((pet) => ({
-            pet_id: pet.pet_id,
-            pet_name: pet.pet_name,
-            pet_type: pet.pet_type,
-            breed: pet.breed,
-            age: pet.age,
-            weight: pet.weight,
-            special_notes: pet.special_notes,
-          })),
-          ...(isDirectBooking && {
-            notification_preferences: {
-              selected_notifications: notifications,
-              notification_details: notifications
-                .map((n) => {
-                  switch (n) {
-                    case "1_hour":
-                      return { type: "1_hour", label: "1 hour before", enabled: true }
-                    case "1_day":
-                      return { type: "1_day", label: "1 day before", enabled: true }
-                    case "1_week":
-                      return { type: "1_week", label: "1 week before", enabled: true }
-                    default:
-                      return null
-                  }
-                })
-                .filter(Boolean),
-            },
-          }),
-          bookings: bookingDataList,
-        }
-
-        console.log("Sending drop-in booking data:", finalPayload)
-
-        const response = await fetch(webhookUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(finalPayload),
-        })
-
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-        const result = await response.json()
-        console.log("Drop-in booking created:", result)
-
-        if (result && result[0] && result[0].output === "Booking Successfully Created") {
-          setShowPetSelection(false)
-          setCreatingBooking(false)
-          setShowConfirmation(true)
-        } else {
-          throw new Error("Drop-in booking creation failed")
-        }
-      } else {
-        // Existing single booking logic
-        logWebhookUsage("PROFESSIONAL_CONFIG", "create_booking")
-        const selectedTimeSlot = selectedTimeSlots.length > 0 ? selectedTimeSlots[0] : null
-        if (!selectedTimeSlot) {
-          throw new Error("No time slot selected.")
-        }
-
-        // Add this line to define isMultiDay
-        const isMultiDay = bookingType === "multi-day" && multiDayTimeSlot
-
-        const startDateTimeUTC = isMultiDay
-          ? multiDayTimeSlot.start.toISOString()
-          : convertLocalTimeToUTC(selectedTimeSlot.date, selectedTimeSlot.startTime, userTimezoneData.timezone)
-
-        let totalDurationMinutes = 0
-        let totalCost = 0
-        selectedServices.forEach((service) => {
-          let durationInMinutes = service.duration_number
-          if (service.duration_unit === "Hours") {
-            durationInMinutes = service.duration_number * 60
-          } else if (service.duration_unit === "Days") {
-            durationInMinutes = service.duration_number * 24 * 60
-          }
-          totalDurationMinutes += durationInMinutes
-          totalCost += Number(service.customer_cost)
-        })
-
-        const endDateTimeUTC = isMultiDay
-          ? multiDayTimeSlot.end.toISOString()
-          : calculateEndDateTimeUTC(startDateTimeUTC, totalDurationMinutes, "Minutes")
-
-        const endTimeLocal = new Date(endDateTimeUTC).toLocaleTimeString("en-US", {
-          hour: "numeric",
-          minute: "2-digit",
-          hour12: true,
-          timeZone: userTimezoneData.timezone,
-        })
-
-        let enhancedRecurringDetails = null
-        if (bookingType === "recurring" && recurringConfig) {
-          const recurringDates = generateRecurringDates(selectedTimeSlot.date, recurringConfig)
-          enhancedRecurringDetails = {
-            selected_days_of_week: recurringConfig.daysOfWeek || recurringConfig.selectedDays || [],
-            selected_end_date: recurringConfig.endDate || recurringConfig.originalEndDate,
-            recurring_start_date: selectedTimeSlot.date,
-            frequency: recurringConfig.frequency || 1,
-            unit: recurringConfig.unit || "week",
-            end_date: recurringConfig.endDate,
-            total_appointments: recurringConfig.totalAppointments || recurringDates.length,
-            pattern_description: `Every ${recurringConfig.frequency || 1} ${recurringConfig.unit || "week"}${
-              (recurringConfig.frequency || 1) > 1 ? "s" : ""
-            }`,
-            start_date: selectedTimeSlot.date,
-            start_time: selectedTimeSlot.startTime,
-            end_time: endTimeLocal,
-            all_occurrences: recurringDates,
-            total_occurrences: recurringDates.length,
-            days_of_week_included: [...new Set(recurringDates.map((d) => d.day_of_week))],
-            date_range: {
-              first_appointment: recurringDates[0]?.date,
-              last_appointment: recurringDates[recurringDates.length - 1]?.date,
-            },
-            recurring_schedule: {
-              same_time_each_occurrence: true,
-              start_time_local: selectedTimeSlot.startTime,
-              end_time_local: endTimeLocal,
-              duration_minutes: totalDurationMinutes,
-              timezone: userTimezoneData.timezone,
-            },
-            booking_pattern: {
-              frequency_number: recurringConfig.frequency || 1,
-              frequency_unit: recurringConfig.unit || "week",
-              pattern_type:
-                (recurringConfig.frequency || 1) === 1
-                  ? `${recurringConfig.unit || "week"}ly`
-                  : `every_${recurringConfig.frequency || 1}_${recurringConfig.unit || "week"}s`,
-            },
-          }
-        }
-
-        const bookingData = {
-          action: "create_booking",
-          uniqueUrl: uniqueUrl,
-          professional_id: professionalId,
-          session_id: sessionIdRef.current,
-          timestamp: new Date().toISOString(),
-          user_timezone: userTimezoneData,
-          booking_system: bookingPreferences?.booking_system || "direct_booking",
-          booking_type: determineBookingType(),
-          user_booking_type: bookingType,
-          all_day: bookingType === "multi-day",
-          is_recurring_booking: bookingType === "recurring",
-          ...(bookingType === "recurring" &&
-            enhancedRecurringDetails && {
-              recurring_details: enhancedRecurringDetails,
-              is_recurring_booking: true,
-            }),
-          booking_details: {
-            service_ids: selectedServices.map((service) => service.service_id),
-            service_names: selectedServices.map((service) => service.name),
-            service_descriptions: selectedServices.map((service) => service.description),
-            service_durations: selectedServices.map((service) => service.duration_number),
-            service_duration_units: selectedServices.map((service) => service.duration_unit),
-            service_costs: selectedServices.map((service) => service.customer_cost),
-            service_currencies: selectedServices.map((service) => service.customer_cost_currency),
-            total_duration_minutes: totalDurationMinutes,
-            total_cost: totalCost,
-            start_utc: startDateTimeUTC,
-            end_utc: endDateTimeUTC,
-            date_local: selectedTimeSlot.date,
-            start_time_local: selectedTimeSlot.startTime,
+          recurring_schedule: {
+            same_time_each_occurrence: true,
+            start_time_local: slot.startTime,
             end_time_local: endTimeLocal,
-            day_of_week: selectedTimeSlot.dayOfWeek,
+            duration_minutes: totalDurationMinutes,
             timezone: userTimezoneData.timezone,
-            timezone_offset: userTimezoneData.offset,
           },
-          customer_info: {
-            first_name: customerInfo.firstName.trim(),
-            last_name: customerInfo.lastName.trim(),
-            email: customerInfo.email.trim().toLowerCase(),
+          booking_pattern: {
+            frequency_number: recurringConfig.frequency || 1,
+            frequency_unit: recurringConfig.unit || "week",
+            pattern_type:
+              (recurringConfig.frequency || 1) === 1
+                ? `${recurringConfig.unit || "week"}ly`
+                : `every_${recurringConfig.frequency || 1}_${recurringConfig.unit || "week"}s`,
           },
-          pets_info: pets.map((pet) => ({
-            pet_id: pet.pet_id,
-            pet_name: pet.pet_name,
-            pet_type: pet.pet_type,
-            breed: pet.breed,
-            age: pet.age,
-            weight: pet.weight,
-            special_notes: pet.special_notes,
-          })),
-          ...(isDirectBooking && {
-            notification_preferences: {
-              selected_notifications: notifications,
-              notification_details: notifications
-                .map((n) => {
-                  switch (n) {
-                    case "1_hour":
-                      return { type: "1_hour", label: "1 hour before", enabled: true }
-                    case "1_day":
-                      return { type: "1_day", label: "1 day before", enabled: true }
-                    case "1_week":
-                      return { type: "1_week", label: "1 week before", enabled: true }
-                    default:
-                      return null
-                  }
-                })
-                .filter(Boolean),
-            },
-          }),
-        }
-
-        console.log("Sending enhanced booking data with detailed recurring information:", bookingData)
-
-        const response = await fetch(webhookUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(bookingData),
-        })
-
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-        const result = await response.json()
-        console.log("Booking created:", result)
-
-        if (result && result[0] && result[0].output === "Booking Successfully Created") {
-          try {
-            const confirmationWebhookData = { ...bookingData, action: "send_confirmation_emails" }
-            logWebhookUsage("PROFESSIONAL_CONFIG", "send_confirmation_emails")
-            console.log("Sending confirmation email webhook with enhanced recurring details:", confirmationWebhookData)
-            const confirmationResponse = await fetch(webhookUrl, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(confirmationWebhookData),
-            })
-            if (confirmationResponse.ok) {
-              console.log("Confirmation email webhook sent successfully")
-            } else {
-              console.warn("Confirmation email webhook failed, but continuing with booking confirmation")
-            }
-          } catch (confirmationError) {
-            console.warn("Error sending confirmation email webhook:", confirmationError)
-          }
-          setShowPetSelection(false)
-          setCreatingBooking(false)
-          setShowConfirmation(true)
-        } else {
-          throw new Error("Booking creation failed")
         }
       }
-    } catch (err) {
-      console.error("Error creating booking:", err)
+
+      const singleBookingPayload = {
+        action: "create_booking", // Use the standard action for each drop-in
+        uniqueUrl: uniqueUrl,
+        professional_id: professionalId,
+        session_id: `${sessionIdRef.current}_${slot.date}_${slot.startTime.replace(/[:\s]/g, "")}`, // Unique session per booking
+        timestamp: new Date().toISOString(),
+        user_timezone: userTimezoneData,
+        booking_system: bookingPreferences?.booking_system || "direct_booking",
+        booking_type: determineBookingType(),
+        user_booking_type: bookingType, // This can be 'recurring' for recurring drop-ins
+        all_day: false,
+        is_recurring_booking: bookingType === "recurring",
+        ...(bookingType === "recurring" &&
+          enhancedRecurringDetails && {
+            recurring_details: enhancedRecurringDetails,
+            is_recurring_booking: true,
+          }),
+        booking_details: {
+          service_ids: selectedServices.map((service) => service.service_id),
+          service_names: selectedServices.map((service) => service.name),
+          service_descriptions: selectedServices.map((service) => service.description),
+          service_durations: selectedServices.map((service) => service.duration_number),
+          service_duration_units: selectedServices.map((service) => service.duration_unit),
+          service_costs: selectedServices.map((service) => service.customer_cost),
+          service_currencies: selectedServices.map((service) => service.customer_cost_currency),
+          total_duration_minutes: totalDurationMinutes,
+          total_cost: totalCost,
+          start_utc: startDateTimeUTC,
+          end_utc: endDateTimeUTC,
+          date_local: slot.date,
+          start_time_local: slot.startTime,
+          end_time_local: endTimeLocal,
+          day_of_week: slot.dayOfWeek,
+          timezone: userTimezoneData.timezone,
+          timezone_offset: userTimezoneData.offset,
+        },
+        customer_info: {
+          first_name: customerInfo.firstName.trim(),
+          last_name: customerInfo.lastName.trim(),
+          email: customerInfo.email.trim().toLowerCase(),
+        },
+        pets_info: pets.map((pet) => ({
+          pet_id: pet.pet_id,
+          pet_name: pet.pet_name,
+          pet_type: pet.pet_type,
+          breed: pet.breed,
+          age: pet.age,
+          weight: pet.weight,
+          special_notes: pet.special_notes,
+        })),
+        ...(isDirectBooking && {
+          notification_preferences: {
+            selected_notifications: notifications,
+            notification_details: notifications
+              .map((n) => {
+                switch (n) {
+                  case "1_hour":
+                    return { type: "1_hour", label: "1 hour before", enabled: true }
+                  case "1_day":
+                    return { type: "1_day", label: "1 day before", enabled: true }
+                  case "1_week":
+                    return { type: "1_week", label: "1 week before", enabled: true }
+                  default:
+                    return null
+                }
+              })
+              .filter(Boolean),
+          },
+        }),
+      }
+
+      console.log("Sending individual drop-in booking data:", singleBookingPayload)
+      return fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(singleBookingPayload),
+      })
+    })
+
+    const responses = await Promise.all(bookingPromises)
+    const allSuccessful = responses.every((res) => res.ok)
+
+    if (allSuccessful) {
+      const results = await Promise.all(responses.map((res) => res.json()))
+      console.log("All drop-in bookings created successfully:", results)
+      setShowPetSelection(false)
       setCreatingBooking(false)
-      setError("Failed to create booking. Please try again.")
+      setShowConfirmation(true)
+    } else {
+      throw new Error("One or more drop-in bookings failed to create.")
+    }
+  } else {
+    // Historical logic for standard (non-drop-in) bookings
+    logWebhookUsage("PROFESSIONAL_CONFIG", "create_booking")
+    const selectedTimeSlot = selectedTimeSlots.length > 0 ? selectedTimeSlots[0] : null
+    if (!selectedTimeSlot) {
+      throw new Error("No time slot selected.")
+    }
+
+    const isMultiDay = bookingType === "multi-day" && multiDayTimeSlot
+
+    const startDateTimeUTC = isMultiDay
+      ? multiDayTimeSlot.start.toISOString()
+      : convertLocalTimeToUTC(selectedTimeSlot.date, selectedTimeSlot.startTime, userTimezoneData.timezone)
+
+    let totalDurationMinutes = 0
+    let totalCost = 0
+    selectedServices.forEach((service) => {
+      let durationInMinutes = service.duration_number
+      if (service.duration_unit === "Hours") {
+        durationInMinutes = service.duration_number * 60
+      } else if (service.duration_unit === "Days") {
+        durationInMinutes = service.duration_number * 24 * 60
+      }
+      totalDurationMinutes += durationInMinutes
+      totalCost += Number(service.customer_cost)
+    })
+
+    const endDateTimeUTC = isMultiDay
+      ? multiDayTimeSlot.end.toISOString()
+      : calculateEndDateTimeUTC(startDateTimeUTC, totalDurationMinutes, "Minutes")
+
+    const endTimeLocal = new Date(endDateTimeUTC).toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: userTimezoneData.timezone,
+    })
+
+    let enhancedRecurringDetails = null
+    if (bookingType === "recurring" && recurringConfig) {
+      const recurringDates = generateRecurringDates(selectedTimeSlot.date, recurringConfig)
+      enhancedRecurringDetails = {
+        selected_days_of_week: recurringConfig.daysOfWeek || recurringConfig.selectedDays || [],
+        selected_end_date: recurringConfig.endDate || recurringConfig.originalEndDate,
+        recurring_start_date: selectedTimeSlot.date,
+        frequency: recurringConfig.frequency || 1,
+        unit: recurringConfig.unit || "week",
+        end_date: recurringConfig.endDate,
+        total_appointments: recurringConfig.totalAppointments || recurringDates.length,
+        pattern_description: `Every ${recurringConfig.frequency || 1} ${recurringConfig.unit || "week"}${
+          (recurringConfig.frequency || 1) > 1 ? "s" : ""
+        }`,
+        start_date: selectedTimeSlot.date,
+        start_time: selectedTimeSlot.startTime,
+        end_time: endTimeLocal,
+        all_occurrences: recurringDates,
+        total_occurrences: recurringDates.length,
+        days_of_week_included: [...new Set(recurringDates.map((d) => d.day_of_week))],
+        date_range: {
+          first_appointment: recurringDates[0]?.date,
+          last_appointment: recurringDates[recurringDates.length - 1]?.date,
+        },
+        recurring_schedule: {
+          same_time_each_occurrence: true,
+          start_time_local: selectedTimeSlot.startTime,
+          end_time_local: endTimeLocal,
+          duration_minutes: totalDurationMinutes,
+          timezone: userTimezoneData.timezone,
+        },
+        booking_pattern: {
+          frequency_number: recurringConfig.frequency || 1,
+          frequency_unit: recurringConfig.unit || "week",
+          pattern_type:
+            (recurringConfig.frequency || 1) === 1
+              ? `${recurringConfig.unit || "week"}ly`
+              : `every_${recurringConfig.frequency || 1}_${recurringConfig.unit || "week"}s`,
+        },
+      }
+    }
+
+    const bookingData = {
+      action: "create_booking",
+      uniqueUrl: uniqueUrl,
+      professional_id: professionalId,
+      session_id: sessionIdRef.current,
+      timestamp: new Date().toISOString(),
+      user_timezone: userTimezoneData,
+      booking_system: bookingPreferences?.booking_system || "direct_booking",
+      booking_type: determineBookingType(),
+      user_booking_type: bookingType,
+      all_day: bookingType === "multi-day",
+      is_recurring_booking: bookingType === "recurring",
+      ...(bookingType === "recurring" &&
+        enhancedRecurringDetails && {
+          recurring_details: enhancedRecurringDetails,
+          is_recurring_booking: true,
+        }),
+      booking_details: {
+        service_ids: selectedServices.map((service) => service.service_id),
+        service_names: selectedServices.map((service) => service.name),
+        service_descriptions: selectedServices.map((service) => service.description),
+        service_durations: selectedServices.map((service) => service.duration_number),
+        service_duration_units: selectedServices.map((service) => service.duration_unit),
+        service_costs: selectedServices.map((service) => service.customer_cost),
+        service_currencies: selectedServices.map((service) => service.customer_cost_currency),
+        total_duration_minutes: totalDurationMinutes,
+        total_cost: totalCost,
+        start_utc: startDateTimeUTC,
+        end_utc: endDateTimeUTC,
+        date_local: selectedTimeSlot.date,
+        start_time_local: selectedTimeSlot.startTime,
+        end_time_local: endTimeLocal,
+        day_of_week: selectedTimeSlot.dayOfWeek,
+        timezone: userTimezoneData.timezone,
+        timezone_offset: userTimezoneData.offset,
+      },
+      customer_info: {
+        first_name: customerInfo.firstName.trim(),
+        last_name: customerInfo.lastName.trim(),
+        email: customerInfo.email.trim().toLowerCase(),
+      },
+      pets_info: pets.map((pet) => ({
+        pet_id: pet.pet_id,
+        pet_name: pet.pet_name,
+        pet_type: pet.pet_type,
+        breed: pet.breed,
+        age: pet.age,
+        weight: pet.weight,
+        special_notes: pet.special_notes,
+      })),
+      ...(isDirectBooking && {
+        notification_preferences: {
+          selected_notifications: notifications,
+          notification_details: notifications
+            .map((n) => {
+              switch (n) {
+                case "1_hour":
+                  return { type: "1_hour", label: "1 hour before", enabled: true }
+                case "1_day":
+                  return { type: "1_day", label: "1 day before", enabled: true }
+                case "1_week":
+                  return { type: "1_week", label: "1 week before", enabled: true }
+                default:
+                  return null
+              }
+            })
+            .filter(Boolean),
+        },
+      }),
+    }
+
+    console.log("Sending standard booking data:", bookingData)
+
+    const response = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(bookingData),
+    })
+
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+    const result = await response.json()
+    console.log("Booking created:", result)
+
+    if (result && result[0] && result[0].output === "Booking Successfully Created") {
+      try {
+        const confirmationWebhookData = { ...bookingData, action: "send_confirmation_emails" }
+        logWebhookUsage("PROFESSIONAL_CONFIG", "send_confirmation_emails")
+        console.log("Sending confirmation email webhook with enhanced recurring details:", confirmationWebhookData)
+        const confirmationResponse = await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(confirmationWebhookData),
+        })
+        if (confirmationResponse.ok) {
+          console.log("Confirmation email webhook sent successfully")
+        } else {
+          console.warn("Confirmation email webhook failed, but continuing with booking confirmation")
+        }
+      } catch (confirmationError) {
+        console.warn("Error sending confirmation email webhook:", confirmationError)
+      }
+      setShowPetSelection(false)
+      setCreatingBooking(false)
+      setShowConfirmation(true)
+    } else {
+      throw new Error("Booking creation failed")
     }
   }
+} catch (err) {
+  console.error("Error creating booking:", err)
+  setCreatingBooking(false)
+  setError("Failed to create booking. Please try again.")
+}
+}
 
 const handleBackToCustomerForm = () => {
 setShowPetSelection(false)
