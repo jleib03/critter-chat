@@ -406,22 +406,22 @@ if (!booking.booking_date_formatted && booking.start) {
 // Find all service entries
 const serviceEntries = rawData.filter((entry) => entry.name && entry.duration_unit)
 
-// Parse services and group by category
+// Parse services and group by service_type_name
 const servicesByCategory: { [category: string]: Service[] } = {}
 serviceEntries.forEach((service) => {
-const category = getCategoryFromService(service.name)
-if (!servicesByCategory[category]) {
-  servicesByCategory[category] = []
-}
-servicesByCategory[category].push({
-  service_id: service.service_id || `fallback_${service.name.replace(/\s+/g, "_").toLowerCase()}`,
-  name: service.name,
-  description: service.description || "",
-  duration_unit: service.duration_unit,
-  duration_number: service.duration_number,
-  customer_cost: service.customer_cost,
-  customer_cost_currency: service.customer_cost_currency,
-})
+  const category = service.service_type_name || "Other Services" // Use service_type_name directly
+  if (!servicesByCategory[category]) {
+    servicesByCategory[category] = []
+  }
+  servicesByCategory[category].push({
+    service_id: service.service_id || service.id || `fallback_${service.name.replace(/\s+/g, "_").toLowerCase()}`,
+    name: service.name,
+    description: service.description || "",
+    duration_unit: service.duration_unit,
+    duration_number: service.duration_number,
+    customer_cost: service.customer_cost,
+    customer_cost_currency: service.customer_cost_currency,
+  })
 })
 
 // Add this after parsing other data - REPLACE the existing booking preferences parsing
@@ -472,14 +472,14 @@ show_prices: showPrices,
 }
 
 // Helper function to categorize services
-const getCategoryFromService = (serviceName: string): string => {
-const lower = serviceName.toLowerCase()
-if (lower.includes("add on") || lower.includes("addon")) return "Add-Ons"
-if (lower.includes("groom")) return "Grooming"
-if (lower.includes("walk")) return "Walks"
-if (lower.includes("board")) return "Boarding"
-return "Other Services"
-}
+// const getCategoryFromService = (serviceName: string): string => {
+// const lower = serviceName.toLowerCase()
+// if (lower.includes("add on") || lower.includes("addon")) return "Add-Ons"
+// if (lower.includes("groom")) return "Grooming"
+// if (lower.includes("walk")) return "Walks"
+// if (lower.includes("board")) return "Boarding"
+// return "Other Services"
+// }
 
 // Memoize professional config to prevent unnecessary re-renders
 const memoizedProfessionalConfig = useMemo(() => professionalConfig, [professionalConfig])
