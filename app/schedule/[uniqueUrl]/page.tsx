@@ -759,7 +759,12 @@ export default function SchedulePage() {
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
         const result = await response.json()
 
-        if (result && result[0] && result[0].output === "Booking Successfully Created") {
+        // Handle both single object and array responses for Drop-In bookings
+        const isSuccessful = Array.isArray(result)
+          ? result.some((r) => r && r.output === "Booking Successfully Created")
+          : result && result[0] && result[0].output === "Booking Successfully Created"
+
+        if (isSuccessful) {
           try {
             const confirmationWebhookData = { ...bookingData, action: "send_confirmation_emails" }
             logWebhookUsage("PROFESSIONAL_CONFIG", "send_confirmation_emails")
