@@ -89,16 +89,21 @@ export function BookingConfirmation({
                 </div>
               </>
             ) : multipleWindows ? (
-              <div className="space-y-1">
-                <div className="text-sm text-gray-600">Selected Times:</div>
-                <ul className="text-sm">
+              <div className="space-y-2">
+                <div className="text-sm text-gray-600">Selected Drop-In Times:</div>
+                <div className="bg-white rounded-lg p-3 space-y-2 max-h-32 overflow-y-auto">
                   {selectedTimeSlots.map((slot, idx) => (
-                    <li key={`${slot.date}-${slot.startTime}-${idx}`} className="flex justify-between">
-                      <span>{formatDate(slot.date)}</span>
-                      <span className="font-medium">{slot.startTime}</span>
-                    </li>
+                    <div key={`${slot.date}-${slot.startTime}-${idx}`} className="flex justify-between text-sm">
+                      <span className="font-medium">{formatDate(slot.date)}</span>
+                      <span className="text-gray-600">
+                        {slot.startTime} - {slot.endTime}
+                      </span>
+                    </div>
                   ))}
-                </ul>
+                </div>
+                <div className="text-xs text-gray-500 text-center">
+                  {selectedTimeSlots.length} Drop-In visit{selectedTimeSlots.length > 1 ? "s" : ""} scheduled
+                </div>
               </div>
             ) : selectedTimeSlot ? (
               <>
@@ -114,7 +119,7 @@ export function BookingConfirmation({
             ) : null}
 
             {bookingType === "recurring" && recurringConfig && (
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-sm mt-4">
                 <span className="text-gray-600">Recurring:</span>
                 <span className="font-medium text-blue-600">
                   Every {recurringConfig.daysOfWeek?.join(", ")} until{" "}
