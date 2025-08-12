@@ -4,7 +4,7 @@ import { useState, useMemo } from "react"
 import type { BookingData, WorkingDay, Service, SelectedTimeSlot } from "@/types/schedule"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, Clock, ChevronDown, ChevronUp, Users } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Clock, ChevronDown, ChevronUp, Users } from "lucide-react"
 import { calculateAvailableSlots, timeToMinutes, isTimeSlotBlocked } from "@/utils/professional-config"
 import type { ProfessionalConfig } from "@/types/professional-config"
 import type { BookingType, RecurringConfig } from "./booking-type-selection"
@@ -199,6 +199,22 @@ export function WeeklyCalendar({
     return slots
   }
 
+  const getSelectedDate = () => selectedTimeSlotsMulti?.[0]?.date || null
+
+  const isSlotDisabledForMultiSelect = (slot: SelectedTimeSlot) => {
+    // Only restrict for Drop-In recurring bookings
+    if (!allowMultiSelect || bookingType !== "recurring") return false
+
+    const hasDropIn = selectedServices?.some(
+      (s) => !!s?.service_type_name && s.service_type_name.toLowerCase().replace("-", " ") === "drop in",
+    )
+
+    if (!hasDropIn) return false
+
+    const selectedDate = getSelectedDate()
+    return selectedDate && selectedDate !== slot.date
+  }
+
   const isMultiSelected = (slot: SelectedTimeSlot) =>
     selectedTimeSlotsMulti?.some((s) => s.date === slot.date && s.startTime === slot.startTime)
 
@@ -222,7 +238,8 @@ export function WeeklyCalendar({
           </p>
           {allowMultiSelect && (
             <p className="text-xs text-[#E75837] mt-1 body-font">
-              You can select multiple time windows for this Drop-In service.
+              You can select multiple time windows for this Drop-In service
+              {bookingType === "recurring" ? " on the same day." : "."}
             </p>
           )}
         </div>
@@ -252,15 +269,10 @@ export function WeeklyCalendar({
           const displayedSlots = isExpanded ? timeSlots : timeSlots.slice(0, initialSlotCount)
 
           return (
-            <Card
-              key={dateStr}
-              className={`${isToday ? "ring-2 ring-[#E75837]" : ""} h-fit`}
-            >
+            <Card key={dateStr} className={`${isToday ? "ring-2 ring-[#E75837]" : ""} h-fit`}>
               <CardHeader className="pb-3 text-center">
                 <CardTitle className="space-y-1">
-                  <div
-                    className={`text-sm font-semibold header-font ${isToday ? "text-[#E75837]" : "text-gray-900"}`}
-                  >
+                  <div className={`text-sm font-semibold header-font ${isToday ? "text-[#E75837]" : "text-gray-900"}`}>
                     {dayName}
                   </div>
                   <div className="text-2xl font-bold text-gray-900">{date.getDate()}</div>
@@ -281,12 +293,14 @@ export function WeeklyCalendar({
                 ) : (
                   <div className="space-y-2">
                     {displayedSlots.map((slot, slotIndex) => {
-                      const isSelected =
-                        allowMultiSelect
-                          ? isMultiSelected(slot)
-                          : selectedTimeSlot?.date === slot.date && selectedTimeSlot?.startTime === slot.startTime
-                      const availabilityColor = slot.availableSlots && slot.availableSlots <= 1 ? "text-orange-600" : "text-green-600"
+                      const isSelected = allowMultiSelect
+                        ? selectedTimeSlotsMulti?.some((s) => s.date === slot.date && s.startTime === slot.startTime)
+                        : selectedTimeSlot?.date === slot.date && selectedTimeSlot?.startTime === slot.startTime
+                      const availabilityColor =
+                        slot.availableSlots && slot.availableSlots <= 1 ? "text-orange-600" : "text-green-600"
                       const tooltipText = `Capacity: ${slot.availableSlots ?? "-"}${slot.totalCapacity ? `/${slot.totalCapacity}` : ""}${slot.reason ? `. Reason: ${slot.reason}` : ""}`
+
+                      const isSlotDisabled = isSlotDisabledForMultiSelect(slot)
 
                       return (
                         <Button
@@ -296,12 +310,18 @@ export function WeeklyCalendar({
                           className={`w-full text-xs py-3 h-auto min-h-[3.5rem] body-font transition-all ${
                             isSelected
                               ? "bg-[#E75837] text-white border-[#E75837] hover:bg-[#d14a2a] shadow-md"
-                              : "hover:bg-gray-50 hover:border-gray-300"
+                              : isSlotDisabled
+                                ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                                : "hover:bg-gray-50 hover:border-gray-300"
                           }`}
                           onClick={() => {
+                            if (isSlotDisabled) return
+
                             if (allowMultiSelect && onMultiSelect) {
-                              const next = isMultiSelected(slot)
-                                ? selectedTimeSlotsMulti.filter((s) => !(s.date === slot.date && s.startTime === slot.startTime))
+                              const next = isSelected
+                                ? selectedTimeSlotsMulti.filter(
+                                    (s) => !(s.date === slot.date && s.startTime === slot.startTime),
+                                  )
                                 : [...(selectedTimeSlotsMulti || []), slot]
                               onMultiSelect(next)
                             } else {
@@ -309,6 +329,7 @@ export function WeeklyCalendar({
                             }
                           }}
                           title={tooltipText}
+                          disabled={isSlotDisabled}
                         >
                           <div className="flex flex-col items-center w-full">
                             <span className="font-medium">{slot.startTime}</span>
@@ -316,9 +337,7 @@ export function WeeklyCalendar({
                               <div className="flex items-center gap-1">
                                 <Users className="w-2.5 h-2.5" />
                                 <span
-                                  className={`text-[10px] font-medium ${
-                                    isSelected ? "text-white" : availabilityColor
-                                  }`}
+                                  className={`text-[10px] font-medium ${isSelected ? "text-white" : availabilityColor}`}
                                 >
                                   {slot.availableSlots ?? ""}
                                 </span>
