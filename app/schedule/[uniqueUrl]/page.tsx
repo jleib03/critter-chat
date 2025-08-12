@@ -689,13 +689,29 @@ export default function SchedulePage() {
               current_slot_index: index,
               group_session_id: sessionIdRef.current,
               booking_creation_timestamp: new Date().toISOString(),
-              all_selected_slots_summary: selectedTimeSlots.map((s, idx) => ({
-                slot_index: idx + 1,
-                date: s.date,
-                start_time: s.startTime,
-                end_time: s.endTime,
-                day_of_week: s.dayOfWeek,
-              })),
+              all_selected_slots_summary: selectedTimeSlots.map((s, idx) => {
+                const slotStartUTC = convertLocalTimeToUTC(s.date, s.startTime, userTimezoneData.timezone)
+
+                // Calculate slot duration and end time UTC
+                let slotDurationMinutes = 0
+                selectedServices.forEach((service) => {
+                  let durationInMinutes = service.duration_number
+                  if (service.duration_unit === "Hours") durationInMinutes = service.duration_number * 60
+                  else if (service.duration_unit === "Days") durationInMinutes = service.duration_number * 24 * 60
+                  slotDurationMinutes += durationInMinutes
+                })
+                const slotEndUTC = calculateEndDateTimeUTC(slotStartUTC, slotDurationMinutes, "Minutes")
+
+                return {
+                  slot_index: idx + 1,
+                  date: s.date,
+                  start_time: s.startTime,
+                  end_time: s.endTime,
+                  day_of_week: s.dayOfWeek,
+                  start_time_utc: slotStartUTC,
+                  end_time_utc: slotEndUTC,
+                }
+              }),
             },
           }),
           customer_info: {
