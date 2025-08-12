@@ -802,19 +802,22 @@ export default function SchedulePage() {
             console.log(`Drop-In booking ${index}/${total} created successfully for slot:`, slot.date, slot.startTime)
           }
 
-          try {
-            const confirmationWebhookData = { ...bookingData, action: "send_confirmation_emails" }
-            logWebhookUsage("PROFESSIONAL_CONFIG", "send_confirmation_emails")
-            await fetch(webhookUrl, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(confirmationWebhookData),
-              signal: AbortSignal.timeout(10000), // 10 second timeout for email confirmation
-            }).catch((emailError) => {
-              console.warn("Email confirmation failed but booking was successful:", emailError)
-            })
-          } catch {
-            // ignore email webhook errors but don't fail the booking
+          // Only send confirmation emails for non-Drop-In bookings here
+          if (actionOverride !== "create_booking_dropin") {
+            try {
+              const confirmationWebhookData = { ...bookingData, action: "send_confirmation_emails" }
+              logWebhookUsage("PROFESSIONAL_CONFIG", "send_confirmation_emails")
+              await fetch(webhookUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(confirmationWebhookData),
+                signal: AbortSignal.timeout(10000), // 10 second timeout for email confirmation
+              }).catch((emailError) => {
+                console.warn("Email confirmation failed but booking was successful:", emailError)
+              })
+            } catch {
+              // ignore email webhook errors but don't fail the booking
+            }
           }
           return true
         } else {
@@ -839,6 +842,52 @@ export default function SchedulePage() {
             dropInGroupIdRef.current!,
           )
           if (!ok) throw new Error("One of the Drop-In bookings failed")
+        }
+
+        // Send ONE confirmation email for all Drop-In bookings after they're all created
+        try {
+          const confirmationWebhookData = {
+            action: "send_confirmation_emails",
+            uniqueUrl: uniqueUrl,
+            professional_id: professionalId,
+            session_id: sessionIdRef.current,
+            timestamp: new Date().toISOString(),
+            user_timezone: userTimezoneData,
+            booking_system: bookingPreferences?.booking_system || "direct_booking",
+            booking_type: determineBookingType(),
+            user_booking_type: bookingType,
+            multi_booking_group_id: dropInGroupIdRef.current,
+            drop_in_confirmation: {
+              total_bookings_created: selectedTimeSlots.length,
+              all_slots: selectedTimeSlots.map((s, idx) => ({
+                slot_index: idx + 1,
+                date: s.date,
+                start_time: s.startTime,
+                end_time: s.endTime,
+                day_of_week: s.dayOfWeek,
+              })),
+            },
+            customer_info: {
+              first_name: customerInfo.firstName.trim(),
+              last_name: customerInfo.lastName.trim(),
+              email: customerInfo.email.trim().toLowerCase(),
+            },
+            pets_info: pets.map((pet) => ({
+              pet_id: pet.pet_id,
+              pet_name: pet.pet_name,
+            })),
+          }
+          logWebhookUsage("PROFESSIONAL_CONFIG", "send_confirmation_emails")
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(confirmationWebhookData),
+            signal: AbortSignal.timeout(10000),
+          }).catch((emailError) => {
+            console.warn("Drop-In confirmation email failed but all bookings were successful:", emailError)
+          })
+        } catch (emailError) {
+          console.warn("Drop-In confirmation email failed but all bookings were successful:", emailError)
         }
       } else {
         // Single booking path (existing behavior)
