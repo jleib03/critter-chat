@@ -486,7 +486,7 @@ export default function SchedulePage() {
 
   const allowMultiSelect = useMemo(() => {
     const hasDropIn = selectedServices.some((s) => isDropInType(s))
-    return hasDropIn && bookingType === "one-time"
+    return hasDropIn && (bookingType === "one-time" || bookingType === "recurring")
   }, [selectedServices, bookingType])
 
   const handleTimeSlotSelect = (slot: SelectedTimeSlot) => {
@@ -576,6 +576,8 @@ export default function SchedulePage() {
         let enhancedRecurringDetails = null as any
         if (bookingType === "recurring" && recurringConfig) {
           const recurringDates = generateRecurringDates(slot.date, recurringConfig)
+          const isDropInMultiSlot = actionOverride === "create_booking_dropin" && total && total > 1
+
           enhancedRecurringDetails = {
             selected_days_of_week: recurringConfig.daysOfWeek || recurringConfig.selectedDays || [],
             selected_end_date: recurringConfig.endDate || recurringConfig.originalEndDate,
@@ -583,7 +585,7 @@ export default function SchedulePage() {
             frequency: recurringConfig.frequency || 1,
             unit: recurringConfig.unit || "week",
             end_date: recurringConfig.endDate,
-            total_appointments: recurringConfig.totalAppointments || recurringDates.length,
+            total_appointments: recurringDates.length,
             pattern_description: `Every ${recurringConfig.frequency || 1} ${recurringConfig.unit || "week"}${(recurringConfig.frequency || 1) > 1 ? "s" : ""}`,
             start_date: slot.date,
             start_time: slot.startTime,
@@ -610,6 +612,16 @@ export default function SchedulePage() {
                   ? `${recurringConfig.unit || "week"}ly`
                   : `every_${recurringConfig.frequency || 1}_${recurringConfig.unit || "week"}s`,
             },
+            // Add Drop-In specific recurring metadata
+            ...(isDropInMultiSlot && {
+              drop_in_recurring_metadata: {
+                is_multi_slot_recurring: true,
+                current_slot_in_group: index,
+                total_slots_in_group: total,
+                slot_specific_time: slot.startTime,
+                recurring_pattern_applies_to_each_slot: true,
+              },
+            }),
           }
         }
 
@@ -838,27 +850,31 @@ export default function SchedulePage() {
         for (const slot of selectedTimeSlots) {
           try {
             const idx = selectedTimeSlots.findIndex((s) => s.date === slot.date && s.startTime === slot.startTime)
+            const actionType = bookingType === "recurring" ? "create_booking_dropin" : "create_booking_dropin"
             const ok = await sendSingleBooking(
               slot,
               undefined,
-              "create_booking_dropin",
+              actionType,
               idx + 1,
               selectedTimeSlots.length,
               dropInGroupIdRef.current!,
             )
             if (ok) {
               successfulBookings++
-              console.log(`Drop-In booking ${successfulBookings}/${totalBookings} created successfully`)
+              console.log(`Drop-In ${bookingType} booking ${successfulBookings}/${totalBookings} created successfully`)
             }
           } catch (bookingError) {
-            console.error(`Drop-In booking ${successfulBookings + 1}/${totalBookings} failed:`, bookingError)
+            console.error(
+              `Drop-In ${bookingType} booking ${successfulBookings + 1}/${totalBookings} failed:`,
+              bookingError,
+            )
             // Continue with remaining bookings instead of failing completely
           }
         }
 
         // If we successfully created any bookings, show confirmation
         if (successfulBookings > 0) {
-          console.log(`Successfully created ${successfulBookings}/${totalBookings} Drop-In bookings`)
+          console.log(`Successfully created ${successfulBookings}/${totalBookings} Drop-In ${bookingType} bookings`)
 
           // Immediately show confirmation screen
           setShowPetSelection(false)
@@ -882,6 +898,16 @@ export default function SchedulePage() {
                 drop_in_confirmation: {
                   total_bookings_created: successfulBookings,
                   total_bookings_requested: totalBookings,
+                  is_recurring: bookingType === "recurring",
+                  recurring_details:
+                    bookingType === "recurring"
+                      ? {
+                          frequency: recurringConfig?.frequency || 1,
+                          unit: recurringConfig?.unit || "week",
+                          end_date: recurringConfig?.endDate,
+                          days_of_week: recurringConfig?.daysOfWeek || [],
+                        }
+                      : undefined,
                   all_slots: selectedTimeSlots.slice(0, successfulBookings).map((s, idx) => ({
                     slot_index: idx + 1,
                     date: s.date,
@@ -907,15 +933,15 @@ export default function SchedulePage() {
                 body: JSON.stringify(confirmationWebhookData),
                 signal: AbortSignal.timeout(10000),
               })
-              console.log("Drop-In confirmation emails sent successfully")
+              console.log(`Drop-In ${bookingType} confirmation emails sent successfully`)
             } catch (emailError) {
-              console.warn("Drop-In confirmation email failed but bookings were successful:", emailError)
+              console.warn(`Drop-In ${bookingType} confirmation email failed but bookings were successful:`, emailError)
             }
           }, 100) // Small delay to ensure UI updates first
 
           return // Exit the function here for Drop-In flow
         } else {
-          throw new Error("All Drop-In bookings failed to create")
+          throw new Error(`All Drop-In ${bookingType} bookings failed to create`)
         }
       } else {
         // Single booking path (existing behavior)
