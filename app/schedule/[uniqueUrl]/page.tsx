@@ -831,63 +831,91 @@ export default function SchedulePage() {
         if (!dropInGroupIdRef.current) {
           dropInGroupIdRef.current = `dropin_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
         }
+
+        let successfulBookings = 0
+        const totalBookings = selectedTimeSlots.length
+
         for (const slot of selectedTimeSlots) {
-          const idx = selectedTimeSlots.findIndex((s) => s.date === slot.date && s.startTime === slot.startTime)
-          const ok = await sendSingleBooking(
-            slot,
-            undefined,
-            "create_booking_dropin",
-            idx + 1,
-            selectedTimeSlots.length,
-            dropInGroupIdRef.current!,
-          )
-          if (!ok) throw new Error("One of the Drop-In bookings failed")
+          try {
+            const idx = selectedTimeSlots.findIndex((s) => s.date === slot.date && s.startTime === slot.startTime)
+            const ok = await sendSingleBooking(
+              slot,
+              undefined,
+              "create_booking_dropin",
+              idx + 1,
+              selectedTimeSlots.length,
+              dropInGroupIdRef.current!,
+            )
+            if (ok) {
+              successfulBookings++
+              console.log(`Drop-In booking ${successfulBookings}/${totalBookings} created successfully`)
+            }
+          } catch (bookingError) {
+            console.error(`Drop-In booking ${successfulBookings + 1}/${totalBookings} failed:`, bookingError)
+            // Continue with remaining bookings instead of failing completely
+          }
         }
 
-        // Send ONE confirmation email for all Drop-In bookings after they're all created
-        try {
-          const confirmationWebhookData = {
-            action: "send_confirmation_emails",
-            uniqueUrl: uniqueUrl,
-            professional_id: professionalId,
-            session_id: sessionIdRef.current,
-            timestamp: new Date().toISOString(),
-            user_timezone: userTimezoneData,
-            booking_system: bookingPreferences?.booking_system || "direct_booking",
-            booking_type: determineBookingType(),
-            user_booking_type: bookingType,
-            multi_booking_group_id: dropInGroupIdRef.current,
-            drop_in_confirmation: {
-              total_bookings_created: selectedTimeSlots.length,
-              all_slots: selectedTimeSlots.map((s, idx) => ({
-                slot_index: idx + 1,
-                date: s.date,
-                start_time: s.startTime,
-                end_time: s.endTime,
-                day_of_week: s.dayOfWeek,
-              })),
-            },
-            customer_info: {
-              first_name: customerInfo.firstName.trim(),
-              last_name: customerInfo.lastName.trim(),
-              email: customerInfo.email.trim().toLowerCase(),
-            },
-            pets_info: pets.map((pet) => ({
-              pet_id: pet.pet_id,
-              pet_name: pet.pet_name,
-            })),
-          }
-          logWebhookUsage("PROFESSIONAL_CONFIG", "send_confirmation_emails")
-          await fetch(webhookUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(confirmationWebhookData),
-            signal: AbortSignal.timeout(10000),
-          }).catch((emailError) => {
-            console.warn("Drop-In confirmation email failed but all bookings were successful:", emailError)
-          })
-        } catch (emailError) {
-          console.warn("Drop-In confirmation email failed but all bookings were successful:", emailError)
+        // If we successfully created any bookings, show confirmation
+        if (successfulBookings > 0) {
+          console.log(`Successfully created ${successfulBookings}/${totalBookings} Drop-In bookings`)
+
+          // Immediately show confirmation screen
+          setShowPetSelection(false)
+          setCreatingBooking(false)
+          setShowConfirmation(true)
+
+          // Send confirmation email in background (non-blocking)
+          setTimeout(async () => {
+            try {
+              const confirmationWebhookData = {
+                action: "send_confirmation_emails",
+                uniqueUrl: uniqueUrl,
+                professional_id: professionalId,
+                session_id: sessionIdRef.current,
+                timestamp: new Date().toISOString(),
+                user_timezone: userTimezoneData,
+                booking_system: bookingPreferences?.booking_system || "direct_booking",
+                booking_type: determineBookingType(),
+                user_booking_type: bookingType,
+                multi_booking_group_id: dropInGroupIdRef.current,
+                drop_in_confirmation: {
+                  total_bookings_created: successfulBookings,
+                  total_bookings_requested: totalBookings,
+                  all_slots: selectedTimeSlots.slice(0, successfulBookings).map((s, idx) => ({
+                    slot_index: idx + 1,
+                    date: s.date,
+                    start_time: s.startTime,
+                    end_time: s.endTime,
+                    day_of_week: s.dayOfWeek,
+                  })),
+                },
+                customer_info: {
+                  first_name: customerInfo.firstName.trim(),
+                  last_name: customerInfo.lastName.trim(),
+                  email: customerInfo.email.trim().toLowerCase(),
+                },
+                pets_info: pets.map((pet) => ({
+                  pet_id: pet.pet_id,
+                  pet_name: pet.pet_name,
+                })),
+              }
+              logWebhookUsage("PROFESSIONAL_CONFIG", "send_confirmation_emails")
+              await fetch(webhookUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(confirmationWebhookData),
+                signal: AbortSignal.timeout(10000),
+              })
+              console.log("Drop-In confirmation emails sent successfully")
+            } catch (emailError) {
+              console.warn("Drop-In confirmation email failed but bookings were successful:", emailError)
+            }
+          }, 100) // Small delay to ensure UI updates first
+
+          return // Exit the function here for Drop-In flow
+        } else {
+          throw new Error("All Drop-In bookings failed to create")
         }
       } else {
         // Single booking path (existing behavior)
