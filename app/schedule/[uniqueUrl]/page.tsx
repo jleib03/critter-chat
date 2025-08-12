@@ -654,7 +654,50 @@ export default function SchedulePage() {
             day_of_week: slot.dayOfWeek,
             timezone: userTimezoneData.timezone,
             timezone_offset: userTimezoneData.offset,
+            // Add slot-specific details for Drop-In bookings
+            slot_specific_details: {
+              selected_date: slot.date,
+              selected_start_time: slot.startTime,
+              selected_end_time: slot.endTime,
+              selected_day_of_week: slot.dayOfWeek,
+              booking_date_formatted: (() => {
+                const [year, month, day] = slot.date.split("-").map(Number)
+                const localDate = new Date(year, month - 1, day)
+                return localDate.toLocaleDateString("en-US", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })
+              })(),
+              start_datetime_utc: startDateTimeUTC,
+              end_datetime_utc: endDateTimeUTC,
+              start_time_local_formatted: slot.startTime,
+              end_time_local_formatted: endTimeLocal,
+            },
           },
+          // Only for Drop-In posts: add comprehensive booking metadata
+          ...(actionOverride === "create_booking_dropin" && {
+            multi_booking_group_id: groupId,
+            multi_booking_index: index,
+            multi_booking_total: total,
+            request_id: perRequestId,
+            drop_in_booking_metadata: {
+              is_drop_in_service: true,
+              service_type_name: selectedServices.find((s) => isDropInType(s))?.service_type_name || "Drop-In",
+              total_selected_slots: total,
+              current_slot_index: index,
+              group_session_id: sessionIdRef.current,
+              booking_creation_timestamp: new Date().toISOString(),
+              all_selected_slots_summary: selectedTimeSlots.map((s, idx) => ({
+                slot_index: idx + 1,
+                date: s.date,
+                start_time: s.startTime,
+                end_time: s.endTime,
+                day_of_week: s.dayOfWeek,
+              })),
+            },
+          }),
           customer_info: {
             first_name: customerInfo.firstName.trim(),
             last_name: customerInfo.lastName.trim(),
@@ -691,12 +734,6 @@ export default function SchedulePage() {
         }
 
         // Only for Drop-In posts: add clear, per-request metadata for grouping and traceability
-        if (actionOverride === "create_booking_dropin") {
-          bookingData.multi_booking_group_id = groupId
-          bookingData.multi_booking_index = index
-          bookingData.multi_booking_total = total
-          bookingData.request_id = perRequestId
-        }
 
         const response = await fetch(webhookUrl, {
           method: "POST",
