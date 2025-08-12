@@ -755,16 +755,53 @@ export default function SchedulePage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(bookingData),
+          // Add timeout handling for Drop-In bookings
+          signal:
+            actionOverride === "create_booking_dropin"
+              ? AbortSignal.timeout(30000) // 30 second timeout for Drop-In
+              : AbortSignal.timeout(15000), // 15 second timeout for regular bookings
         })
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-        const result = await response.json()
 
-        // Handle both single object and array responses for Drop-In bookings
-        const isSuccessful = Array.isArray(result)
-          ? result.some((r) => r && r.output === "Booking Successfully Created")
-          : result && result[0] && result[0].output === "Booking Successfully Created"
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => "Unknown error")
+          console.error(`Webhook response error: ${response.status} - ${errorText}`)
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        let result
+        try {
+          result = await response.json()
+        } catch (jsonError) {
+          console.error("Failed to parse JSON response:", jsonError)
+          throw new Error("Invalid response format from webhook")
+        }
+
+        // Enhanced response validation for Drop-In bookings
+        const isSuccessful = (() => {
+          if (actionOverride === "create_booking_dropin") {
+            // For Drop-In bookings, handle various response formats
+            if (Array.isArray(result)) {
+              return result.some((r) => r && (r.output === "Booking Successfully Created" || r.status === "success"))
+            } else if (result && typeof result === "object") {
+              return (
+                result.output === "Booking Successfully Created" ||
+                result.status === "success" ||
+                (result[0] && result[0].output === "Booking Successfully Created")
+              )
+            }
+            return false
+          } else {
+            // Regular booking validation (existing logic)
+            return result && result[0] && result[0].output === "Booking Successfully Created"
+          }
+        })()
 
         if (isSuccessful) {
+          // Log successful Drop-In booking for debugging
+          if (actionOverride === "create_booking_dropin") {
+            console.log(`Drop-In booking ${index}/${total} created successfully for slot:`, slot.date, slot.startTime)
+          }
+
           try {
             const confirmationWebhookData = { ...bookingData, action: "send_confirmation_emails" }
             logWebhookUsage("PROFESSIONAL_CONFIG", "send_confirmation_emails")
@@ -772,13 +809,17 @@ export default function SchedulePage() {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(confirmationWebhookData),
-            }).catch(() => {})
+              signal: AbortSignal.timeout(10000), // 10 second timeout for email confirmation
+            }).catch((emailError) => {
+              console.warn("Email confirmation failed but booking was successful:", emailError)
+            })
           } catch {
-            // ignore email webhook errors
+            // ignore email webhook errors but don't fail the booking
           }
           return true
         } else {
-          throw new Error("Booking creation failed")
+          console.error("Booking creation failed. Response:", result)
+          throw new Error(`Booking creation failed: ${JSON.stringify(result)}`)
         }
       }
 
