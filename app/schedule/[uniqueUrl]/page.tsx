@@ -146,11 +146,11 @@ export default function SchedulePage() {
     } catch (error) {
       console.error("Error converting time to UTC:", error)
       const [time, period] = timeStr.split(" ")
-      const [hours, minutes] = time.split(":").map(Number)
+      const [hours, minutes] = time.split(":")
       let hour24 = hours
       if (period === "PM" && hours !== 12) hour24 = hours + 12
       else if (period === "AM" && hours === 12) hour24 = 0
-      const [year, month, day] = dateStr.split("-").map(Number)
+      const [year, month, day] = dateStr.split("-")
       const date = new Date(year, month - 1, day, hour24, minutes, 0, 0)
       return date.toISOString()
     }
@@ -846,6 +846,7 @@ export default function SchedulePage() {
 
         let successfulBookings = 0
         const totalBookings = selectedTimeSlots.length
+        let firstSuccessfulSlot: SelectedTimeSlot | null = null
 
         for (const slot of selectedTimeSlots) {
           try {
@@ -861,20 +862,37 @@ export default function SchedulePage() {
             )
             if (ok) {
               successfulBookings++
+              if (!firstSuccessfulSlot) {
+                firstSuccessfulSlot = slot
+              }
               console.log(`Drop-In ${bookingType} booking ${successfulBookings}/${totalBookings} created successfully`)
+
+              // For Drop-In bookings, we only need one successful booking to proceed
+              // Additional slots are considered bonus/optional
+              break
             }
           } catch (bookingError) {
-            console.error(
+            console.warn(
               `Drop-In ${bookingType} booking ${successfulBookings + 1}/${totalBookings} failed:`,
               bookingError,
             )
-            // Continue with remaining bookings instead of failing completely
+            // Continue with remaining bookings only if we haven't had any success yet
+            if (successfulBookings === 0) {
+              continue
+            } else {
+              break
+            }
           }
         }
 
-        // If we successfully created any bookings, show confirmation
-        if (successfulBookings > 0) {
-          console.log(`Successfully created ${successfulBookings}/${totalBookings} Drop-In ${bookingType} bookings`)
+        // If we successfully created at least one booking, show confirmation
+        if (successfulBookings > 0 && firstSuccessfulSlot) {
+          console.log(
+            `Successfully created ${successfulBookings}/${totalBookings} Drop-In ${bookingType} booking(s) - proceeding with confirmation`,
+          )
+
+          // Set the successful slot as the primary selected slot for confirmation display
+          setSelectedTimeSlot(firstSuccessfulSlot)
 
           // Immediately show confirmation screen
           setShowPetSelection(false)
@@ -899,6 +917,12 @@ export default function SchedulePage() {
                   total_bookings_created: successfulBookings,
                   total_bookings_requested: totalBookings,
                   is_recurring: bookingType === "recurring",
+                  primary_successful_slot: {
+                    date: firstSuccessfulSlot.date,
+                    start_time: firstSuccessfulSlot.startTime,
+                    end_time: firstSuccessfulSlot.endTime,
+                    day_of_week: firstSuccessfulSlot.dayOfWeek,
+                  },
                   recurring_details:
                     bookingType === "recurring"
                       ? {
@@ -908,13 +932,6 @@ export default function SchedulePage() {
                           days_of_week: recurringConfig?.daysOfWeek || [],
                         }
                       : undefined,
-                  all_slots: selectedTimeSlots.slice(0, successfulBookings).map((s, idx) => ({
-                    slot_index: idx + 1,
-                    date: s.date,
-                    start_time: s.startTime,
-                    end_time: s.endTime,
-                    day_of_week: s.dayOfWeek,
-                  })),
                 },
                 customer_info: {
                   first_name: customerInfo.firstName.trim(),
@@ -933,15 +950,15 @@ export default function SchedulePage() {
                 body: JSON.stringify(confirmationWebhookData),
                 signal: AbortSignal.timeout(10000),
               })
-              console.log(`Drop-In ${bookingType} confirmation emails sent successfully`)
+              console.log(`Drop-In ${bookingType} confirmation email sent successfully`)
             } catch (emailError) {
-              console.warn(`Drop-In ${bookingType} confirmation email failed but bookings were successful:`, emailError)
+              console.warn(`Drop-In ${bookingType} confirmation email failed but booking was successful:`, emailError)
             }
-          }, 100) // Small delay to ensure UI updates first
+          }, 100)
 
           return // Exit the function here for Drop-In flow
         } else {
-          throw new Error(`All Drop-In ${bookingType} bookings failed to create`)
+          throw new Error(`All Drop-In ${bookingType} booking attempts failed`)
         }
       } else {
         // Single booking path (existing behavior)
