@@ -111,7 +111,7 @@ export const calculateAvailableSlots = (
     const workStartMinutes = timeToMinutes(workingDay.start)
     const workEndMinutes = timeToMinutes(workingDay.end)
 
-    if (slotStartMinutes < workStartMinutes || slotEndMinutes > workEndMinutes) {
+    if (slotStartMinutes < workStartMinutes || slotStartMinutes >= workEndMinutes) {
       return {
         availableSlots: 0,
         totalCapacity: 0,
@@ -150,7 +150,7 @@ export const calculateAvailableSlots = (
     if (!empWorkingDay || !empWorkingDay.isWorking) return false
     const empWorkStart = timeToMinutes(empWorkingDay.start)
     const empWorkEnd = timeToMinutes(empWorkingDay.end)
-    return slotStartMinutes >= empWorkStart && slotEndMinutes <= empWorkEnd
+    return slotStartMinutes >= empWorkStart && slotStartMinutes < empWorkEnd
   })
 
   if (employeesWorkingThisSlot.length === 0) {
@@ -200,18 +200,7 @@ export const calculateAvailableSlots = (
       const effectiveBookingStart = bookingStartMinutes - bufferMinutes
       const effectiveBookingEnd = bookingEndMinutes + bufferMinutes
 
-      console.log(`Checking booking overlap:`)
-      console.log(
-        `  Booking: ${booking.booking_id} - ${bookingStart.toLocaleString()} to ${bookingEnd.toLocaleString()}`,
-      )
-      console.log(`  Booking minutes: ${bookingStartMinutes} to ${bookingEndMinutes}`)
-      console.log(`  Slot minutes: ${slotStartMinutes} to ${slotEndMinutes}`)
-      console.log(
-        `  Overlap check: slot(${slotStartMinutes}-${slotEndMinutes}) vs booking(${effectiveBookingStart}-${effectiveBookingEnd})`,
-      )
-
       const hasOverlap = slotStartMinutes < effectiveBookingEnd && slotEndMinutes > effectiveBookingStart
-      console.log(`  Has overlap: ${hasOverlap}`)
 
       return hasOverlap
     } catch (error) {
