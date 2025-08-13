@@ -95,9 +95,6 @@ export const calculateAvailableSlots = (
   const slotStartMinutes = timeToMinutes(startTime)
   const slotEndMinutes = timeToMinutes(endTime)
 
-  console.log(`🔍 Calculating availability for ${date} ${startTime}-${endTime}`)
-  console.log(`📊 Total existing bookings provided: ${existingBookings.length}`)
-
   // --- Default behavior if no config is provided ---
   if (!config) {
     const workingDay = workingDays.find((wd) => wd.day === dayName && wd.isWorking)
@@ -124,45 +121,20 @@ export const calculateAvailableSlots = (
       }
     }
 
-    // Enhanced existing bookings filtering for default behavior
     const overlappingBookings = existingBookings.filter((booking) => {
-      // Check if booking has required fields
-      if (!booking.booking_date_formatted || !booking.start || !booking.end) {
-        console.log(`⚠️ Skipping booking ${booking.booking_id} - missing required fields`)
-        return false
-      }
-
-      // Check if booking is on the same date
-      if (booking.booking_date_formatted !== date) {
-        return false
-      }
-
+      if (booking.booking_date_formatted !== date || !booking.start || !booking.end) return false
       try {
-        // Parse booking times - handle both UTC and local time formats
         const bookingStart = new Date(booking.start)
         const bookingEnd = new Date(booking.end)
-
-        // Convert to minutes for comparison (using UTC to be consistent)
         const bookingStartMinutes = bookingStart.getUTCHours() * 60 + bookingStart.getUTCMinutes()
         const bookingEndMinutes = bookingEnd.getUTCHours() * 60 + bookingEnd.getUTCMinutes()
-
-        // Check for time overlap
-        const hasOverlap = slotStartMinutes < bookingEndMinutes && slotEndMinutes > bookingStartMinutes
-
-        if (hasOverlap) {
-          console.log(
-            `📅 Found overlapping booking ${booking.booking_id}: ${bookingStartMinutes}-${bookingEndMinutes} minutes`,
-          )
-        }
-
-        return hasOverlap
-      } catch (error) {
-        console.error(`❌ Error parsing booking ${booking.booking_id} times:`, error)
+        return slotStartMinutes < bookingEndMinutes && slotEndMinutes > bookingStartMinutes
+      } catch (e) {
+        console.log("error parsing booking time", booking)
         return false
       }
     })
 
-    console.log(`📊 Default mode - Found ${overlappingBookings.length} overlapping bookings`)
     const available = overlappingBookings.length === 0 ? 1 : 0
     return {
       availableSlots: available,
@@ -176,8 +148,6 @@ export const calculateAvailableSlots = (
   // --- Advanced calculation with ProfessionalConfig ---
   const { employees, capacityRules, blockedTimes } = config
 
-  console.log(`🏢 Advanced mode - ${employees.length} employees, capacity rules: ${JSON.stringify(capacityRules)}`)
-
   // Layer 1: Find employees scheduled to work at this time
   const activeEmployees = employees.filter((emp) => emp.isActive)
   const employeesWorkingThisSlot = activeEmployees.filter((emp) => {
@@ -187,8 +157,6 @@ export const calculateAvailableSlots = (
     const empWorkEnd = timeToMinutes(empWorkingDay.end)
     return slotStartMinutes >= empWorkStart && slotEndMinutes <= empWorkEnd
   })
-
-  console.log(`👥 ${employeesWorkingThisSlot.length} employees working this slot`)
 
   if (employeesWorkingThisSlot.length === 0) {
     return {
@@ -206,8 +174,6 @@ export const calculateAvailableSlots = (
     return !isEmployeeBlocked
   })
 
-  console.log(`🚫 ${employeesAfterBlocks.length} employees available after checking blocks`)
-
   if (employeesAfterBlocks.length === 0) {
     return {
       availableSlots: 0,
@@ -222,62 +188,26 @@ export const calculateAvailableSlots = (
   const baseCapacity = employeesAfterBlocks.length
   const finalCapacity = Math.min(baseCapacity, capacityRules.maxConcurrentBookings)
 
-  console.log(`📈 Base capacity: ${baseCapacity}, Final capacity after rules: ${finalCapacity}`)
-
-  // Layer 4: Enhanced existing bookings calculation with buffer time
+  // Layer 4: Subtract existing bookings, accounting for buffer time
   const bufferMinutes = capacityRules.bufferTimeBetweenBookings || 0
-  console.log(`⏰ Buffer time: ${bufferMinutes} minutes`)
-
   const overlappingBookings = existingBookings.filter((booking) => {
-    // Check if booking has required fields
-    if (!booking.booking_date_formatted || !booking.start || !booking.end) {
-      console.log(`⚠️ Skipping booking ${booking.booking_id} - missing required fields`)
-      return false
-    }
-
-    // Check if booking is on the same date
-    if (booking.booking_date_formatted !== date) {
-      return false
-    }
-
+    if (booking.booking_date_formatted !== date || !booking.start || !booking.end) return false
     try {
-      // Parse booking times - handle both UTC and local time formats
       const bookingStart = new Date(booking.start)
       const bookingEnd = new Date(booking.end)
-
-      // Convert to minutes for comparison (using UTC to be consistent)
+      // IMPORTANT: Use UTC hours/minutes for comparison as dates are in UTC
       const bookingStartMinutes = bookingStart.getUTCHours() * 60 + bookingStart.getUTCMinutes()
       const bookingEndMinutes = bookingEnd.getUTCHours() * 60 + bookingEnd.getUTCMinutes()
-
-      // Apply buffer time to booking window
       const effectiveBookingStart = bookingStartMinutes - bufferMinutes
       const effectiveBookingEnd = bookingEndMinutes + bufferMinutes
-
-      // Check for time overlap (including buffer)
-      const hasOverlap = slotStartMinutes < effectiveBookingEnd && slotEndMinutes > effectiveBookingStart
-
-      if (hasOverlap) {
-        console.log(`📅 Found overlapping booking ${booking.booking_id}:`)
-        console.log(`   Original: ${bookingStartMinutes}-${bookingEndMinutes} minutes`)
-        console.log(`   With buffer: ${effectiveBookingStart}-${effectiveBookingEnd} minutes`)
-        console.log(`   Slot: ${slotStartMinutes}-${slotEndMinutes} minutes`)
-      }
-
-      return hasOverlap
-    } catch (error) {
-      console.error(`❌ Error parsing booking ${booking.booking_id} times:`, error)
+      return slotStartMinutes < effectiveBookingEnd && slotEndMinutes > effectiveBookingStart
+    } catch (e) {
+      console.log("error parsing booking time", booking)
       return false
     }
   })
 
-  console.log(`📊 Found ${overlappingBookings.length} overlapping bookings (including buffer)`)
-
-  // Calculate available slots
-  const availableSlots = Math.max(0, finalCapacity - overlappingBookings.length)
-
-  console.log(
-    `✅ Final calculation: ${availableSlots} available slots (${finalCapacity} capacity - ${overlappingBookings.length} bookings)`,
-  )
+  const availableSlots = finalCapacity - overlappingBookings.length
 
   if (availableSlots <= 0) {
     return {
