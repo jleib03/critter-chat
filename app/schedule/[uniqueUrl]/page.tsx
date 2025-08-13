@@ -39,7 +39,7 @@ export default function SchedulePage() {
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<SelectedTimeSlot | null>(null)
   // New: multiple time slots (Drop-In)
   const [selectedTimeSlots, setSelectedTimeSlots] = useState<SelectedTimeSlot[]>([])
-  const [sessionIdRef, setSessionIdRef] = useState<string | null>(null)
+  const sessionIdRef = useRef<string | null>(null)
   const userTimezoneRef = useRef<string | null>(null)
   const dropInGroupIdRef = useRef<string | null>(null)
 
@@ -146,11 +146,11 @@ export default function SchedulePage() {
     } catch (error) {
       console.error("Error converting time to UTC:", error)
       const [time, period] = timeStr.split(" ")
-      const [hours, minutes] = time.split(":")
+      const [hours, minutes] = time.split(":").map(Number)
       let hour24 = hours
       if (period === "PM" && hours !== 12) hour24 = hours + 12
       else if (period === "AM" && hours === 12) hour24 = 0
-      const [year, month, day] = dateStr.split("-")
+      const [year, month, day] = dateStr.split("-").map(Number)
       const date = new Date(year, month - 1, day, hour24, minutes, 0, 0)
       return date.toISOString()
     }
@@ -316,7 +316,7 @@ export default function SchedulePage() {
       setLoading(true)
       setError(null)
 
-      setSessionIdRef(generateSessionId())
+      sessionIdRef.current = generateSessionId()
       userTimezoneRef.current = JSON.stringify(detectUserTimezone())
       loadProfessionalConfiguration()
 
@@ -329,7 +329,7 @@ export default function SchedulePage() {
         body: JSON.stringify({
           action: "initialize_schedule",
           uniqueUrl: uniqueUrl,
-          session_id: sessionIdRef,
+          session_id: sessionIdRef.current,
           timestamp: new Date().toISOString(),
           user_timezone: JSON.parse(userTimezoneRef.current),
         }),
@@ -635,7 +635,7 @@ export default function SchedulePage() {
           action: actionOverride,
           uniqueUrl: uniqueUrl,
           professional_id: professionalId,
-          session_id: sessionIdRef,
+          session_id: sessionIdRef.current,
           timestamp: new Date().toISOString(),
           user_timezone: userTimezoneData,
           booking_system: bookingPreferences?.booking_system || "direct_booking",
@@ -699,7 +699,7 @@ export default function SchedulePage() {
               service_type_name: selectedServices.find((s) => isDropInType(s))?.service_type_name || "Drop-In",
               total_selected_slots: total,
               current_slot_index: index,
-              group_session_id: sessionIdRef,
+              group_session_id: sessionIdRef.current,
               booking_creation_timestamp: new Date().toISOString(),
               all_selected_slots_summary: selectedTimeSlots.map((s, idx) => {
                 const slotStartUTC = convertLocalTimeToUTC(s.date, s.startTime, userTimezoneData.timezone)
@@ -760,8 +760,6 @@ export default function SchedulePage() {
             },
           }),
         }
-
-        // Only for Drop-In posts: add clear, per-request metadata for grouping and traceability
 
         const response = await fetch(webhookUrl, {
           method: "POST",
@@ -906,7 +904,7 @@ export default function SchedulePage() {
                 action: "send_confirmation_emails_dropin",
                 uniqueUrl: uniqueUrl,
                 professional_id: professionalId,
-                session_id: sessionIdRef,
+                session_id: sessionIdRef.current,
                 timestamp: new Date().toISOString(),
                 user_timezone: userTimezoneData,
                 booking_system: bookingPreferences?.booking_system || "direct_booking",
@@ -1324,7 +1322,7 @@ export default function SchedulePage() {
             selectedTimeSlots={selectedTimeSlots}
             professionalId={professionalId || uniqueUrl}
             professionalName={webhookData.professional_info.professional_name}
-            sessionId={sessionIdRef}
+            sessionId={sessionIdRef.current!}
             onPetsReceived={handlePetsReceived}
             onBack={handleBackToSchedule}
             bookingType={bookingType}
