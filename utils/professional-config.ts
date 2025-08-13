@@ -2,6 +2,24 @@ import type { ProfessionalConfig, Employee, WorkingDay } from "@/types/professio
 import type { BookingData } from "@/types/schedule"
 import type { Service } from "@/types/service"
 
+// Helper function to check if a date is in the current week
+const isCurrentWeek = (dateStr: string): boolean => {
+  const date = new Date(dateStr)
+  const now = new Date()
+
+  // Get the start of the current week (Sunday)
+  const startOfWeek = new Date(now)
+  startOfWeek.setDate(now.getDate() - now.getDay())
+  startOfWeek.setHours(0, 0, 0, 0)
+
+  // Get the end of the current week (Saturday)
+  const endOfWeek = new Date(startOfWeek)
+  endOfWeek.setDate(startOfWeek.getDate() + 6)
+  endOfWeek.setHours(23, 59, 59, 999)
+
+  return date >= startOfWeek && date <= endOfWeek
+}
+
 // Helper: convert "HH:MM:SS", "HH:MM" or "H:MM AM/PM" to minutes past midnight
 export const timeToMinutes = (timeStr: string): number => {
   if (!timeStr || typeof timeStr !== "string") return 0
@@ -108,15 +126,19 @@ export const generateAllTimeSlots = (
 ): { startTime: string; endTime: string; startMinutes: number; endMinutes: number }[] => {
   const workingDay = workingDays.find((wd) => wd.day === dayName && wd.isWorking)
   if (!workingDay) {
-    console.log(`No working day found for ${dayName}`)
+    if (isCurrentWeek(new Date().toISOString().split("T")[0])) {
+      console.log(`No working day found for ${dayName}`)
+    }
     return []
   }
 
   const workStartMinutes = timeToMinutes(workingDay.start)
   const workEndMinutes = timeToMinutes(workingDay.end)
-  console.log(
-    `Working hours for ${dayName}: ${workStartMinutes} to ${workEndMinutes} minutes (${workingDay.start} to ${workingDay.end})`,
-  )
+  if (isCurrentWeek(new Date().toISOString().split("T")[0])) {
+    console.log(
+      `Working hours for ${dayName}: ${workStartMinutes} to ${workEndMinutes} minutes (${workingDay.start} to ${workingDay.end})`,
+    )
+  }
 
   const slots: { startTime: string; endTime: string; startMinutes: number; endMinutes: number }[] = []
 
@@ -133,7 +155,9 @@ export const generateAllTimeSlots = (
     }
   }
 
-  console.log(`Generated ${slots.length} time slots for ${dayName}`)
+  if (isCurrentWeek(new Date().toISOString().split("T")[0])) {
+    console.log(`Generated ${slots.length} time slots for ${dayName}`)
+  }
   return slots
 }
 
@@ -187,7 +211,9 @@ export const countOverlappingBookings = (
   existingBookings: BookingData[],
   bufferMinutes = 0,
 ): number => {
-  console.log(`Checking overlapping bookings for ${date} from ${startMinutes} to ${endMinutes} minutes`)
+  if (isCurrentWeek(date)) {
+    console.log(`Checking overlapping bookings for ${date} from ${startMinutes} to ${endMinutes} minutes`)
+  }
 
   const overlappingBookings = existingBookings.filter((booking) => {
     if (booking.booking_date_formatted !== date || !booking.start || !booking.end) {
@@ -203,9 +229,11 @@ export const countOverlappingBookings = (
       const bookingStartMinutes = bookingStart.getUTCHours() * 60 + bookingStart.getUTCMinutes()
       const bookingEndMinutes = bookingEnd.getUTCHours() * 60 + bookingEnd.getUTCMinutes()
 
-      console.log(
-        `Booking ${booking.booking_id}: ${bookingStartMinutes}-${bookingEndMinutes} minutes (${booking.start} to ${booking.end})`,
-      )
+      if (isCurrentWeek(date)) {
+        console.log(
+          `Booking ${booking.booking_id}: ${bookingStartMinutes}-${bookingEndMinutes} minutes (${booking.start} to ${booking.end})`,
+        )
+      }
 
       // Apply buffer time
       const effectiveBookingStart = bookingStartMinutes - bufferMinutes
@@ -213,7 +241,7 @@ export const countOverlappingBookings = (
 
       // Check for overlap
       const hasOverlap = startMinutes < effectiveBookingEnd && endMinutes > effectiveBookingStart
-      if (hasOverlap) {
+      if (hasOverlap && isCurrentWeek(date)) {
         console.log(`Found overlap with booking ${booking.booking_id}`)
       }
       return hasOverlap
@@ -223,7 +251,9 @@ export const countOverlappingBookings = (
     }
   })
 
-  console.log(`Found ${overlappingBookings.length} overlapping bookings`)
+  if (isCurrentWeek(date)) {
+    console.log(`Found ${overlappingBookings.length} overlapping bookings`)
+  }
   return overlappingBookings.length
 }
 
@@ -240,19 +270,23 @@ export const generateAvailableSlots = (
   totalPossibleSlots: number
   reason: string
 } => {
-  console.log(`=== Generating available slots for ${date} (${dayName}) ===`)
-  console.log(
-    `Selected services:`,
-    selectedServices.map((s) => `${s.name} (${s.duration_number} ${s.duration_unit})`),
-  )
-  console.log(
-    `Existing bookings for ${date}:`,
-    existingBookings.filter((b) => b.booking_date_formatted === date).length,
-  )
+  if (isCurrentWeek(date)) {
+    console.log(`=== Generating available slots for ${date} (${dayName}) ===`)
+    console.log(
+      `Selected services:`,
+      selectedServices.map((s) => `${s.name} (${s.duration_number} ${s.duration_unit})`),
+    )
+    console.log(
+      `Existing bookings for ${date}:`,
+      existingBookings.filter((b) => b.booking_date_formatted === date).length,
+    )
+  }
 
   // Calculate total service duration
   const serviceDurationMinutes = calculateServiceDuration(selectedServices)
-  console.log(`Total service duration: ${serviceDurationMinutes} minutes`)
+  if (isCurrentWeek(date)) {
+    console.log(`Total service duration: ${serviceDurationMinutes} minutes`)
+  }
 
   if (serviceDurationMinutes === 0) {
     return {
@@ -274,7 +308,9 @@ export const generateAvailableSlots = (
 
   // If no config, use simple logic
   if (!config) {
-    console.log("No professional config found, using simple logic")
+    if (isCurrentWeek(date)) {
+      console.log("No professional config found, using simple logic")
+    }
     const availableSlots: { startTime: string; endTime: string; capacity: number }[] = []
 
     for (const slot of allTimeSlots) {
@@ -286,9 +322,11 @@ export const generateAvailableSlots = (
       const serviceEndMinutes = slot.startMinutes + serviceDurationMinutes
 
       if (serviceEndMinutes > workEndMinutes) {
-        console.log(
-          `Slot ${slot.startTime} skipped: service would end at ${serviceEndMinutes} but work ends at ${workEndMinutes}`,
-        )
+        if (isCurrentWeek(date)) {
+          console.log(
+            `Slot ${slot.startTime} skipped: service would end at ${serviceEndMinutes} but work ends at ${workEndMinutes}`,
+          )
+        }
         continue
       }
 
@@ -301,13 +339,19 @@ export const generateAvailableSlots = (
           endTime: minutesToTime(serviceEndMinutes),
           capacity: 1,
         })
-        console.log(`Available slot: ${slot.startTime} - ${minutesToTime(serviceEndMinutes)}`)
+        if (isCurrentWeek(date)) {
+          console.log(`Available slot: ${slot.startTime} - ${minutesToTime(serviceEndMinutes)}`)
+        }
       } else {
-        console.log(`Slot ${slot.startTime} blocked by ${overlappingCount} overlapping bookings`)
+        if (isCurrentWeek(date)) {
+          console.log(`Slot ${slot.startTime} blocked by ${overlappingCount} overlapping bookings`)
+        }
       }
     }
 
-    console.log(`Found ${availableSlots.length} available slots without config`)
+    if (isCurrentWeek(date)) {
+      console.log(`Found ${availableSlots.length} available slots without config`)
+    }
     return {
       availableSlots,
       totalPossibleSlots: allTimeSlots.length,
@@ -316,12 +360,16 @@ export const generateAvailableSlots = (
   }
 
   // Advanced logic with professional config
-  console.log("Using professional config for advanced logic")
+  if (isCurrentWeek(date)) {
+    console.log("Using professional config for advanced logic")
+  }
   const { employees, capacityRules, blockedTimes } = config
   const bufferMinutes = capacityRules.bufferTimeBetweenBookings || 0
-  console.log(`Buffer minutes: ${bufferMinutes}`)
-  console.log(`Active employees: ${employees.filter((e) => e.isActive).length}`)
-  console.log(`Blocked times: ${blockedTimes.length}`)
+  if (isCurrentWeek(date)) {
+    console.log(`Buffer minutes: ${bufferMinutes}`)
+    console.log(`Active employees: ${employees.filter((e) => e.isActive).length}`)
+    console.log(`Blocked times: ${blockedTimes.length}`)
+  }
 
   const availableSlots: { startTime: string; endTime: string; capacity: number }[] = []
 
@@ -334,9 +382,11 @@ export const generateAvailableSlots = (
     const serviceEndMinutes = slot.startMinutes + serviceDurationMinutes
 
     if (serviceEndMinutes > workEndMinutes) {
-      console.log(
-        `Slot ${slot.startTime} skipped: service would end at ${serviceEndMinutes} but work ends at ${workEndMinutes}`,
-      )
+      if (isCurrentWeek(date)) {
+        console.log(
+          `Slot ${slot.startTime} skipped: service would end at ${serviceEndMinutes} but work ends at ${workEndMinutes}`,
+        )
+      }
       continue
     }
 
@@ -346,18 +396,24 @@ export const generateAvailableSlots = (
     )
 
     if (availableEmployees.length === 0) {
-      console.log(`Slot ${slot.startTime} skipped: no available employees`)
+      if (isCurrentWeek(date)) {
+        console.log(`Slot ${slot.startTime} skipped: no available employees`)
+      }
       continue
     }
 
     // Step 2: Filter employees who can perform the selected services
     const qualifiedEmployees = canEmployeesPerformServices(availableEmployees, selectedServices)
     if (qualifiedEmployees.length === 0) {
-      console.log(`Slot ${slot.startTime} skipped: no qualified employees`)
+      if (isCurrentWeek(date)) {
+        console.log(`Slot ${slot.startTime} skipped: no qualified employees`)
+      }
       continue
     }
 
-    console.log(`Slot ${slot.startTime}: ${qualifiedEmployees.length} qualified employees`)
+    if (isCurrentWeek(date)) {
+      console.log(`Slot ${slot.startTime}: ${qualifiedEmployees.length} qualified employees`)
+    }
 
     // Step 3: Calculate capacity
     let capacity = qualifiedEmployees.length
@@ -370,7 +426,9 @@ export const generateAvailableSlots = (
       capacity = Math.min(capacity, capacityRules.maxConcurrentBookings)
     }
 
-    console.log(`Slot ${slot.startTime}: capacity = ${capacity}`)
+    if (isCurrentWeek(date)) {
+      console.log(`Slot ${slot.startTime}: capacity = ${capacity}`)
+    }
 
     // Step 4: Check existing bookings
     const overlappingCount = countOverlappingBookings(
@@ -382,7 +440,9 @@ export const generateAvailableSlots = (
     )
 
     const finalCapacity = capacity - overlappingCount
-    console.log(`Slot ${slot.startTime}: final capacity = ${finalCapacity} (${capacity} - ${overlappingCount})`)
+    if (isCurrentWeek(date)) {
+      console.log(`Slot ${slot.startTime}: final capacity = ${finalCapacity} (${capacity} - ${overlappingCount})`)
+    }
 
     if (finalCapacity > 0) {
       availableSlots.push({
@@ -390,13 +450,17 @@ export const generateAvailableSlots = (
         endTime: minutesToTime(serviceEndMinutes),
         capacity: finalCapacity,
       })
-      console.log(
-        `Available slot: ${slot.startTime} - ${minutesToTime(serviceEndMinutes)} (capacity: ${finalCapacity})`,
-      )
+      if (isCurrentWeek(date)) {
+        console.log(
+          `Available slot: ${slot.startTime} - ${minutesToTime(serviceEndMinutes)} (capacity: ${finalCapacity})`,
+        )
+      }
     }
   }
 
-  console.log(`=== Final result: ${availableSlots.length} available slots ===`)
+  if (isCurrentWeek(date)) {
+    console.log(`=== Final result: ${availableSlots.length} available slots ===`)
+  }
   return {
     availableSlots,
     totalPossibleSlots: allTimeSlots.length,
