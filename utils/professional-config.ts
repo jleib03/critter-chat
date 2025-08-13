@@ -101,12 +101,10 @@ export const calculateServiceDuration = (services: Service[]): number => {
   return totalDurationMinutes
 }
 
-// Generate all possible time slots for a day based on working hours and service duration
-export const generatePossibleSlots = (
+// Generate all 15-minute time slots for a day
+export const generateAllTimeSlots = (
   workingDays: WorkingDay[],
   dayName: string,
-  serviceDurationMinutes: number,
-  slotIntervalMinutes = 30, // Default 30-minute intervals
 ): { startTime: string; endTime: string; startMinutes: number; endMinutes: number }[] => {
   const workingDay = workingDays.find((wd) => wd.day === dayName && wd.isWorking)
   if (!workingDay) return []
@@ -115,145 +113,73 @@ export const generatePossibleSlots = (
   const workEndMinutes = timeToMinutes(workingDay.end)
   const slots: { startTime: string; endTime: string; startMinutes: number; endMinutes: number }[] = []
 
-  // Generate slots at regular intervals
-  for (
-    let startMinutes = workStartMinutes;
-    startMinutes + serviceDurationMinutes <= workEndMinutes;
-    startMinutes += slotIntervalMinutes
-  ) {
-    const endMinutes = startMinutes + serviceDurationMinutes
-    slots.push({
-      startTime: minutesToTime(startMinutes),
-      endTime: minutesToTime(endMinutes),
-      startMinutes,
-      endMinutes,
-    })
+  // Generate 15-minute slots
+  for (let startMinutes = workStartMinutes; startMinutes < workEndMinutes; startMinutes += 15) {
+    const endMinutes = startMinutes + 15
+    if (endMinutes <= workEndMinutes) {
+      slots.push({
+        startTime: minutesToTime(startMinutes),
+        endTime: minutesToTime(endMinutes),
+        startMinutes,
+        endMinutes,
+      })
+    }
   }
 
-  console.log(`📅 Generated ${slots.length} possible slots for ${dayName} (${serviceDurationMinutes}min service)`)
   return slots
 }
 
-// Check if employees have capacity for the entire duration of a slot
-export const checkEmployeeCapacityForSlot = (
-  employees: Employee[],
+// Check if an employee can work the entire service duration starting at a specific time
+export const canEmployeeWorkEntireService = (
+  employee: Employee,
   dayName: string,
-  slotStartMinutes: number,
-  slotEndMinutes: number,
+  serviceStartMinutes: number,
+  serviceDurationMinutes: number,
   date: string,
   blockedTimes: any[],
-  capacityRules: any,
-  selectedServices?: Service[],
-): {
-  availableEmployees: Employee[]
-  totalCapacity: number
-  reason: string
-} => {
-  console.log(`👥 Checking employee capacity for slot ${slotStartMinutes}-${slotEndMinutes} on ${dayName}`)
+): boolean => {
+  // Check if employee is active
+  if (!employee.isActive) return false
 
-  // Step 1: Find active employees
-  const activeEmployees = employees.filter((emp) => emp.isActive)
-  console.log(`👥 Active employees: ${activeEmployees.length}`)
+  // Check if employee works on this day
+  const workingDay = employee.workingDays.find((wd) => wd.day === dayName)
+  if (!workingDay || !workingDay.isWorking) return false
 
-  // Step 2: Find employees working the entire slot duration
-  const employeesWorkingEntireSlot = activeEmployees.filter((emp) => {
-    const empWorkingDay = emp.workingDays.find((wd) => wd.day === dayName)
-    if (!empWorkingDay || !empWorkingDay.isWorking) {
-      console.log(`👤 ${emp.name} not working on ${dayName}`)
-      return false
-    }
+  const empWorkStart = timeToMinutes(workingDay.start)
+  const empWorkEnd = timeToMinutes(workingDay.end)
+  const serviceEndMinutes = serviceStartMinutes + serviceDurationMinutes
 
-    const empWorkStart = timeToMinutes(empWorkingDay.start)
-    const empWorkEnd = timeToMinutes(empWorkingDay.end)
+  // Employee must be available for the entire service duration
+  if (serviceStartMinutes < empWorkStart || serviceEndMinutes > empWorkEnd) return false
 
-    // Employee must be available for the ENTIRE slot duration
-    const canWorkEntireSlot = slotStartMinutes >= empWorkStart && slotEndMinutes <= empWorkEnd
-    console.log(`👤 ${emp.name} working ${empWorkStart}-${empWorkEnd}, can work entire slot: ${canWorkEntireSlot}`)
-    return canWorkEntireSlot
-  })
+  // Check if employee is blocked during the service time
+  const serviceStartTime = minutesToTime(serviceStartMinutes)
+  const serviceEndTime = minutesToTime(serviceEndMinutes)
+  if (isTimeSlotBlocked(date, serviceStartTime, serviceEndTime, blockedTimes, employee.id)) return false
 
-  if (employeesWorkingEntireSlot.length === 0) {
-    return {
-      availableEmployees: [],
-      totalCapacity: 0,
-      reason: "No employees available for entire slot duration",
-    }
-  }
-
-  // Step 3: Filter out blocked employees
-  const employeesAfterBlocks = employeesWorkingEntireSlot.filter((emp) => {
-    const startTime = minutesToTime(slotStartMinutes)
-    const endTime = minutesToTime(slotEndMinutes)
-    const isBlocked = isTimeSlotBlocked(date, startTime, endTime, blockedTimes, emp.id)
-    if (isBlocked) {
-      console.log(`🚫 ${emp.name} is blocked for this slot`)
-    }
-    return !isBlocked
-  })
-
-  if (employeesAfterBlocks.length === 0) {
-    return {
-      availableEmployees: [],
-      totalCapacity: 0,
-      reason: "All employees are blocked for this slot",
-    }
-  }
-
-  // Step 4: Check service requirements
-  if (selectedServices && selectedServices.length > 0) {
-    const employeesWhoCanPerformServices = employeesAfterBlocks.filter((emp) => {
-      // If employee has no specific services listed, assume they can do all
-      if (!emp.services || emp.services.length === 0) return true
-
-      // Check if employee can perform all selected services
-      return selectedServices.every(
-        (service) => emp.services.includes(service.name) || emp.services.includes(service.service_id),
-      )
-    })
-
-    if (employeesWhoCanPerformServices.length === 0) {
-      return {
-        availableEmployees: [],
-        totalCapacity: 0,
-        reason: "No employees can perform the selected services",
-      }
-    }
-
-    // Update available employees list
-    employeesAfterBlocks.splice(0, employeesAfterBlocks.length, ...employeesWhoCanPerformServices)
-  }
-
-  // Step 5: Apply capacity rules
-  let totalCapacity = employeesAfterBlocks.length
-
-  if (capacityRules.requireAllEmployeesForService && selectedServices && selectedServices.length > 0) {
-    // All available employees must work together
-    totalCapacity = 1
-    console.log(`🔧 Service requires all employees working together, capacity set to 1`)
-  } else {
-    // Apply max concurrent bookings limit
-    totalCapacity = Math.min(totalCapacity, capacityRules.maxConcurrentBookings)
-    console.log(
-      `📊 Capacity: ${employeesAfterBlocks.length} employees, max concurrent: ${capacityRules.maxConcurrentBookings}, final: ${totalCapacity}`,
-    )
-  }
-
-  return {
-    availableEmployees: employeesAfterBlocks,
-    totalCapacity,
-    reason: "Available",
-  }
+  return true
 }
 
-// Check how many bookings overlap with a specific slot
+// Check if employees can perform the selected services
+export const canEmployeesPerformServices = (employees: Employee[], services: Service[]): Employee[] => {
+  return employees.filter((emp) => {
+    // If employee has no specific services listed, assume they can do all
+    if (!emp.services || emp.services.length === 0) return true
+
+    // Check if employee can perform all selected services
+    return services.every((service) => emp.services.includes(service.name) || emp.services.includes(service.service_id))
+  })
+}
+
+// Count overlapping bookings for a specific time range
 export const countOverlappingBookings = (
   date: string,
-  slotStartMinutes: number,
-  slotEndMinutes: number,
+  startMinutes: number,
+  endMinutes: number,
   existingBookings: BookingData[],
   bufferMinutes = 0,
-): { count: number; overlappingBookings: BookingData[] } => {
-  const overlappingBookings = existingBookings.filter((booking) => {
+): number => {
+  return existingBookings.filter((booking) => {
     if (booking.booking_date_formatted !== date || !booking.start || !booking.end) return false
 
     try {
@@ -267,25 +193,11 @@ export const countOverlappingBookings = (
       const effectiveBookingEnd = bookingEndMinutes + bufferMinutes
 
       // Check for overlap
-      const overlaps = slotStartMinutes < effectiveBookingEnd && slotEndMinutes > effectiveBookingStart
-
-      if (overlaps) {
-        console.log(
-          `📋 Booking overlaps: ${bookingStartMinutes}-${bookingEndMinutes} (with buffer: ${effectiveBookingStart}-${effectiveBookingEnd})`,
-        )
-      }
-
-      return overlaps
+      return startMinutes < effectiveBookingEnd && endMinutes > effectiveBookingStart
     } catch (e) {
-      console.error("❌ Error parsing booking time", booking, e)
       return false
     }
-  })
-
-  return {
-    count: overlappingBookings.length,
-    overlappingBookings,
-  }
+  }).length
 }
 
 // Main function - Generate available slots for a day
@@ -296,23 +208,24 @@ export const generateAvailableSlots = (
   dayName: string,
   existingBookings: BookingData[],
   selectedServices: Service[],
-  slotIntervalMinutes = 30,
 ): {
   availableSlots: { startTime: string; endTime: string; capacity: number }[]
   totalPossibleSlots: number
   reason: string
 } => {
-  console.log(`🔍 Generating available slots for ${date} (${dayName})`)
-  console.log(`🛠️ Selected services: ${selectedServices.map((s) => s.name).join(", ")}`)
-
   // Calculate total service duration
   const serviceDurationMinutes = calculateServiceDuration(selectedServices)
-  console.log(`⏱️ Total service duration: ${serviceDurationMinutes} minutes`)
+  if (serviceDurationMinutes === 0) {
+    return {
+      availableSlots: [],
+      totalPossibleSlots: 0,
+      reason: "No services selected",
+    }
+  }
 
-  // Generate all possible slots based on working hours and service duration
-  const possibleSlots = generatePossibleSlots(workingDays, dayName, serviceDurationMinutes, slotIntervalMinutes)
-
-  if (possibleSlots.length === 0) {
+  // Generate all 15-minute time slots
+  const allTimeSlots = generateAllTimeSlots(workingDays, dayName)
+  if (allTimeSlots.length === 0) {
     return {
       availableSlots: [],
       totalPossibleSlots: 0,
@@ -322,77 +235,97 @@ export const generateAvailableSlots = (
 
   // If no config, use simple logic
   if (!config) {
-    console.log("⚠️ No professional config, using simple availability logic")
-    const availableSlots = possibleSlots
-      .filter((slot) => {
-        const { count } = countOverlappingBookings(date, slot.startMinutes, slot.endMinutes, existingBookings)
-        return count === 0
-      })
-      .map((slot) => ({
-        startTime: slot.startTime,
-        endTime: slot.endTime,
-        capacity: 1,
-      }))
+    const availableSlots: { startTime: string; endTime: string; capacity: number }[] = []
+
+    for (const slot of allTimeSlots) {
+      // Check if there's enough time left in the day for the full service
+      const workingDay = workingDays.find((wd) => wd.day === dayName && wd.isWorking)
+      if (!workingDay) continue
+
+      const workEndMinutes = timeToMinutes(workingDay.end)
+      const serviceEndMinutes = slot.startMinutes + serviceDurationMinutes
+
+      if (serviceEndMinutes > workEndMinutes) continue
+
+      // Check for overlapping bookings
+      const overlappingCount = countOverlappingBookings(date, slot.startMinutes, serviceEndMinutes, existingBookings)
+
+      if (overlappingCount === 0) {
+        availableSlots.push({
+          startTime: slot.startTime,
+          endTime: minutesToTime(serviceEndMinutes),
+          capacity: 1,
+        })
+      }
+    }
 
     return {
       availableSlots,
-      totalPossibleSlots: possibleSlots.length,
+      totalPossibleSlots: allTimeSlots.length,
       reason: availableSlots.length > 0 ? "Available slots found" : "All slots are booked",
     }
   }
 
   // Advanced logic with professional config
-  const { capacityRules, blockedTimes } = config
+  const { employees, capacityRules, blockedTimes } = config
   const bufferMinutes = capacityRules.bufferTimeBetweenBookings || 0
-
   const availableSlots: { startTime: string; endTime: string; capacity: number }[] = []
 
-  for (const slot of possibleSlots) {
-    // Check employee capacity for this slot
-    const employeeCapacity = checkEmployeeCapacityForSlot(
-      config.employees,
-      dayName,
-      slot.startMinutes,
-      slot.endMinutes,
-      date,
-      blockedTimes,
-      capacityRules,
-      selectedServices,
+  for (const slot of allTimeSlots) {
+    // Check if there's enough time left in the day for the full service
+    const workingDay = workingDays.find((wd) => wd.day === dayName && wd.isWorking)
+    if (!workingDay) continue
+
+    const workEndMinutes = timeToMinutes(workingDay.end)
+    const serviceEndMinutes = slot.startMinutes + serviceDurationMinutes
+
+    if (serviceEndMinutes > workEndMinutes) continue
+
+    // Step 1: Find employees who can work the entire service duration
+    const availableEmployees = employees.filter((emp) =>
+      canEmployeeWorkEntireService(emp, dayName, slot.startMinutes, serviceDurationMinutes, date, blockedTimes),
     )
 
-    if (employeeCapacity.totalCapacity === 0) {
-      console.log(`❌ Slot ${slot.startTime}-${slot.endTime}: ${employeeCapacity.reason}`)
-      continue
+    if (availableEmployees.length === 0) continue
+
+    // Step 2: Filter employees who can perform the selected services
+    const qualifiedEmployees = canEmployeesPerformServices(availableEmployees, selectedServices)
+    if (qualifiedEmployees.length === 0) continue
+
+    // Step 3: Calculate capacity
+    let capacity = qualifiedEmployees.length
+
+    if (capacityRules.requireAllEmployeesForService) {
+      // All qualified employees must work together
+      capacity = 1
+    } else {
+      // Apply max concurrent bookings limit
+      capacity = Math.min(capacity, capacityRules.maxConcurrentBookings)
     }
 
-    // Check existing bookings
-    const { count: overlappingCount } = countOverlappingBookings(
+    // Step 4: Check existing bookings
+    const overlappingCount = countOverlappingBookings(
       date,
       slot.startMinutes,
-      slot.endMinutes,
+      serviceEndMinutes,
       existingBookings,
       bufferMinutes,
     )
 
-    const availableCapacity = employeeCapacity.totalCapacity - overlappingCount
+    const finalCapacity = capacity - overlappingCount
 
-    if (availableCapacity > 0) {
+    if (finalCapacity > 0) {
       availableSlots.push({
         startTime: slot.startTime,
-        endTime: slot.endTime,
-        capacity: availableCapacity,
+        endTime: minutesToTime(serviceEndMinutes),
+        capacity: finalCapacity,
       })
-      console.log(`✅ Slot ${slot.startTime}-${slot.endTime}: ${availableCapacity} capacity available`)
-    } else {
-      console.log(
-        `❌ Slot ${slot.startTime}-${slot.endTime}: No capacity (${employeeCapacity.totalCapacity} total - ${overlappingCount} booked)`,
-      )
     }
   }
 
   return {
     availableSlots,
-    totalPossibleSlots: possibleSlots.length,
+    totalPossibleSlots: allTimeSlots.length,
     reason: availableSlots.length > 0 ? `${availableSlots.length} slots available` : "No available slots",
   }
 }
@@ -414,9 +347,17 @@ export const calculateAvailableSlots = (
   existingBookingsCount: number
   reason: string
 } => {
-  console.log(`🔍 Legacy calculateAvailableSlots called for ${date} ${startTime}-${endTime}`)
-
   const services = selectedServices || []
+  if (services.length === 0) {
+    return {
+      availableSlots: 0,
+      totalCapacity: 0,
+      workingEmployees: [],
+      existingBookingsCount: 0,
+      reason: "No services selected",
+    }
+  }
+
   const slotResults = generateAvailableSlots(config, workingDays, date, dayName, existingBookings, services)
 
   // Find the specific slot requested
@@ -429,7 +370,7 @@ export const calculateAvailableSlots = (
       availableSlots: requestedSlot.capacity,
       totalCapacity: requestedSlot.capacity,
       workingEmployees: config?.employees.filter((emp) => emp.isActive) || [],
-      existingBookingsCount: 0, // This would need to be calculated separately if needed
+      existingBookingsCount: 0,
       reason: "Available",
     }
   } else {
