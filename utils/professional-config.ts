@@ -2,6 +2,30 @@ import type { ProfessionalConfig, Employee, WorkingDay } from "@/types/professio
 import type { BookingData } from "@/types/schedule"
 import type { Service } from "@/types/service"
 
+// Debug function to log all relevant data
+export const debugAvailabilityCalculation = (
+  date: string,
+  dayName: string,
+  workingDays: WorkingDay[],
+  existingBookings: BookingData[],
+  selectedServices: Service[],
+) => {
+  console.log(`\n🔍 DEBUG AVAILABILITY CALCULATION FOR ${date} (${dayName})`)
+  console.log("📋 Working Days:", workingDays)
+  console.log("📅 All Existing Bookings:", existingBookings.length)
+  console.log("🎯 Selected Services:", selectedServices)
+  console.log(
+    "📊 Bookings for this date:",
+    existingBookings.filter((b) => b.booking_date_formatted === date),
+  )
+
+  // Check if working day exists
+  const workingDay = workingDays.find((wd) => wd.day === dayName && wd.isWorking)
+  console.log("⏰ Working day found:", workingDay)
+
+  return true
+}
+
 // Helper: convert "HH:MM:SS", "HH:MM" or "H:MM AM/PM" to minutes past midnight
 export const timeToMinutes = (timeStr: string): number => {
   if (!timeStr || typeof timeStr !== "string") return 0
@@ -66,12 +90,19 @@ export const generateAvailableSlots = (
   totalPossibleSlots: number
   reason: string
 } => {
+  // Add debug call at the very beginning
+  debugAvailabilityCalculation(date, dayName, workingDays, existingBookings, selectedServices)
+
   console.log(`\n=== DEBUGGING ${date} (${dayName}) ===`)
 
   // Step 1: Get working hours
   const workingDay = workingDays.find((wd) => wd.day === dayName && wd.isWorking)
   if (!workingDay) {
     console.log(`❌ No working day found for ${dayName}`)
+    console.log(
+      "Available working days:",
+      workingDays.map((wd) => `${wd.day}: ${wd.isWorking}`),
+    )
     return {
       availableSlots: [],
       totalPossibleSlots: 0,
