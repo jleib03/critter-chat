@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { ArrowLeft, User, Mail, Phone, MessageSquare } from 'lucide-react'
 import { Button } from "@/components/ui/button"
@@ -16,6 +15,7 @@ import { getWebhookEndpoint, logWebhookUsage } from "@/types/webhook-endpoints"
 interface CustomerFormProps {
   selectedServices: Service[]
   selectedTimeSlot: SelectedTimeSlot
+  selectedTimeSlots?: SelectedTimeSlot[] // New for Drop-In
   professionalId: string
   professionalName: string
   sessionId: string
@@ -30,6 +30,7 @@ interface CustomerFormProps {
 export function CustomerForm({
   selectedServices,
   selectedTimeSlot,
+  selectedTimeSlots = [],
   professionalId,
   professionalName,
   sessionId,
@@ -63,12 +64,10 @@ export function CustomerForm({
     setError(null)
 
     try {
-      // Validate required fields
-      if (!customerInfo.firstName.trim() || !customerInfo.lastName.trim() || !customerInfo.email.trim()) {
+      if (!customerInfo.firstName?.trim() || !customerInfo.lastName?.trim() || !customerInfo.email?.trim()) {
         throw new Error("Please fill in all required fields")
       }
 
-      // Email validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
       if (!emailRegex.test(customerInfo.email.trim())) {
         throw new Error("Please enter a valid email address")
@@ -76,8 +75,6 @@ export function CustomerForm({
 
       const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG");
       logWebhookUsage("PROFESSIONAL_CONFIG", "get_customer_pets");
-
-      console.log("Sending webhook to:", webhookUrl)
 
       const payload = {
         professional_id: professionalId,
@@ -88,26 +85,23 @@ export function CustomerForm({
           first_name: customerInfo.firstName.trim(),
           last_name: customerInfo.lastName.trim(),
           email: customerInfo.email.trim().toLowerCase(),
-          phone: customerInfo.phone.trim(),
-          notes: customerInfo.notes.trim(),
+          phone: customerInfo.phone?.trim() || "",
+          notes: customerInfo.notes?.trim() || "",
         },
         booking_context: {
           selected_services: selectedServices.map((service) => service.name),
           selected_date: selectedTimeSlot.date,
           selected_time: selectedTimeSlot.startTime,
+          selected_times: selectedTimeSlots.map((s) => ({ date: s.date, time: s.startTime })), // Multi
           booking_type: bookingType,
           recurring_config: recurringConfig,
           multi_day_slot: multiDayTimeSlot,
         },
       }
 
-      console.log("Sending customer pets webhook with payload:", payload)
-
       const response = await fetch(webhookUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       })
 
@@ -116,25 +110,15 @@ export function CustomerForm({
       }
 
       const result = await response.json()
-      console.log("Customer pets response:", result)
 
-      // Parse the response to extract pets
       let pets: any[] = []
       if (Array.isArray(result)) {
-        // Look for pets in the response array
         const petsData = result.find((item) => item.pets || (Array.isArray(item) && item.length > 0))
-        if (petsData?.pets) {
-          pets = petsData.pets
-        } else if (Array.isArray(petsData)) {
-          pets = petsData
-        }
+        if (petsData?.pets) pets = petsData.pets
+        else if (Array.isArray(petsData)) pets = petsData
       }
 
-      const petResponse: PetResponse = {
-        pets: pets,
-        success: true,
-      }
-
+      const petResponse: PetResponse = { pets, success: true } as any
       onPetsReceived(customerInfo, petResponse)
     } catch (err) {
       console.error("Error fetching customer pets:", err)
@@ -146,7 +130,6 @@ export function CustomerForm({
 
   const formatDateTime = () => {
     if (!selectedTimeSlot?.date) return ""
-    // Fix: Create date in local timezone to prevent day-off errors
     const [year, month, day] = selectedTimeSlot.date.split("-").map(Number)
     const localDate = new Date(year, month - 1, day)
     return localDate.toLocaleDateString("en-US", {
@@ -165,11 +148,8 @@ export function CustomerForm({
     let totalMinutes = 0
     selectedServices.forEach((service) => {
       let minutes = service.duration_number
-      if (service.duration_unit === "Hours") {
-        minutes = service.duration_number * 60
-      } else if (service.duration_unit === "Days") {
-        minutes = service.duration_number * 24 * 60
-      }
+      if (service.duration_unit === "Hours") minutes = service.duration_number * 60
+      else if (service.duration_unit === "Days") minutes = service.duration_number * 24 * 60
       totalMinutes += minutes
     })
 
@@ -193,55 +173,10 @@ export function CustomerForm({
     })
   }
 
-  const calculateMultiDayInfo = () => {
-    if (!multiDayTimeSlot || !selectedServices.length) {
-      return { durationLabel: "", totalCost: 0 }
-    }
-    const service = selectedServices[0]
-    const rate = Number(service.customer_cost)
-    const diffMs = new Date(multiDayTimeSlot.end).getTime() - new Date(multiDayTimeSlot.start).getTime()
-
-    let billableUnits = 0
-    let durationLabel = ""
-    const nights = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)))
-    const totalDays = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
-
-    const serviceUnit = service.duration_unit.toLowerCase()
-    const serviceDuration = service.duration_number
-
-    if (serviceUnit.includes("day")) {
-      // Priced per day or block of days
-      const serviceDurationMs = serviceDuration * 24 * 60 * 60 * 1000
-      billableUnits = Math.ceil(diffMs / serviceDurationMs)
-      durationLabel = `${nights} Night${nights !== 1 ? "s" : ""} / ${totalDays} Day${totalDays !== 1 ? "s" : ""}`
-    } else if (serviceUnit.includes("hour")) {
-      // Priced per hour or block of hours (e.g., a 24-hour block)
-      const serviceDurationMs = serviceDuration * 60 * 60 * 1000
-      billableUnits = Math.ceil(diffMs / serviceDurationMs)
-      if (serviceDuration >= 24) {
-        durationLabel = `${nights} Night${nights !== 1 ? "s" : ""} / ${totalDays} Day${totalDays !== 1 ? "s" : ""}`
-      } else {
-        const totalHours = Math.ceil(diffMs / (1000 * 60 * 60))
-        durationLabel = `${totalHours} Hour${totalHours !== 1 ? "s" : ""}`
-      }
-    } else if (serviceUnit.includes("minute")) {
-      const serviceDurationMs = serviceDuration * 60 * 1000
-      billableUnits = Math.ceil(diffMs / serviceDurationMs)
-      const totalMinutes = Math.ceil(diffMs / (1000 * 60))
-      durationLabel = `${totalMinutes} minutes`
-    } else {
-      // Fallback for unknown units, charge as a single stay
-      billableUnits = 1
-      durationLabel = "1 Stay"
-    }
-
-    return {
-      durationLabel,
-      totalCost: billableUnits * rate,
-    }
-  }
-
-  const multiDayInfo = calculateMultiDayInfo()
+  const isDropIn = selectedServices.some((s) =>
+    (s.service_type_name || "").toLowerCase().replace("-", " ") === "drop in"
+  )
+  const multipleWindows = isDropIn && selectedTimeSlots.length > 0
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -269,9 +204,29 @@ export function CustomerForm({
                 <span className="text-gray-500 body-font">Pick-up:</span>
                 <p className="font-medium header-font">{formatMultiDayDateTime(multiDayTimeSlot.end)}</p>
               </div>
+            </div>
+          ) : multipleWindows ? (
+            <div className="space-y-2 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <span className="text-gray-500 body-font">Professional:</span>
+                  <p className="font-medium header-font">{professionalName}</p>
+                </div>
+                <div>
+                  <span className="text-gray-500 body-font">Service:</span>
+                  <p className="font-medium header-font">{selectedServices.map((s) => s.name).join(", ")}</p>
+                </div>
+              </div>
               <div>
-                <span className="text-gray-500 body-font">Duration:</span>
-                <p className="font-medium header-font">{multiDayInfo.durationLabel}</p>
+                <span className="text-gray-500 body-font">Selected Times:</span>
+                <ul className="mt-1 space-y-1">
+                  {selectedTimeSlots.map((s, i) => (
+                    <li key={`${s.date}-${s.startTime}-${i}`} className="flex justify-between">
+                      <span className="header-font">{formatDateTimeFromISODate(s.date)}</span>
+                      <span className="header-font font-medium">{s.startTime}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
           ) : (
@@ -297,21 +252,7 @@ export function CustomerForm({
               {showPrices && (
                 <div>
                   <span className="text-gray-500 body-font">Total Cost:</span>
-                  <p className="font-medium header-font">${calculateTotalCost()}</p>
-                </div>
-              )}
-              {bookingType === "recurring" && recurringConfig && (
-                <div>
-                  <span className="text-gray-500 body-font">Recurring:</span>
-                  <p className="font-medium header-font text-blue-600">
-                    Every {recurringConfig.frequency} {recurringConfig.unit}
-                    {recurringConfig.frequency > 1 ? "s" : ""} until{" "}
-                    {new Date(recurringConfig.endDate).toLocaleDateString("en-US", {
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </p>
+                  <p className="font-medium header-font">${selectedServices.reduce((t, s) => t + Number(s.customer_cost), 0)}</p>
                 </div>
               )}
             </div>
@@ -398,7 +339,7 @@ export function CustomerForm({
                 <Input
                   id="phone"
                   type="tel"
-                  value={customerInfo.phone}
+                  value={customerInfo.phone || ""}
                   onChange={(e) => handleInputChange("phone", e.target.value)}
                   className="pl-10 rounded-lg border-gray-300 focus:border-[#E75837] focus:ring-[#E75837]"
                   placeholder="Enter your phone number"
@@ -414,7 +355,7 @@ export function CustomerForm({
                 <MessageSquare className="absolute left-3 top-3 text-gray-400 w-4 h-4" />
                 <Textarea
                   id="notes"
-                  value={customerInfo.notes}
+                  value={customerInfo.notes || ""}
                   onChange={(e) => handleInputChange("notes", e.target.value)}
                   className="pl-10 pt-3 rounded-lg border-gray-300 focus:border-[#E75837] focus:ring-[#E75837] min-h-[100px]"
                   placeholder="Any special requests or information for the professional..."
@@ -453,4 +394,15 @@ export function CustomerForm({
       </Card>
     </div>
   )
+
+  function formatDateTimeFromISODate(dateStr: string) {
+    const [year, month, day] = dateStr.split("-").map(Number)
+    const localDate = new Date(year, month - 1, day)
+    return localDate.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    })
+  }
 }

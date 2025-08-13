@@ -111,7 +111,7 @@ export const calculateAvailableSlots = (
     const workStartMinutes = timeToMinutes(workingDay.start)
     const workEndMinutes = timeToMinutes(workingDay.end)
 
-    if (slotStartMinutes < workStartMinutes || slotEndMinutes > workEndMinutes) {
+    if (slotStartMinutes < workStartMinutes || slotStartMinutes >= workEndMinutes) {
       return {
         availableSlots: 0,
         totalCapacity: 0,
@@ -150,7 +150,7 @@ export const calculateAvailableSlots = (
     if (!empWorkingDay || !empWorkingDay.isWorking) return false
     const empWorkStart = timeToMinutes(empWorkingDay.start)
     const empWorkEnd = timeToMinutes(empWorkingDay.end)
-    return slotStartMinutes >= empWorkStart && slotEndMinutes <= empWorkEnd
+    return slotStartMinutes >= empWorkStart && slotStartMinutes < empWorkEnd
   })
 
   if (employeesWorkingThisSlot.length === 0) {
@@ -187,14 +187,26 @@ export const calculateAvailableSlots = (
   const bufferMinutes = capacityRules.bufferTimeBetweenBookings || 0
   const overlappingBookings = existingBookings.filter((booking) => {
     if (booking.booking_date_formatted !== date || !booking.start || !booking.end) return false
-    const bookingStart = new Date(booking.start)
-    const bookingEnd = new Date(booking.end)
-    // IMPORTANT: Use UTC hours/minutes for comparison as dates are in UTC
-    const bookingStartMinutes = bookingStart.getUTCHours() * 60 + bookingStart.getUTCMinutes()
-    const bookingEndMinutes = bookingEnd.getUTCHours() * 60 + bookingEnd.getUTCMinutes()
-    const effectiveBookingStart = bookingStartMinutes - bufferMinutes
-    const effectiveBookingEnd = bookingEndMinutes + bufferMinutes
-    return slotStartMinutes < effectiveBookingEnd && slotEndMinutes > effectiveBookingStart
+
+    try {
+      const bookingStart = new Date(booking.start)
+      const bookingEnd = new Date(booking.end)
+
+      // Convert UTC booking times to local minutes for comparison
+      // The booking times are stored in UTC, but we need to compare them in local time
+      const bookingStartMinutes = bookingStart.getHours() * 60 + bookingStart.getMinutes()
+      const bookingEndMinutes = bookingEnd.getHours() * 60 + bookingEnd.getMinutes()
+
+      const effectiveBookingStart = bookingStartMinutes - bufferMinutes
+      const effectiveBookingEnd = bookingEndMinutes + bufferMinutes
+
+      const hasOverlap = slotStartMinutes < effectiveBookingEnd && slotEndMinutes > effectiveBookingStart
+
+      return hasOverlap
+    } catch (error) {
+      console.error(`Error processing booking ${booking.booking_id}:`, error)
+      return false
+    }
   })
 
   const availableSlots = finalCapacity - overlappingBookings.length

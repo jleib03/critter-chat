@@ -45,7 +45,7 @@ export type BookingData = {
   week_number?: string
   month_number?: string
   quarter?: string
-  all_day?: boolean // Add this for multi-day bookings
+  all_day?: boolean
 }
 
 export type Service = {
@@ -56,12 +56,17 @@ export type Service = {
   duration_number: number
   customer_cost: string
   customer_cost_currency: string
+  // New field from webhook for grouping
+  service_type_name?: string
 }
 
 export type CustomerInfo = {
   firstName: string
   lastName: string
   email: string
+  // Make these optional to match actual usage in CustomerForm
+  phone?: string
+  notes?: string
 }
 
 export type Pet = {
@@ -101,7 +106,6 @@ export type WebhookResponse = {
   friday_working: string
   saturday_working: string
   sunday_working: string
-  // Booking data entries
   booking_id?: string | null
   start?: string | null
   end?: string | null
@@ -135,6 +139,8 @@ export type WebhookResponse = {
   duration_number?: number
   customer_cost?: string
   customer_cost_currency?: string
+  // New field for grouping incoming data
+  service_type_name?: string
   // Webhook response with config
   webhook_response?: {
     success: boolean
@@ -168,7 +174,6 @@ export type WebhookResponse = {
       professional_id: string
     }
   }
-  // Add these fields to the WebhookResponse type
   business_name?: string
   booking_type?: "direct_booking" | "request_to_book" | "no_online_booking"
   allow_direct_booking?: boolean
@@ -233,7 +238,6 @@ export type RecurringConfig = {
   unit: "day" | "week" | "month"
   endDate: string
   totalAppointments: number
-  // Add these fields to preserve original user selections
   daysOfWeek?: string[]
   selectedDays?: string[]
   originalEndDate?: string
