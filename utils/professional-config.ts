@@ -107,10 +107,17 @@ export const generateAllTimeSlots = (
   dayName: string,
 ): { startTime: string; endTime: string; startMinutes: number; endMinutes: number }[] => {
   const workingDay = workingDays.find((wd) => wd.day === dayName && wd.isWorking)
-  if (!workingDay) return []
+  if (!workingDay) {
+    console.log(`No working day found for ${dayName}`)
+    return []
+  }
 
   const workStartMinutes = timeToMinutes(workingDay.start)
   const workEndMinutes = timeToMinutes(workingDay.end)
+  console.log(
+    `Working hours for ${dayName}: ${workStartMinutes} to ${workEndMinutes} minutes (${workingDay.start} to ${workingDay.end})`,
+  )
+
   const slots: { startTime: string; endTime: string; startMinutes: number; endMinutes: number }[] = []
 
   // Generate 15-minute slots
@@ -126,6 +133,7 @@ export const generateAllTimeSlots = (
     }
   }
 
+  console.log(`Generated ${slots.length} time slots for ${dayName}`)
   return slots
 }
 
@@ -171,7 +179,7 @@ export const canEmployeesPerformServices = (employees: Employee[], services: Ser
   })
 }
 
-// Count overlapping bookings for a specific time range
+// Count overlapping bookings for a specific time range - FIXED VERSION
 export const countOverlappingBookings = (
   date: string,
   startMinutes: number,
@@ -179,28 +187,47 @@ export const countOverlappingBookings = (
   existingBookings: BookingData[],
   bufferMinutes = 0,
 ): number => {
-  return existingBookings.filter((booking) => {
-    if (booking.booking_date_formatted !== date || !booking.start || !booking.end) return false
+  console.log(`Checking overlapping bookings for ${date} from ${startMinutes} to ${endMinutes} minutes`)
+
+  const overlappingBookings = existingBookings.filter((booking) => {
+    if (booking.booking_date_formatted !== date || !booking.start || !booking.end) {
+      return false
+    }
 
     try {
       const bookingStart = new Date(booking.start)
       const bookingEnd = new Date(booking.end)
+
+      // Convert UTC times to local minutes for comparison
+      // The booking times are in UTC, but we need to compare them in the local timezone
       const bookingStartMinutes = bookingStart.getUTCHours() * 60 + bookingStart.getUTCMinutes()
       const bookingEndMinutes = bookingEnd.getUTCHours() * 60 + bookingEnd.getUTCMinutes()
+
+      console.log(
+        `Booking ${booking.booking_id}: ${bookingStartMinutes}-${bookingEndMinutes} minutes (${booking.start} to ${booking.end})`,
+      )
 
       // Apply buffer time
       const effectiveBookingStart = bookingStartMinutes - bufferMinutes
       const effectiveBookingEnd = bookingEndMinutes + bufferMinutes
 
       // Check for overlap
-      return startMinutes < effectiveBookingEnd && endMinutes > effectiveBookingStart
+      const hasOverlap = startMinutes < effectiveBookingEnd && endMinutes > effectiveBookingStart
+      if (hasOverlap) {
+        console.log(`Found overlap with booking ${booking.booking_id}`)
+      }
+      return hasOverlap
     } catch (e) {
+      console.error(`Error processing booking ${booking.booking_id}:`, e)
       return false
     }
-  }).length
+  })
+
+  console.log(`Found ${overlappingBookings.length} overlapping bookings`)
+  return overlappingBookings.length
 }
 
-// Main function - Generate available slots for a day
+// Main function - Generate available slots for a day - FIXED VERSION
 export const generateAvailableSlots = (
   config: ProfessionalConfig | null,
   workingDays: WorkingDay[],
@@ -213,8 +240,20 @@ export const generateAvailableSlots = (
   totalPossibleSlots: number
   reason: string
 } => {
+  console.log(`=== Generating available slots for ${date} (${dayName}) ===`)
+  console.log(
+    `Selected services:`,
+    selectedServices.map((s) => `${s.name} (${s.duration_number} ${s.duration_unit})`),
+  )
+  console.log(
+    `Existing bookings for ${date}:`,
+    existingBookings.filter((b) => b.booking_date_formatted === date).length,
+  )
+
   // Calculate total service duration
   const serviceDurationMinutes = calculateServiceDuration(selectedServices)
+  console.log(`Total service duration: ${serviceDurationMinutes} minutes`)
+
   if (serviceDurationMinutes === 0) {
     return {
       availableSlots: [],
@@ -235,6 +274,7 @@ export const generateAvailableSlots = (
 
   // If no config, use simple logic
   if (!config) {
+    console.log("No professional config found, using simple logic")
     const availableSlots: { startTime: string; endTime: string; capacity: number }[] = []
 
     for (const slot of allTimeSlots) {
@@ -245,7 +285,12 @@ export const generateAvailableSlots = (
       const workEndMinutes = timeToMinutes(workingDay.end)
       const serviceEndMinutes = slot.startMinutes + serviceDurationMinutes
 
-      if (serviceEndMinutes > workEndMinutes) continue
+      if (serviceEndMinutes > workEndMinutes) {
+        console.log(
+          `Slot ${slot.startTime} skipped: service would end at ${serviceEndMinutes} but work ends at ${workEndMinutes}`,
+        )
+        continue
+      }
 
       // Check for overlapping bookings
       const overlappingCount = countOverlappingBookings(date, slot.startMinutes, serviceEndMinutes, existingBookings)
@@ -256,9 +301,13 @@ export const generateAvailableSlots = (
           endTime: minutesToTime(serviceEndMinutes),
           capacity: 1,
         })
+        console.log(`Available slot: ${slot.startTime} - ${minutesToTime(serviceEndMinutes)}`)
+      } else {
+        console.log(`Slot ${slot.startTime} blocked by ${overlappingCount} overlapping bookings`)
       }
     }
 
+    console.log(`Found ${availableSlots.length} available slots without config`)
     return {
       availableSlots,
       totalPossibleSlots: allTimeSlots.length,
@@ -267,8 +316,13 @@ export const generateAvailableSlots = (
   }
 
   // Advanced logic with professional config
+  console.log("Using professional config for advanced logic")
   const { employees, capacityRules, blockedTimes } = config
   const bufferMinutes = capacityRules.bufferTimeBetweenBookings || 0
+  console.log(`Buffer minutes: ${bufferMinutes}`)
+  console.log(`Active employees: ${employees.filter((e) => e.isActive).length}`)
+  console.log(`Blocked times: ${blockedTimes.length}`)
+
   const availableSlots: { startTime: string; endTime: string; capacity: number }[] = []
 
   for (const slot of allTimeSlots) {
@@ -279,18 +333,31 @@ export const generateAvailableSlots = (
     const workEndMinutes = timeToMinutes(workingDay.end)
     const serviceEndMinutes = slot.startMinutes + serviceDurationMinutes
 
-    if (serviceEndMinutes > workEndMinutes) continue
+    if (serviceEndMinutes > workEndMinutes) {
+      console.log(
+        `Slot ${slot.startTime} skipped: service would end at ${serviceEndMinutes} but work ends at ${workEndMinutes}`,
+      )
+      continue
+    }
 
     // Step 1: Find employees who can work the entire service duration
     const availableEmployees = employees.filter((emp) =>
       canEmployeeWorkEntireService(emp, dayName, slot.startMinutes, serviceDurationMinutes, date, blockedTimes),
     )
 
-    if (availableEmployees.length === 0) continue
+    if (availableEmployees.length === 0) {
+      console.log(`Slot ${slot.startTime} skipped: no available employees`)
+      continue
+    }
 
     // Step 2: Filter employees who can perform the selected services
     const qualifiedEmployees = canEmployeesPerformServices(availableEmployees, selectedServices)
-    if (qualifiedEmployees.length === 0) continue
+    if (qualifiedEmployees.length === 0) {
+      console.log(`Slot ${slot.startTime} skipped: no qualified employees`)
+      continue
+    }
+
+    console.log(`Slot ${slot.startTime}: ${qualifiedEmployees.length} qualified employees`)
 
     // Step 3: Calculate capacity
     let capacity = qualifiedEmployees.length
@@ -303,6 +370,8 @@ export const generateAvailableSlots = (
       capacity = Math.min(capacity, capacityRules.maxConcurrentBookings)
     }
 
+    console.log(`Slot ${slot.startTime}: capacity = ${capacity}`)
+
     // Step 4: Check existing bookings
     const overlappingCount = countOverlappingBookings(
       date,
@@ -313,6 +382,7 @@ export const generateAvailableSlots = (
     )
 
     const finalCapacity = capacity - overlappingCount
+    console.log(`Slot ${slot.startTime}: final capacity = ${finalCapacity} (${capacity} - ${overlappingCount})`)
 
     if (finalCapacity > 0) {
       availableSlots.push({
@@ -320,9 +390,13 @@ export const generateAvailableSlots = (
         endTime: minutesToTime(serviceEndMinutes),
         capacity: finalCapacity,
       })
+      console.log(
+        `Available slot: ${slot.startTime} - ${minutesToTime(serviceEndMinutes)} (capacity: ${finalCapacity})`,
+      )
     }
   }
 
+  console.log(`=== Final result: ${availableSlots.length} available slots ===`)
   return {
     availableSlots,
     totalPossibleSlots: allTimeSlots.length,
