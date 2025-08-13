@@ -39,7 +39,7 @@ export default function SchedulePage() {
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<SelectedTimeSlot | null>(null)
   // New: multiple time slots (Drop-In)
   const [selectedTimeSlots, setSelectedTimeSlots] = useState<SelectedTimeSlot[]>([])
-  const sessionIdRef = useRef<string | null>(null)
+  const [sessionIdRef, setSessionIdRef] = useState<string | null>(null)
   const userTimezoneRef = useRef<string | null>(null)
   const dropInGroupIdRef = useRef<string | null>(null)
 
@@ -316,7 +316,7 @@ export default function SchedulePage() {
       setLoading(true)
       setError(null)
 
-      sessionIdRef.current = generateSessionId()
+      setSessionIdRef(generateSessionId())
       userTimezoneRef.current = JSON.stringify(detectUserTimezone())
       loadProfessionalConfiguration()
 
@@ -329,7 +329,7 @@ export default function SchedulePage() {
         body: JSON.stringify({
           action: "initialize_schedule",
           uniqueUrl: uniqueUrl,
-          session_id: sessionIdRef.current,
+          session_id: sessionIdRef,
           timestamp: new Date().toISOString(),
           user_timezone: JSON.parse(userTimezoneRef.current),
         }),
@@ -635,7 +635,7 @@ export default function SchedulePage() {
           action: actionOverride,
           uniqueUrl: uniqueUrl,
           professional_id: professionalId,
-          session_id: sessionIdRef.current,
+          session_id: sessionIdRef,
           timestamp: new Date().toISOString(),
           user_timezone: userTimezoneData,
           booking_system: bookingPreferences?.booking_system || "direct_booking",
@@ -699,7 +699,7 @@ export default function SchedulePage() {
               service_type_name: selectedServices.find((s) => isDropInType(s))?.service_type_name || "Drop-In",
               total_selected_slots: total,
               current_slot_index: index,
-              group_session_id: sessionIdRef.current,
+              group_session_id: sessionIdRef,
               booking_creation_timestamp: new Date().toISOString(),
               all_selected_slots_summary: selectedTimeSlots.map((s, idx) => {
                 const slotStartUTC = convertLocalTimeToUTC(s.date, s.startTime, userTimezoneData.timezone)
@@ -903,10 +903,10 @@ export default function SchedulePage() {
           setTimeout(async () => {
             try {
               const confirmationWebhookData = {
-                action: "send_confirmation_emails",
+                action: "send_confirmation_emails_dropin",
                 uniqueUrl: uniqueUrl,
                 professional_id: professionalId,
-                session_id: sessionIdRef.current,
+                session_id: sessionIdRef,
                 timestamp: new Date().toISOString(),
                 user_timezone: userTimezoneData,
                 booking_system: bookingPreferences?.booking_system || "direct_booking",
@@ -923,6 +923,23 @@ export default function SchedulePage() {
                     end_time: firstSuccessfulSlot.endTime,
                     day_of_week: firstSuccessfulSlot.dayOfWeek,
                   },
+                  all_selected_slots: selectedTimeSlots.map((s, idx) => ({
+                    slot_index: idx + 1,
+                    date: s.date,
+                    start_time: s.startTime,
+                    end_time: s.endTime,
+                    day_of_week: s.dayOfWeek,
+                    booking_date_formatted: (() => {
+                      const [year, month, day] = s.date.split("-").map(Number)
+                      const localDate = new Date(year, month - 1, day)
+                      return localDate.toLocaleDateString("en-US", {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })
+                    })(),
+                  })),
                   recurring_details:
                     bookingType === "recurring"
                       ? {
@@ -942,8 +959,16 @@ export default function SchedulePage() {
                   pet_id: pet.pet_id,
                   pet_name: pet.pet_name,
                 })),
+                booking_details: {
+                  service_names: selectedServices.map((s) => s.name),
+                  service_descriptions: selectedServices.map((s) => s.description),
+                  service_durations: selectedServices.map((s) => s.duration_number),
+                  service_duration_units: selectedServices.map((s) => s.duration_unit),
+                  service_costs: selectedServices.map((s) => s.customer_cost),
+                  service_currencies: selectedServices.map((s) => s.customer_cost_currency),
+                },
               }
-              logWebhookUsage("PROFESSIONAL_CONFIG", "send_confirmation_emails")
+              logWebhookUsage("PROFESSIONAL_CONFIG", "send_confirmation_emails_dropin")
               await fetch(webhookUrl, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -1299,7 +1324,7 @@ export default function SchedulePage() {
             selectedTimeSlots={selectedTimeSlots}
             professionalId={professionalId || uniqueUrl}
             professionalName={webhookData.professional_info.professional_name}
-            sessionId={sessionIdRef.current!}
+            sessionId={sessionIdRef}
             onPetsReceived={handlePetsReceived}
             onBack={handleBackToSchedule}
             bookingType={bookingType}
