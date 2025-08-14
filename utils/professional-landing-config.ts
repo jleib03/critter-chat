@@ -50,6 +50,8 @@ export interface ProfessionalLandingData {
   years_experience: number
   certifications: string[]
   show_prices: boolean
+  currency: string
+  currency_symbol: string
 }
 
 // Helper function to format time from 24-hour to 12-hour format
@@ -199,8 +201,8 @@ export async function loadProfessionalLandingData(
   forceRefresh = false,
 ): Promise<ProfessionalLandingData | null> {
   try {
-    const webhookUrl = getWebhookEndpoint("CHAT_CONFIG");
-    logWebhookUsage("CHAT_CONFIG", "external_page_initialization");
+    const webhookUrl = getWebhookEndpoint("CHAT_CONFIG")
+    logWebhookUsage("CHAT_CONFIG", "external_page_initialization")
 
     console.log("🚀 Loading professional landing data for URL:", uniqueUrl)
     console.log("🔗 Using webhook URL:", webhookUrl)
@@ -255,6 +257,9 @@ export async function loadProfessionalLandingData(
       console.log("🛠️ Services info:", services)
       console.log("📍 Service areas:", serviceAreas)
 
+      const currencySymbol = business?.currency_symbol || "$"
+      const currency = business?.currency || "usd"
+
       // Extract and format services
       const formattedServices: ServiceItem[] = []
       const serviceTypes = new Set<string>()
@@ -266,7 +271,7 @@ export async function loadProfessionalLandingData(
             name: service.service_name,
             description: service.service_description || "",
             duration: formatDuration(service.duration_number, service.duration_unit),
-            cost: service.customer_cost ? `$${service.customer_cost}` : "",
+            cost: service.customer_cost ? `${currencySymbol}${service.customer_cost}` : "",
             type: service.service_type_name || "General",
             type_display: getServiceTypeDisplayName(service.service_type_name || "General"),
             sort_order: service.service_sort_order || 999,
@@ -376,6 +381,8 @@ export async function loadProfessionalLandingData(
           "Critter Verified Professional",
         ],
         show_prices: business?.show_prices ?? true,
+        currency: currency,
+        currency_symbol: currencySymbol,
       }
 
       console.log("✅ Final parsed landing data:", JSON.stringify(landingData, null, 2))
@@ -425,6 +432,8 @@ export function getDefaultProfessionalData(uniqueUrl: string): ProfessionalLandi
     years_experience: 5,
     certifications: ["Certified Professional", "Licensed Pet Care Provider"],
     show_prices: true,
+    currency: "usd",
+    currency_symbol: "$",
   }
 }
 
