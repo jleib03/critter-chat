@@ -62,6 +62,13 @@ export function ServiceSelectorBar({
     return `${currencySymbol}${priceNumber.toFixed(0)}`
   }
 
+  const displayServiceCost = (cost: string | number | null) => {
+    if (typeof cost === "string" && /^[£$€¥₹₽¢₩₪₦₨₡₵₴₸₼₾₿]/.test(cost)) {
+      return cost // Already formatted, return as-is
+    }
+    return formatPrice(cost, null)
+  }
+
   const getCategoryRank = (category: string) => {
     const lowerCategory = category.toLowerCase()
     if (lowerCategory.includes("add-on")) {
@@ -109,11 +116,7 @@ export function ServiceSelectorBar({
                   <p className="font-semibold header-font">{service.name}</p>
                   {durationText && <p className="text-sm text-gray-500 body-font">{durationText}</p>}
                 </div>
-                {showPrices && (
-                  <p className="font-semibold body-font">
-                    {formatPrice(service.customer_cost, service.customer_cost_currency)}
-                  </p>
-                )}
+                {showPrices && <p className="font-semibold body-font">{displayServiceCost(service.customer_cost)}</p>}
               </div>
             )
           })}
@@ -173,7 +176,7 @@ export function ServiceSelectorBar({
                               <div className="flex items-center gap-1 text-sm text-gray-500">
                                 <DollarSign className="w-4 h-4 flex-shrink-0" />
                                 <span className="body-font font-medium">
-                                  {formatPrice(service.customer_cost, service.customer_cost_currency)}
+                                  {displayServiceCost(service.customer_cost)}
                                 </span>
                               </div>
                             )}
