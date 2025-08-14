@@ -3,7 +3,7 @@
 import type { Service, ServicesByCategory } from "@/types/schedule"
 import { Button } from "@/components/ui/button"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Clock, DollarSign, Check } from "lucide-react"
+import { Clock, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 type ServiceSelectorBarProps = {
@@ -13,6 +13,7 @@ type ServiceSelectorBarProps = {
   onContinue?: () => void
   summaryOnly: boolean
   showPrices: boolean
+  currencySymbol?: string
 }
 
 export function ServiceSelectorBar({
@@ -22,6 +23,7 @@ export function ServiceSelectorBar({
   onContinue,
   summaryOnly,
   showPrices,
+  currencySymbol = "$", // Default to $ if no currency symbol provided
 }: ServiceSelectorBarProps) {
   const formatDuration = (duration: number | null, unit: string | null) => {
     if (duration === null || unit === null) {
@@ -48,11 +50,23 @@ export function ServiceSelectorBar({
     if (price === null || price === undefined) {
       return "By Consult"
     }
+
+    if (typeof price === "string" && /^[£$€¥₹₽¢₩₪₦₨₡₵₴₸₼₾₿]/.test(price)) {
+      return price // Return already formatted price as-is
+    }
+
     const priceNumber = typeof price === "string" ? Number.parseFloat(price) : price
     if (isNaN(priceNumber)) {
       return "By Consult"
     }
-    return `$${priceNumber.toFixed(0)}`
+    return `${currencySymbol}${priceNumber.toFixed(0)}`
+  }
+
+  const displayServiceCost = (cost: string | number | null) => {
+    if (typeof cost === "string" && /^[£$€¥₹₽¢₩₪₦₨₡₵₴₸₼₾₿]/.test(cost)) {
+      return cost // Already formatted, return as-is
+    }
+    return formatPrice(cost, null)
   }
 
   const getCategoryRank = (category: string) => {
@@ -102,11 +116,7 @@ export function ServiceSelectorBar({
                   <p className="font-semibold header-font">{service.name}</p>
                   {durationText && <p className="text-sm text-gray-500 body-font">{durationText}</p>}
                 </div>
-                {showPrices && (
-                  <p className="font-semibold body-font">
-                    {formatPrice(service.customer_cost, service.customer_cost_currency)}
-                  </p>
-                )}
+                {showPrices && <p className="font-semibold body-font">{displayServiceCost(service.customer_cost)}</p>}
               </div>
             )
           })}
@@ -114,7 +124,7 @@ export function ServiceSelectorBar({
         {showPrices && (
           <div className="mt-4 pt-4 border-t flex justify-between font-bold text-lg header-font">
             <span>Total</span>
-            <span>{formatPrice(totalCost, "USD")}</span>
+            <span>{formatPrice(totalCost, null)}</span>
           </div>
         )}
       </div>
@@ -164,9 +174,8 @@ export function ServiceSelectorBar({
                             )}
                             {showPrices && (
                               <div className="flex items-center gap-1 text-sm text-gray-500">
-                                <DollarSign className="w-4 h-4 flex-shrink-0" />
                                 <span className="body-font font-medium">
-                                  {formatPrice(service.customer_cost, service.customer_cost_currency)}
+                                  {displayServiceCost(service.customer_cost)}
                                 </span>
                               </div>
                             )}
@@ -199,7 +208,7 @@ export function ServiceSelectorBar({
               <p className="font-semibold header-font">
                 {selectedServices.length} service{selectedServices.length > 1 ? "s" : ""} selected
               </p>
-              {showPrices && <p className="text-sm text-gray-600 body-font">Total: {formatPrice(totalCost, "USD")}</p>}
+              {showPrices && <p className="text-sm text-gray-600 body-font">Total: {formatPrice(totalCost, null)}</p>}
             </div>
             <Button onClick={onContinue} className="bg-[#E75837] hover:bg-[#d14a2a] text-white body-font">
               Continue

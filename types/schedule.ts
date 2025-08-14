@@ -231,6 +231,10 @@ export type ParsedWebhookData = {
     online_booking_enabled?: boolean
   } | null
   show_prices: boolean
+  currency_info?: {
+    currency: string
+    currency_symbol: string
+  }
 }
 
 export type RecurringConfig = {
