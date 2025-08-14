@@ -266,6 +266,14 @@ export default function SchedulePage() {
     const priceSettingEntry = rawData.find((entry) => Object.prototype.hasOwnProperty.call(entry, "show_prices"))
     const showPrices = priceSettingEntry ? priceSettingEntry.show_prices : true
 
+    const currencyEntry = rawData.find((entry) => entry.currency && entry.currency_symbol)
+    const currencyInfo = currencyEntry
+      ? {
+          currency: currencyEntry.currency,
+          currency_symbol: currencyEntry.currency_symbol,
+        }
+      : undefined
+
     const workingDays = parseWorkingDaysFromSchedule(scheduleEntry)
 
     return {
@@ -287,6 +295,7 @@ export default function SchedulePage() {
           }
         : null,
       show_prices: showPrices,
+      currency_info: currencyInfo,
     }
   }
 
@@ -1355,6 +1364,7 @@ export default function SchedulePage() {
                   onContinue={selectedServices.length > 0 ? handleContinueFromServices : undefined}
                   summaryOnly={false}
                   showPrices={showPrices}
+                  currencySymbol={webhookData.currency_info?.currency_symbol}
                 />
               </div>
             )}
@@ -1369,6 +1379,7 @@ export default function SchedulePage() {
                     onServiceSelect={handleServiceSelect}
                     summaryOnly={true}
                     showPrices={showPrices}
+                    currencySymbol={webhookData.currency_info?.currency_symbol}
                   />
                 </div>
 
