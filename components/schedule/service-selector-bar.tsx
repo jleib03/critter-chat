@@ -50,6 +50,11 @@ export function ServiceSelectorBar({
     if (price === null || price === undefined) {
       return "By Consult"
     }
+
+    if (typeof price === "string" && /^[£$€¥₹₽¢₩₪₦₨₡₵₴₸₼₾₿]/.test(price)) {
+      return price // Return already formatted price as-is
+    }
+
     const priceNumber = typeof price === "string" ? Number.parseFloat(price) : price
     if (isNaN(priceNumber)) {
       return "By Consult"
