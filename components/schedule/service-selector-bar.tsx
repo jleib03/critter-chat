@@ -3,7 +3,7 @@
 import type { Service, ServicesByCategory } from "@/types/schedule"
 import { Button } from "@/components/ui/button"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Clock, DollarSign, Check } from "lucide-react"
+import { Clock, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 type ServiceSelectorBarProps = {
@@ -174,7 +174,6 @@ export function ServiceSelectorBar({
                             )}
                             {showPrices && (
                               <div className="flex items-center gap-1 text-sm text-gray-500">
-                                <DollarSign className="w-4 h-4 flex-shrink-0" />
                                 <span className="body-font font-medium">
                                   {displayServiceCost(service.customer_cost)}
                                 </span>
