@@ -104,7 +104,7 @@ export default function NewCustomerOnboarding({
           firstName: data.firstName,
           lastName: data.lastName,
           email: data.email,
-          selectedAction: "new_customer_onboarding",
+          selectedAction: "new_customer_intake_services",
         },
         formData: data,
         professionalID: initialProfessionalId,
