@@ -353,10 +353,10 @@ export default function NewCustomerIntake({
               firstName: formData.firstName,
               lastName: formData.lastName,
               email: formData.email,
-              selectedAction: "new_customer_intake",
+              selectedAction: "new_customer_intake_services",
             }
           : {
-              selectedAction: "new_customer_intake",
+              selectedAction: "new_customer_intake_services",
             },
         formData: formData,
         petData: formData?.pets || [], // Include pet information in webhook
