@@ -49,15 +49,14 @@ export type BookingData = {
 }
 
 export type Service = {
-  service_id: string
+  id: string // Updated from service_id to id to match new webhook format
   name: string
   description: string
   duration_unit: string
   duration_number: number
-  customer_cost: string
+  customer_cost: string | null // Made nullable to handle services without cost
   customer_cost_currency: string
-  // New field from webhook for grouping
-  service_type_name?: string
+  service_type_name: string // Made required as it's always provided in new format
 }
 
 export type CustomerInfo = {
