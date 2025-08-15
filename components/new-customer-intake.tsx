@@ -174,19 +174,17 @@ export default function NewCustomerIntake({
     logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "retrieve_services")
 
     const payload = {
-      message: {
-        userId: USER_ID.current,
-        timestamp: new Date().toISOString(),
-        userInfo: {
-          firstName: combinedData.firstName,
-          lastName: combinedData.lastName,
-          email: combinedData.email,
-          selectedAction: "new_customer_intake_services",
-        },
-        formData: combinedData,
-        professionalID: initialProfessionalId, // Use the actual professional_id from the lookup
-        source: "critter_booking_site",
+      action: "new_customer_intake_services",
+      userId: USER_ID.current,
+      timestamp: new Date().toISOString(),
+      userInfo: {
+        firstName: combinedData.firstName,
+        lastName: combinedData.lastName,
+        email: combinedData.email,
       },
+      formData: combinedData,
+      professionalID: initialProfessionalId,
+      source: "critter_booking_site",
     }
 
     try {
@@ -342,26 +340,22 @@ export default function NewCustomerIntake({
     logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "final_intake_submission")
 
     const payload = {
-      message: {
-        userId: USER_ID.current,
-        timestamp: new Date().toISOString(),
-        userInfo: formData
-          ? {
-              firstName: formData.firstName,
-              lastName: formData.lastName,
-              email: formData.email,
-              selectedAction: "new_customer_intake_services",
-            }
-          : {
-              selectedAction: "new_customer_intake_services",
-            },
-        formData: formData,
-        petData: formData?.pets || [], // Include pet information in webhook
-        serviceData: serviceSelectionData,
-        schedulingData: schedulingData,
-        professionalID: initialProfessionalId, // Use the actual professional_id from the lookup
-        source: "critter_booking_site",
-      },
+      action: "new_customer_intake_completion",
+      userId: USER_ID.current,
+      timestamp: new Date().toISOString(),
+      userInfo: formData
+        ? {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+          }
+        : {},
+      formData: formData,
+      petData: formData?.pets || [],
+      serviceData: serviceSelectionData,
+      schedulingData: schedulingData,
+      professionalID: initialProfessionalId,
+      source: "critter_booking_site",
     }
 
     try {
