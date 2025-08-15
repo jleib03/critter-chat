@@ -124,12 +124,64 @@ export default function NewCustomerOnboarding({
         const responseData = await response.json()
         console.log("Webhook response:", responseData)
 
-        // Parse services from the response message
         if (responseData.message) {
           try {
             const parsedMessage = JSON.parse(responseData.message)
 
-            if (parsedMessage.type === "service_list" && parsedMessage.items) {
+            // Check if it's the new format (array with professional info + services)
+            if (Array.isArray(parsedMessage) && parsedMessage.length > 0) {
+              // First item contains professional/business information
+              const professionalInfo = parsedMessage[0]
+              console.log("Professional info:", professionalInfo)
+
+              // Remaining items are services
+              const serviceItems = parsedMessage.slice(1)
+
+              if (serviceItems.length > 0) {
+                const services = serviceItems.map((item: any, index: number) => {
+                  // Use conservative category detection
+                  const originalCategory = item.service_type_name || "Other Services"
+                  const detectedCategory = isAddOnService(originalCategory, item.name) ? "Add-On" : originalCategory
+
+                  console.log(
+                    `Service: "${item.name}" | Original Category: "${originalCategory}" | Detected: "${detectedCategory}"`,
+                  )
+
+                  return {
+                    id: item.id || (index + 1).toString(),
+                    name: item.name,
+                    description: item.description || "No additional description",
+                    duration:
+                      item.duration_number && item.duration_unit
+                        ? `${item.duration_number} ${item.duration_unit.toLowerCase()}`
+                        : "Not specified",
+                    price: item.customer_cost
+                      ? `${professionalInfo.currency_symbol || "$"}${Number.parseFloat(item.customer_cost).toFixed(2)}`
+                      : "Contact for pricing",
+                    category: detectedCategory,
+                    selected: false,
+                  }
+                })
+
+                setServicesData(services)
+                console.log("Parsed services from new format:", services)
+              } else {
+                console.log("No services found in new format, using mock data")
+                setServicesData([
+                  {
+                    id: "1",
+                    name: "Service information unavailable",
+                    description: "Please contact your professional directly",
+                    duration: "Varies",
+                    price: "Contact for pricing",
+                    category: "Main Service",
+                    selected: false,
+                  },
+                ])
+              }
+            }
+            // Fallback to old format handling
+            else if (parsedMessage.type === "service_list" && parsedMessage.items) {
               // Convert the webhook format to our component format
               const services = parsedMessage.items.map((item: any, index: number) => {
                 // Extract duration and price from details array
@@ -172,9 +224,9 @@ export default function NewCustomerOnboarding({
               })
 
               setServicesData(services)
-              console.log("Parsed services:", services)
+              console.log("Parsed services from old format:", services)
             } else {
-              console.log("No service_list found in response, using mock data")
+              console.log("No recognized format found in response, using mock data")
               // Fallback to mock data
               setServicesData([
                 {

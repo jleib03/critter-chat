@@ -28,37 +28,6 @@ const isDropInType = (service?: Service) =>
 
 type NotificationPreference = "1_hour" | "1_day" | "1_week"
 
-interface WebhookResponse {
-  id?: string
-  professional_id?: string
-  business_name?: string
-  currency?: string
-  currency_symbol?: string
-  name?: string
-  description?: string
-  duration_unit?: string
-  duration_number?: number
-  customer_cost?: number
-  customer_cost_currency?: string
-  service_type_name?: string
-  monday_start?: string
-  tuesday_start?: string
-  wednesday_start?: string
-  thursday_start?: string
-  friday_start?: string
-  saturday_start?: string
-  sunday_start?: string
-  booking_id?: string
-  start?: string
-  end?: string
-  booking_date?: string
-  booking_system?: string
-  online_booking_enabled?: boolean
-  allow_direct_booking?: boolean
-  webhook_response?: any
-  show_prices?: boolean
-}
-
 export default function SchedulePage() {
   const params = useParams()
   const uniqueUrl = params.uniqueUrl as string
@@ -245,55 +214,43 @@ export default function SchedulePage() {
   }
 
   // Add the parseWebhookData function
-  const parseWebhookData = (rawData: WebhookResponse[]): ParsedWebhookData => {
-    // First item contains professional/business info
-    const professionalInfo = rawData.find((item) => item.professional_id && (item.business_name || item.currency))
+  const parseWebhookData = (rawData: any[]): ParsedWebhookData => {
+    const scheduleEntry = rawData.find((entry) => entry.monday_start)
 
-    // Remaining items are services
-    const serviceItems = rawData.filter((item) => item.id && item.name && item.service_type_name)
-
-    // Parse services and group by category
-    const servicesByCategory: { [category: string]: Service[] } = {}
-
-    serviceItems.forEach((item) => {
-      const service: Service = {
-        service_id: item.id,
-        name: item.name,
-        description: item.description || "",
-        duration_unit: item.duration_unit,
-        duration_number: item.duration_number,
-        customer_cost: item.customer_cost,
-        customer_cost_currency: item.customer_cost_currency,
-        service_type_name: item.service_type_name,
+    const bookingEntries = rawData.filter((entry) => entry.booking_id && entry.start)
+    bookingEntries.forEach((booking) => {
+      if (!booking.booking_date_formatted && booking.start) {
+        try {
+          const localDate = new Date(booking.start)
+          const year = localDate.getFullYear()
+          const month = String(localDate.getMonth() + 1).padStart(2, "0")
+          const day = String(localDate.getDate()).padStart(2, "0")
+          booking.booking_date_formatted = `${year}-${month}-${day}`
+        } catch (e) {
+          console.error(`Could not parse date for booking ${booking.booking_id}`, e)
+        }
       }
-
-      const category = item.service_type_name
-      if (!servicesByCategory[category]) {
-        servicesByCategory[category] = []
-      }
-      servicesByCategory[category].push(service)
     })
 
-    // Find schedule and booking entries (existing logic)
-    const scheduleEntry = rawData.find(
-      (entry) =>
-        entry.professional_id &&
-        (entry.monday_start !== undefined ||
-          entry.tuesday_start !== undefined ||
-          entry.wednesday_start !== undefined ||
-          entry.thursday_start !== undefined ||
-          entry.friday_start !== undefined ||
-          entry.saturday_start !== undefined ||
-          entry.sunday_start !== undefined),
-    )
+    const serviceEntries = rawData.filter((entry) => entry.name && entry.duration_unit)
 
-    const bookingEntries = rawData.filter(
-      (entry) =>
-        entry.booking_id !== undefined ||
-        entry.start !== undefined ||
-        entry.end !== undefined ||
-        entry.booking_date !== undefined,
-    )
+    // Group by service_type_name when provided; fallback to name heuristics
+    const servicesByCategory: { [category: string]: Service[] } = {}
+    serviceEntries.forEach((service: any) => {
+      const rawType = service.service_type_name as string | undefined
+      const category = rawType && String(rawType).trim().length > 0 ? rawType : getCategoryFromService(service.name)
+      if (!servicesByCategory[category]) servicesByCategory[category] = []
+      servicesByCategory[category].push({
+        service_id: service.service_id || `fallback_${service.name.replace(/\s+/g, "_").toLowerCase()}`,
+        name: service.name,
+        description: service.description || "",
+        duration_unit: service.duration_unit,
+        duration_number: service.duration_number,
+        customer_cost: service.customer_cost,
+        customer_cost_currency: service.customer_cost_currency,
+        service_type_name: rawType,
+      })
+    })
 
     let bookingPrefs = rawData.find(
       (entry) =>
@@ -309,20 +266,20 @@ export default function SchedulePage() {
     const priceSettingEntry = rawData.find((entry) => Object.prototype.hasOwnProperty.call(entry, "show_prices"))
     const showPrices = priceSettingEntry ? priceSettingEntry.show_prices : true
 
-    const currencyInfo =
-      professionalInfo && professionalInfo.currency && professionalInfo.currency_symbol
-        ? {
-            currency: professionalInfo.currency,
-            currency_symbol: professionalInfo.currency_symbol,
-          }
-        : undefined
+    const currencyEntry = rawData.find((entry) => entry.currency && entry.currency_symbol)
+    const currencyInfo = currencyEntry
+      ? {
+          currency: currencyEntry.currency,
+          currency_symbol: currencyEntry.currency_symbol,
+        }
+      : undefined
 
     const workingDays = parseWorkingDaysFromSchedule(scheduleEntry)
 
     return {
       professional_info: {
-        professional_id: scheduleEntry?.professional_id || professionalInfo?.professional_id || uniqueUrl,
-        professional_name: bookingEntries[0]?.professional_name || professionalInfo?.business_name || "Professional",
+        professional_id: scheduleEntry?.professional_id || uniqueUrl,
+        professional_name: bookingEntries[0]?.professional_name || "Professional",
       },
       schedule: { working_days: workingDays },
       bookings: { all_booking_data: bookingEntries },
@@ -330,7 +287,7 @@ export default function SchedulePage() {
       config: configEntry?.webhook_response?.config_data,
       booking_preferences: bookingPrefs
         ? {
-            business_name: bookingPrefs.business_name || professionalInfo?.business_name,
+            business_name: bookingPrefs.business_name,
             booking_system: bookingPrefs.booking_system,
             allow_direct_booking: bookingPrefs.allow_direct_booking,
             require_approval: bookingPrefs.require_approval,

@@ -146,11 +146,11 @@ export function ServiceSelectorBar({
             <AccordionContent className="p-0">
               <div className="divide-y divide-gray-200/60 bg-white">
                 {servicesByCategory[category].map((service, index) => {
-                  const isSelected = selectedServices.some((s) => s.id === service.id) // Updated to use id instead of name for comparison
+                  const isSelected = selectedServices.some((s) => s.name === service.name)
                   const durationText = formatDuration(service.duration_number, service.duration_unit)
                   return (
                     <div
-                      key={`${category}-${service.id}-${index}`} // Updated key to use service.id
+                      key={`${category}-${index}`}
                       className={cn(
                         "p-4 transition-all duration-200 cursor-pointer",
                         isSelected ? "bg-orange-50 border-l-4 border-[#E75837]" : "hover:bg-gray-50/80",
