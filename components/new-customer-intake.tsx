@@ -175,18 +175,16 @@ export default function NewCustomerIntake({
 
     const payload = {
       message: {
-        text: "New customer intake - retrieve services",
         userId: USER_ID.current,
         timestamp: new Date().toISOString(),
         userInfo: {
           firstName: combinedData.firstName,
           lastName: combinedData.lastName,
           email: combinedData.email,
-          selectedAction: "new_customer_intake",
+          selectedAction: "new_customer_intake_services",
         },
         formData: combinedData,
         professionalID: initialProfessionalId, // Use the actual professional_id from the lookup
-        type: "new_customer_intake_services",
         source: "critter_booking_site",
       },
     }
@@ -345,7 +343,6 @@ export default function NewCustomerIntake({
 
     const payload = {
       message: {
-        text: "New customer final intake submission",
         userId: USER_ID.current,
         timestamp: new Date().toISOString(),
         userInfo: formData
@@ -363,7 +360,6 @@ export default function NewCustomerIntake({
         serviceData: serviceSelectionData,
         schedulingData: schedulingData,
         professionalID: initialProfessionalId, // Use the actual professional_id from the lookup
-        type: "new_customer_final_intake_submission",
         source: "critter_booking_site",
       },
     }

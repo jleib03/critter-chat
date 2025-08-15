@@ -97,7 +97,6 @@ export default function NewCustomerOnboarding({
 
     const payload = {
       message: {
-        text: "New customer onboarding - retrieve services",
         userId: USER_ID.current,
         timestamp: new Date().toISOString(),
         userInfo: {
@@ -108,7 +107,6 @@ export default function NewCustomerOnboarding({
         },
         formData: data,
         professionalID: initialProfessionalId,
-        type: "new_customer_intake_services",
         source: "critter_booking_site",
       },
     }
@@ -264,7 +262,6 @@ export default function NewCustomerOnboarding({
   const handleConfirmationSubmit = async (data: any) => {
     const payload = {
       message: {
-        text: "New customer final booking submission",
         userId: USER_ID.current,
         timestamp: new Date().toISOString(),
         userInfo: formData
@@ -281,7 +278,6 @@ export default function NewCustomerOnboarding({
         serviceData: serviceSelectionData,
         schedulingData: schedulingData,
         professionalID: initialProfessionalId,
-        type: "new_customer_final_submission",
         source: "critter_booking_site",
       },
     }
