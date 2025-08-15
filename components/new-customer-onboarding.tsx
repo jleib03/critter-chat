@@ -108,7 +108,7 @@ export default function NewCustomerOnboarding({
         },
         formData: data,
         professionalID: initialProfessionalId,
-        type: "new_customer_get_services",
+        type: "new_customer_intake_services",
         source: "critter_booking_site",
       },
     }
