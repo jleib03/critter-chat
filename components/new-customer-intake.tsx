@@ -200,7 +200,57 @@ export default function NewCustomerIntake({
         const responseData = await response.json()
         console.log("Webhook response:", responseData)
 
-        if (responseData.message) {
+        if (Array.isArray(responseData) && responseData.length > 0) {
+          // Direct array format - first item contains professional/business information
+          const professionalInfo = responseData[0]
+          console.log("Professional info:", professionalInfo)
+
+          // Remaining items are services
+          const serviceItems = responseData.slice(1)
+
+          if (serviceItems.length > 0) {
+            const services = serviceItems.map((item: any, index: number) => {
+              // Use conservative category detection
+              const originalCategory = item.service_type_name || "Other Services"
+              const detectedCategory = isAddOnService(originalCategory, item.name) ? "Add-On" : originalCategory
+
+              console.log(
+                `Service: "${item.name}" | Original Category: "${originalCategory}" | Detected: "${detectedCategory}"`,
+              )
+
+              return {
+                id: item.id || (index + 1).toString(),
+                name: item.name,
+                description: item.description || "No additional description",
+                duration:
+                  item.duration_number && item.duration_unit
+                    ? `${item.duration_number} ${item.duration_unit.toLowerCase()}`
+                    : "Not specified",
+                price: item.customer_cost
+                  ? `${professionalInfo.currency_symbol || "$"}${Number.parseFloat(item.customer_cost).toFixed(2)}`
+                  : "Contact for pricing",
+                category: detectedCategory,
+                selected: false,
+              }
+            })
+
+            setServicesData(services)
+            console.log("Parsed services from direct array format:", services)
+          } else {
+            console.log("No services found in direct array format, using mock data")
+            setServicesData([
+              {
+                id: "1",
+                name: "Service information unavailable",
+                description: "Please contact your professional directly",
+                duration: "Varies",
+                price: "Contact for pricing",
+                category: "Main Service",
+                selected: false,
+              },
+            ])
+          }
+        } else if (responseData.message) {
           try {
             const parsedMessage = JSON.parse(responseData.message)
 
