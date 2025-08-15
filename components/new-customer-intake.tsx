@@ -94,7 +94,9 @@ export default function NewCustomerIntake({
 }: NewCustomerIntakeProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [currentStep, setCurrentStep] = useState<"form" | "services" | "scheduling" | "confirmation" | "submitting" | "success">("form")
+  const [currentStep, setCurrentStep] = useState<
+    "form" | "services" | "scheduling" | "confirmation" | "submitting" | "success"
+  >("form")
   const [formData, setFormData] = useState<any>(null)
   const [servicesData, setServicesData] = useState<any>(null)
   const [serviceSelectionData, setServiceSelectionData] = useState<any>(null)
@@ -499,10 +501,7 @@ export default function NewCustomerIntake({
         />
       )}
       {currentStep === "scheduling" && (
-        <RequestScheduling
-          onSubmit={handleSchedulingSubmit}
-          onBack={handleBackToServices}
-        />
+        <RequestScheduling onSubmit={handleSchedulingSubmit} onBack={handleBackToServices} />
       )}
       {currentStep === "confirmation" && (
         <Confirmation

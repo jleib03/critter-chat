@@ -81,7 +81,9 @@ export default function NewCustomerOnboarding({
   initialProfessionalId,
   skipProfessionalStep = false,
 }: NewCustomerOnboardingProps) {
-  const [currentStep, setCurrentStep] = useState<"form" | "services" | "scheduling" | "confirmation" | "success">("form")
+  const [currentStep, setCurrentStep] = useState<"form" | "services" | "scheduling" | "confirmation" | "success">(
+    "form",
+  )
   const [formData, setFormData] = useState<any>(null)
   const [servicesData, setServicesData] = useState<any>(null)
   const [serviceSelectionData, setServiceSelectionData] = useState<any>(null)
@@ -341,10 +343,7 @@ export default function NewCustomerOnboarding({
         />
       )}
       {currentStep === "scheduling" && (
-        <RequestScheduling
-          onSubmit={handleSchedulingSubmit}
-          onBack={handleBackToServices}
-        />
+        <RequestScheduling onSubmit={handleSchedulingSubmit} onBack={handleBackToServices} />
       )}
       {currentStep === "confirmation" && (
         <Confirmation
