@@ -272,9 +272,15 @@ export default function CustomerHubPage() {
       }
 
       if (Array.isArray(data) && data.length > 0) {
+        console.log("[v0] Full webhook response:", JSON.stringify(data, null, 2))
+
         const firstItem = data[0]
+        console.log("[v0] First item:", JSON.stringify(firstItem, null, 2))
+
         const pets = firstItem?.pets || []
-        const invoices = firstItem?.invoices || []
+        const invoices = firstItem?.invoices || firstItem?.invoice || (Array.isArray(firstItem) ? firstItem : [])
+        console.log("[v0] Extracted invoices:", JSON.stringify(invoices, null, 2))
+
         const payment_instructions = firstItem?.payment_instructions || ""
         const bookings = data.slice(1) || []
 
