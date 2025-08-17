@@ -1,0 +1,419 @@
+"use client"
+
+import type React from "react"
+
+import { useState, useEffect } from "react"
+import { useParams, useRouter } from "next/navigation"
+import {
+  ArrowLeft,
+  Mail,
+  User,
+  Calendar,
+  Heart,
+  Loader2,
+  Dog,
+  Cat,
+  Fish,
+  Bird,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react"
+import { getWebhookEndpoint, logWebhookUsage } from "../../../types/webhook-endpoints"
+
+interface Pet {
+  pet_name: string
+  pet_id: string
+  pet_type: string
+}
+
+interface Booking {
+  booking_id: string
+  start: string
+  end: string
+  start_formatted: string
+  end_formatted: string
+  booking_date_formatted: string
+  day_of_week: string
+  professional_name: string
+  customer_first_name: string
+  customer_last_name: string
+  is_recurring: boolean
+  service_type?: string
+}
+
+interface CustomerData {
+  pets: Pet[]
+  bookings: Booking[]
+}
+
+export default function CustomerHubPage() {
+  const params = useParams()
+  const router = useRouter()
+  const uniqueUrl = params.uniqueUrl as string
+
+  const [email, setEmail] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [customerData, setCustomerData] = useState<CustomerData | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [professionalName, setProfessionalName] = useState("")
+  const [currentDate, setCurrentDate] = useState(new Date())
+
+  useEffect(() => {
+    // You might want to fetch professional name based on uniqueUrl
+    setProfessionalName("Professional") // Placeholder
+  }, [uniqueUrl])
+
+  const getPetIcon = (petType: string) => {
+    const type = petType.toLowerCase()
+    if (type.includes("dog")) return <Dog className="w-5 h-5" />
+    if (type.includes("cat")) return <Cat className="w-5 h-5" />
+    if (type.includes("fish")) return <Fish className="w-5 h-5" />
+    if (type.includes("bird")) return <Bird className="w-5 h-5" />
+    return <Heart className="w-5 h-5" />
+  }
+
+  const getServiceTypeColor = (serviceType: string) => {
+    const type = serviceType?.toLowerCase() || ""
+    if (type.includes("walk")) return "bg-green-100 border-green-300 text-green-800"
+    if (type.includes("groom")) return "bg-purple-100 border-purple-300 text-purple-800"
+    if (type.includes("drop")) return "bg-blue-100 border-blue-300 text-blue-800"
+    if (type.includes("board")) return "bg-orange-100 border-orange-300 text-orange-800"
+    if (type.includes("train")) return "bg-teal-100 border-teal-300 text-teal-800"
+    return "bg-gray-100 border-gray-300 text-gray-800"
+  }
+
+  const convertToUserTimezone = (utcTime: string) => {
+    const date = new Date(utcTime)
+    return date.toLocaleString("en-US", {
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    })
+  }
+
+  const generateCalendarDays = (date: Date) => {
+    const year = date.getFullYear()
+    const month = date.getMonth()
+    const firstDay = new Date(year, month, 1)
+    const lastDay = new Date(year, month + 1, 0)
+    const startDate = new Date(firstDay)
+    startDate.setDate(startDate.getDate() - firstDay.getDay())
+
+    const days = []
+    const current = new Date(startDate)
+
+    for (let i = 0; i < 42; i++) {
+      days.push(new Date(current))
+      current.setDate(current.getDate() + 1)
+    }
+
+    return days
+  }
+
+  const getBookingsForDate = (date: Date) => {
+    if (!customerData?.bookings) return []
+
+    const dateStr = date.toISOString().split("T")[0]
+    return customerData.bookings.filter((booking) => {
+      const bookingDate = new Date(booking.start).toISOString().split("T")[0]
+      return bookingDate === dateStr
+    })
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email.trim()) return
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const webhookUrl = getWebhookEndpoint("CUSTOMER_HUB")
+      logWebhookUsage("CUSTOMER_HUB", "initialize_customer_hub")
+
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+
+      const payload = {
+        action: "initialize_customer_hub",
+        unique_url: uniqueUrl,
+        professional_name: professionalName,
+        customer_email: email.trim(),
+        timestamp: new Date().toISOString(),
+        timezone: userTimezone,
+      }
+
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      if (Array.isArray(data) && data.length > 0) {
+        const pets = data[0]?.pets || []
+        const bookings = data.slice(1) || []
+
+        setCustomerData({
+          pets,
+          bookings,
+        })
+      } else {
+        setError("No customer information found for this email address.")
+      }
+    } catch (err) {
+      console.error("Error fetching customer data:", err)
+      setError("Unable to retrieve customer information. Please check your email and try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const resetForm = () => {
+    setEmail("")
+    setCustomerData(null)
+    setError(null)
+    setIsLoading(false)
+  }
+
+  const calendarDays = generateCalendarDays(currentDate)
+  const monthNames = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ]
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-[#E75837] to-[#d04e30] text-white">
+        <div className="max-w-6xl mx-auto px-4 py-6">
+          <div className="flex items-center gap-4">
+            <button onClick={() => router.back()} className="p-2 hover:bg-white/20 rounded-lg transition-colors">
+              <ArrowLeft className="w-6 h-6" />
+            </button>
+            <div>
+              <h1 className="text-3xl font-bold header-font">Customer Portal</h1>
+              <p className="text-white/90 body-font">Access your booking information and pet details</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        {!customerData ? (
+          /* Email Input Form */
+          <div className="max-w-md mx-auto">
+            <div className="bg-white rounded-2xl shadow-lg p-8">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2 body-font">
+                    Enter your email address
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="email"
+                      id="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="your.email@example.com"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent body-font"
+                      required
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <p className="text-sm text-gray-500 mt-2 body-font">
+                    We'll look up your booking history and pet information
+                  </p>
+                </div>
+
+                {error && (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-red-600 body-font">{error}</p>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isLoading || !email.trim()}
+                  className="w-full bg-[#E75837] text-white py-3 px-6 rounded-lg font-medium hover:bg-[#d04e30] disabled:opacity-50 disabled:cursor-not-allowed transition-colors body-font flex items-center justify-center gap-2"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Looking up your information...
+                    </>
+                  ) : (
+                    <>
+                      <User className="w-5 h-5" />
+                      Access My Portal
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+          </div>
+        ) : (
+          /* Customer Information Display */
+          <div className="space-y-8">
+            {/* Pet Information */}
+            {customerData.pets && customerData.pets.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-lg p-8">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6 header-font flex items-center gap-3">
+                  <Heart className="w-8 h-8 text-[#E75837]" />
+                  Your Pets
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {customerData.pets.map((pet) => (
+                    <div
+                      key={pet.pet_id}
+                      className="bg-gradient-to-br from-orange-50 to-pink-50 rounded-xl p-6 border border-orange-200"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="text-[#E75837] bg-white p-3 rounded-full">{getPetIcon(pet.pet_type)}</div>
+                        <div>
+                          <p className="font-bold text-xl body-font text-gray-900">{pet.pet_name}</p>
+                          <p className="text-gray-600 body-font">{pet.pet_type}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Calendar */}
+            {customerData.bookings && customerData.bookings.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-lg p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 header-font flex items-center gap-3">
+                    <Calendar className="w-8 h-8 text-[#E75837]" />
+                    Your Appointments
+                  </h2>
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <h3 className="text-lg font-semibold body-font min-w-[200px] text-center">
+                      {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                    </h3>
+                    <button
+                      onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Calendar Grid */}
+                <div className="grid grid-cols-7 gap-1 mb-4">
+                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                    <div key={day} className="p-3 text-center font-semibold text-gray-600 body-font">
+                      {day}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-7 gap-1">
+                  {calendarDays.map((day, index) => {
+                    const bookings = getBookingsForDate(day)
+                    const isCurrentMonth = day.getMonth() === currentDate.getMonth()
+                    const isToday = day.toDateString() === new Date().toDateString()
+
+                    return (
+                      <div
+                        key={index}
+                        className={`min-h-[100px] p-2 border border-gray-200 ${
+                          isCurrentMonth ? "bg-white" : "bg-gray-50"
+                        } ${isToday ? "ring-2 ring-[#E75837]" : ""}`}
+                      >
+                        <div
+                          className={`text-sm font-medium mb-1 ${isCurrentMonth ? "text-gray-900" : "text-gray-400"}`}
+                        >
+                          {day.getDate()}
+                        </div>
+                        <div className="space-y-1">
+                          {bookings.map((booking) => (
+                            <div
+                              key={booking.booking_id}
+                              className={`text-xs p-1 rounded border ${getServiceTypeColor(booking.service_type || "")}`}
+                            >
+                              <div className="font-medium truncate">{convertToUserTimezone(booking.start)}</div>
+                              <div className="truncate">{booking.service_type || "Appointment"}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Legend */}
+                <div className="mt-6 flex flex-wrap gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
+                    <span className="text-sm body-font">Walking</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-purple-100 border border-purple-300 rounded"></div>
+                    <span className="text-sm body-font">Grooming</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-blue-100 border border-blue-300 rounded"></div>
+                    <span className="text-sm body-font">Drop-in</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-orange-100 border border-orange-300 rounded"></div>
+                    <span className="text-sm body-font">Boarding</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-teal-100 border border-teal-300 rounded"></div>
+                    <span className="text-sm body-font">Training</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* No bookings message */}
+            {(!customerData.bookings || customerData.bookings.length === 0) && (
+              <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
+                <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 body-font text-xl mb-2">No upcoming appointments scheduled</p>
+                <p className="text-gray-500 body-font">Contact us to book your next appointment!</p>
+              </div>
+            )}
+
+            {/* Back button */}
+            <div className="text-center">
+              <button
+                onClick={resetForm}
+                className="bg-gray-100 text-gray-700 py-3 px-8 rounded-lg font-medium hover:bg-gray-200 transition-colors body-font"
+              >
+                Look up different email
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

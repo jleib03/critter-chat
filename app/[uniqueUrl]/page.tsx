@@ -6,7 +6,6 @@ import Link from "next/link"
 import { Calendar, Clock, MapPin, Phone, Mail, UserPlus, MessageCircle, ArrowRight, Loader2, User } from "lucide-react"
 import Header from "../../components/header"
 import LiveChatWidget from "../../components/live-chat-widget"
-import CustomerHubModal from "../../components/customer-hub-modal"
 import { loadChatConfig } from "../../utils/chat-config"
 import { loadProfessionalLandingData, getDefaultProfessionalData } from "../../utils/professional-landing-config"
 import { getServiceIcon, getServiceColor, getPrimaryServiceIcon } from "../../utils/service-icons"
@@ -22,7 +21,6 @@ export default function ProfessionalLandingPage() {
   const [isProfessionalDataLoading, setIsProfessionalDataLoading] = useState(true)
   const [isChatEnabled, setIsChatEnabled] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [isCustomerHubOpen, setIsCustomerHubOpen] = useState(false)
 
   // Function to load professional data
   const loadProfessionalData = async (forceRefresh = false) => {
@@ -276,14 +274,14 @@ export default function ProfessionalLandingPage() {
                 <div className="bg-gradient-to-br from-[#6B46C1] to-[#553C9A] rounded-xl p-6 text-white">
                   <h3 className="text-xl font-bold mb-2 header-font">Customer Portal</h3>
                   <p className="text-white/90 mb-4 body-font">View your bookings and pet information</p>
-                  <button
-                    onClick={() => setIsCustomerHubOpen(true)}
+                  <Link
+                    href={`/customer-hub/${uniqueUrl}`}
                     className="inline-flex items-center gap-2 bg-white text-[#6B46C1] px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors body-font"
                   >
                     <User className="w-4 h-4" />
                     Access Portal
                     <ArrowRight className="w-4 h-4" />
-                  </button>
+                  </Link>
                 </div>
 
                 {/* Conditionally render chat card only if chat is enabled */}
@@ -415,13 +413,6 @@ export default function ProfessionalLandingPage() {
             isConfigLoading={isChatConfigLoading}
           />
         )}
-
-        <CustomerHubModal
-          isOpen={isCustomerHubOpen}
-          onClose={() => setIsCustomerHubOpen(false)}
-          uniqueUrl={uniqueUrl}
-          professionalName={professionalData?.name || ""}
-        />
       </main>
     </div>
   )
