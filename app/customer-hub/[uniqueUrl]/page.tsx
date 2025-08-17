@@ -20,6 +20,7 @@ import {
   ChevronRight,
   Plus,
   Shield,
+  FileText,
 } from "lucide-react"
 import { getWebhookEndpoint, logWebhookUsage } from "../../../types/webhook-endpoints"
 
@@ -45,9 +46,18 @@ interface Booking {
   service_names?: string
 }
 
+interface Invoice {
+  invoice_number: string
+  status: string
+  due_date: string
+  amount: string
+}
+
 interface CustomerData {
   pets: Pet[]
   bookings: Booking[]
+  invoices?: Invoice[]
+  payment_instructions?: string
 }
 
 export default function CustomerHubPage() {
@@ -64,9 +74,9 @@ export default function CustomerHubPage() {
   const [error, setError] = useState<string | null>(null)
   const [professionalName, setProfessionalName] = useState("")
   const [currentDate, setCurrentDate] = useState(new Date())
+  const [activeTab, setActiveTab] = useState<"pets" | "appointments" | "invoices">("pets")
 
   useEffect(() => {
-    // You might want to fetch professional name based on uniqueUrl
     setProfessionalName("Professional") // Placeholder
   }, [uniqueUrl])
 
@@ -86,6 +96,14 @@ export default function CustomerHubPage() {
     if (types.includes("drop-in")) return "bg-blue-100 border-blue-300 text-blue-800"
     if (types.includes("other")) return "bg-orange-100 border-orange-300 text-orange-800"
     return "bg-gray-100 border-gray-300 text-gray-800"
+  }
+
+  const getStatusBadgeStyle = (status: string) => {
+    const statusLower = status.toLowerCase()
+    if (statusLower === "overdue") return "bg-red-100 text-red-800 border-red-200"
+    if (statusLower === "paid") return "bg-green-100 text-green-800 border-green-200"
+    if (statusLower === "cancelled") return "bg-gray-100 text-gray-800 border-gray-200"
+    return "bg-blue-100 text-blue-800 border-blue-200"
   }
 
   const convertToUserTimezone = (utcTime: string) => {
@@ -216,12 +234,17 @@ export default function CustomerHubPage() {
       }
 
       if (Array.isArray(data) && data.length > 0) {
-        const pets = data[0]?.pets || []
+        const firstItem = data[0]
+        const pets = firstItem?.pets || []
+        const invoices = firstItem?.invoices || []
+        const payment_instructions = firstItem?.payment_instructions || ""
         const bookings = data.slice(1) || []
 
         setCustomerData({
           pets,
           bookings,
+          invoices,
+          payment_instructions,
         })
         setStep("data")
       } else {
@@ -416,132 +439,245 @@ export default function CustomerHubPage() {
         {step === "data" && customerData && (
           /* Customer Information Display */
           <div className="space-y-8">
-            {/* Pet Information */}
-            {customerData.pets && customerData.pets.length > 0 && (
-              <div className="bg-white rounded-2xl shadow-lg p-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6 header-font flex items-center gap-3">
-                  <Heart className="w-8 h-8 text-[#E75837]" />
-                  Your Pets
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {customerData.pets.map((pet) => (
-                    <div
-                      key={pet.pet_id}
-                      className="bg-gradient-to-br from-orange-50 to-pink-50 rounded-xl p-6 border border-orange-200"
-                    >
+            {/* Tabbed Navigation */}
+            <div className="bg-white rounded-2xl shadow-lg">
+              <div className="border-b border-gray-200">
+                <nav className="flex space-x-8 px-8 pt-6">
+                  <button
+                    onClick={() => setActiveTab("pets")}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                      activeTab === "pets"
+                        ? "border-[#E75837] text-[#E75837]"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Heart className="w-4 h-4" />
+                      Pets
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("appointments")}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                      activeTab === "appointments"
+                        ? "border-[#E75837] text-[#E75837]"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      Appointments
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("invoices")}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                      activeTab === "invoices"
+                        ? "border-[#E75837] text-[#E75837]"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      Invoices
+                    </div>
+                  </button>
+                </nav>
+              </div>
+
+              <div className="p-8">
+                {activeTab === "pets" && (
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6 header-font flex items-center gap-3">
+                      <Heart className="w-8 h-8 text-[#E75837]" />
+                      Your Pets
+                    </h2>
+                    {customerData.pets && customerData.pets.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {customerData.pets.map((pet) => (
+                          <div
+                            key={pet.pet_id}
+                            className="bg-gradient-to-br from-orange-50 to-pink-50 rounded-xl p-6 border border-orange-200"
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className="text-[#E75837] bg-white p-3 rounded-full">{getPetIcon(pet.pet_type)}</div>
+                              <div>
+                                <p className="font-bold text-xl body-font text-gray-900">{pet.pet_name}</p>
+                                <p className="text-gray-600 body-font">{pet.pet_type}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12">
+                        <Heart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <p className="text-gray-600 body-font text-xl">No pets registered</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === "appointments" && (
+                  <div>
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-2xl font-bold text-gray-900 header-font flex items-center gap-3">
+                        <Calendar className="w-8 h-8 text-[#E75837]" />
+                        Your Appointments
+                      </h2>
                       <div className="flex items-center gap-4">
-                        <div className="text-[#E75837] bg-white p-3 rounded-full">{getPetIcon(pet.pet_type)}</div>
-                        <div>
-                          <p className="font-bold text-xl body-font text-gray-900">{pet.pet_name}</p>
-                          <p className="text-gray-600 body-font">{pet.pet_type}</p>
-                        </div>
+                        <button
+                          onClick={() =>
+                            setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))
+                          }
+                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        >
+                          <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <h3 className="text-lg font-semibold body-font min-w-[200px] text-center">
+                          {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                        </h3>
+                        <button
+                          onClick={() =>
+                            setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))
+                          }
+                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        >
+                          <ChevronRight className="w-5 h-5" />
+                        </button>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
-            {/* Calendar */}
-            {customerData.bookings && customerData.bookings.length > 0 && (
-              <div className="bg-white rounded-2xl shadow-lg p-8">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 header-font flex items-center gap-3">
-                    <Calendar className="w-8 h-8 text-[#E75837]" />
-                    Your Appointments
-                  </h2>
-                  <div className="flex items-center gap-4">
-                    <button
-                      onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))}
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <h3 className="text-lg font-semibold body-font min-w-[200px] text-center">
-                      {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-                    </h3>
-                    <button
-                      onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))}
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Calendar Grid */}
-                <div className="grid grid-cols-7 gap-1 mb-4">
-                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                    <div key={day} className="p-3 text-center font-semibold text-gray-600 body-font">
-                      {day}
-                    </div>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-7 gap-1">
-                  {calendarDays.map((day, index) => {
-                    const bookings = getBookingsForDate(day)
-                    const isCurrentMonth = day.getMonth() === currentDate.getMonth()
-                    const isToday = day.toDateString() === new Date().toDateString()
-
-                    return (
-                      <div
-                        key={index}
-                        className={`min-h-[100px] p-2 border border-gray-200 ${
-                          isCurrentMonth ? "bg-white" : "bg-gray-50"
-                        } ${isToday ? "ring-2 ring-[#E75837]" : ""}`}
-                      >
-                        <div
-                          className={`text-sm font-medium mb-1 ${isCurrentMonth ? "text-gray-900" : "text-gray-400"}`}
-                        >
-                          {day.getDate()}
-                        </div>
-                        <div className="space-y-1">
-                          {bookings.map((booking) => (
-                            <div
-                              key={booking.booking_id}
-                              className={`text-xs p-1 rounded border ${getServiceTypeColor(booking.service_types || "")}`}
-                            >
-                              <div className="font-medium truncate">{convertToUserTimezone(booking.start)}</div>
-                              <div className="truncate">{booking.service_names || "Appointment"}</div>
+                    {customerData.bookings && customerData.bookings.length > 0 ? (
+                      <>
+                        {/* Calendar Grid */}
+                        <div className="grid grid-cols-7 gap-1 mb-4">
+                          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                            <div key={day} className="p-3 text-center font-semibold text-gray-600 body-font">
+                              {day}
                             </div>
                           ))}
                         </div>
+
+                        <div className="grid grid-cols-7 gap-1">
+                          {calendarDays.map((day, index) => {
+                            const bookings = getBookingsForDate(day)
+                            const isCurrentMonth = day.getMonth() === currentDate.getMonth()
+                            const isToday = day.toDateString() === new Date().toDateString()
+
+                            return (
+                              <div
+                                key={index}
+                                className={`min-h-[100px] p-2 border border-gray-200 ${
+                                  isCurrentMonth ? "bg-white" : "bg-gray-50"
+                                } ${isToday ? "ring-2 ring-[#E75837]" : ""}`}
+                              >
+                                <div
+                                  className={`text-sm font-medium mb-1 ${isCurrentMonth ? "text-gray-900" : "text-gray-400"}`}
+                                >
+                                  {day.getDate()}
+                                </div>
+                                <div className="space-y-1">
+                                  {bookings.map((booking) => (
+                                    <div
+                                      key={booking.booking_id}
+                                      className={`text-xs p-1 rounded border ${getServiceTypeColor(booking.service_types || "")}`}
+                                    >
+                                      <div className="font-medium truncate">{convertToUserTimezone(booking.start)}</div>
+                                      <div className="truncate">{booking.service_names || "Appointment"}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+
+                        {/* Legend */}
+                        <div className="mt-6 flex flex-wrap gap-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
+                            <span className="text-sm body-font">Walking</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-purple-100 border border-purple-300 rounded"></div>
+                            <span className="text-sm body-font">Grooming</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-blue-100 border border-blue-300 rounded"></div>
+                            <span className="text-sm body-font">Drop-in</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-orange-100 border border-orange-300 rounded"></div>
+                            <span className="text-sm body-font">Other</span>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-center py-12">
+                        <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <p className="text-gray-600 body-font text-xl mb-2">No upcoming appointments scheduled</p>
+                        <p className="text-gray-500 body-font">Contact us to book your next appointment!</p>
                       </div>
-                    )
-                  })}
-                </div>
+                    )}
+                  </div>
+                )}
 
-                {/* Legend */}
-                <div className="mt-6 flex flex-wrap gap-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
-                    <span className="text-sm body-font">Walking</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-purple-100 border border-purple-300 rounded"></div>
-                    <span className="text-sm body-font">Grooming</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-blue-100 border border-blue-300 rounded"></div>
-                    <span className="text-sm body-font">Drop-in</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-orange-100 border border-orange-300 rounded"></div>
-                    <span className="text-sm body-font">Other</span>
-                  </div>
-                </div>
-              </div>
-            )}
+                {activeTab === "invoices" && (
+                  <div>
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-2xl font-bold text-gray-900 header-font flex items-center gap-3">
+                        <FileText className="w-8 h-8 text-[#E75837]" />
+                        Invoices
+                      </h2>
+                    </div>
 
-            {/* No bookings message */}
-            {(!customerData.bookings || customerData.bookings.length === 0) && (
-              <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
-                <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 body-font text-xl mb-2">No upcoming appointments scheduled</p>
-                <p className="text-gray-500 body-font">Contact us to book your next appointment!</p>
+                    {customerData.invoices && customerData.invoices.length > 0 ? (
+                      <div className="space-y-4">
+                        {customerData.invoices.map((invoice) => (
+                          <div
+                            key={invoice.invoice_number}
+                            className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-4 mb-2">
+                                  <h3 className="text-lg font-bold text-gray-900 body-font">{invoice.amount}</h3>
+                                  <span className="text-gray-600 body-font">Due {invoice.due_date}</span>
+                                </div>
+                                <p className="text-gray-600 body-font">Invoice #{invoice.invoice_number}</p>
+                              </div>
+                              <div className="flex-shrink-0">
+                                <span
+                                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getStatusBadgeStyle(
+                                    invoice.status,
+                                  )}`}
+                                >
+                                  {invoice.status}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+
+                        {customerData.payment_instructions && (
+                          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p className="text-blue-800 body-font text-sm">
+                              <strong>Payment Instructions:</strong> {customerData.payment_instructions}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12">
+                        <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <p className="text-gray-600 body-font text-xl">No invoices found</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-            )}
+            </div>
 
             {/* Back button */}
             <div className="text-center">
