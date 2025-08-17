@@ -57,6 +57,7 @@ export default function CustomerHubPage() {
 
   const [email, setEmail] = useState("")
   const [validationCode, setValidationCode] = useState("")
+  const [generatedCode, setGeneratedCode] = useState("")
   const [step, setStep] = useState<"email" | "code" | "data">("email")
   const [isLoading, setIsLoading] = useState(false)
   const [customerData, setCustomerData] = useState<CustomerData | null>(null)
@@ -158,8 +159,13 @@ export default function CustomerHubPage() {
         throw new Error(`HTTP ${response.status}`)
       }
 
-      // Move to code validation step
-      setStep("code")
+      const data = await response.json()
+      if (Array.isArray(data) && data.length > 0 && data[0].random_code) {
+        setGeneratedCode(data[0].random_code)
+        setStep("code")
+      } else {
+        throw new Error("Invalid response format")
+      }
     } catch (err) {
       console.error("Error validating email:", err)
       setError("Unable to send validation code. Please check your email and try again.")
@@ -186,7 +192,8 @@ export default function CustomerHubPage() {
         unique_url: uniqueUrl,
         professional_name: professionalName,
         customer_email: email.trim(),
-        validation_code: validationCode.trim(),
+        generated_code: generatedCode,
+        user_submitted_code: validationCode.trim(),
         timestamp: new Date().toISOString(),
         timezone: userTimezone,
       }
@@ -226,6 +233,7 @@ export default function CustomerHubPage() {
   const resetForm = () => {
     setEmail("")
     setValidationCode("")
+    setGeneratedCode("")
     setStep("email")
     setCustomerData(null)
     setError(null)
