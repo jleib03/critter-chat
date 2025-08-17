@@ -47,12 +47,15 @@ export default function CustomerHubModal({ isOpen, onClose, uniqueUrl, professio
       const webhookUrl = getWebhookEndpoint("CUSTOMER_HUB")
       logWebhookUsage("CUSTOMER_HUB", "initialize_customer_hub")
 
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+
       const payload = {
         action: "initialize_customer_hub",
         unique_url: uniqueUrl,
         professional_name: professionalName,
         customer_email: email.trim(),
         timestamp: new Date().toISOString(),
+        timezone: userTimezone,
       }
 
       console.log("Sending customer hub webhook:", payload)
