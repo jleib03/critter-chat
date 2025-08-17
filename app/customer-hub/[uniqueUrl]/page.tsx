@@ -38,7 +38,8 @@ interface Booking {
   customer_first_name: string
   customer_last_name: string
   is_recurring: boolean
-  service_type?: string
+  service_types?: string
+  service_names?: string
 }
 
 interface CustomerData {
@@ -72,13 +73,12 @@ export default function CustomerHubPage() {
     return <Heart className="w-5 h-5" />
   }
 
-  const getServiceTypeColor = (serviceType: string) => {
-    const type = serviceType?.toLowerCase() || ""
-    if (type.includes("walk")) return "bg-green-100 border-green-300 text-green-800"
-    if (type.includes("groom")) return "bg-purple-100 border-purple-300 text-purple-800"
-    if (type.includes("drop")) return "bg-blue-100 border-blue-300 text-blue-800"
-    if (type.includes("board")) return "bg-orange-100 border-orange-300 text-orange-800"
-    if (type.includes("train")) return "bg-teal-100 border-teal-300 text-teal-800"
+  const getServiceTypeColor = (serviceTypes: string) => {
+    const types = serviceTypes?.toLowerCase() || ""
+    if (types.includes("walking")) return "bg-green-100 border-green-300 text-green-800"
+    if (types.includes("grooming")) return "bg-purple-100 border-purple-300 text-purple-800"
+    if (types.includes("drop-in")) return "bg-blue-100 border-blue-300 text-blue-800"
+    if (types.includes("other")) return "bg-orange-100 border-orange-300 text-orange-800"
     return "bg-gray-100 border-gray-300 text-gray-800"
   }
 
@@ -355,10 +355,10 @@ export default function CustomerHubPage() {
                           {bookings.map((booking) => (
                             <div
                               key={booking.booking_id}
-                              className={`text-xs p-1 rounded border ${getServiceTypeColor(booking.service_type || "")}`}
+                              className={`text-xs p-1 rounded border ${getServiceTypeColor(booking.service_types || "")}`}
                             >
                               <div className="font-medium truncate">{convertToUserTimezone(booking.start)}</div>
-                              <div className="truncate">{booking.service_type || "Appointment"}</div>
+                              <div className="truncate">{booking.service_names || "Appointment"}</div>
                             </div>
                           ))}
                         </div>
@@ -383,11 +383,7 @@ export default function CustomerHubPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 bg-orange-100 border border-orange-300 rounded"></div>
-                    <span className="text-sm body-font">Boarding</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-teal-100 border border-teal-300 rounded"></div>
-                    <span className="text-sm body-font">Training</span>
+                    <span className="text-sm body-font">Other</span>
                   </div>
                 </div>
               </div>
