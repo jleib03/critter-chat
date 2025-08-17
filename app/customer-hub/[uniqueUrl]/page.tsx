@@ -107,13 +107,27 @@ export default function CustomerHubPage() {
   }
 
   const convertToUserTimezone = (utcTime: string) => {
-    const date = new Date(utcTime)
-    return date.toLocaleString("en-US", {
-      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    })
+    if (!utcTime || typeof utcTime !== "string") {
+      return "Invalid time"
+    }
+
+    try {
+      const date = new Date(utcTime)
+      // Check if the date is valid
+      if (isNaN(date.getTime())) {
+        return "Invalid time"
+      }
+
+      return date.toLocaleString("en-US", {
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      })
+    } catch (error) {
+      console.error("[v0] Error converting timezone:", error, "for time:", utcTime)
+      return "Invalid time"
+    }
   }
 
   const generateCalendarDays = (date: Date) => {
@@ -138,11 +152,35 @@ export default function CustomerHubPage() {
   const getBookingsForDate = (date: Date) => {
     if (!customerData?.bookings) return []
 
-    const dateStr = date.toISOString().split("T")[0]
-    return customerData.bookings.filter((booking) => {
-      const bookingDate = new Date(booking.start).toISOString().split("T")[0]
-      return bookingDate === dateStr
-    })
+    if (!date || isNaN(date.getTime())) {
+      return []
+    }
+
+    try {
+      const dateStr = date.toISOString().split("T")[0]
+      return customerData.bookings.filter((booking) => {
+        if (!booking.start || typeof booking.start !== "string") {
+          return false
+        }
+
+        try {
+          const bookingDate = new Date(booking.start)
+          // Check if the booking date is valid
+          if (isNaN(bookingDate.getTime())) {
+            return false
+          }
+
+          const bookingDateStr = bookingDate.toISOString().split("T")[0]
+          return bookingDateStr === dateStr
+        } catch (error) {
+          console.error("[v0] Error parsing booking date:", error, "for booking:", booking.booking_id)
+          return false
+        }
+      })
+    } catch (error) {
+      console.error("[v0] Error in getBookingsForDate:", error)
+      return []
+    }
   }
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
