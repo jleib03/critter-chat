@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
+import Link from "next/link"
 import {
   ArrowLeft,
   Mail,
@@ -17,6 +18,7 @@ import {
   Bird,
   ChevronLeft,
   ChevronRight,
+  Plus,
 } from "lucide-react"
 import { getWebhookEndpoint, logWebhookUsage } from "../../../types/webhook-endpoints"
 
@@ -202,14 +204,25 @@ export default function CustomerHubPage() {
       {/* Header */}
       <div className="bg-gradient-to-r from-[#E75837] to-[#d04e30] text-white">
         <div className="max-w-6xl mx-auto px-4 py-6">
-          <div className="flex items-center gap-4">
-            <button onClick={() => router.back()} className="p-2 hover:bg-white/20 rounded-lg transition-colors">
-              <ArrowLeft className="w-6 h-6" />
-            </button>
-            <div>
-              <h1 className="text-3xl font-bold header-font">Customer Portal</h1>
-              <p className="text-white/90 body-font">Access your booking information and pet details</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button onClick={() => router.back()} className="p-2 hover:bg-white/20 rounded-lg transition-colors">
+                <ArrowLeft className="w-6 h-6" />
+              </button>
+              <div>
+                <h1 className="text-3xl font-bold header-font">Customer Portal</h1>
+                <p className="text-white/90 body-font">Access your booking information and pet details</p>
+              </div>
             </div>
+            {customerData && (
+              <Link
+                href={`/schedule/${uniqueUrl}`}
+                className="bg-white text-[#E75837] py-2 px-6 rounded-lg font-medium hover:bg-gray-100 transition-colors body-font flex items-center gap-2"
+              >
+                <Plus className="w-5 h-5" />
+                New Appointment
+              </Link>
+            )}
           </div>
         </div>
       </div>
