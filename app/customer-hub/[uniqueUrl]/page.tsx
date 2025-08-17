@@ -210,6 +210,11 @@ export default function CustomerHubPage() {
 
       const data = await response.json()
 
+      if (Array.isArray(data) && data.length > 0 && data[0].Output === "Incorrect Code, Please Try Again") {
+        setError("Incorrect code, please try again or go back and request a new code")
+        return
+      }
+
       if (Array.isArray(data) && data.length > 0) {
         const pets = data[0]?.pets || []
         const bookings = data.slice(1) || []
