@@ -19,6 +19,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
+  Shield,
 } from "lucide-react"
 import { getWebhookEndpoint, logWebhookUsage } from "../../../types/webhook-endpoints"
 
@@ -55,6 +56,8 @@ export default function CustomerHubPage() {
   const uniqueUrl = params.uniqueUrl as string
 
   const [email, setEmail] = useState("")
+  const [validationCode, setValidationCode] = useState("")
+  const [step, setStep] = useState<"email" | "code" | "data">("email")
   const [isLoading, setIsLoading] = useState(false)
   const [customerData, setCustomerData] = useState<CustomerData | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -123,9 +126,51 @@ export default function CustomerHubPage() {
     })
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email.trim()) return
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const webhookUrl = getWebhookEndpoint("CUSTOMER_HUB")
+      logWebhookUsage("CUSTOMER_HUB", "validate_email")
+
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+
+      const payload = {
+        action: "validate_email",
+        unique_url: uniqueUrl,
+        professional_name: professionalName,
+        customer_email: email.trim(),
+        timestamp: new Date().toISOString(),
+        timezone: userTimezone,
+      }
+
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+
+      // Move to code validation step
+      setStep("code")
+    } catch (err) {
+      console.error("Error validating email:", err)
+      setError("Unable to send validation code. Please check your email and try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleCodeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!validationCode.trim()) return
 
     setIsLoading(true)
     setError(null)
@@ -141,6 +186,7 @@ export default function CustomerHubPage() {
         unique_url: uniqueUrl,
         professional_name: professionalName,
         customer_email: email.trim(),
+        validation_code: validationCode.trim(),
         timestamp: new Date().toISOString(),
         timezone: userTimezone,
       }
@@ -165,12 +211,13 @@ export default function CustomerHubPage() {
           pets,
           bookings,
         })
+        setStep("data")
       } else {
-        setError("No customer information found for this email address.")
+        setError("Incorrect validation code. Please try again.")
       }
     } catch (err) {
-      console.error("Error fetching customer data:", err)
-      setError("Unable to retrieve customer information. Please check your email and try again.")
+      console.error("Error validating code:", err)
+      setError("Incorrect validation code. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -178,6 +225,8 @@ export default function CustomerHubPage() {
 
   const resetForm = () => {
     setEmail("")
+    setValidationCode("")
+    setStep("email")
     setCustomerData(null)
     setError(null)
     setIsLoading(false)
@@ -214,7 +263,7 @@ export default function CustomerHubPage() {
                 <p className="text-white/90 body-font">Access your booking information and pet details</p>
               </div>
             </div>
-            {customerData && (
+            {step === "data" && customerData && (
               <Link
                 href={`/schedule/${uniqueUrl}`}
                 className="bg-white text-[#E75837] py-2 px-6 rounded-lg font-medium hover:bg-gray-100 transition-colors body-font flex items-center gap-2"
@@ -228,11 +277,11 @@ export default function CustomerHubPage() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-8">
-        {!customerData ? (
+        {step === "email" && (
           /* Email Input Form */
           <div className="max-w-md mx-auto">
             <div className="bg-white rounded-2xl shadow-lg p-8">
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleEmailSubmit} className="space-y-6">
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2 body-font">
                     Enter your email address
@@ -251,7 +300,7 @@ export default function CustomerHubPage() {
                     />
                   </div>
                   <p className="text-sm text-gray-500 mt-2 body-font">
-                    We'll look up your booking history and pet information
+                    We'll send you a verification code to access your information
                   </p>
                 </div>
 
@@ -269,19 +318,89 @@ export default function CustomerHubPage() {
                   {isLoading ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      Looking up your information...
+                      Sending verification code...
                     </>
                   ) : (
                     <>
-                      <User className="w-5 h-5" />
-                      Access My Portal
+                      <Mail className="w-5 h-5" />
+                      Send Verification Code
                     </>
                   )}
                 </button>
               </form>
             </div>
           </div>
-        ) : (
+        )}
+
+        {step === "code" && (
+          /* Validation Code Input Form */
+          <div className="max-w-md mx-auto">
+            <div className="bg-white rounded-2xl shadow-lg p-8">
+              <div className="text-center mb-6">
+                <Shield className="w-12 h-12 text-[#E75837] mx-auto mb-4" />
+                <h2 className="text-xl font-bold text-gray-900 header-font">Check Your Email</h2>
+                <p className="text-gray-600 body-font mt-2">
+                  We've sent a verification code to <span className="font-medium">{email}</span>
+                </p>
+              </div>
+
+              <form onSubmit={handleCodeSubmit} className="space-y-6">
+                <div>
+                  <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2 body-font">
+                    Enter verification code
+                  </label>
+                  <input
+                    type="text"
+                    id="code"
+                    value={validationCode}
+                    onChange={(e) => setValidationCode(e.target.value)}
+                    placeholder="Enter 6-digit code"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent body-font text-center text-lg tracking-widest"
+                    required
+                    disabled={isLoading}
+                    maxLength={6}
+                  />
+                </div>
+
+                {error && (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-red-600 body-font">{error}</p>
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  <button
+                    type="submit"
+                    disabled={isLoading || !validationCode.trim()}
+                    className="w-full bg-[#E75837] text-white py-3 px-6 rounded-lg font-medium hover:bg-[#d04e30] disabled:opacity-50 disabled:cursor-not-allowed transition-colors body-font flex items-center justify-center gap-2"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Verifying code...
+                      </>
+                    ) : (
+                      <>
+                        <User className="w-5 h-5" />
+                        Access My Portal
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setStep("email")}
+                    className="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-200 transition-colors body-font"
+                  >
+                    Use Different Email
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {step === "data" && customerData && (
           /* Customer Information Display */
           <div className="space-y-8">
             {/* Pet Information */}
