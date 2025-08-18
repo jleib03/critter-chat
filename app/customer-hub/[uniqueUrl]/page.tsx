@@ -21,6 +21,15 @@ import {
   Plus,
   Shield,
   FileText,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  Pill,
+  Utensils,
+  Scissors,
+  AlertTriangle,
+  Phone,
+  MapPin,
 } from "lucide-react"
 import { getWebhookEndpoint, logWebhookUsage } from "../../../types/webhook-endpoints"
 
@@ -28,6 +37,16 @@ interface Pet {
   pet_name: string
   pet_id: string
   pet_type: string
+  feeding_instructions?: string
+  medication_schedule?: string
+  behavioral_notes?: string
+  medical_conditions?: string
+  allergies?: string
+  emergency_contact?: string
+  veterinarian_info?: string
+  special_instructions?: string
+  grooming_notes?: string
+  exercise_requirements?: string
 }
 
 interface Booking {
@@ -75,6 +94,7 @@ export default function CustomerHubPage() {
   const [professionalName, setProfessionalName] = useState("")
   const [currentDate, setCurrentDate] = useState(new Date())
   const [activeTab, setActiveTab] = useState<"pets" | "appointments" | "invoices">("pets")
+  const [expandedPet, setExpandedPet] = useState<string | null>(null)
 
   useEffect(() => {
     setProfessionalName("Professional") // Placeholder
@@ -313,6 +333,24 @@ export default function CustomerHubPage() {
     setIsLoading(false)
   }
 
+  const togglePetExpansion = (petId: string) => {
+    setExpandedPet(expandedPet === petId ? null : petId)
+  }
+
+  const renderCareInstructionField = (label: string, value: string | undefined, icon: React.ReactNode) => {
+    if (!value || value.trim() === "") return null
+
+    return (
+      <div className="flex gap-3 p-4 bg-gray-50 rounded-lg">
+        <div className="text-[#E75837] mt-0.5">{icon}</div>
+        <div className="flex-1">
+          <h4 className="font-semibold text-gray-900 body-font mb-1">{label}</h4>
+          <p className="text-gray-700 body-font text-sm leading-relaxed">{value}</p>
+        </div>
+      </div>
+    )
+  }
+
   const calendarDays = generateCalendarDays(currentDate)
   const monthNames = [
     "January",
@@ -538,19 +576,124 @@ export default function CustomerHubPage() {
                       Your Pets
                     </h2>
                     {customerData.pets && customerData.pets.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <div className="space-y-6">
                         {customerData.pets.map((pet) => (
-                          <div
-                            key={pet.pet_id}
-                            className="bg-gradient-to-br from-orange-50 to-pink-50 rounded-xl p-6 border border-orange-200"
-                          >
-                            <div className="flex items-center gap-4">
-                              <div className="text-[#E75837] bg-white p-3 rounded-full">{getPetIcon(pet.pet_type)}</div>
-                              <div>
-                                <p className="font-bold text-xl body-font text-gray-900">{pet.pet_name}</p>
-                                <p className="text-gray-600 body-font">{pet.pet_type}</p>
+                          <div key={pet.pet_id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                            <button
+                              onClick={() => togglePetExpansion(pet.pet_id)}
+                              className="w-full p-6 bg-gradient-to-br from-orange-50 to-pink-50 border-b border-orange-200 hover:from-orange-100 hover:to-pink-100 transition-colors"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                  <div className="text-[#E75837] bg-white p-3 rounded-full">
+                                    {getPetIcon(pet.pet_type)}
+                                  </div>
+                                  <div className="text-left">
+                                    <p className="font-bold text-xl body-font text-gray-900">{pet.pet_name}</p>
+                                    <p className="text-gray-600 body-font">{pet.pet_type}</p>
+                                  </div>
+                                </div>
+                                <div className="text-[#E75837]">
+                                  {expandedPet === pet.pet_id ? (
+                                    <ChevronUp className="w-6 h-6" />
+                                  ) : (
+                                    <ChevronDown className="w-6 h-6" />
+                                  )}
+                                </div>
                               </div>
-                            </div>
+                            </button>
+
+                            {expandedPet === pet.pet_id && (
+                              <div className="p-6 space-y-4">
+                                <h3 className="text-lg font-bold text-gray-900 body-font mb-4 flex items-center gap-2">
+                                  <Heart className="w-5 h-5 text-[#E75837]" />
+                                  Care Instructions for {pet.pet_name}
+                                </h3>
+
+                                <div className="grid gap-4">
+                                  {renderCareInstructionField(
+                                    "Feeding Instructions",
+                                    pet.feeding_instructions,
+                                    <Utensils className="w-5 h-5" />,
+                                  )}
+
+                                  {renderCareInstructionField(
+                                    "Medication Schedule",
+                                    pet.medication_schedule,
+                                    <Pill className="w-5 h-5" />,
+                                  )}
+
+                                  {renderCareInstructionField(
+                                    "Exercise Requirements",
+                                    pet.exercise_requirements,
+                                    <Clock className="w-5 h-5" />,
+                                  )}
+
+                                  {renderCareInstructionField(
+                                    "Grooming Notes",
+                                    pet.grooming_notes,
+                                    <Scissors className="w-5 h-5" />,
+                                  )}
+
+                                  {renderCareInstructionField(
+                                    "Medical Conditions",
+                                    pet.medical_conditions,
+                                    <AlertTriangle className="w-5 h-5" />,
+                                  )}
+
+                                  {renderCareInstructionField(
+                                    "Allergies",
+                                    pet.allergies,
+                                    <AlertTriangle className="w-5 h-5" />,
+                                  )}
+
+                                  {renderCareInstructionField(
+                                    "Behavioral Notes",
+                                    pet.behavioral_notes,
+                                    <Heart className="w-5 h-5" />,
+                                  )}
+
+                                  {renderCareInstructionField(
+                                    "Emergency Contact",
+                                    pet.emergency_contact,
+                                    <Phone className="w-5 h-5" />,
+                                  )}
+
+                                  {renderCareInstructionField(
+                                    "Veterinarian Information",
+                                    pet.veterinarian_info,
+                                    <MapPin className="w-5 h-5" />,
+                                  )}
+
+                                  {renderCareInstructionField(
+                                    "Special Instructions",
+                                    pet.special_instructions,
+                                    <FileText className="w-5 h-5" />,
+                                  )}
+                                </div>
+
+                                {!pet.feeding_instructions &&
+                                  !pet.medication_schedule &&
+                                  !pet.exercise_requirements &&
+                                  !pet.grooming_notes &&
+                                  !pet.medical_conditions &&
+                                  !pet.allergies &&
+                                  !pet.behavioral_notes &&
+                                  !pet.emergency_contact &&
+                                  !pet.veterinarian_info &&
+                                  !pet.special_instructions && (
+                                    <div className="text-center py-8">
+                                      <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                                      <p className="text-gray-600 body-font">
+                                        No care instructions available for {pet.pet_name}
+                                      </p>
+                                      <p className="text-gray-500 body-font text-sm mt-1">
+                                        Contact us to add care details
+                                      </p>
+                                    </div>
+                                  )}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
