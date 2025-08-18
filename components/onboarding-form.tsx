@@ -171,12 +171,28 @@ export default function OnboardingForm({
   const handleSubmit = async () => {
     setIsSubmitting(true)
     try {
-      await onSubmit(formData)
+      const processedFormData = convertEmptyStringsToNull(formData)
+      await onSubmit(processedFormData)
     } catch (error) {
       console.error("Error submitting form:", error)
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const convertEmptyStringsToNull = (data: OnboardingFormData): OnboardingFormData => {
+    const processedData = { ...data }
+
+    // Process pets array
+    processedData.pets = data.pets.map((pet) => ({
+      ...pet,
+      sex: pet.sex?.trim() === "" ? null : pet.sex,
+      birthDate: pet.birthDate?.trim() === "" ? null : pet.birthDate,
+      weight: pet.weight?.trim() === "" ? null : pet.weight,
+      notes: pet.notes?.trim() === "" ? null : pet.notes,
+    }))
+
+    return processedData
   }
 
   const validateStep = () => {
