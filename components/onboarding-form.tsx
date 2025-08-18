@@ -111,8 +111,21 @@ export default function OnboardingForm({
       }
     })
 
-    setAvailableBreeds(newAvailableBreeds)
-  }, [formData.pets, petTypes, breedOptions])
+    const hasChanged =
+      Object.keys(newAvailableBreeds).length !== Object.keys(availableBreeds).length ||
+      Object.keys(newAvailableBreeds).some((key) => {
+        const newBreeds = newAvailableBreeds[Number.parseInt(key)]
+        const currentBreeds = availableBreeds[Number.parseInt(key)] || []
+        return (
+          newBreeds.length !== currentBreeds.length ||
+          newBreeds.some((breed, idx) => breed.value !== currentBreeds[idx]?.value)
+        )
+      })
+
+    if (hasChanged) {
+      setAvailableBreeds(newAvailableBreeds)
+    }
+  }, [formData.pets, petTypes, breedOptions, availableBreeds])
 
   const updateFormData = (field: keyof Omit<OnboardingFormData, "pets">, value: string) => {
     setFormData((prev) => ({
