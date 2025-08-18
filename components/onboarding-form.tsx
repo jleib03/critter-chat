@@ -66,6 +66,7 @@ export default function OnboardingForm({
         birthDay?: string
         birthYear?: string
         weight?: string
+        spayedNeutered?: string
       }
     }
   }>({})
@@ -86,7 +87,7 @@ export default function OnboardingForm({
         type: "",
         breed: "",
         age: "",
-        isSpayedOrNeutered: false,
+        spayedNeutered: "",
         notes: "",
         sex: "",
         birthMonth: "",
@@ -191,7 +192,7 @@ export default function OnboardingForm({
           type: "",
           breed: "",
           age: "",
-          isSpayedOrNeutered: false,
+          spayedNeutered: "",
           notes: "",
           sex: "",
           birthMonth: "",
@@ -253,6 +254,7 @@ export default function OnboardingForm({
           : null,
       weight: pet.weight?.trim() === "" ? null : pet.weight,
       notes: pet.notes?.trim() === "" ? null : pet.notes,
+      spayedNeutered: pet.spayedNeutered?.trim() === "" ? null : pet.spayedNeutered,
     }))
 
     return processedData
@@ -292,6 +294,7 @@ export default function OnboardingForm({
           age?: string
           sex?: string
           weight?: string
+          spayedNeutered?: string
         }
       } = {}
       let hasPetErrors = false
@@ -304,6 +307,7 @@ export default function OnboardingForm({
           age?: string
           sex?: string
           weight?: string
+          spayedNeutered?: string
         } = {}
 
         if (!pet.name.trim()) {
@@ -321,11 +325,6 @@ export default function OnboardingForm({
           hasPetErrors = true
         }
 
-        // if (!pet.age.trim()) {
-        //   petError.age = "Age is required"
-        //   hasPetErrors = true
-        // }
-
         if (!pet.sex?.trim()) {
           petError.sex = "Sex is required"
           hasPetErrors = true
@@ -333,6 +332,11 @@ export default function OnboardingForm({
 
         if (!pet.weight?.trim()) {
           petError.weight = "Weight is required"
+          hasPetErrors = true
+        }
+
+        if (!pet.spayedNeutered?.trim()) {
+          petError.spayedNeutered = "Spayed/Neutered status is required"
           hasPetErrors = true
         }
 
@@ -786,18 +790,28 @@ export default function OnboardingForm({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div className="flex items-center">
-                  <label className="flex items-center body-font">
-                    <input
-                      type="checkbox"
-                      checked={pet.isSpayedOrNeutered}
-                      onChange={(e) => updatePetData(index, "isSpayedOrNeutered", e.target.checked)}
-                      className="mr-2 h-4 w-4 text-[#E75837] focus:ring-2 focus:ring-[#E75837] border-gray-300 rounded"
-                    />
-                    Spayed/Neutered
-                  </label>
-                </div>
+              <div className="mb-4">
+                <label
+                  htmlFor={`petSpayedNeutered-${index}`}
+                  className="block text-sm font-medium text-gray-700 mb-1 header-font"
+                >
+                  Spayed/Neutered*
+                </label>
+                <select
+                  id={`petSpayedNeutered-${index}`}
+                  value={pet.spayedNeutered || ""}
+                  onChange={(e) => updatePetData(index, "spayedNeutered", e.target.value)}
+                  className={`w-full p-3 border ${formErrors.pets?.[index]?.spayedNeutered ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
+                  required
+                >
+                  <option value="">Select status</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                  <option value="N/A">N/A</option>
+                </select>
+                {formErrors.pets?.[index]?.spayedNeutered && (
+                  <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].spayedNeutered}</p>
+                )}
               </div>
 
               <div>
