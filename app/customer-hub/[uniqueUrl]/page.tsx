@@ -297,7 +297,99 @@ export default function CustomerHubPage() {
         const firstItem = data[0]
         console.log("[v0] First item:", JSON.stringify(firstItem, null, 2))
 
-        const pets = firstItem?.pets || []
+        const rawPets = firstItem?.pets || []
+        const pets = rawPets.map((petData: any) => {
+          const pet = petData.pet || {}
+          const carePlan = petData.carePlan || {}
+          const careDetails = petData.careDetails || {}
+          const healthInfo = petData.healthInfo || {}
+
+          // Extract feeding instructions
+          let feeding_instructions = carePlan.general_feeding_notes || ""
+          if (careDetails.feedings && careDetails.feedings.length > 0) {
+            const feedingDetails = careDetails.feedings
+              .map(
+                (f: any) =>
+                  `${f.time ? f.time : ""} - ${f.amount || ""} ${f.food_name || ""}: ${f.instructions || f.food_notes || ""}`,
+              )
+              .filter(Boolean)
+              .join("; ")
+            feeding_instructions = [carePlan.general_feeding_notes, feedingDetails].filter(Boolean).join(" ")
+          }
+
+          // Extract medication schedule
+          let medication_schedule = ""
+          if (careDetails.medications && careDetails.medications.length > 0) {
+            medication_schedule = careDetails.medications
+              .map(
+                (m: any) =>
+                  `${m.medication_name || ""} - ${m.frequency || ""} ${m.amount || ""}: ${m.instructions || m.medication_notes || ""}`,
+              )
+              .filter(Boolean)
+              .join("; ")
+          }
+
+          // Extract exercise requirements
+          let exercise_requirements = carePlan.general_exercise_and_play_notes || ""
+          if (careDetails.walks && careDetails.walks.length > 0) {
+            const walkDetails = careDetails.walks
+              .map(
+                (w: any) =>
+                  `${w.start_time ? w.start_time : ""} - ${w.typical_length_minutes || ""} minutes: ${w.instructions || ""}`,
+              )
+              .filter(Boolean)
+              .join("; ")
+            exercise_requirements = [carePlan.general_exercise_and_play_notes, carePlan.play_instructions, walkDetails]
+              .filter(Boolean)
+              .join(" ")
+          } else if (carePlan.play_instructions) {
+            exercise_requirements = [carePlan.general_exercise_and_play_notes, carePlan.play_instructions]
+              .filter(Boolean)
+              .join(" ")
+          }
+
+          // Extract other care details
+          const grooming_notes = carePlan.general_grooming_and_cleaning_notes || ""
+          const behavioral_notes = [
+            carePlan.general_behavioral_notes,
+            carePlan.interactions_with_adults_notes,
+            carePlan.interactions_with_kids_notes,
+            carePlan.interactions_with_animals_notes,
+          ]
+            .filter(Boolean)
+            .join(" ")
+          const medical_conditions = healthInfo.conditions
+            ? healthInfo.conditions.map((c: any) => c.condition_name || c.name || "").join(", ")
+            : ""
+          const allergies = healthInfo.allergies
+            ? healthInfo.allergies.map((a: any) => a.allergy_name || a.name || "").join(", ")
+            : ""
+          const special_instructions = [
+            carePlan.general_health_notes,
+            carePlan.sleep_instructions,
+            carePlan.general_sleeping_notes,
+            carePlan.miscellaneous_notes,
+          ]
+            .filter(Boolean)
+            .join(" ")
+
+          return {
+            pet_name: pet.pet_name || "",
+            pet_id: pet.pet_id || "",
+            pet_type: pet.pet_type || "",
+            feeding_instructions: feeding_instructions.trim(),
+            medication_schedule: medication_schedule.trim(),
+            exercise_requirements: exercise_requirements.trim(),
+            grooming_notes: grooming_notes.trim(),
+            behavioral_notes: behavioral_notes.trim(),
+            medical_conditions: medical_conditions.trim(),
+            allergies: allergies.trim(),
+            special_instructions: special_instructions.trim(),
+            emergency_contact: "", // Not provided in current webhook structure
+            veterinarian_info: "", // Not provided in current webhook structure
+          }
+        })
+
         const lastItem = data[data.length - 1]
         const invoices = lastItem?.invoices || []
         const payment_instructions = lastItem?.payment_instructions || ""
