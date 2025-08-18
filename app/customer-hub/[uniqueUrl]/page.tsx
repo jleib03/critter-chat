@@ -297,12 +297,38 @@ export default function CustomerHubPage() {
         const firstItem = data[0]
         console.log("[v0] First item:", JSON.stringify(firstItem, null, 2))
 
-        const rawPets = firstItem?.pets || []
-        const pets = rawPets.map((petData: any) => {
-          const pet = petData.pet || {}
-          const carePlan = petData.carePlan || {}
-          const careDetails = petData.careDetails || {}
-          const healthInfo = petData.healthInfo || {}
+        const basicPets = firstItem?.pets || []
+        console.log("[v0] Basic pets from first item:", JSON.stringify(basicPets, null, 2))
+
+        const detailedPetItems = data.filter((item) => item.pet && item.pet.pet_id)
+        console.log("[v0] Detailed pet items:", JSON.stringify(detailedPetItems, null, 2))
+
+        const pets = basicPets.map((basicPet: any) => {
+          // Find matching detailed pet object by pet_id
+          const detailedPet = detailedPetItems.find((item: any) => item.pet?.pet_id === basicPet.pet_id)
+
+          if (!detailedPet) {
+            // Return basic pet info if no detailed data found
+            return {
+              pet_name: basicPet.pet_name || "",
+              pet_id: basicPet.pet_id || "",
+              pet_type: basicPet.pet_type || "",
+              feeding_instructions: "",
+              medication_schedule: "",
+              exercise_requirements: "",
+              grooming_notes: "",
+              behavioral_notes: "",
+              medical_conditions: "",
+              allergies: "",
+              special_instructions: "",
+              emergency_contact: "",
+              veterinarian_info: "",
+            }
+          }
+
+          const carePlan = detailedPet.carePlan || {}
+          const careDetails = detailedPet.careDetails || {}
+          const healthInfo = detailedPet.healthInfo || {}
 
           // Extract feeding instructions
           let feeding_instructions = carePlan.general_feeding_notes || ""
@@ -374,9 +400,9 @@ export default function CustomerHubPage() {
             .join(" ")
 
           return {
-            pet_name: pet.pet_name || "",
-            pet_id: pet.pet_id || "",
-            pet_type: pet.pet_type || "",
+            pet_name: basicPet.pet_name || "",
+            pet_id: basicPet.pet_id || "",
+            pet_type: basicPet.pet_type || "",
             feeding_instructions: feeding_instructions.trim(),
             medication_schedule: medication_schedule.trim(),
             exercise_requirements: exercise_requirements.trim(),
@@ -390,12 +416,14 @@ export default function CustomerHubPage() {
           }
         })
 
+        console.log("[v0] Final processed pets:", JSON.stringify(pets, null, 2))
+
         const lastItem = data[data.length - 1]
         const invoices = lastItem?.invoices || []
         const payment_instructions = lastItem?.payment_instructions || ""
         console.log("[v0] Extracted invoices:", JSON.stringify(invoices, null, 2))
 
-        const bookings = data.slice(1, -1) || []
+        const bookings = data.filter((item) => item.booking_id && !item.pet && !item.invoices) || []
 
         setCustomerData({
           pets,
