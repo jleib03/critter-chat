@@ -336,7 +336,7 @@ export default function CustomerHubPage() {
             const feedingDetails = careDetails.feedings
               .map(
                 (f: any) =>
-                  `${f.time ? f.time : ""} - ${f.amount || ""} ${f.food_name || ""}: ${f.instructions || f.food_notes || ""}`,
+                  `${f.time ? convertToUserTimezone(f.time) : ""} - ${f.amount || ""} ${f.food_name || ""}: ${f.instructions || f.food_notes || ""}`,
               )
               .filter(Boolean)
               .join("; ")
@@ -349,7 +349,7 @@ export default function CustomerHubPage() {
             medication_schedule = careDetails.medications
               .map(
                 (m: any) =>
-                  `${m.medication_name || ""} - ${m.frequency || ""} ${m.amount || ""}: ${m.instructions || m.medication_notes || ""}`,
+                  `${m.medication_name || ""} - ${m.frequency || ""} ${m.amount || ""} ${m.time ? `at ${convertToUserTimezone(m.time)}` : ""}: ${m.instructions || m.medication_notes || ""}`,
               )
               .filter(Boolean)
               .join("; ")
@@ -361,7 +361,7 @@ export default function CustomerHubPage() {
             const walkDetails = careDetails.walks
               .map(
                 (w: any) =>
-                  `${w.start_time ? w.start_time : ""} - ${w.typical_length_minutes || ""} minutes: ${w.instructions || ""}`,
+                  `${w.start_time ? convertToUserTimezone(w.start_time) : ""} - ${w.typical_length_minutes || ""} minutes: ${w.instructions || ""}`,
               )
               .filter(Boolean)
               .join("; ")
