@@ -26,8 +26,8 @@ export default function ProfessionalSpecificPage() {
       try {
         setLoading(true)
         console.log("Fetching professional info for intake URL:", uniqueUrl)
-        const webhookUrl = getWebhookEndpoint("NEW_CUSTOMER_ONBOARDING")
-        logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "get_professional_name_by_url")
+        const webhookUrl = getWebhookEndpoint("CHAT_CONFIG")
+        logWebhookUsage("CHAT_CONFIG", "get_professional_name_by_url")
 
         const response = await fetch(webhookUrl, {
           method: "POST",
