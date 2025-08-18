@@ -6,12 +6,21 @@ import Header from "../../../components/header"
 import { Loader2 } from "lucide-react"
 import { getWebhookEndpoint, logWebhookUsage } from "../../../types/webhook-endpoints"
 
+interface PicklistItem {
+  table_name: string
+  picklist_type: string
+  value: string
+  label: string
+  category: string
+}
+
 export default function ProfessionalSpecificPage() {
   const params = useParams()
   const router = useRouter()
   const uniqueUrl = params.uniqueUrl as string
   const [professionalName, setProfessionalName] = useState<string>("")
   const [professionalId, setProfessionalId] = useState<string>("")
+  const [picklistData, setPicklistData] = useState<PicklistItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -111,6 +120,10 @@ export default function ProfessionalSpecificPage() {
               console.log("Found ID in data[0].id:", firstItem.id)
               setProfessionalId(firstItem.id)
             }
+
+            const picklistItems = data.slice(1).filter((item: any) => item.picklist_type && item.label && item.value)
+            console.log("[v0] Extracted picklistData:", picklistItems)
+            setPicklistData(picklistItems)
           } else if (data.name) {
             console.log("Found name in data.name:", data.name)
             setProfessionalName(data.name)
@@ -226,6 +239,7 @@ export default function ProfessionalSpecificPage() {
                   initialProfessionalName={professionalName}
                   skipProfessionalStep={true}
                   userInfo={null}
+                  picklistData={picklistData}
                 />
               </div>
             </>
