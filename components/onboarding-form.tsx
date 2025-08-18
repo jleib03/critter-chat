@@ -321,10 +321,10 @@ export default function OnboardingForm({
           hasPetErrors = true
         }
 
-        if (!pet.age.trim()) {
-          petError.age = "Age is required"
-          hasPetErrors = true
-        }
+        // if (!pet.age.trim()) {
+        //   petError.age = "Age is required"
+        //   hasPetErrors = true
+        // }
 
         if (!pet.sex?.trim()) {
           petError.sex = "Sex is required"
@@ -668,6 +668,33 @@ export default function OnboardingForm({
                     <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].type}</p>
                   )}
                 </div>
+              </div>
+
+              <div className="mb-4">
+                <label
+                  htmlFor={`petBreed-${index}`}
+                  className="block text-sm font-medium text-gray-700 mb-1 header-font"
+                >
+                  Breed/Variety*
+                </label>
+                <select
+                  id={`petBreed-${index}`}
+                  value={pet.breed}
+                  onChange={(e) => updatePetData(index, "breed", e.target.value)}
+                  className={`w-full p-3 border ${formErrors.pets?.[index]?.breed ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
+                  disabled={!pet.type}
+                  required
+                >
+                  <option value="">{pet.type ? "Select breed" : "Select pet type first"}</option>
+                  {availableBreeds[index]?.map((breed) => (
+                    <option key={breed.value} value={breed.value}>
+                      {breed.label}
+                    </option>
+                  ))}
+                </select>
+                {formErrors.pets?.[index]?.breed && (
+                  <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].breed}</p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
