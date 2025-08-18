@@ -344,8 +344,8 @@ export default function CustomerHubPage() {
       <div className="flex gap-3 p-4 bg-gray-50 rounded-lg">
         <div className="text-[#E75837] mt-0.5">{icon}</div>
         <div className="flex-1">
-          <h4 className="font-semibold text-gray-900 body-font mb-1">{label}</h4>
-          <p className="text-gray-700 body-font text-sm leading-relaxed">{value}</p>
+          <h4 className="font-semibold text-gray-900 font-body mb-1">{label}</h4>
+          <p className="text-gray-700 font-body text-sm leading-relaxed">{value}</p>
         </div>
       </div>
     )
@@ -378,14 +378,14 @@ export default function CustomerHubPage() {
                 <ArrowLeft className="w-6 h-6" />
               </button>
               <div>
-                <h1 className="text-3xl font-bold header-font">Customer Portal</h1>
-                <p className="text-white/90 body-font">Access your booking information and pet details</p>
+                <h1 className="text-3xl font-bold font-title">Customer Portal</h1>
+                <p className="text-white/90 font-body">Access your booking information and pet details</p>
               </div>
             </div>
             {step === "data" && customerData && (
               <Link
                 href={`/schedule/${uniqueUrl}`}
-                className="bg-white text-[#E75837] py-2 px-6 rounded-lg font-medium hover:bg-gray-100 transition-colors body-font flex items-center gap-2"
+                className="bg-white text-[#E75837] py-2 px-6 rounded-lg font-medium hover:bg-gray-100 transition-colors font-body flex items-center gap-2"
               >
                 <Plus className="w-5 h-5" />
                 New Appointment
@@ -402,7 +402,7 @@ export default function CustomerHubPage() {
             <div className="bg-white rounded-2xl shadow-lg p-8">
               <form onSubmit={handleEmailSubmit} className="space-y-6">
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2 body-font">
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2 font-body">
                     Enter your email address
                   </label>
                   <div className="relative">
@@ -413,26 +413,26 @@ export default function CustomerHubPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="your.email@example.com"
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent body-font"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent font-body"
                       required
                       disabled={isLoading}
                     />
                   </div>
-                  <p className="text-sm text-gray-500 mt-2 body-font">
+                  <p className="text-sm text-gray-500 mt-2 font-body">
                     We'll send you a verification code to access your information
                   </p>
                 </div>
 
                 {error && (
                   <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-600 body-font">{error}</p>
+                    <p className="text-red-600 font-body">{error}</p>
                   </div>
                 )}
 
                 <button
                   type="submit"
                   disabled={isLoading || !email.trim()}
-                  className="w-full bg-[#E75837] text-white py-3 px-6 rounded-lg font-medium hover:bg-[#d04e30] disabled:opacity-50 disabled:cursor-not-allowed transition-colors body-font flex items-center justify-center gap-2"
+                  className="w-full bg-[#E75837] text-white py-3 px-6 rounded-lg font-medium hover:bg-[#d04e30] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-body flex items-center justify-center gap-2"
                 >
                   {isLoading ? (
                     <>
@@ -457,15 +457,15 @@ export default function CustomerHubPage() {
             <div className="bg-white rounded-2xl shadow-lg p-8">
               <div className="text-center mb-6">
                 <Shield className="w-12 h-12 text-[#E75837] mx-auto mb-4" />
-                <h2 className="text-xl font-bold text-gray-900 header-font">Check Your Email</h2>
-                <p className="text-gray-600 body-font mt-2">
+                <h2 className="text-xl font-bold text-gray-900 font-header">Check Your Email</h2>
+                <p className="text-gray-600 font-body mt-2">
                   We've sent a verification code to <span className="font-medium">{email}</span>
                 </p>
               </div>
 
               <form onSubmit={handleCodeSubmit} className="space-y-6">
                 <div>
-                  <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2 body-font">
+                  <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2 font-body">
                     Enter verification code
                   </label>
                   <input
@@ -474,7 +474,7 @@ export default function CustomerHubPage() {
                     value={validationCode}
                     onChange={(e) => setValidationCode(e.target.value)}
                     placeholder="Enter 6-digit code"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent body-font text-center text-lg tracking-widest"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent font-body text-center text-lg tracking-widest"
                     required
                     disabled={isLoading}
                     maxLength={6}
@@ -483,7 +483,7 @@ export default function CustomerHubPage() {
 
                 {error && (
                   <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-600 body-font">{error}</p>
+                    <p className="text-red-600 font-body">{error}</p>
                   </div>
                 )}
 
@@ -491,7 +491,7 @@ export default function CustomerHubPage() {
                   <button
                     type="submit"
                     disabled={isLoading || !validationCode.trim()}
-                    className="w-full bg-[#E75837] text-white py-3 px-6 rounded-lg font-medium hover:bg-[#d04e30] disabled:opacity-50 disabled:cursor-not-allowed transition-colors body-font flex items-center justify-center gap-2"
+                    className="w-full bg-[#E75837] text-white py-3 px-6 rounded-lg font-medium hover:bg-[#d04e30] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-body flex items-center justify-center gap-2"
                   >
                     {isLoading ? (
                       <>
@@ -509,7 +509,7 @@ export default function CustomerHubPage() {
                   <button
                     type="button"
                     onClick={() => setStep("email")}
-                    className="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-200 transition-colors body-font"
+                    className="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-200 transition-colors font-body"
                   >
                     Use Different Email
                   </button>
@@ -571,7 +571,7 @@ export default function CustomerHubPage() {
               <div className="p-8">
                 {activeTab === "pets" && (
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6 header-font flex items-center gap-3">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6 font-header flex items-center gap-3">
                       <Heart className="w-8 h-8 text-[#E75837]" />
                       Your Pets
                     </h2>
@@ -589,8 +589,8 @@ export default function CustomerHubPage() {
                                     {getPetIcon(pet.pet_type)}
                                   </div>
                                   <div className="text-left">
-                                    <p className="font-bold text-xl body-font text-gray-900">{pet.pet_name}</p>
-                                    <p className="text-gray-600 body-font">{pet.pet_type}</p>
+                                    <p className="font-bold text-xl font-body text-gray-900">{pet.pet_name}</p>
+                                    <p className="text-gray-600 font-body">{pet.pet_type}</p>
                                   </div>
                                 </div>
                                 <div className="text-[#E75837]">
@@ -605,7 +605,7 @@ export default function CustomerHubPage() {
 
                             {expandedPet === pet.pet_id && (
                               <div className="p-6 space-y-4">
-                                <h3 className="text-lg font-bold text-gray-900 body-font mb-4 flex items-center gap-2">
+                                <h3 className="text-lg font-bold text-gray-900 font-body mb-4 flex items-center gap-2">
                                   <Heart className="w-5 h-5 text-[#E75837]" />
                                   Care Instructions for {pet.pet_name}
                                 </h3>
@@ -684,10 +684,10 @@ export default function CustomerHubPage() {
                                   !pet.special_instructions && (
                                     <div className="text-center py-8">
                                       <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                                      <p className="text-gray-600 body-font">
+                                      <p className="text-gray-600 font-body">
                                         No care instructions available for {pet.pet_name}
                                       </p>
-                                      <p className="text-gray-500 body-font text-sm mt-1">
+                                      <p className="text-gray-500 font-body text-sm mt-1">
                                         Contact us to add care details
                                       </p>
                                     </div>
@@ -700,7 +700,7 @@ export default function CustomerHubPage() {
                     ) : (
                       <div className="text-center py-12">
                         <Heart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-600 body-font text-xl">No pets registered</p>
+                        <p className="text-gray-600 font-body text-xl">No pets registered</p>
                       </div>
                     )}
                   </div>
@@ -709,7 +709,7 @@ export default function CustomerHubPage() {
                 {activeTab === "appointments" && (
                   <div>
                     <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-2xl font-bold text-gray-900 header-font flex items-center gap-3">
+                      <h2 className="text-2xl font-bold text-gray-900 font-header flex items-center gap-3">
                         <Calendar className="w-8 h-8 text-[#E75837]" />
                         Your Appointments
                       </h2>
@@ -722,7 +722,7 @@ export default function CustomerHubPage() {
                         >
                           <ChevronLeft className="w-5 h-5" />
                         </button>
-                        <h3 className="text-lg font-semibold body-font min-w-[200px] text-center">
+                        <h3 className="text-lg font-semibold font-body min-w-[200px] text-center">
                           {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
                         </h3>
                         <button
@@ -741,7 +741,7 @@ export default function CustomerHubPage() {
                         {/* Calendar Grid */}
                         <div className="grid grid-cols-7 gap-1 mb-4">
                           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                            <div key={day} className="p-3 text-center font-semibold text-gray-600 body-font">
+                            <div key={day} className="p-3 text-center font-semibold text-gray-600 font-body">
                               {day}
                             </div>
                           ))}
@@ -785,27 +785,27 @@ export default function CustomerHubPage() {
                         <div className="mt-6 flex flex-wrap gap-4">
                           <div className="flex items-center gap-2">
                             <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
-                            <span className="text-sm body-font">Walking</span>
+                            <span className="text-sm font-body">Walking</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="w-4 h-4 bg-purple-100 border border-purple-300 rounded"></div>
-                            <span className="text-sm body-font">Grooming</span>
+                            <span className="text-sm font-body">Grooming</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="w-4 h-4 bg-blue-100 border border-blue-300 rounded"></div>
-                            <span className="text-sm body-font">Drop-in</span>
+                            <span className="text-sm font-body">Drop-in</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="w-4 h-4 bg-orange-100 border border-orange-300 rounded"></div>
-                            <span className="text-sm body-font">Other</span>
+                            <span className="text-sm font-body">Other</span>
                           </div>
                         </div>
                       </>
                     ) : (
                       <div className="text-center py-12">
                         <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-600 body-font text-xl mb-2">No upcoming appointments scheduled</p>
-                        <p className="text-gray-500 body-font">Contact us to book your next appointment!</p>
+                        <p className="text-gray-600 font-body text-xl mb-2">No upcoming appointments scheduled</p>
+                        <p className="text-gray-500 font-body">Contact us to book your next appointment!</p>
                       </div>
                     )}
                   </div>
@@ -814,7 +814,7 @@ export default function CustomerHubPage() {
                 {activeTab === "invoices" && (
                   <div>
                     <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-2xl font-bold text-gray-900 header-font flex items-center gap-3">
+                      <h2 className="text-2xl font-bold text-gray-900 font-header flex items-center gap-3">
                         <FileText className="w-8 h-8 text-[#E75837]" />
                         Invoices
                       </h2>
@@ -830,10 +830,10 @@ export default function CustomerHubPage() {
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-4 mb-2">
-                                  <h3 className="text-lg font-bold text-gray-900 body-font">{invoice.amount}</h3>
-                                  <span className="text-gray-600 body-font">Due {invoice.due_date}</span>
+                                  <h3 className="text-lg font-bold text-gray-900 font-body">{invoice.amount}</h3>
+                                  <span className="text-gray-600 font-body">Due {invoice.due_date}</span>
                                 </div>
-                                <p className="text-gray-600 body-font">Invoice #{invoice.invoice_number}</p>
+                                <p className="text-gray-600 font-body">Invoice #{invoice.invoice_number}</p>
                               </div>
                               <div className="flex-shrink-0">
                                 <span
@@ -850,7 +850,7 @@ export default function CustomerHubPage() {
 
                         {customerData.payment_instructions && (
                           <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                            <p className="text-blue-800 body-font text-sm">
+                            <p className="text-blue-800 font-body text-sm">
                               <strong>Payment Instructions:</strong> {customerData.payment_instructions}
                             </p>
                           </div>
@@ -859,7 +859,7 @@ export default function CustomerHubPage() {
                     ) : (
                       <div className="text-center py-12">
                         <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-600 body-font text-xl">No invoices found</p>
+                        <p className="text-gray-600 font-body text-xl">No invoices found</p>
                       </div>
                     )}
                   </div>
@@ -871,7 +871,7 @@ export default function CustomerHubPage() {
             <div className="text-center">
               <button
                 onClick={resetForm}
-                className="bg-gray-100 text-gray-700 py-3 px-8 rounded-lg font-medium hover:bg-gray-200 transition-colors body-font"
+                className="bg-gray-100 text-gray-700 py-3 px-8 rounded-lg font-medium hover:bg-gray-200 transition-colors font-body"
               >
                 Look up different email
               </button>
