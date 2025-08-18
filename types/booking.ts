@@ -65,7 +65,9 @@ export type PetFormData = {
   isSpayedOrNeutered: boolean
   notes: string
   sex?: string | null
-  birthDate?: string | null
+  birthMonth?: string | null
+  birthDay?: string | null
+  birthYear?: string | null
   weight?: string | null
 }
 

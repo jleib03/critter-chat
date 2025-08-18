@@ -62,7 +62,9 @@ export default function OnboardingForm({
         breed?: string
         age?: string
         sex?: string
-        birthDate?: string
+        birthMonth?: string
+        birthDay?: string
+        birthYear?: string
         weight?: string
       }
     }
@@ -87,7 +89,9 @@ export default function OnboardingForm({
         isSpayedOrNeutered: false,
         notes: "",
         sex: "",
-        birthDate: "",
+        birthMonth: "",
+        birthDay: "",
+        birthYear: "",
         weight: "",
       },
     ],
@@ -203,7 +207,9 @@ export default function OnboardingForm({
           isSpayedOrNeutered: false,
           notes: "",
           sex: "",
-          birthDate: "",
+          birthMonth: "",
+          birthDay: "",
+          birthYear: "",
           weight: "",
         },
       ],
@@ -254,7 +260,10 @@ export default function OnboardingForm({
     processedData.pets = data.pets.map((pet) => ({
       ...pet,
       sex: pet.sex?.trim() === "" ? null : pet.sex,
-      birthDate: pet.birthDate?.trim() === "" ? null : pet.birthDate,
+      birthDate:
+        pet.birthMonth && pet.birthDay && pet.birthYear
+          ? `${pet.birthYear}-${pet.birthMonth.padStart(2, "0")}-${pet.birthDay.padStart(2, "0")}`
+          : null,
       weight: pet.weight?.trim() === "" ? null : pet.weight,
       notes: pet.notes?.trim() === "" ? null : pet.notes,
     }))
@@ -295,7 +304,6 @@ export default function OnboardingForm({
           breed?: string
           age?: string
           sex?: string
-          birthDate?: string
           weight?: string
         }
       } = {}
@@ -308,7 +316,6 @@ export default function OnboardingForm({
           breed?: string
           age?: string
           sex?: string
-          birthDate?: string
           weight?: string
         } = {}
 
@@ -329,6 +336,16 @@ export default function OnboardingForm({
 
         if (!pet.age.trim()) {
           petError.age = "Age is required"
+          hasPetErrors = true
+        }
+
+        if (!pet.sex?.trim()) {
+          petError.sex = "Sex is required"
+          hasPetErrors = true
+        }
+
+        if (!pet.weight?.trim()) {
+          petError.weight = "Weight is required"
           hasPetErrors = true
         }
 
@@ -666,104 +683,92 @@ export default function OnboardingForm({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label
-                    htmlFor={`petBreed-${index}`}
-                    className="block text-sm font-medium text-gray-700 mb-1 header-font"
-                  >
-                    Breed/Variety*
-                  </label>
-                  <select
-                    id={`petBreed-${index}`}
-                    value={pet.breed}
-                    onChange={(e) => updatePetData(index, "breed", e.target.value)}
-                    className={`w-full p-3 border ${formErrors.pets?.[index]?.breed ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
-                    required
-                    disabled={!pet.type}
-                  >
-                    <option value="">{pet.type ? "Select breed" : "Select pet type first"}</option>
-                    {availableBreeds[index]?.map((breed) => (
-                      <option key={breed.value} value={breed.value}>
-                        {breed.label}
-                      </option>
-                    ))}
-                  </select>
-                  {formErrors.pets?.[index]?.breed && (
-                    <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].breed}</p>
-                  )}
-                </div>
-                <div>
-                  <label
-                    htmlFor={`petAge-${index}`}
-                    className="block text-sm font-medium text-gray-700 mb-1 header-font"
-                  >
-                    Age*
-                  </label>
-                  <input
-                    type="text"
-                    id={`petAge-${index}`}
-                    value={pet.age}
-                    onChange={(e) => updatePetData(index, "age", e.target.value)}
-                    className={`w-full p-3 border ${formErrors.pets?.[index]?.age ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
-                    placeholder="e.g., 3 years"
-                    required
-                  />
-                  {formErrors.pets?.[index]?.age && (
-                    <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].age}</p>
-                  )}
-                </div>
-              </div>
-
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div>
                   <label
                     htmlFor={`petSex-${index}`}
                     className="block text-sm font-medium text-gray-700 mb-1 header-font"
                   >
-                    Sex
+                    Sex*
                   </label>
                   <select
                     id={`petSex-${index}`}
                     value={pet.sex || ""}
                     onChange={(e) => updatePetData(index, "sex", e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
+                    className={`w-full p-3 border ${formErrors.pets?.[index]?.sex ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
+                    required
                   >
                     <option value="">Select sex</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
                   </select>
+                  {formErrors.pets?.[index]?.sex && (
+                    <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].sex}</p>
+                  )}
                 </div>
                 <div>
-                  <label
-                    htmlFor={`petBirthDate-${index}`}
-                    className="block text-sm font-medium text-gray-700 mb-1 header-font"
-                  >
-                    Birth Date
-                  </label>
-                  <input
-                    type="date"
-                    id={`petBirthDate-${index}`}
-                    value={pet.birthDate || ""}
-                    onChange={(e) => updatePetData(index, "birthDate", e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-1 header-font">Birth Date</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <select
+                      value={pet.birthMonth || ""}
+                      onChange={(e) => updatePetData(index, "birthMonth", e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font text-sm"
+                    >
+                      <option value="">Month</option>
+                      {Array.from({ length: 12 }, (_, i) => (
+                        <option key={i + 1} value={i + 1}>
+                          {new Date(0, i).toLocaleString("default", { month: "short" })}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={pet.birthDay || ""}
+                      onChange={(e) => updatePetData(index, "birthDay", e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font text-sm"
+                    >
+                      <option value="">Day</option>
+                      {Array.from({ length: 31 }, (_, i) => (
+                        <option key={i + 1} value={i + 1}>
+                          {i + 1}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={pet.birthYear || ""}
+                      onChange={(e) => updatePetData(index, "birthYear", e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font text-sm"
+                    >
+                      <option value="">Year</option>
+                      {Array.from({ length: 30 }, (_, i) => {
+                        const year = new Date().getFullYear() - i
+                        return (
+                          <option key={year} value={year}>
+                            {year}
+                          </option>
+                        )
+                      })}
+                    </select>
+                  </div>
                 </div>
                 <div>
                   <label
                     htmlFor={`petWeight-${index}`}
                     className="block text-sm font-medium text-gray-700 mb-1 header-font"
                   >
-                    Weight
+                    Weight*
                   </label>
                   <input
                     type="text"
                     id={`petWeight-${index}`}
                     value={pet.weight || ""}
                     onChange={(e) => updatePetData(index, "weight", e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
+                    className={`w-full p-3 border ${formErrors.pets?.[index]?.weight ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
                     placeholder="e.g., 25 lbs"
+                    required
                   />
+                  {formErrors.pets?.[index]?.weight && (
+                    <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].weight}</p>
+                  )}
                 </div>
               </div>
 
