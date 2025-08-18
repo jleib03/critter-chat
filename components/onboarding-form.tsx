@@ -38,7 +38,17 @@ export default function OnboardingForm({
     city?: string
     state?: string
     zipCode?: string
-    pets?: { [key: number]: { name?: string; type?: string; breed?: string; age?: string } }
+    pets?: {
+      [key: number]: {
+        name?: string
+        type?: string
+        breed?: string
+        age?: string
+        sex?: string
+        birthDate?: string
+        weight?: string
+      }
+    }
   }>({})
 
   const [formData, setFormData] = useState<OnboardingFormData>({
@@ -59,6 +69,9 @@ export default function OnboardingForm({
         age: "",
         isSpayedOrNeutered: false,
         notes: "",
+        sex: "",
+        birthDate: "",
+        weight: "",
       },
     ],
   })
@@ -122,6 +135,9 @@ export default function OnboardingForm({
           age: "",
           isSpayedOrNeutered: false,
           notes: "",
+          sex: "",
+          birthDate: "",
+          weight: "",
         },
       ],
     }))
@@ -189,11 +205,29 @@ export default function OnboardingForm({
       if (!formData.state.trim()) errors.state = "State is required"
       if (!formData.zipCode.trim()) errors.zipCode = "ZIP code is required"
     } else if (currentStep === 3) {
-      const petErrors: { [key: number]: { name?: string; type?: string; breed?: string; age?: string } } = {}
+      const petErrors: {
+        [key: number]: {
+          name?: string
+          type?: string
+          breed?: string
+          age?: string
+          sex?: string
+          birthDate?: string
+          weight?: string
+        }
+      } = {}
       let hasPetErrors = false
 
       formData.pets.forEach((pet, index) => {
-        const petError: { name?: string; type?: string; breed?: string; age?: string } = {}
+        const petError: {
+          name?: string
+          type?: string
+          breed?: string
+          age?: string
+          sex?: string
+          birthDate?: string
+          weight?: string
+        } = {}
 
         if (!pet.name.trim()) {
           petError.name = "Pet name is required"
@@ -591,6 +625,58 @@ export default function OnboardingForm({
                   {formErrors.pets?.[index]?.age && (
                     <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].age}</p>
                   )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label
+                    htmlFor={`petSex-${index}`}
+                    className="block text-sm font-medium text-gray-700 mb-1 header-font"
+                  >
+                    Sex
+                  </label>
+                  <select
+                    id={`petSex-${index}`}
+                    value={pet.sex || ""}
+                    onChange={(e) => updatePetData(index, "sex", e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
+                  >
+                    <option value="">Select sex</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
+                </div>
+                <div>
+                  <label
+                    htmlFor={`petBirthDate-${index}`}
+                    className="block text-sm font-medium text-gray-700 mb-1 header-font"
+                  >
+                    Birth Date
+                  </label>
+                  <input
+                    type="date"
+                    id={`petBirthDate-${index}`}
+                    value={pet.birthDate || ""}
+                    onChange={(e) => updatePetData(index, "birthDate", e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor={`petWeight-${index}`}
+                    className="block text-sm font-medium text-gray-700 mb-1 header-font"
+                  >
+                    Weight
+                  </label>
+                  <input
+                    type="text"
+                    id={`petWeight-${index}`}
+                    value={pet.weight || ""}
+                    onChange={(e) => updatePetData(index, "weight", e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
+                    placeholder="e.g., 25 lbs"
+                  />
                 </div>
               </div>
 
