@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { PlusCircle, MinusCircle, ArrowRight, ArrowLeft, Loader2 } from "lucide-react"
 import type { OnboardingFormData, PetFormData } from "../types/booking"
 
@@ -9,6 +9,14 @@ type UserInfo = {
   lastName: string
 }
 
+type PicklistItem = {
+  table_name: string
+  picklist_type: "type" | "breed"
+  value: string
+  label: string
+  category: string
+}
+
 type OnboardingFormProps = {
   onSubmit: (data: OnboardingFormData) => void
   onCancel: () => void
@@ -16,6 +24,7 @@ type OnboardingFormProps = {
   professionalId?: string
   professionalName?: string
   userInfo?: UserInfo | null
+  picklistData?: PicklistItem[]
 }
 
 export default function OnboardingForm({
@@ -25,9 +34,13 @@ export default function OnboardingForm({
   professionalId,
   professionalName,
   userInfo,
+  picklistData = [],
 }: OnboardingFormProps) {
   const [currentStep, setCurrentStep] = useState(skipProfessionalStep ? 2 : 1)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const [availableBreeds, setAvailableBreeds] = useState<{ [petIndex: number]: PicklistItem[] }>({})
+
   const [formErrors, setFormErrors] = useState<{
     professionalName?: string
     firstName?: string
@@ -76,6 +89,27 @@ export default function OnboardingForm({
     ],
   })
 
+  const petTypes = picklistData.filter((item) => item.picklist_type === "type" && item.category === "Pet Type")
+  const breedOptions = picklistData.filter((item) => item.picklist_type === "breed")
+
+  useEffect(() => {
+    const newAvailableBreeds: { [petIndex: number]: PicklistItem[] } = {}
+
+    formData.pets.forEach((pet, index) => {
+      if (pet.type) {
+        // Find the selected pet type to get its label for matching with breed categories
+        const selectedPetType = petTypes.find((type) => type.value === pet.type)
+        if (selectedPetType) {
+          newAvailableBreeds[index] = breedOptions.filter((breed) => breed.category === selectedPetType.label)
+        }
+      } else {
+        newAvailableBreeds[index] = []
+      }
+    })
+
+    setAvailableBreeds(newAvailableBreeds)
+  }, [formData.pets, petTypes, breedOptions])
+
   const updateFormData = (field: keyof Omit<OnboardingFormData, "pets">, value: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -98,6 +132,11 @@ export default function OnboardingForm({
         ...updatedPets[index],
         [field]: value,
       }
+
+      if (field === "type") {
+        updatedPets[index].breed = ""
+      }
+
       return {
         ...prev,
         pets: updatedPets,
@@ -587,13 +626,11 @@ export default function OnboardingForm({
                     required
                   >
                     <option value="">Select type</option>
-                    <option value="Dog">Dog</option>
-                    <option value="Cat">Cat</option>
-                    <option value="Bird">Bird</option>
-                    <option value="Fish">Fish</option>
-                    <option value="Reptile">Reptile</option>
-                    <option value="Small Animal">Small Animal</option>
-                    <option value="Other">Other</option>
+                    {petTypes.map((type) => (
+                      <option key={type.value} value={type.value}>
+                        {type.label}
+                      </option>
+                    ))}
                   </select>
                   {formErrors.pets?.[index]?.type && (
                     <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].type}</p>
@@ -609,15 +646,21 @@ export default function OnboardingForm({
                   >
                     Breed/Variety*
                   </label>
-                  <input
-                    type="text"
+                  <select
                     id={`petBreed-${index}`}
                     value={pet.breed}
                     onChange={(e) => updatePetData(index, "breed", e.target.value)}
                     className={`w-full p-3 border ${formErrors.pets?.[index]?.breed ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
-                    placeholder="e.g., Labrador, Siamese"
                     required
-                  />
+                    disabled={!pet.type}
+                  >
+                    <option value="">{pet.type ? "Select breed" : "Select pet type first"}</option>
+                    {availableBreeds[index]?.map((breed) => (
+                      <option key={breed.value} value={breed.value}>
+                        {breed.label}
+                      </option>
+                    ))}
+                  </select>
                   {formErrors.pets?.[index]?.breed && (
                     <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].breed}</p>
                   )}
