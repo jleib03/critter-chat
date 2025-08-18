@@ -38,10 +38,10 @@ export default function ProfessionalSpecificPage() {
 
         const webhookUrl = getWebhookEndpoint("NEW_CUSTOMER_ONBOARDING")
         console.log("[v0] Webhook URL:", webhookUrl)
-        logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "get_professional_name")
+        logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "initialize_customer_hub")
 
         const requestPayload = {
-          action: "get_professional_name",
+          action: "initialize_customer_hub",
           uniqueUrl: uniqueUrl,
         }
         console.log("[v0] Request payload:", JSON.stringify(requestPayload, null, 2))
