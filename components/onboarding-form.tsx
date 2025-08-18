@@ -125,7 +125,7 @@ export default function OnboardingForm({
     if (hasChanged) {
       setAvailableBreeds(newAvailableBreeds)
     }
-  }, [formData.pets, petTypes, breedOptions, availableBreeds])
+  }, [formData.pets, petTypes, breedOptions])
 
   const updateFormData = (field: keyof Omit<OnboardingFormData, "pets">, value: string) => {
     setFormData((prev) => ({
