@@ -36,6 +36,10 @@ export default function OnboardingForm({
   userInfo,
   picklistData = [],
 }: OnboardingFormProps) {
+  console.log("[v0] OnboardingForm received picklistData:", picklistData)
+  console.log("[v0] picklistData length:", picklistData.length)
+  console.log("[v0] picklistData sample:", picklistData.slice(0, 3))
+
   const [currentStep, setCurrentStep] = useState(skipProfessionalStep ? 2 : 1)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -89,12 +93,19 @@ export default function OnboardingForm({
     ],
   })
 
-  const petTypes = useMemo(
-    () => picklistData.filter((item) => item.picklist_type === "type" && item.category === "Pet Type"),
-    [picklistData],
-  )
+  const petTypes = useMemo(() => {
+    const filtered = picklistData.filter((item) => item.picklist_type === "type" && item.category === "Pet Type")
+    console.log("[v0] Filtered petTypes:", filtered)
+    console.log("[v0] petTypes length:", filtered.length)
+    return filtered
+  }, [picklistData])
 
-  const breedOptions = useMemo(() => picklistData.filter((item) => item.picklist_type === "breed"), [picklistData])
+  const breedOptions = useMemo(() => {
+    const filtered = picklistData.filter((item) => item.picklist_type === "breed")
+    console.log("[v0] Filtered breedOptions:", filtered)
+    console.log("[v0] breedOptions length:", filtered.length)
+    return filtered
+  }, [picklistData])
 
   useEffect(() => {
     const newAvailableBreeds: { [petIndex: number]: PicklistItem[] } = {}

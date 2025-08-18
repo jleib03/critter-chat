@@ -24,6 +24,7 @@ type NewCustomerIntakeProps = {
   initialProfessionalId?: string
   initialProfessionalName?: string
   skipProfessionalStep?: boolean
+  picklistData?: any[]
 }
 
 // More conservative function to determine if a service is an add-on
@@ -91,6 +92,7 @@ export default function NewCustomerIntake({
   initialProfessionalId,
   initialProfessionalName,
   skipProfessionalStep,
+  picklistData = [],
 }: NewCustomerIntakeProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -583,6 +585,7 @@ export default function NewCustomerIntake({
           professionalId={initialProfessionalId}
           professionalName={resolvedProfessionalName || initialProfessionalName}
           userInfo={initialUserInfo && initialUserInfo.firstName ? initialUserInfo : null}
+          picklistData={picklistData}
         />
       )}
       {currentStep === "services" && servicesData && (
