@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { PlusCircle, MinusCircle, ArrowRight, ArrowLeft, Loader2 } from "lucide-react"
 import type { OnboardingFormData, PetFormData } from "../types/booking"
 
@@ -89,8 +89,12 @@ export default function OnboardingForm({
     ],
   })
 
-  const petTypes = picklistData.filter((item) => item.picklist_type === "type" && item.category === "Pet Type")
-  const breedOptions = picklistData.filter((item) => item.picklist_type === "breed")
+  const petTypes = useMemo(
+    () => picklistData.filter((item) => item.picklist_type === "type" && item.category === "Pet Type"),
+    [picklistData],
+  )
+
+  const breedOptions = useMemo(() => picklistData.filter((item) => item.picklist_type === "breed"), [picklistData])
 
   useEffect(() => {
     const newAvailableBreeds: { [petIndex: number]: PicklistItem[] } = {}
