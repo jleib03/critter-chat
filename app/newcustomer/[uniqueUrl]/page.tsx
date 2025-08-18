@@ -25,28 +25,38 @@ export default function ProfessionalSpecificPage() {
     const fetchProfessionalName = async () => {
       try {
         setLoading(true)
-        console.log("Fetching professional info for intake URL:", uniqueUrl)
+        console.log("[v0] Fetching professional info for intake URL:", uniqueUrl)
+
         const webhookUrl = getWebhookEndpoint("NEW_CUSTOMER_ONBOARDING")
+        console.log("[v0] Webhook URL:", webhookUrl)
         logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "get_professional_name")
+
+        const requestPayload = {
+          action: "get_professional_name",
+          uniqueUrl: uniqueUrl,
+        }
+        console.log("[v0] Request payload:", JSON.stringify(requestPayload, null, 2))
 
         const response = await fetch(webhookUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            action: "get_professional_name",
-            uniqueUrl: uniqueUrl,
-          }),
+          body: JSON.stringify(requestPayload),
         })
 
+        console.log("[v0] Response status:", response.status)
+        console.log("[v0] Response ok:", response.ok)
+        console.log("[v0] Response headers:", Object.fromEntries(response.headers.entries()))
+
         if (!response.ok) {
-          throw new Error(`Error: ${response.status}`)
+          console.log("[v0] Response not ok, status:", response.status, response.statusText)
+          throw new Error(`HTTP Error: ${response.status} ${response.statusText}`)
         }
 
         // Get the raw text first to debug
         const rawText = await response.text()
-        console.log("Raw response:", rawText)
+        console.log("[v0] Raw response:", rawText)
 
         // Try to parse if it looks like JSON
         let data
@@ -161,8 +171,18 @@ export default function ProfessionalSpecificPage() {
           throw new Error("Empty response from server")
         }
       } catch (err) {
-        console.error("Error fetching professional name:", err)
-        setError("Professional not found")
+        console.error("[v0] Error fetching professional name:", err)
+        console.error("[v0] Error type:", typeof err)
+        console.error("[v0] Error message:", err instanceof Error ? err.message : String(err))
+        console.error("[v0] Error stack:", err instanceof Error ? err.stack : "No stack trace")
+
+        if (err instanceof TypeError && err.message.includes("fetch")) {
+          setError("Network connection failed. Please check your internet connection.")
+        } else if (err instanceof Error && err.message.includes("HTTP Error")) {
+          setError(`Server error: ${err.message}`)
+        } else {
+          setError("Professional not found")
+        }
       } finally {
         setLoading(false)
       }
