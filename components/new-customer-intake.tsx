@@ -230,6 +230,7 @@ export default function NewCustomerIntake({
   const handleSuccessfulSubmission = async (formData: any) => {
     try {
       setCurrentStep("submitting")
+      setError(null)
 
       // Send email webhook
       logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "send_confirmation_email")
@@ -261,9 +262,11 @@ export default function NewCustomerIntake({
         console.log("Email webhook sent successfully")
       } else {
         console.error("Email webhook failed:", emailResponse.status)
+        console.log("Email failed but proceeding to success screen since pet submission succeeded")
       }
     } catch (error) {
       console.error("Error sending email webhook:", error)
+      console.log("Email webhook error but proceeding to success screen since pet submission succeeded")
     } finally {
       setCurrentStep("success")
     }
