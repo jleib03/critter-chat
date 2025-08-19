@@ -356,35 +356,41 @@ export default function NewCustomerIntake({
             <p className="text-lg text-gray-700 mb-6 body-font">
               Your pet information has been sent to your Critter professional.
             </p>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <p className="text-blue-800 body-font">
-                📧 <strong className="header-font">Check your email!</strong> You should receive a confirmation email
-                shortly with next steps and your professional's contact information.
-              </p>
-            </div>
             <div className="space-y-3 text-gray-600 body-font mb-8">
-              <p>What happens next:</p>
-              <ul className="text-left max-w-md mx-auto space-y-2">
+              <p className="text-lg font-medium text-gray-800">What happens next:</p>
+              <ul className="text-left max-w-lg mx-auto space-y-3">
                 <li className="flex items-start">
-                  <span className="text-[#E75837] mr-2">1.</span>
-                  Your professional will review your information
+                  <span className="text-[#E75837] mr-3 font-bold">1.</span>
+                  Your professional will review your submission
                 </li>
                 <li className="flex items-start">
-                  <span className="text-[#E75837] mr-2">2.</span>
-                  They'll contact you to discuss services and scheduling
+                  <span className="text-[#E75837] mr-3 font-bold">2.</span>
+                  They'll contact you to discuss the fit, scheduling, and onboarding
                 </li>
                 <li className="flex items-start">
-                  <span className="text-[#E75837] mr-2">3.</span>
-                  You'll work together to set up your pet care plan
+                  <span className="text-[#E75837] mr-3 font-bold">3.</span>
+                  You will complete your onboarding and schedule your first appointment in the customer hub
                 </li>
               </ul>
             </div>
-            <button
-              onClick={handleCancel}
-              className="bg-[#E75837] text-white px-8 py-3 rounded-lg hover:bg-[#d04e30] transition-colors body-font font-medium"
-            >
-              Return to Home
-            </button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={handleCancel}
+                className="bg-gray-100 text-gray-700 px-8 py-3 rounded-lg hover:bg-gray-200 transition-colors body-font font-medium border border-gray-300"
+              >
+                Return to Home
+              </button>
+              <button
+                onClick={() => {
+                  const currentPath = window.location.pathname
+                  const uniqueUrl = currentPath.split("/").pop()
+                  router.push(`/customer-hub/${uniqueUrl}`)
+                }}
+                className="bg-[#E75837] text-white px-8 py-3 rounded-lg hover:bg-[#d04e30] transition-colors body-font font-medium"
+              >
+                Customer Hub
+              </button>
+            </div>
           </div>
         </div>
       )}
