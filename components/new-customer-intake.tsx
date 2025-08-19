@@ -4,10 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { getWebhookEndpoint, logWebhookUsage } from "../types/webhook-endpoints"
 import OnboardingForm from "./onboarding-form"
-import ServiceSelection from "./service-selection"
-import RequestScheduling from "./request-scheduling"
 import Confirmation from "./confirmation"
-import type { OnboardingFormData } from "../types/booking"
 
 type UserInfo = {
   email: string
@@ -203,327 +200,72 @@ export default function NewCustomerIntake({
         console.log("Webhook response:", responseData)
 
         if (Array.isArray(responseData) && responseData.length > 0) {
-          // Direct array format - first item contains professional/business information
-          const professionalInfo = responseData[0]
-          console.log("Professional info:", professionalInfo)
-
-          // Remaining items are services
-          const serviceItems = responseData.slice(1)
-
-          if (serviceItems.length > 0) {
-            const services = serviceItems.map((item: any, index: number) => {
-              // Use conservative category detection
-              const originalCategory = item.service_type_name || "Other Services"
-              const detectedCategory = isAddOnService(originalCategory, item.name) ? "Add-On" : originalCategory
-
-              console.log(
-                `Service: "${item.name}" | Original Category: "${originalCategory}" | Detected: "${detectedCategory}"`,
-              )
-
-              return {
-                id: item.id || (index + 1).toString(),
-                name: item.name,
-                description: item.description || "No additional description",
-                duration:
-                  item.duration_number && item.duration_unit
-                    ? `${item.duration_number} ${item.duration_unit.toLowerCase()}`
-                    : "Not specified",
-                price: item.customer_cost
-                  ? `${professionalInfo.currency_symbol || "$"}${Number.parseFloat(item.customer_cost).toFixed(2)}`
-                  : "Contact for pricing",
-                category: detectedCategory,
-                selected: false,
-              }
-            })
-
-            setServicesData(services)
-            console.log("Parsed services from direct array format:", services)
-          } else {
-            console.log("No services found in direct array format, using mock data")
-            setServicesData([
-              {
-                id: "1",
-                name: "Service information unavailable",
-                description: "Please contact your professional directly",
-                duration: "Varies",
-                price: "Contact for pricing",
-                category: "Main Service",
-                selected: false,
-              },
-            ])
+          const firstItem = responseData[0]
+          if (firstItem.output === "success" || firstItem.Output === "success") {
+            console.log("Pet submission successful, moving to success screen")
+            await handleSuccessfulSubmission(combinedData)
+            return
           }
-        } else if (responseData.message) {
-          try {
-            const parsedMessage = JSON.parse(responseData.message)
-
-            // Check if it's the new format (array with professional info + services)
-            if (Array.isArray(parsedMessage) && parsedMessage.length > 0) {
-              // First item contains professional/business information
-              const professionalInfo = parsedMessage[0]
-              console.log("Professional info:", professionalInfo)
-
-              // Remaining items are services
-              const serviceItems = parsedMessage.slice(1)
-
-              if (serviceItems.length > 0) {
-                const services = serviceItems.map((item: any, index: number) => {
-                  // Use conservative category detection
-                  const originalCategory = item.service_type_name || "Other Services"
-                  const detectedCategory = isAddOnService(originalCategory, item.name) ? "Add-On" : originalCategory
-
-                  console.log(
-                    `Service: "${item.name}" | Original Category: "${originalCategory}" | Detected: "${detectedCategory}"`,
-                  )
-
-                  return {
-                    id: item.id || (index + 1).toString(),
-                    name: item.name,
-                    description: item.description || "No additional description",
-                    duration:
-                      item.duration_number && item.duration_unit
-                        ? `${item.duration_number} ${item.duration_unit.toLowerCase()}`
-                        : "Not specified",
-                    price: item.customer_cost
-                      ? `${professionalInfo.currency_symbol || "$"}${Number.parseFloat(item.customer_cost).toFixed(2)}`
-                      : "Contact for pricing",
-                    category: detectedCategory,
-                    selected: false,
-                  }
-                })
-
-                setServicesData(services)
-                console.log("Parsed services from new format:", services)
-              } else {
-                console.log("No services found in new format, using mock data")
-                setServicesData([
-                  {
-                    id: "1",
-                    name: "Service information unavailable",
-                    description: "Please contact your professional directly",
-                    duration: "Varies",
-                    price: "Contact for pricing",
-                    category: "Main Service",
-                    selected: false,
-                  },
-                ])
-              }
-            }
-            // Fallback to old format handling
-            else if (parsedMessage.type === "service_list" && parsedMessage.items) {
-              // Convert the webhook format to our component format
-              const services = parsedMessage.items.map((item: any, index: number) => {
-                // Extract duration and price from details array
-                let duration = "Not specified"
-                let price = "Contact for pricing"
-                let description = "No description provided"
-
-                if (item.details && Array.isArray(item.details)) {
-                  item.details.forEach((detail: string) => {
-                    if (detail.startsWith("Duration:")) {
-                      duration = detail.replace("Duration:", "").trim()
-                    } else if (detail.startsWith("Price:")) {
-                      price = detail.replace("Price:", "").trim()
-                    } else if (
-                      !detail.includes("No description provided") &&
-                      !detail.includes("No additional description")
-                    ) {
-                      description = detail
-                    }
-                  })
-                }
-
-                // Use conservative category detection
-                const originalCategory = item.category || "Other Services"
-                const detectedCategory = isAddOnService(originalCategory, item.name) ? "Add-On" : originalCategory
-
-                console.log(
-                  `Service: "${item.name}" | Original Category: "${originalCategory}" | Detected: "${detectedCategory}"`,
-                )
-
-                return {
-                  id: (index + 1).toString(),
-                  name: item.name,
-                  description: description === "No description provided" ? "No additional description" : description,
-                  duration: duration,
-                  price: price,
-                  category: detectedCategory,
-                  selected: false,
-                }
-              })
-
-              setServicesData(services)
-              console.log("Parsed services from old format:", services)
-            } else {
-              console.log("No recognized format found in response, using mock data")
-              // Fallback to mock data
-              setServicesData([
-                {
-                  id: "1",
-                  name: "Dog Walking",
-                  description: "30-minute neighborhood walk",
-                  duration: "30 minutes",
-                  price: "$25",
-                  category: "Main Service",
-                  selected: false,
-                },
-                {
-                  id: "2",
-                  name: "Pet Sitting",
-                  description: "In-home pet care while you're away",
-                  duration: "Per day",
-                  price: "$50",
-                  category: "Main Service",
-                  selected: false,
-                },
-                {
-                  id: "3",
-                  name: "Additional Feeding",
-                  description: "Extra feeding service",
-                  duration: "15 minutes",
-                  price: "$10",
-                  category: "Add-On",
-                  selected: false,
-                },
-              ])
-            }
-          } catch (parseError) {
-            console.error("Error parsing webhook message:", parseError)
-            console.log("Raw message:", responseData.message)
-            // Use mock data as fallback
-            setServicesData([
-              {
-                id: "1",
-                name: "Service information unavailable",
-                description: "Please contact your professional directly",
-                duration: "Varies",
-                price: "Contact for pricing",
-                category: "Main Service",
-                selected: false,
-              },
-            ])
-          }
-        } else {
-          console.log("No message in response, using mock data")
-          // Fallback to mock data if no message
-          setServicesData([
-            {
-              id: "1",
-              name: "Dog Walking",
-              description: "30-minute neighborhood walk",
-              duration: "30 minutes",
-              price: "$25",
-              category: "Main Service",
-              selected: false,
-            },
-          ])
+        } else if (responseData.output === "success" || responseData.Output === "success") {
+          console.log("Pet submission successful, moving to success screen")
+          await handleSuccessfulSubmission(combinedData)
+          return
         }
 
-        setCurrentStep("services")
+        // If no success response, fall back to old behavior (though this shouldn't happen)
+        console.log("No success response found, using fallback")
+        setCurrentStep("success")
       } else {
         console.error("Webhook request failed:", response.status)
+        setError("Failed to submit pet information. Please try again.")
       }
     } catch (error) {
       console.error("Error sending webhook request:", error)
+      setError("There was an error submitting your information. Please try again.")
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleServiceSelection = (data: any) => {
-    setServiceSelectionData(data)
-    setCurrentStep("scheduling")
-  }
-
-  const handleSchedulingSubmit = (data: any) => {
-    setSchedulingData(data)
-    setCurrentStep("confirmation")
-  }
-
-  const handleConfirmationSubmit = async (data: any) => {
-    setCurrentStep("submitting") // Show submitting screen
-    logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "final_intake_submission")
-
-    const payload = {
-      action: "new_customer_intake_completion",
-      userId: USER_ID.current,
-      timestamp: new Date().toISOString(),
-      userInfo: formData
-        ? {
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            email: formData.email,
-          }
-        : {},
-      formData: formData,
-      petData: formData?.pets || [],
-      serviceData: serviceSelectionData,
-      schedulingData: schedulingData,
-      professionalID: initialProfessionalId,
-      source: "critter_booking_site",
-    }
-
+  const handleSuccessfulSubmission = async (formData: any) => {
     try {
-      const response = await fetch(getWebhookEndpoint("NEW_CUSTOMER_ONBOARDING"), {
+      setCurrentStep("submitting")
+
+      // Send email webhook
+      logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "send_confirmation_email")
+
+      const emailPayload = {
+        action: "new_customer_intake_completion",
+        userId: USER_ID.current,
+        timestamp: new Date().toISOString(),
+        userInfo: {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+        },
+        formData: formData,
+        petData: formData?.pets || [],
+        professionalID: initialProfessionalId,
+        source: "critter_booking_site",
+      }
+
+      const emailResponse = await fetch(getWebhookEndpoint("NEW_CUSTOMER_ONBOARDING"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(emailPayload),
       })
 
-      if (response.ok) {
-        setCurrentStep("success")
+      if (emailResponse.ok) {
+        console.log("Email webhook sent successfully")
       } else {
-        console.error("Webhook request failed:", response.status)
-        setCurrentStep("confirmation") // Go back to confirmation on error
+        console.error("Email webhook failed:", emailResponse.status)
       }
     } catch (error) {
-      console.error("Error sending webhook request:", error)
-      setCurrentStep("confirmation") // Go back to confirmation on error
-    }
-  }
-
-  const handleBackToServices = () => {
-    setCurrentStep("services")
-  }
-
-  const handleBackToScheduling = () => {
-    setCurrentStep("scheduling")
-  }
-
-  const handleSubmit = async (data: OnboardingFormData) => {
-    setIsSubmitting(true)
-    setError(null)
-
-    try {
-      // If we have an initialProfessionalName, use it
-      const dataToSubmit = initialProfessionalName ? { ...data, professionalName: initialProfessionalName } : data
-
-      logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "onboarding_submission")
-
-      const response = await fetch(getWebhookEndpoint("NEW_CUSTOMER_ONBOARDING"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          action: "new_customer_onboarding",
-          professionalId: initialProfessionalId, // Use the actual professional_id from the lookup
-          formData: dataToSubmit,
-          petData: dataToSubmit.pets || [], // Include pet information
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status}`)
-      }
-
-      setIsComplete(true)
-    } catch (err) {
-      console.error("Error submitting form:", err)
-      setError("There was an error submitting your information. Please try again.")
+      console.error("Error sending email webhook:", error)
     } finally {
-      setIsSubmitting(false)
+      setCurrentStep("success")
     }
   }
 
@@ -588,32 +330,14 @@ export default function NewCustomerIntake({
           picklistData={picklistData}
         />
       )}
-      {currentStep === "services" && servicesData && (
-        <ServiceSelection
-          services={servicesData}
-          onSubmit={handleServiceSelection}
-          onBack={() => setCurrentStep("form")}
-        />
-      )}
-      {currentStep === "scheduling" && (
-        <RequestScheduling onSubmit={handleSchedulingSubmit} onBack={handleBackToServices} />
-      )}
-      {currentStep === "confirmation" && (
-        <Confirmation
-          onSubmit={handleConfirmationSubmit}
-          onCancel={onCancel}
-          onBack={handleBackToScheduling}
-          formData={formData}
-          serviceData={serviceSelectionData}
-          schedulingData={schedulingData}
-        />
-      )}
       {currentStep === "submitting" && (
         <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#E75837] mx-auto mb-4"></div>
-            <h3 className="text-lg font-medium header-font">Submitting Your Request...</h3>
-            <p className="text-gray-600 body-font">Please wait while we process your intake and booking request.</p>
+            <h3 className="text-lg font-medium header-font">Submitting Your Information...</h3>
+            <p className="text-gray-600 body-font">
+              Please wait while we process your pet information and send confirmation.
+            </p>
           </div>
         </div>
       )}
@@ -625,9 +349,9 @@ export default function NewCustomerIntake({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-3xl font-bold text-[#E75837] mb-4 header-font">Request Submitted Successfully!</h2>
+            <h2 className="text-3xl font-bold text-[#E75837] mb-4 header-font">Information Submitted Successfully!</h2>
             <p className="text-lg text-gray-700 mb-6 body-font">
-              Your intake and booking request has been sent to your Critter professional.
+              Your pet information has been sent to your Critter professional.
             </p>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
               <p className="text-blue-800 body-font">
@@ -640,15 +364,15 @@ export default function NewCustomerIntake({
               <ul className="text-left max-w-md mx-auto space-y-2">
                 <li className="flex items-start">
                   <span className="text-[#E75837] mr-2">1.</span>
-                  Your professional will review your request
+                  Your professional will review your information
                 </li>
                 <li className="flex items-start">
                   <span className="text-[#E75837] mr-2">2.</span>
-                  They'll contact you to confirm details and schedule
+                  They'll contact you to discuss services and scheduling
                 </li>
                 <li className="flex items-start">
                   <span className="text-[#E75837] mr-2">3.</span>
-                  You'll receive booking confirmation once approved
+                  You'll work together to set up your pet care plan
                 </li>
               </ul>
             </div>
