@@ -26,10 +26,6 @@ import {
   Clock,
   Pill,
   Utensils,
-  Scissors,
-  AlertTriangle,
-  Phone,
-  MapPin,
 } from "lucide-react"
 import { getWebhookEndpoint, logWebhookUsage } from "../../../types/webhook-endpoints"
 
@@ -47,6 +43,10 @@ interface Pet {
   special_instructions?: string
   grooming_notes?: string
   exercise_requirements?: string
+  sex?: string
+  breed?: string
+  spayedNeutered?: string
+  weight?: string
 }
 
 interface Booking {
@@ -86,7 +86,8 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
   const [error, setError] = useState("")
   const [customerData, setCustomerData] = useState<CustomerData | null>(null)
   const [activeTab, setActiveTab] = useState<"pets" | "appointments" | "invoices">("pets")
-  const [expandedPet, setExpandedPet] = useState<number | null>(null)
+  const [expandedPet, setExpandedPet] = useState<string | null>(null)
+  const [selectedPetSection, setSelectedPetSection] = useState<string>("general")
   const [currentDate, setCurrentDate] = useState(new Date())
   const [appointmentView, setAppointmentView] = useState<"calendar" | "list">("calendar")
 
@@ -331,12 +332,17 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
               special_instructions: "",
               emergency_contact: "",
               veterinarian_info: "",
+              sex: "",
+              breed: "",
+              spayedNeutered: "",
+              weight: "",
             }
           }
 
           const carePlan = detailedPet.carePlan || {}
           const careDetails = detailedPet.careDetails || {}
           const healthInfo = detailedPet.healthInfo || {}
+          const basicInfo = detailedPet.basicInfo || {}
 
           // Extract feeding instructions
           let feeding_instructions = carePlan.general_feeding_notes || ""
@@ -421,6 +427,10 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
             special_instructions: special_instructions.trim(),
             emergency_contact: "", // Not provided in current webhook structure
             veterinarian_info: "", // Not provided in current webhook structure
+            sex: basicInfo.sex || "",
+            breed: basicInfo.breed || "",
+            spayedNeutered: basicInfo.spayed_neutered || "",
+            weight: basicInfo.weight || "",
           }
         })
 
@@ -472,6 +482,147 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
 
   const togglePetExpansion = (petId: string) => {
     setExpandedPet(expandedPet === petId ? null : petId)
+    if (expandedPet !== petId) {
+      setSelectedPetSection("general")
+    }
+  }
+
+  const renderPetProfileSection = (pet: any, section: string) => {
+    switch (section) {
+      case "general":
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-gray-900 font-body mb-1">Name</h4>
+                <p className="text-gray-700 font-body">{pet.pet_name}</p>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-gray-900 font-body mb-1">Type</h4>
+                <p className="text-gray-700 font-body">{pet.pet_type}</p>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-gray-900 font-body mb-1">Sex</h4>
+                <p className="text-gray-700 font-body">{pet.sex || "Not specified"}</p>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-gray-900 font-body mb-1">Breed</h4>
+                <p className="text-gray-700 font-body">{pet.breed || "Not specified"}</p>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-gray-900 font-body mb-1">Spayed/Neutered</h4>
+                <p className="text-gray-700 font-body">{pet.spayedNeutered || "Not specified"}</p>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-gray-900 font-body mb-1">Weight</h4>
+                <p className="text-gray-700 font-body">{pet.weight || "Not specified"}</p>
+              </div>
+            </div>
+          </div>
+        )
+
+      case "health":
+        return (
+          <div className="space-y-6">
+            <div className="border-b border-gray-200">
+              <nav className="flex space-x-8">
+                <button className="py-2 px-1 border-b-2 border-[#E75837] text-[#E75837] font-medium text-sm">
+                  Medications
+                </button>
+                <button className="py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm">
+                  Conditions
+                </button>
+                <button className="py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm">
+                  Allergies
+                </button>
+                <button className="py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm">
+                  Weight
+                </button>
+              </nav>
+            </div>
+
+            <div className="space-y-4">
+              {pet.medication_schedule ? (
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold text-gray-900 font-body">Medication Schedule</h4>
+                      <p className="text-gray-600 font-body text-sm mt-1">{pet.medication_schedule}</p>
+                    </div>
+                    <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                      Treatment
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Pill className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600 font-body">No medications recorded</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+
+      case "food":
+        return (
+          <div className="space-y-6">
+            <div className="border-b border-gray-200">
+              <nav className="flex space-x-8">
+                <button className="py-2 px-1 border-b-2 border-[#E75837] text-[#E75837] font-medium text-sm">
+                  Food
+                </button>
+                <button className="py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm">
+                  Treats
+                </button>
+              </nav>
+            </div>
+
+            <div className="space-y-4">
+              {pet.feeding_instructions ? (
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold text-gray-900 font-body">Feeding Instructions</h4>
+                      <p className="text-gray-600 font-body text-sm mt-1">{pet.feeding_instructions}</p>
+                    </div>
+                    <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                      Primary
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Utensils className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600 font-body">No feeding information recorded</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+
+      default:
+        return (
+          <div className="space-y-4">
+            {renderCareInstructionField(
+              "Feeding Instructions",
+              pet.feeding_instructions,
+              <Utensils className="w-5 h-5" />,
+            )}
+            {renderCareInstructionField("Medication Schedule", pet.medication_schedule, <Pill className="w-5 h-5" />)}
+            {renderCareInstructionField(
+              "Exercise Requirements",
+              pet.exercise_requirements,
+              <Clock className="w-5 h-5" />,
+            )}
+            {renderCareInstructionField(
+              "Special Instructions",
+              pet.special_instructions,
+              <FileText className="w-5 h-5" />,
+            )}
+          </div>
+        )
+    }
   }
 
   const renderCareInstructionField = (label: string, value: string | undefined, icon: React.ReactNode) => {
@@ -759,94 +910,66 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                             </button>
 
                             {expandedPet === pet.pet_id && (
-                              <div className="p-6 space-y-4">
-                                <h3 className="text-lg font-bold text-gray-900 font-body mb-4 flex items-center gap-2">
-                                  <Heart className="w-5 h-5 text-[#E75837]" />
-                                  Care Instructions for {pet.pet_name}
-                                </h3>
+                              <div className="bg-gray-50">
+                                <div className="flex">
+                                  {/* Sidebar Navigation */}
+                                  <div className="w-48 bg-white border-r border-gray-200 p-4">
+                                    <nav className="space-y-2">
+                                      <button
+                                        onClick={() => setSelectedPetSection("general")}
+                                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
+                                          selectedPetSection === "general"
+                                            ? "bg-[#E75837] text-white"
+                                            : "text-gray-700 hover:bg-gray-100"
+                                        }`}
+                                      >
+                                        General
+                                      </button>
+                                      <button
+                                        onClick={() => setSelectedPetSection("health")}
+                                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
+                                          selectedPetSection === "health"
+                                            ? "bg-[#E75837] text-white"
+                                            : "text-gray-700 hover:bg-gray-100"
+                                        }`}
+                                      >
+                                        Health
+                                      </button>
+                                      <button
+                                        onClick={() => setSelectedPetSection("food")}
+                                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
+                                          selectedPetSection === "food"
+                                            ? "bg-[#E75837] text-white"
+                                            : "text-gray-700 hover:bg-gray-100"
+                                        }`}
+                                      >
+                                        Food
+                                      </button>
+                                    </nav>
+                                  </div>
 
-                                <div className="grid gap-4">
-                                  {renderCareInstructionField(
-                                    "Feeding Instructions",
-                                    pet.feeding_instructions,
-                                    <Utensils className="w-5 h-5" />,
-                                  )}
-
-                                  {renderCareInstructionField(
-                                    "Medication Schedule",
-                                    pet.medication_schedule,
-                                    <Pill className="w-5 h-5" />,
-                                  )}
-
-                                  {renderCareInstructionField(
-                                    "Exercise Requirements",
-                                    pet.exercise_requirements,
-                                    <Clock className="w-5 h-5" />,
-                                  )}
-
-                                  {renderCareInstructionField(
-                                    "Grooming Notes",
-                                    pet.grooming_notes,
-                                    <Scissors className="w-5 h-5" />,
-                                  )}
-
-                                  {renderCareInstructionField(
-                                    "Medical Conditions",
-                                    pet.medical_conditions,
-                                    <AlertTriangle className="w-5 h-5" />,
-                                  )}
-
-                                  {renderCareInstructionField(
-                                    "Allergies",
-                                    pet.allergies,
-                                    <AlertTriangle className="w-5 h-5" />,
-                                  )}
-
-                                  {renderCareInstructionField(
-                                    "Behavioral Notes",
-                                    pet.behavioral_notes,
-                                    <Heart className="w-5 h-5" />,
-                                  )}
-
-                                  {renderCareInstructionField(
-                                    "Emergency Contact",
-                                    pet.emergency_contact,
-                                    <Phone className="w-5 h-5" />,
-                                  )}
-
-                                  {renderCareInstructionField(
-                                    "Veterinarian Information",
-                                    pet.veterinarian_info,
-                                    <MapPin className="w-5 h-5" />,
-                                  )}
-
-                                  {renderCareInstructionField(
-                                    "Special Instructions",
-                                    pet.special_instructions,
-                                    <FileText className="w-5 h-5" />,
-                                  )}
-                                </div>
-
-                                {!pet.feeding_instructions &&
-                                  !pet.medication_schedule &&
-                                  !pet.exercise_requirements &&
-                                  !pet.grooming_notes &&
-                                  !pet.medical_conditions &&
-                                  !pet.allergies &&
-                                  !pet.behavioral_notes &&
-                                  !pet.emergency_contact &&
-                                  !pet.veterinarian_info &&
-                                  !pet.special_instructions && (
-                                    <div className="text-center py-8">
-                                      <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                                      <p className="text-gray-600 font-body">
-                                        No care instructions available for {pet.pet_name}
-                                      </p>
-                                      <p className="text-gray-500 font-body text-sm mt-1">
-                                        Contact us to add care details
-                                      </p>
+                                  {/* Main Content */}
+                                  <div className="flex-1 p-6">
+                                    <div className="flex items-center justify-between mb-6">
+                                      <h3 className="text-xl font-bold text-gray-900 font-header capitalize">
+                                        {selectedPetSection} Information
+                                      </h3>
+                                      <div className="flex gap-2">
+                                        <button className="px-3 py-1 text-sm border border-[#E75837] text-[#E75837] rounded-lg hover:bg-[#E75837] hover:text-white transition-colors">
+                                          Activity Timeline
+                                        </button>
+                                        <button className="px-3 py-1 text-sm border border-[#E75837] text-[#E75837] rounded-lg hover:bg-[#E75837] hover:text-white transition-colors">
+                                          Care Plan
+                                        </button>
+                                        <button className="px-3 py-1 text-sm border border-[#E75837] text-[#E75837] rounded-lg hover:bg-[#E75837] hover:text-white transition-colors">
+                                          Vaccine Record
+                                        </button>
+                                      </div>
                                     </div>
-                                  )}
+
+                                    {renderPetProfileSection(pet, selectedPetSection)}
+                                  </div>
+                                </div>
                               </div>
                             )}
                           </div>
