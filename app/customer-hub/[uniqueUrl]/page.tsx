@@ -1272,7 +1272,10 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                     Vaccine Overview
                                   </button>
                                   <button
-                                    onClick={() => setShowCarePlan(showCarePlan === pet.pet_id ? null : pet.pet_id)}
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setShowCarePlan(showCarePlan === pet.pet_id ? null : pet.pet_id)
+                                    }}
                                     className="px-3 py-1 text-sm border border-[#E75837] text-[#E75837] rounded-lg hover:bg-[#E75837] hover:text-white transition-colors"
                                   >
                                     Care Plan Report
