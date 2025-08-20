@@ -378,17 +378,29 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
         const detailedPetItems = data.filter((item) => item.pet && item.pet.pet_id)
         console.log("[v0] Detailed pet items:", JSON.stringify(detailedPetItems, null, 2))
 
-        const pets = data.map((petData: any) => {
+        const petItems = data.filter((item) => {
+          // Check if item has pet data with required fields
+          return (
+            (item.pet_name && item.pet_name.trim() !== "") ||
+            (item.name && item.name.trim() !== "") ||
+            (item.pet && item.pet.pet_name && item.pet.pet_name.trim() !== "")
+          )
+        })
+
+        const pets = petItems.map((petData: any) => {
+          // Handle different pet data structures
+          const petInfo = petData.pet || petData
+
           return {
-            pet_name: petData.name || "",
-            pet_id: petData.id || "",
-            pet_type: petData.pet_type || "",
-            birthdate: petData.birthdate,
-            chip_id: petData.chip_id,
-            spayed_or_neutered: petData.spayed_or_neutered,
-            sex: petData.pet_sex,
-            breed_name: petData.breed_name,
-            gotcha_date: petData.gotcha_date,
+            pet_name: petInfo.pet_name || petData.name || "",
+            pet_id: petInfo.pet_id || petData.id || "",
+            pet_type: petInfo.pet_type || petData.pet_type || "",
+            birthdate: petInfo.birthdate || petData.birthdate,
+            chip_id: petInfo.chip_id || petData.chip_id,
+            spayed_or_neutered: petInfo.spayed_or_neutered || petData.spayed_or_neutered,
+            sex: petInfo.pet_sex || petData.pet_sex,
+            breed_name: petInfo.breed_name || petData.breed_name,
+            gotcha_date: petInfo.gotcha_date || petData.gotcha_date,
             contacts: petData.contacts || [],
             foods: petData.foods || [],
             treats: petData.treats || [],
