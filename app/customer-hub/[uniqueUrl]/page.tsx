@@ -726,7 +726,15 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                     {getPetIcon(pet.pet_type)}
                                   </div>
                                   <div className="text-left">
-                                    <p className="font-bold text-xl font-body text-gray-900">{pet.pet_name}</p>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        router.push(`/customer-hub/${uniqueUrl}/pet/${pet.pet_id}`)
+                                      }}
+                                      className="font-bold text-xl font-body text-gray-900 hover:text-[#E75837] transition-colors"
+                                    >
+                                      {pet.pet_name}
+                                    </button>
                                     <p className="text-gray-600 font-body">{pet.pet_type}</p>
                                   </div>
                                 </div>
