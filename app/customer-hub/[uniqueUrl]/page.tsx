@@ -193,33 +193,36 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
     return "bg-blue-100 text-blue-800 border-blue-200"
   }
 
-  const convertToUserTimezone = (utcTime: string) => {
-    if (!utcTime || typeof utcTime !== "string") {
-      return "Invalid time"
-    }
+  const convertToUserTimezone = (utcTime: string): string => {
+    if (!utcTime || utcTime.trim() === "") return ""
 
     try {
-      // Check if it's a full datetime string (contains 'T' or 'Z' indicating ISO format)
-      if (utcTime.includes("T") || utcTime.includes("Z") || utcTime.includes("-")) {
-        const date = new Date(utcTime)
-        // Check if the date is valid
-        if (isNaN(date.getTime())) {
-          return utcTime // Return original if not a valid datetime
-        }
+      // Handle different time formats
+      let date: Date
 
-        return date.toLocaleString("en-US", {
-          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          hour: "numeric",
-          minute: "2-digit",
-          hour12: true,
-        })
+      // If it's just a time (like "14:00:00"), assume it's today in UTC
+      if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(utcTime)) {
+        const today = new Date()
+        const [hours, minutes] = utcTime.split(":").map(Number)
+        date = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), hours, minutes))
       } else {
-        // For simple time formats or durations, return as-is
-        return utcTime
+        // Try to parse as full datetime
+        date = new Date(utcTime)
       }
+
+      if (isNaN(date.getTime())) {
+        return utcTime // Return original if can't parse
+      }
+
+      // Format as 12-hour time with AM/PM in user's timezone
+      return date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      })
     } catch (error) {
-      console.error("[v0] Error converting timezone:", error, "for time:", utcTime)
-      return utcTime // Return original value instead of "Invalid time"
+      return utcTime // Return original if conversion fails
     }
   }
 
@@ -853,10 +856,10 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
       case "vaccine-overview":
         return (
           <div className="space-y-6">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
               <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mr-4">
+                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -882,10 +885,10 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
       case "care-plan-report":
         return (
           <div className="space-y-6">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
               <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
-                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mr-4">
+                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -905,18 +908,13 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                 {pet.feeding_schedule && pet.feeding_schedule.length > 0 && (
                   <div className="bg-white rounded-lg p-4">
                     <h4 className="font-semibold text-gray-900 font-body mb-3 flex items-center">
-                      <svg
-                        className="w-5 h-5 text-orange-500 mr-2"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
+                      <svg className="w-5 h-5 text-gray-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2" />
                       </svg>
                       Feeding Schedule
                     </h4>
                     {pet.feeding_schedule.map((feeding: any, index: number) => (
-                      <div key={index} className="border-l-4 border-orange-500 pl-4 py-2">
+                      <div key={index} className="border-l-4 border-gray-300 pl-4 py-2">
                         <p className="font-medium text-gray-900 font-body">
                           {convertToUserTimezone(feeding.time)} - {feeding.amount} {feeding.food_name}
                         </p>
@@ -932,7 +930,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                 {pet.medication_schedule && pet.medication_schedule.length > 0 && (
                   <div className="bg-white rounded-lg p-4">
                     <h4 className="font-semibold text-gray-900 font-body mb-3 flex items-center">
-                      <svg className="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5 text-gray-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -943,10 +941,13 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                       Medication Schedule
                     </h4>
                     {pet.medication_schedule.map((medication: any, index: number) => (
-                      <div key={index} className="border-l-4 border-red-500 pl-4 py-2">
+                      <div key={index} className="border-l-4 border-gray-300 pl-4 py-2">
                         <p className="font-medium text-gray-900 font-body">
                           {convertToUserTimezone(medication.time)} - {medication.amount}
                         </p>
+                        {medication.instructions && (
+                          <p className="text-gray-600 font-body text-sm mt-1">{medication.instructions}</p>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -956,7 +957,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                 {pet.walk_schedule && pet.walk_schedule.length > 0 && (
                   <div className="bg-white rounded-lg p-4">
                     <h4 className="font-semibold text-gray-900 font-body mb-3 flex items-center">
-                      <svg className="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5 text-gray-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -967,7 +968,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                       Walk Schedule
                     </h4>
                     {pet.walk_schedule.map((walk: any, index: number) => (
-                      <div key={index} className="border-l-4 border-blue-500 pl-4 py-2">
+                      <div key={index} className="border-l-4 border-gray-300 pl-4 py-2">
                         <p className="font-medium text-gray-900 font-body">
                           {convertToUserTimezone(walk.start_time)} - {walk.duration}
                         </p>
@@ -983,25 +984,21 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                 {pet.grooming_schedule && pet.grooming_schedule.length > 0 && (
                   <div className="bg-white rounded-lg p-4">
                     <h4 className="font-semibold text-gray-900 font-body mb-3 flex items-center">
-                      <svg
-                        className="w-5 h-5 text-purple-500 mr-2"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
+                      <svg className="w-5 h-5 text-gray-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
-                          d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+                          d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM7 3H5a2 2 0 00-2 2v12a4 4 0 004 4h2a2 2 0 002-2V5a2 2 0 00-2-2z"
                         />
                       </svg>
                       Grooming Schedule
                     </h4>
                     {pet.grooming_schedule.map((grooming: any, index: number) => (
-                      <div key={index} className="border-l-4 border-purple-500 pl-4 py-2">
-                        <p className="font-medium text-gray-900 font-body">{grooming.activity}</p>
-                        {grooming.frequency && <p className="text-gray-600 font-body text-sm">{grooming.frequency}</p>}
+                      <div key={index} className="border-l-4 border-gray-300 pl-4 py-2">
+                        <p className="font-medium text-gray-900 font-body">
+                          {grooming.activity} - {grooming.frequency}
+                        </p>
                         {grooming.instructions && (
                           <p className="text-gray-600 font-body text-sm mt-1">{grooming.instructions}</p>
                         )}
