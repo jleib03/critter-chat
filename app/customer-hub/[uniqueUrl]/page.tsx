@@ -29,6 +29,7 @@ import {
   AlertTriangle,
   Scale,
   Cookie,
+  Scissors,
 } from "lucide-react"
 import { getWebhookEndpoint, logWebhookUsage } from "../../../types/webhook-endpoints"
 
@@ -36,20 +37,77 @@ interface Pet {
   pet_name: string
   pet_id: string
   pet_type: string
-  feeding_instructions?: string
-  medication_schedule?: string
-  behavioral_notes?: string
-  medical_conditions?: string
-  allergies?: string
-  emergency_contact?: string
-  veterinarian_info?: string
-  special_instructions?: string
-  grooming_notes?: string
-  exercise_requirements?: string
+  birthdate?: string
+  chip_id?: string
+  spayed_or_neutered?: string
   sex?: string
-  breed?: string
-  spayedNeutered?: string
-  weight?: string
+  breed_name?: string
+  gotcha_date?: string
+  contacts?: Array<{
+    contact_name: string
+    contact_type: string
+    email: string
+  }>
+  foods?: Array<{
+    food_name: string
+    food_type: string
+    photo_filename?: string
+  }>
+  treats?: Array<{
+    treat_name: string
+    treat_type: string
+  }>
+  weights?: Array<{
+    date: string
+    weight: string
+    weight_units: string
+  }>
+  supplies?: Array<{
+    supply_name: string
+    notes: string
+  }>
+  medications?: Array<{
+    medication_name: string
+    purpose: string
+    delivery_method: string
+  }>
+  conditions?: Array<{
+    condition_name: string
+    notes: string
+    start_date: string
+  }>
+  allergies?: Array<any>
+  feeding_schedule?: Array<{
+    time: string
+    amount: string
+    food_name: string
+    instructions: string
+  }>
+  medication_schedule?: Array<{
+    amount: string
+    schedule_times: string[]
+  }>
+  walk_schedule?: Array<{
+    start_time: string
+    instructions: string
+    typical_length_minutes: number
+  }>
+  grooming_schedule?: Array<{
+    activity_name: string
+    frequency?: string
+    instructions: string
+  }>
+  sleep_instructions?: string
+  play_instructions?: string
+  general_health_notes?: string
+  general_feeding_notes?: string
+  general_exercise_and_play_notes?: string
+  general_grooming_and_cleaning_notes?: string
+  general_behavioral_notes?: string
+  interactions_with_adults_notes?: string
+  interactions_with_kids_notes?: string
+  interactions_with_animals_notes?: string
+  miscellaneous_notes?: string
 }
 
 interface Booking {
@@ -104,6 +162,8 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
 
   const [selectedHealthSubSection, setSelectedHealthSubSection] = useState("medications")
   const [selectedFoodSubSection, setSelectedFoodSubSection] = useState("food")
+
+  const [showCarePlan, setShowCarePlan] = useState<string | null>(null)
 
   useEffect(() => {
     setProfessionalName("Professional") // Placeholder
@@ -318,125 +378,40 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
         const detailedPetItems = data.filter((item) => item.pet && item.pet.pet_id)
         console.log("[v0] Detailed pet items:", JSON.stringify(detailedPetItems, null, 2))
 
-        const pets = basicPets.map((basicPet: any) => {
-          // Find matching detailed pet object by pet_id
-          const detailedPet = detailedPetItems.find((item: any) => item.pet?.pet_id === basicPet.pet_id)
-
-          if (!detailedPet) {
-            // Return basic pet info if no detailed data found
-            return {
-              pet_name: basicPet.pet_name || "",
-              pet_id: basicPet.pet_id || "",
-              pet_type: basicPet.pet_type || "",
-              feeding_instructions: "",
-              medication_schedule: "",
-              exercise_requirements: "",
-              grooming_notes: "",
-              behavioral_notes: "",
-              medical_conditions: "",
-              allergies: "",
-              special_instructions: "",
-              emergency_contact: "",
-              veterinarian_info: "",
-              sex: "",
-              breed: "",
-              spayedNeutered: "",
-              weight: "",
-            }
-          }
-
-          const carePlan = detailedPet.carePlan || {}
-          const careDetails = detailedPet.careDetails || {}
-          const healthInfo = detailedPet.healthInfo || {}
-          const basicInfo = detailedPet.basicInfo || {}
-
-          // Extract feeding instructions
-          let feeding_instructions = carePlan.general_feeding_notes || ""
-          if (careDetails.feedings && careDetails.feedings.length > 0) {
-            const feedingDetails = careDetails.feedings
-              .map(
-                (f: any) =>
-                  `${f.time ? convertToUserTimezone(f.time) : ""} - ${f.amount || ""} ${f.food_name || ""}: ${f.instructions || f.food_notes || ""}`,
-              )
-              .filter(Boolean)
-              .join("; ")
-            feeding_instructions = [carePlan.general_feeding_notes, feedingDetails].filter(Boolean).join(" ")
-          }
-
-          // Extract medication schedule
-          let medication_schedule = ""
-          if (careDetails.medications && careDetails.medications.length > 0) {
-            medication_schedule = careDetails.medications
-              .map(
-                (m: any) =>
-                  `${m.medication_name || ""} - ${m.frequency || ""} ${m.amount || ""} ${m.time ? `at ${convertToUserTimezone(m.time)}` : ""}: ${m.instructions || m.medication_notes || ""}`,
-              )
-              .filter(Boolean)
-              .join("; ")
-          }
-
-          // Extract exercise requirements
-          let exercise_requirements = carePlan.general_exercise_and_play_notes || ""
-          if (careDetails.walks && careDetails.walks.length > 0) {
-            const walkDetails = careDetails.walks
-              .map(
-                (w: any) =>
-                  `${w.start_time ? convertToUserTimezone(w.start_time) : ""} - ${w.typical_length_minutes || ""} minutes: ${w.instructions || ""}`,
-              )
-              .filter(Boolean)
-              .join("; ")
-            exercise_requirements = [carePlan.general_exercise_and_play_notes, carePlan.play_instructions, walkDetails]
-              .filter(Boolean)
-              .join(" ")
-          } else if (carePlan.play_instructions) {
-            exercise_requirements = [carePlan.general_exercise_and_play_notes, carePlan.play_instructions]
-              .filter(Boolean)
-              .join(" ")
-          }
-
-          // Extract other care details
-          const grooming_notes = carePlan.general_grooming_and_cleaning_notes || ""
-          const behavioral_notes = [
-            carePlan.general_behavioral_notes,
-            carePlan.interactions_with_adults_notes,
-            carePlan.interactions_with_kids_notes,
-            carePlan.interactions_with_animals_notes,
-          ]
-            .filter(Boolean)
-            .join(" ")
-          const medical_conditions = healthInfo.conditions
-            ? healthInfo.conditions.map((c: any) => c.condition_name || c.name || "").join(", ")
-            : ""
-          const allergies = healthInfo.allergies
-            ? healthInfo.allergies.map((a: any) => a.allergy_name || a.name || "").join(", ")
-            : ""
-          const special_instructions = [
-            carePlan.general_health_notes,
-            carePlan.sleep_instructions,
-            carePlan.general_sleeping_notes,
-            carePlan.miscellaneous_notes,
-          ]
-            .filter(Boolean)
-            .join(" ")
-
+        const pets = data.map((petData: any) => {
           return {
-            pet_name: basicPet.pet_name || "",
-            pet_id: basicPet.pet_id || "",
-            pet_type: basicPet.pet_type || "",
-            feeding_instructions: feeding_instructions.trim(),
-            medication_schedule: medication_schedule.trim(),
-            exercise_requirements: exercise_requirements.trim(),
-            grooming_notes: grooming_notes.trim(),
-            behavioral_notes: behavioral_notes.trim(),
-            medical_conditions: medical_conditions.trim(),
-            allergies: allergies.trim(),
-            special_instructions: special_instructions.trim(),
-            emergency_contact: "", // Not provided in current webhook structure
-            veterinarian_info: "", // Not provided in current webhook structure
-            sex: basicInfo.sex || "",
-            breed: basicInfo.breed || "",
-            spayedNeutered: basicInfo.spayed_neutered || "",
-            weight: basicInfo.weight || "",
+            pet_name: petData.name || "",
+            pet_id: petData.id || "",
+            pet_type: petData.pet_type || "",
+            birthdate: petData.birthdate,
+            chip_id: petData.chip_id,
+            spayed_or_neutered: petData.spayed_or_neutered,
+            sex: petData.pet_sex,
+            breed_name: petData.breed_name,
+            gotcha_date: petData.gotcha_date,
+            contacts: petData.contacts || [],
+            foods: petData.foods || [],
+            treats: petData.treats || [],
+            weights: petData.weights || [],
+            supplies: petData.supplies || [],
+            medications: petData.medications || [],
+            conditions: petData.conditions || [],
+            allergies: petData.allergies || [],
+            feeding_schedule: petData.feeding_schedule || [],
+            medication_schedule: petData.medication_schedule || [],
+            walk_schedule: petData.walk_schedule || [],
+            grooming_schedule: petData.grooming_schedule || [],
+            sleep_instructions: petData.sleep_instructions,
+            play_instructions: petData.play_instructions,
+            general_health_notes: petData.general_health_notes,
+            general_feeding_notes: petData.general_feeding_notes,
+            general_exercise_and_play_notes: petData.general_exercise_and_play_notes,
+            general_grooming_and_cleaning_notes: petData.general_grooming_and_cleaning_notes,
+            general_behavioral_notes: petData.general_behavioral_notes,
+            interactions_with_adults_notes: petData.interactions_with_adults_notes,
+            interactions_with_kids_notes: petData.interactions_with_kids_notes,
+            interactions_with_animals_notes: petData.interactions_with_animals_notes,
+            miscellaneous_notes: petData.miscellaneous_notes,
           }
         })
 
@@ -498,6 +473,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
       case "general":
         return (
           <div className="space-y-6">
+            {/* Basic Pet Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-semibold text-gray-900 font-body mb-1">Name</h4>
@@ -513,16 +489,89 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
               </div>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-semibold text-gray-900 font-body mb-1">Breed</h4>
-                <p className="text-gray-700 font-body">{pet.breed || "Not specified"}</p>
+                <p className="text-gray-700 font-body">{pet.breed_name || "Not specified"}</p>
               </div>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-semibold text-gray-900 font-body mb-1">Spayed/Neutered</h4>
-                <p className="text-gray-700 font-body">{pet.spayedNeutered || "Not specified"}</p>
+                <p className="text-gray-700 font-body">{pet.spayed_or_neutered || "Not specified"}</p>
               </div>
               <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-semibold text-gray-900 font-body mb-1">Weight</h4>
-                <p className="text-gray-700 font-body">{pet.weight || "Not specified"}</p>
+                <h4 className="font-semibold text-gray-900 font-body mb-1">Chip ID</h4>
+                <p className="text-gray-700 font-body">{pet.chip_id || "Not specified"}</p>
               </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-gray-900 font-body mb-1">Birthdate</h4>
+                <p className="text-gray-700 font-body">
+                  {pet.birthdate ? new Date(pet.birthdate).toLocaleDateString() : "Not specified"}
+                </p>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-gray-900 font-body mb-1">Gotcha Date</h4>
+                <p className="text-gray-700 font-body">
+                  {pet.gotcha_date ? new Date(pet.gotcha_date).toLocaleDateString() : "Not specified"}
+                </p>
+              </div>
+            </div>
+
+            {/* Contacts */}
+            {pet.contacts && pet.contacts.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 font-body mb-4">Contacts</h3>
+                <div className="space-y-3">
+                  {pet.contacts.map((contact: any, index: number) => (
+                    <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-semibold text-gray-900 font-body">{contact.contact_name}</h4>
+                          <p className="text-gray-600 font-body text-sm">{contact.contact_type}</p>
+                          {contact.email && <p className="text-gray-600 font-body text-sm">{contact.email}</p>}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Supplies */}
+            {pet.supplies && pet.supplies.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 font-body mb-4">Supplies</h3>
+                <div className="space-y-3">
+                  {pet.supplies.map((supply: any, index: number) => (
+                    <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-semibold text-gray-900 font-body">{supply.supply_name}</h4>
+                          <p className="text-gray-600 font-body text-sm mt-1">{supply.notes}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Behavioral Notes */}
+            <div className="space-y-4">
+              {pet.sleep_instructions && (
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 font-body mb-2">Sleep Instructions</h4>
+                  <p className="text-gray-700 font-body text-sm">{pet.sleep_instructions}</p>
+                </div>
+              )}
+              {pet.play_instructions && (
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 font-body mb-2">Play Instructions</h4>
+                  <p className="text-gray-700 font-body text-sm">{pet.play_instructions}</p>
+                </div>
+              )}
+              {pet.general_behavioral_notes && (
+                <div className="bg-yellow-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 font-body mb-2">Behavioral Notes</h4>
+                  <p className="text-gray-700 font-body text-sm">{pet.general_behavioral_notes}</p>
+                </div>
+              )}
             </div>
           </div>
         )
@@ -576,44 +625,117 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
             </div>
 
             <div className="space-y-4">
-              {selectedHealthSubSection === "medications" &&
-                (pet.medication_schedule ? (
-                  <div className="bg-white border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-semibold text-gray-900 font-body">Medication Schedule</h4>
-                        <p className="text-gray-600 font-body text-sm mt-1">{pet.medication_schedule}</p>
+              {selectedHealthSubSection === "medications" && (
+                <div className="space-y-3">
+                  {pet.medications && pet.medications.length > 0 ? (
+                    pet.medications.map((medication: any, index: number) => (
+                      <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-semibold text-gray-900 font-body">{medication.medication_name}</h4>
+                            <p className="text-gray-600 font-body text-sm mt-1">
+                              {medication.delivery_method} • {medication.purpose}
+                            </p>
+                          </div>
+                          <span
+                            className={`text-xs font-medium px-2.5 py-0.5 rounded ${
+                              medication.purpose === "Preventative"
+                                ? "bg-green-100 text-green-800"
+                                : medication.purpose === "Allergies"
+                                  ? "bg-red-100 text-red-800"
+                                  : "bg-blue-100 text-blue-800"
+                            }`}
+                          >
+                            {medication.purpose}
+                          </span>
+                        </div>
                       </div>
-                      <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                        Treatment
-                      </span>
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <Pill className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-600 font-body">No medications recorded</p>
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <Pill className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                    <p className="text-gray-600 font-body">No medications recorded</p>
-                  </div>
-                ))}
+                  )}
+                </div>
+              )}
 
               {selectedHealthSubSection === "conditions" && (
-                <div className="text-center py-8">
-                  <Heart className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-600 font-body">No conditions recorded</p>
+                <div className="space-y-3">
+                  {pet.conditions && pet.conditions.length > 0 ? (
+                    pet.conditions.map((condition: any, index: number) => (
+                      <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-semibold text-gray-900 font-body">{condition.condition_name}</h4>
+                            <p className="text-gray-600 font-body text-sm mt-1">{condition.notes}</p>
+                            <p className="text-gray-500 font-body text-xs mt-1">
+                              Started: {new Date(condition.start_date).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <Heart className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-600 font-body">No conditions recorded</p>
+                    </div>
+                  )}
                 </div>
               )}
 
               {selectedHealthSubSection === "allergies" && (
-                <div className="text-center py-8">
-                  <AlertTriangle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-600 font-body">No allergies recorded</p>
+                <div className="space-y-3">
+                  {pet.allergies && pet.allergies.length > 0 ? (
+                    pet.allergies.map((allergy: any, index: number) => (
+                      <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-semibold text-gray-900 font-body">{allergy.allergy_name}</h4>
+                            <p className="text-gray-600 font-body text-sm mt-1">{allergy.notes}</p>
+                          </div>
+                          <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                            Allergy
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <AlertTriangle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-600 font-body">No allergies recorded</p>
+                    </div>
+                  )}
                 </div>
               )}
 
               {selectedHealthSubSection === "weight" && (
-                <div className="text-center py-8">
-                  <Scale className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-600 font-body">No weight records available</p>
+                <div className="space-y-3">
+                  {pet.weights && pet.weights.length > 0 ? (
+                    pet.weights.map((weight: any, index: number) => (
+                      <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-semibold text-gray-900 font-body">
+                              {weight.weight} {weight.weight_units}
+                            </h4>
+                            <p className="text-gray-600 font-body text-sm mt-1">
+                              Recorded: {new Date(weight.date).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                            Weight Record
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <Scale className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-600 font-body">No weight records available</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -649,30 +771,61 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
             </div>
 
             <div className="space-y-4">
-              {selectedFoodSubSection === "food" &&
-                (pet.feeding_instructions ? (
-                  <div className="bg-white border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-semibold text-gray-900 font-body">Feeding Instructions</h4>
-                        <p className="text-gray-600 font-body text-sm mt-1">{pet.feeding_instructions}</p>
+              {selectedFoodSubSection === "food" && (
+                <div className="space-y-3">
+                  {pet.foods && pet.foods.length > 0 ? (
+                    pet.foods.map((food: any, index: number) => (
+                      <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-semibold text-gray-900 font-body">{food.food_name}</h4>
+                            <p className="text-gray-600 font-body text-sm mt-1">{food.food_type}</p>
+                          </div>
+                          <span
+                            className={`text-xs font-medium px-2.5 py-0.5 rounded ${
+                              food.food_type === "Dry Food"
+                                ? "bg-amber-100 text-amber-800"
+                                : food.food_type === "Wet Food"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : "bg-green-100 text-green-800"
+                            }`}
+                          >
+                            {food.food_type}
+                          </span>
+                        </div>
                       </div>
-                      <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                        Daily Food
-                      </span>
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <Utensils className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-600 font-body">No food information recorded</p>
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <Utensils className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                    <p className="text-gray-600 font-body">No food information recorded</p>
-                  </div>
-                ))}
+                  )}
+                </div>
+              )}
 
               {selectedFoodSubSection === "treats" && (
-                <div className="text-center py-8">
-                  <Cookie className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-600 font-body">No treat information recorded</p>
+                <div className="space-y-3">
+                  {pet.treats && pet.treats.length > 0 ? (
+                    pet.treats.map((treat: any, index: number) => (
+                      <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-semibold text-gray-900 font-body">{treat.treat_name}</h4>
+                            <p className="text-gray-600 font-body text-sm mt-1">{treat.treat_type}</p>
+                          </div>
+                          <span className="bg-pink-100 text-pink-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                            {treat.treat_type}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <Cookie className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-600 font-body">No treat information recorded</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -682,25 +835,150 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
       default:
         return (
           <div className="space-y-4">
-            {renderCareInstructionField(
-              "Feeding Instructions",
-              pet.feeding_instructions,
-              <Utensils className="w-5 h-5" />,
-            )}
-            {renderCareInstructionField("Medication Schedule", pet.medication_schedule, <Pill className="w-5 h-5" />)}
-            {renderCareInstructionField(
-              "Exercise Requirements",
-              pet.exercise_requirements,
-              <Clock className="w-5 h-5" />,
-            )}
-            {renderCareInstructionField(
-              "Special Instructions",
-              pet.special_instructions,
-              <FileText className="w-5 h-5" />,
-            )}
+            <div className="text-center py-8">
+              <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+              <p className="text-gray-600 font-body">Select a section to view details</p>
+            </div>
           </div>
         )
     }
+  }
+
+  const renderCarePlanReport = (pet: any) => {
+    const hasScheduleData =
+      (pet.feeding_schedule && pet.feeding_schedule.length > 0) ||
+      (pet.medication_schedule && pet.medication_schedule.length > 0) ||
+      (pet.walk_schedule && pet.walk_schedule.length > 0) ||
+      (pet.grooming_schedule && pet.grooming_schedule.length > 0)
+
+    if (!hasScheduleData) {
+      return (
+        <div className="text-center py-8">
+          <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+          <p className="text-gray-600 font-body">No care schedule available</p>
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-6">
+        <div className="bg-blue-50 p-4 rounded-lg">
+          <h3 className="text-lg font-semibold text-gray-900 font-body mb-2">Daily Care Schedule for {pet.pet_name}</h3>
+          <p className="text-gray-600 font-body text-sm">Complete runlist of daily activities and care instructions</p>
+        </div>
+
+        {/* Feeding Schedule */}
+        {pet.feeding_schedule && pet.feeding_schedule.length > 0 && (
+          <div>
+            <h4 className="text-md font-semibold text-gray-900 font-body mb-3 flex items-center gap-2">
+              <Utensils className="w-5 h-5 text-[#E75837]" />
+              Feeding Schedule
+            </h4>
+            <div className="space-y-3">
+              {pet.feeding_schedule.map((feeding: any, index: number) => (
+                <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h5 className="font-semibold text-gray-900 font-body">
+                        {feeding.time ? convertToUserTimezone(feeding.time) : "Time not specified"} - {feeding.amount}{" "}
+                        {feeding.food_name}
+                      </h5>
+                      <p className="text-gray-600 font-body text-sm mt-1">{feeding.instructions}</p>
+                    </div>
+                    <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                      Feeding
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Medication Schedule */}
+        {pet.medication_schedule && pet.medication_schedule.length > 0 && (
+          <div>
+            <h4 className="text-md font-semibold text-gray-900 font-body mb-3 flex items-center gap-2">
+              <Pill className="w-5 h-5 text-[#E75837]" />
+              Medication Schedule
+            </h4>
+            <div className="space-y-3">
+              {pet.medication_schedule.map((medication: any, index: number) => (
+                <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h5 className="font-semibold text-gray-900 font-body">Amount: {medication.amount}</h5>
+                      <p className="text-gray-600 font-body text-sm mt-1">
+                        Times:{" "}
+                        {medication.schedule_times?.map((time: string) => convertToUserTimezone(time)).join(", ")}
+                      </p>
+                    </div>
+                    <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                      Medication
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Walk Schedule */}
+        {pet.walk_schedule && pet.walk_schedule.length > 0 && (
+          <div>
+            <h4 className="text-md font-semibold text-gray-900 font-body mb-3 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-[#E75837]" />
+              Walk Schedule
+            </h4>
+            <div className="space-y-3">
+              {pet.walk_schedule.map((walk: any, index: number) => (
+                <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h5 className="font-semibold text-gray-900 font-body">
+                        {walk.start_time ? convertToUserTimezone(walk.start_time) : "Time not specified"} -{" "}
+                        {walk.typical_length_minutes} minutes
+                      </h5>
+                      <p className="text-gray-600 font-body text-sm mt-1">{walk.instructions}</p>
+                    </div>
+                    <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                      Exercise
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Grooming Schedule */}
+        {pet.grooming_schedule && pet.grooming_schedule.length > 0 && (
+          <div>
+            <h4 className="text-md font-semibold text-gray-900 font-body mb-3 flex items-center gap-2">
+              <Scissors className="w-5 h-5 text-[#E75837]" />
+              Grooming Schedule
+            </h4>
+            <div className="space-y-3">
+              {pet.grooming_schedule.map((grooming: any, index: number) => (
+                <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h5 className="font-semibold text-gray-900 font-body">
+                        {grooming.activity_name} {grooming.frequency && `- ${grooming.frequency}`}
+                      </h5>
+                      <p className="text-gray-600 font-body text-sm mt-1">{grooming.instructions}</p>
+                    </div>
+                    <span className="bg-orange-100 text-orange-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                      Grooming
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    )
   }
 
   const renderCareInstructionField = (label: string, value: string | undefined, icon: React.ReactNode) => {
