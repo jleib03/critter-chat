@@ -26,6 +26,9 @@ import {
   Clock,
   Pill,
   Utensils,
+  AlertTriangle,
+  Scale,
+  Cookie,
 } from "lucide-react"
 import { getWebhookEndpoint, logWebhookUsage } from "../../../types/webhook-endpoints"
 
@@ -98,6 +101,9 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
   const [generatedCode, setGeneratedCode] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [professionalName, setProfessionalName] = useState("")
+
+  const [selectedHealthSubSection, setSelectedHealthSubSection] = useState("medications")
+  const [selectedFoodSubSection, setSelectedFoodSubSection] = useState("food")
 
   useEffect(() => {
     setProfessionalName("Professional") // Placeholder
@@ -526,38 +532,88 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
           <div className="space-y-6">
             <div className="border-b border-gray-200">
               <nav className="flex space-x-8">
-                <button className="py-2 px-1 border-b-2 border-[#E75837] text-[#E75837] font-medium text-sm">
+                <button
+                  onClick={() => setSelectedHealthSubSection("medications")}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    selectedHealthSubSection === "medications"
+                      ? "border-[#E75837] text-[#E75837]"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
+                >
                   Medications
                 </button>
-                <button className="py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm">
+                <button
+                  onClick={() => setSelectedHealthSubSection("conditions")}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    selectedHealthSubSection === "conditions"
+                      ? "border-[#E75837] text-[#E75837]"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
+                >
                   Conditions
                 </button>
-                <button className="py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm">
+                <button
+                  onClick={() => setSelectedHealthSubSection("allergies")}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    selectedHealthSubSection === "allergies"
+                      ? "border-[#E75837] text-[#E75837]"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
+                >
                   Allergies
                 </button>
-                <button className="py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm">
+                <button
+                  onClick={() => setSelectedHealthSubSection("weight")}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    selectedHealthSubSection === "weight"
+                      ? "border-[#E75837] text-[#E75837]"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
+                >
                   Weight
                 </button>
               </nav>
             </div>
 
             <div className="space-y-4">
-              {pet.medication_schedule ? (
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-semibold text-gray-900 font-body">Medication Schedule</h4>
-                      <p className="text-gray-600 font-body text-sm mt-1">{pet.medication_schedule}</p>
+              {selectedHealthSubSection === "medications" &&
+                (pet.medication_schedule ? (
+                  <div className="bg-white border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-semibold text-gray-900 font-body">Medication Schedule</h4>
+                        <p className="text-gray-600 font-body text-sm mt-1">{pet.medication_schedule}</p>
+                      </div>
+                      <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                        Treatment
+                      </span>
                     </div>
-                    <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                      Treatment
-                    </span>
                   </div>
-                </div>
-              ) : (
+                ) : (
+                  <div className="text-center py-8">
+                    <Pill className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-600 font-body">No medications recorded</p>
+                  </div>
+                ))}
+
+              {selectedHealthSubSection === "conditions" && (
                 <div className="text-center py-8">
-                  <Pill className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-600 font-body">No medications recorded</p>
+                  <Heart className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600 font-body">No conditions recorded</p>
+                </div>
+              )}
+
+              {selectedHealthSubSection === "allergies" && (
+                <div className="text-center py-8">
+                  <AlertTriangle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600 font-body">No allergies recorded</p>
+                </div>
+              )}
+
+              {selectedHealthSubSection === "weight" && (
+                <div className="text-center py-8">
+                  <Scale className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600 font-body">No weight records available</p>
                 </div>
               )}
             </div>
@@ -569,32 +625,54 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
           <div className="space-y-6">
             <div className="border-b border-gray-200">
               <nav className="flex space-x-8">
-                <button className="py-2 px-1 border-b-2 border-[#E75837] text-[#E75837] font-medium text-sm">
+                <button
+                  onClick={() => setSelectedFoodSubSection("food")}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    selectedFoodSubSection === "food"
+                      ? "border-[#E75837] text-[#E75837]"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
+                >
                   Food
                 </button>
-                <button className="py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm">
+                <button
+                  onClick={() => setSelectedFoodSubSection("treats")}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    selectedFoodSubSection === "treats"
+                      ? "border-[#E75837] text-[#E75837]"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
+                >
                   Treats
                 </button>
               </nav>
             </div>
 
             <div className="space-y-4">
-              {pet.feeding_instructions ? (
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-semibold text-gray-900 font-body">Feeding Instructions</h4>
-                      <p className="text-gray-600 font-body text-sm mt-1">{pet.feeding_instructions}</p>
+              {selectedFoodSubSection === "food" &&
+                (pet.feeding_instructions ? (
+                  <div className="bg-white border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-semibold text-gray-900 font-body">Feeding Instructions</h4>
+                        <p className="text-gray-600 font-body text-sm mt-1">{pet.feeding_instructions}</p>
+                      </div>
+                      <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                        Daily Food
+                      </span>
                     </div>
-                    <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                      Primary
-                    </span>
                   </div>
-                </div>
-              ) : (
+                ) : (
+                  <div className="text-center py-8">
+                    <Utensils className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-600 font-body">No food information recorded</p>
+                  </div>
+                ))}
+
+              {selectedFoodSubSection === "treats" && (
                 <div className="text-center py-8">
-                  <Utensils className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-600 font-body">No feeding information recorded</p>
+                  <Cookie className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600 font-body">No treat information recorded</p>
                 </div>
               )}
             </div>
@@ -956,13 +1034,10 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                       </h3>
                                       <div className="flex gap-2">
                                         <button className="px-3 py-1 text-sm border border-[#E75837] text-[#E75837] rounded-lg hover:bg-[#E75837] hover:text-white transition-colors">
-                                          Activity Timeline
+                                          Vaccine Overview
                                         </button>
                                         <button className="px-3 py-1 text-sm border border-[#E75837] text-[#E75837] rounded-lg hover:bg-[#E75837] hover:text-white transition-colors">
-                                          Care Plan
-                                        </button>
-                                        <button className="px-3 py-1 text-sm border border-[#E75837] text-[#E75837] rounded-lg hover:bg-[#E75837] hover:text-white transition-colors">
-                                          Vaccine Record
+                                          Care Plan Report
                                         </button>
                                       </div>
                                     </div>
