@@ -1267,6 +1267,17 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                     </button>
                                   </div>
                                 </div>
+                                <div className="flex gap-2">
+                                  <button className="px-3 py-1 text-sm border border-[#E75837] text-[#E75837] rounded-lg hover:bg-[#E75837] hover:text-white transition-colors">
+                                    Vaccine Overview
+                                  </button>
+                                  <button
+                                    onClick={() => setShowCarePlan(showCarePlan === pet.pet_id ? null : pet.pet_id)}
+                                    className="px-3 py-1 text-sm border border-[#E75837] text-[#E75837] rounded-lg hover:bg-[#E75837] hover:text-white transition-colors"
+                                  >
+                                    Care Plan Report
+                                  </button>
+                                </div>
                                 <div className="text-[#E75837]">
                                   {expandedPet === pet.pet_id ? (
                                     <ChevronUp className="w-6 h-6" />
@@ -1322,17 +1333,12 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                       <h3 className="text-xl font-bold text-gray-900 font-header capitalize">
                                         {selectedPetSection} Information
                                       </h3>
-                                      <div className="flex gap-2">
-                                        <button className="px-3 py-1 text-sm border border-[#E75837] text-[#E75837] rounded-lg hover:bg-[#E75837] hover:text-white transition-colors">
-                                          Vaccine Overview
-                                        </button>
-                                        <button className="px-3 py-1 text-sm border border-[#E75837] text-[#E75837] rounded-lg hover:bg-[#E75837] hover:text-white transition-colors">
-                                          Care Plan Report
-                                        </button>
-                                      </div>
                                     </div>
 
                                     {renderPetProfileSection(pet, selectedPetSection)}
+                                    {showCarePlan === pet.pet_id && (
+                                      <div className="mt-6 border-t pt-6">{renderCarePlanReport(pet)}</div>
+                                    )}
                                   </div>
                                 </div>
                               </div>
