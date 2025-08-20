@@ -926,33 +926,6 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                   </div>
                 )}
 
-                {/* Medication Schedule */}
-                {pet.medication_schedule && pet.medication_schedule.length > 0 && (
-                  <div className="bg-white rounded-lg p-4">
-                    <h4 className="font-semibold text-gray-900 font-body mb-3 flex items-center">
-                      <svg className="w-5 h-5 text-gray-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
-                        />
-                      </svg>
-                      Medication Schedule
-                    </h4>
-                    {pet.medication_schedule.map((medication: any, index: number) => (
-                      <div key={index} className="border-l-4 border-gray-300 pl-4 py-2">
-                        <p className="font-medium text-gray-900 font-body">
-                          {convertToUserTimezone(medication.time)} - {medication.amount}
-                        </p>
-                        {medication.instructions && (
-                          <p className="text-gray-600 font-body text-sm mt-1">{medication.instructions}</p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
                 {/* Walk Schedule */}
                 {pet.walk_schedule && pet.walk_schedule.length > 0 && (
                   <div className="bg-white rounded-lg p-4">
@@ -962,7 +935,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
-                          d="M13 10V3L4 14h7v7l9-11h-7z"
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                         />
                       </svg>
                       Walk Schedule
@@ -1259,61 +1232,41 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                       <div className="space-y-6">
                         {customerData.pets.map((pet) => (
                           <div key={pet.pet_id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                            <button
-                              onClick={() => togglePetExpansion(pet.pet_id)}
-                              className="w-full p-6 bg-gradient-to-br from-orange-50 to-pink-50 border-b border-orange-200 hover:from-orange-100 hover:to-pink-100 transition-colors"
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                  <div className="text-[#E75837] bg-white p-3 rounded-full">
-                                    {getPetIcon(pet.pet_type)}
-                                  </div>
-                                  <div className="text-left">
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        router.push(`/customer-hub/${uniqueUrl}/pet/${pet.pet_id}`)
-                                      }}
-                                      className="font-bold text-xl font-body text-gray-900 hover:text-[#E75837] transition-colors underline decoration-2 decoration-transparent hover:decoration-[#E75837]"
-                                    >
-                                      {pet.pet_name}
-                                    </button>
-                                    <p className="text-gray-600 font-body">{pet.pet_type}</p>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        router.push(`/customer-hub/${uniqueUrl}/pet/${pet.pet_id}`)
-                                      }}
-                                      className="text-sm text-[#E75837] hover:text-[#d64a2a] font-medium mt-1 flex items-center gap-1"
-                                    >
-                                      View Full Profile
-                                      <ChevronRight className="w-4 h-4" />
-                                    </button>
-                                  </div>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center">
+                                <div className="w-10 h-10 bg-[#E75837] rounded-full flex items-center justify-center mr-3">
+                                  {getPetIcon(pet.pet_type)}
                                 </div>
-                                <div className="flex gap-2">
-                                  <button className="px-3 py-1 text-sm border border-[#E75837] text-[#E75837] rounded-lg hover:bg-[#E75837] hover:text-white transition-colors">
-                                    Vaccine Overview
-                                  </button>
+                                <div>
+                                  <h3 className="font-semibold text-gray-900 font-body">{pet.pet_name}</h3>
+                                  <p className="text-gray-600 font-body text-sm">{pet.pet_type}</p>
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      setShowCarePlan(showCarePlan === pet.pet_id ? null : pet.pet_id)
+                                      router.push(`/customer-hub/${uniqueUrl}/pet/${pet.pet_id}`)
                                     }}
-                                    className="px-3 py-1 text-sm border border-[#E75837] text-[#E75837] rounded-lg hover:bg-[#E75837] hover:text-white transition-colors"
+                                    className="text-[#E75837] hover:text-[#d64a2a] font-body text-sm mt-1"
                                   >
-                                    Care Plan Report
+                                    View Full Profile →
                                   </button>
                                 </div>
-                                <div className="text-[#E75837]">
-                                  {expandedPet === pet.pet_id ? (
-                                    <ChevronUp className="w-6 h-6" />
-                                  ) : (
-                                    <ChevronDown className="w-6 h-6" />
-                                  )}
-                                </div>
                               </div>
-                            </button>
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setExpandedPet(expandedPet === pet.pet_id ? null : pet.pet_id)
+                                  }}
+                                  className="text-[#E75837] hover:text-[#d64a2a]"
+                                >
+                                  {expandedPet === pet.pet_id ? (
+                                    <ChevronUp className="w-5 h-5" />
+                                  ) : (
+                                    <ChevronDown className="w-5 h-5" />
+                                  )}
+                                </button>
+                              </div>
+                            </div>
 
                             {expandedPet === pet.pet_id && (
                               <div className="bg-gray-50">
