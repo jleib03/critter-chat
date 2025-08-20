@@ -418,9 +418,18 @@ export default function CustomerHubPage() {
 
         console.log("[v0] Final processed pets:", JSON.stringify(pets, null, 2))
 
-        const lastItem = data[data.length - 1]
-        const invoices = lastItem?.invoices || []
-        const payment_instructions = lastItem?.payment_instructions || ""
+        let invoices: Invoice[] = []
+        let payment_instructions = ""
+
+        // Search through all items to find invoices
+        for (const item of data) {
+          if (item.invoices && Array.isArray(item.invoices)) {
+            invoices = item.invoices
+            payment_instructions = item.payment_instructions || ""
+            break
+          }
+        }
+
         console.log("[v0] Extracted invoices:", JSON.stringify(invoices, null, 2))
 
         const bookings = data.filter((item) => item.booking_id && !item.pet && !item.invoices) || []
