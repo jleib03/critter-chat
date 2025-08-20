@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
   ArrowLeft,
@@ -79,22 +79,24 @@ interface CustomerData {
   payment_instructions?: string
 }
 
-export default function CustomerHubPage() {
-  const params = useParams()
+export default function CustomerHub({ params }: { params: { uniqueUrl: string } }) {
+  const [step, setStep] = useState<"email" | "code" | "data">("email")
+  const [email, setEmail] = useState("")
+  const [code, setCode] = useState("")
+  const [error, setError] = useState("")
+  const [customerData, setCustomerData] = useState<CustomerData | null>(null)
+  const [activeTab, setActiveTab] = useState<"pets" | "appointments" | "invoices">("pets")
+  const [expandedPet, setExpandedPet] = useState<number | null>(null)
+  const [currentDate, setCurrentDate] = useState(new Date())
+  const [appointmentView, setAppointmentView] = useState<"calendar" | "list">("calendar")
+
   const router = useRouter()
   const uniqueUrl = params.uniqueUrl as string
 
-  const [email, setEmail] = useState("")
   const [validationCode, setValidationCode] = useState("")
   const [generatedCode, setGeneratedCode] = useState("")
-  const [step, setStep] = useState<"email" | "code" | "data">("email")
   const [isLoading, setIsLoading] = useState(false)
-  const [customerData, setCustomerData] = useState<CustomerData | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const [professionalName, setProfessionalName] = useState("")
-  const [currentDate, setCurrentDate] = useState(new Date())
-  const [activeTab, setActiveTab] = useState<"pets" | "appointments" | "invoices">("pets")
-  const [expandedPet, setExpandedPet] = useState<string | null>(null)
 
   useEffect(() => {
     setProfessionalName("Professional") // Placeholder
@@ -843,92 +845,186 @@ export default function CustomerHubPage() {
                         Your Appointments
                       </h2>
                       <div className="flex items-center gap-4">
-                        <button
-                          onClick={() =>
-                            setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))
-                          }
-                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                        >
-                          <ChevronLeft className="w-5 h-5" />
-                        </button>
-                        <h3 className="text-lg font-semibold font-body min-w-[200px] text-center">
-                          {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-                        </h3>
-                        <button
-                          onClick={() =>
-                            setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))
-                          }
-                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                        >
-                          <ChevronRight className="w-5 h-5" />
-                        </button>
+                        <div className="flex bg-gray-100 rounded-lg p-1">
+                          <button
+                            onClick={() => setAppointmentView("calendar")}
+                            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                              appointmentView === "calendar"
+                                ? "bg-white text-[#E75837] shadow-sm"
+                                : "text-gray-600 hover:text-gray-900"
+                            }`}
+                          >
+                            Calendar
+                          </button>
+                          <button
+                            onClick={() => setAppointmentView("list")}
+                            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                              appointmentView === "list"
+                                ? "bg-white text-[#E75837] shadow-sm"
+                                : "text-gray-600 hover:text-gray-900"
+                            }`}
+                          >
+                            List
+                          </button>
+                        </div>
+                        {appointmentView === "calendar" && (
+                          <>
+                            <button
+                              onClick={() =>
+                                setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))
+                              }
+                              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                              <ChevronLeft className="w-5 h-5" />
+                            </button>
+                            <h3 className="text-lg font-semibold font-body min-w-[200px] text-center">
+                              {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                            </h3>
+                            <button
+                              onClick={() =>
+                                setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))
+                              }
+                              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                              <ChevronRight className="w-5 h-5" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
 
                     {customerData.bookings && customerData.bookings.length > 0 ? (
                       <>
-                        {/* Calendar Grid */}
-                        <div className="grid grid-cols-7 gap-1 mb-4">
-                          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                            <div key={day} className="p-3 text-center font-semibold text-gray-600 font-body">
-                              {day}
+                        {appointmentView === "calendar" ? (
+                          <>
+                            {/* Calendar Grid */}
+                            <div className="grid grid-cols-7 gap-1 mb-4">
+                              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                                <div key={day} className="p-3 text-center font-semibold text-gray-600 font-body">
+                                  {day}
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
 
-                        <div className="grid grid-cols-7 gap-1">
-                          {calendarDays.map((day, index) => {
-                            const bookings = getBookingsForDate(day)
-                            const isCurrentMonth = day.getMonth() === currentDate.getMonth()
-                            const isToday = day.toDateString() === new Date().toDateString()
+                            <div className="grid grid-cols-7 gap-1">
+                              {calendarDays.map((day, index) => {
+                                const bookings = getBookingsForDate(day)
+                                const isCurrentMonth = day.getMonth() === currentDate.getMonth()
+                                const isToday = day.toDateString() === new Date().toDateString()
 
-                            return (
-                              <div
-                                key={index}
-                                className={`min-h-[100px] p-2 border border-gray-200 ${
-                                  isCurrentMonth ? "bg-white" : "bg-gray-50"
-                                } ${isToday ? "ring-2 ring-[#E75837]" : ""}`}
-                              >
-                                <div
-                                  className={`text-sm font-medium mb-1 ${isCurrentMonth ? "text-gray-900" : "text-gray-400"}`}
-                                >
-                                  {day.getDate()}
-                                </div>
-                                <div className="space-y-1">
-                                  {bookings.map((booking) => (
+                                return (
+                                  <div
+                                    key={index}
+                                    className={`min-h-[100px] p-2 border border-gray-200 ${
+                                      isCurrentMonth ? "bg-white" : "bg-gray-50"
+                                    } ${isToday ? "ring-2 ring-[#E75837]" : ""}`}
+                                  >
                                     <div
-                                      key={booking.booking_id}
-                                      className={`text-xs p-1 rounded border ${getServiceTypeColor(booking.service_types || "")}`}
+                                      className={`text-sm font-medium mb-1 ${isCurrentMonth ? "text-gray-900" : "text-gray-400"}`}
                                     >
-                                      <div className="font-medium truncate">{convertToUserTimezone(booking.start)}</div>
-                                      <div className="truncate">{booking.service_names || "Appointment"}</div>
+                                      {day.getDate()}
                                     </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )
-                          })}
-                        </div>
+                                    <div className="space-y-1">
+                                      {bookings.map((booking) => (
+                                        <div
+                                          key={booking.booking_id}
+                                          className={`text-xs p-1 rounded border ${getServiceTypeColor(booking.service_types || "")}`}
+                                        >
+                                          <div className="font-medium truncate">
+                                            {convertToUserTimezone(booking.start)}
+                                          </div>
+                                          <div className="truncate">{booking.service_names || "Appointment"}</div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
 
-                        {/* Legend */}
-                        <div className="mt-6 flex flex-wrap gap-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
-                            <span className="text-sm font-body">Walking</span>
+                            {/* Legend */}
+                            <div className="mt-6 flex flex-wrap gap-4">
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
+                                <span className="text-sm font-body">Walking</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 bg-purple-100 border border-purple-300 rounded"></div>
+                                <span className="text-sm font-body">Grooming</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 bg-blue-100 border border-blue-300 rounded"></div>
+                                <span className="text-sm font-body">Drop-in</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 bg-orange-100 border border-orange-300 rounded"></div>
+                                <span className="text-sm font-body">Other</span>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          /* Added list view for appointments */
+                          <div className="space-y-4 max-h-[600px] overflow-y-auto">
+                            {customerData.bookings
+                              .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+                              .map((booking) => (
+                                <div
+                                  key={booking.booking_id}
+                                  className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                                >
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-3 mb-2">
+                                        <div
+                                          className={`w-3 h-3 rounded-full ${
+                                            booking.service_types?.toLowerCase().includes("walking")
+                                              ? "bg-green-400"
+                                              : booking.service_types?.toLowerCase().includes("grooming")
+                                                ? "bg-purple-400"
+                                                : booking.service_types?.toLowerCase().includes("drop")
+                                                  ? "bg-blue-400"
+                                                  : "bg-orange-400"
+                                          }`}
+                                        ></div>
+                                        <h3 className="text-lg font-semibold text-gray-900 font-header">
+                                          {booking.service_names || "Appointment"}
+                                        </h3>
+                                      </div>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 font-body">
+                                        <div>
+                                          <span className="font-medium">Date:</span>{" "}
+                                          {booking.booking_date_formatted ||
+                                            new Date(booking.start).toLocaleDateString()}
+                                        </div>
+                                        <div>
+                                          <span className="font-medium">Day:</span> {booking.day_of_week}
+                                        </div>
+                                        <div>
+                                          <span className="font-medium">Time:</span>{" "}
+                                          {convertToUserTimezone(booking.start)} - {convertToUserTimezone(booking.end)}
+                                        </div>
+                                        <div>
+                                          <span className="font-medium">Professional:</span> {booking.professional_name}
+                                        </div>
+                                        {booking.service_types && (
+                                          <div className="md:col-span-2">
+                                            <span className="font-medium">Service Type:</span> {booking.service_types}
+                                          </div>
+                                        )}
+                                        {booking.is_recurring && (
+                                          <div className="md:col-span-2">
+                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                              Recurring Appointment
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 bg-purple-100 border border-purple-300 rounded"></div>
-                            <span className="text-sm font-body">Grooming</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 bg-blue-100 border border-blue-300 rounded"></div>
-                            <span className="text-sm font-body">Drop-in</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 bg-orange-100 border border-orange-300 rounded"></div>
-                            <span className="text-sm font-body">Other</span>
-                          </div>
-                        </div>
+                        )}
                       </>
                     ) : (
                       <div className="text-center py-12">
