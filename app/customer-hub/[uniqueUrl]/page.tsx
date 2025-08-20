@@ -134,21 +134,27 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
     }
 
     try {
-      const date = new Date(utcTime)
-      // Check if the date is valid
-      if (isNaN(date.getTime())) {
-        return "Invalid time"
-      }
+      // Check if it's a full datetime string (contains 'T' or 'Z' indicating ISO format)
+      if (utcTime.includes("T") || utcTime.includes("Z") || utcTime.includes("-")) {
+        const date = new Date(utcTime)
+        // Check if the date is valid
+        if (isNaN(date.getTime())) {
+          return utcTime // Return original if not a valid datetime
+        }
 
-      return date.toLocaleString("en-US", {
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-      })
+        return date.toLocaleString("en-US", {
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        })
+      } else {
+        // For simple time formats or durations, return as-is
+        return utcTime
+      }
     } catch (error) {
       console.error("[v0] Error converting timezone:", error, "for time:", utcTime)
-      return "Invalid time"
+      return utcTime // Return original value instead of "Invalid time"
     }
   }
 
