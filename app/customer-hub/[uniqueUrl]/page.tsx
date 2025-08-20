@@ -1231,36 +1231,22 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                     {customerData.pets && customerData.pets.length > 0 ? (
                       <div className="space-y-6">
                         {customerData.pets.map((pet) => (
-                          <div key={pet.pet_id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                          <div
+                            key={pet.pet_id}
+                            className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                          >
                             <button
                               onClick={() => togglePetExpansion(pet.pet_id)}
                               className="w-full p-6 bg-gradient-to-br from-orange-50 to-pink-50 border-b border-orange-200 hover:from-orange-100 hover:to-pink-100 transition-colors"
                             >
                               <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-3">
-                                  <div className="w-8 h-8 bg-[#E75837] rounded-full flex items-center justify-center">
-                                    {getPetIcon(pet.pet_type)}
+                                <div className="flex items-center space-x-4">
+                                  <div className="w-12 h-12 bg-gradient-to-br from-[#E75837] to-[#D14420] rounded-full flex items-center justify-center shadow-md border-2 border-white">
+                                    <div className="text-white">{getPetIcon(pet.pet_type)}</div>
                                   </div>
-                                  <div>
-                                    <h3
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        router.push(`/customer-hub/${uniqueUrl}/pet/${pet.pet_id}`)
-                                      }}
-                                      className="font-semibold text-gray-900 cursor-pointer hover:text-[#E75837] transition-colors header-font"
-                                    >
-                                      {pet.pet_name}
-                                    </h3>
-                                    <p className="text-gray-600 body-font">{pet.pet_type}</p>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        router.push(`/customer-hub/${uniqueUrl}/pet/${pet.pet_id}`)
-                                      }}
-                                      className="text-[#E75837] hover:text-[#E75837]/80 transition-colors text-sm body-font"
-                                    >
-                                      View Full Profile →
-                                    </button>
+                                  <div className="text-left">
+                                    <h3 className="font-semibold text-gray-900 text-lg header-font">{pet.pet_name}</h3>
+                                    <p className="text-gray-600 body-font text-sm">{pet.pet_type}</p>
                                   </div>
                                 </div>
                                 <button
