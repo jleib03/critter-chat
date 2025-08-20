@@ -23,13 +23,11 @@ import {
   FileText,
   ChevronDown,
   ChevronUp,
-  Clock,
   Pill,
   Utensils,
   AlertTriangle,
   Scale,
   Cookie,
-  Scissors,
 } from "lucide-react"
 import { getWebhookEndpoint, logWebhookUsage } from "../../../types/webhook-endpoints"
 
@@ -555,7 +553,10 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                       <div className="flex items-center justify-between">
                         <div>
                           <h4 className="font-semibold text-gray-900 font-body">{supply.supply_name}</h4>
-                          <p className="text-gray-600 font-body text-sm mt-1">{supply.notes}</p>
+                          <p className="text-gray-600 font-body text-sm">{supply.supply_type}</p>
+                          {supply.usage_notes && (
+                            <p className="text-gray-600 font-body text-sm mt-1">{supply.usage_notes}</p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -565,26 +566,31 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
             )}
 
             {/* Behavioral Notes */}
-            <div className="space-y-4">
-              {pet.sleep_instructions && (
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h4 className="font-semibold text-gray-900 font-body mb-2">Sleep Instructions</h4>
-                  <p className="text-gray-700 font-body text-sm">{pet.sleep_instructions}</p>
+            {(pet.sleep_instructions || pet.play_instructions || pet.behavioral_notes) && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 font-body mb-4">Behavioral Notes</h3>
+                <div className="space-y-3">
+                  {pet.sleep_instructions && (
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-gray-900 font-body mb-2">Sleep Instructions</h4>
+                      <p className="text-gray-700 font-body">{pet.sleep_instructions}</p>
+                    </div>
+                  )}
+                  {pet.play_instructions && (
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-gray-900 font-body mb-2">Play Instructions</h4>
+                      <p className="text-gray-700 font-body">{pet.play_instructions}</p>
+                    </div>
+                  )}
+                  {pet.behavioral_notes && (
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-gray-900 font-body mb-2">Behavioral Notes</h4>
+                      <p className="text-gray-700 font-body">{pet.behavioral_notes}</p>
+                    </div>
+                  )}
                 </div>
-              )}
-              {pet.play_instructions && (
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <h4 className="font-semibold text-gray-900 font-body mb-2">Play Instructions</h4>
-                  <p className="text-gray-700 font-body text-sm">{pet.play_instructions}</p>
-                </div>
-              )}
-              {pet.general_behavioral_notes && (
-                <div className="bg-yellow-50 p-4 rounded-lg">
-                  <h4 className="font-semibold text-gray-900 font-body mb-2">Behavioral Notes</h4>
-                  <p className="text-gray-700 font-body text-sm">{pet.general_behavioral_notes}</p>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )
 
@@ -844,153 +850,173 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
           </div>
         )
 
-      default:
+      case "vaccine-overview":
         return (
-          <div className="space-y-4">
-            <div className="text-center py-8">
-              <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-600 font-body">Select a section to view details</p>
+          <div className="space-y-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 font-body">Vaccine Overview</h3>
+                  <p className="text-gray-600 font-body">Vaccination records and schedule for {pet.pet_name}</p>
+                </div>
+              </div>
+              <div className="bg-white rounded-lg p-4">
+                <p className="text-gray-700 font-body">
+                  Vaccine information will be displayed here when available from the veterinary records.
+                </p>
+              </div>
             </div>
           </div>
         )
+
+      case "care-plan-report":
+        return (
+          <div className="space-y-6">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 font-body">Daily Care Plan</h3>
+                  <p className="text-gray-600 font-body">Daily schedule and care instructions for {pet.pet_name}</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {/* Feeding Schedule */}
+                {pet.feeding_schedule && pet.feeding_schedule.length > 0 && (
+                  <div className="bg-white rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-900 font-body mb-3 flex items-center">
+                      <svg
+                        className="w-5 h-5 text-orange-500 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2" />
+                      </svg>
+                      Feeding Schedule
+                    </h4>
+                    {pet.feeding_schedule.map((feeding: any, index: number) => (
+                      <div key={index} className="border-l-4 border-orange-500 pl-4 py-2">
+                        <p className="font-medium text-gray-900 font-body">
+                          {convertToUserTimezone(feeding.time)} - {feeding.amount} {feeding.food_name}
+                        </p>
+                        {feeding.instructions && (
+                          <p className="text-gray-600 font-body text-sm mt-1">{feeding.instructions}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Medication Schedule */}
+                {pet.medication_schedule && pet.medication_schedule.length > 0 && (
+                  <div className="bg-white rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-900 font-body mb-3 flex items-center">
+                      <svg className="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
+                        />
+                      </svg>
+                      Medication Schedule
+                    </h4>
+                    {pet.medication_schedule.map((medication: any, index: number) => (
+                      <div key={index} className="border-l-4 border-red-500 pl-4 py-2">
+                        <p className="font-medium text-gray-900 font-body">
+                          {convertToUserTimezone(medication.time)} - {medication.amount}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Walk Schedule */}
+                {pet.walk_schedule && pet.walk_schedule.length > 0 && (
+                  <div className="bg-white rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-900 font-body mb-3 flex items-center">
+                      <svg className="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                      </svg>
+                      Walk Schedule
+                    </h4>
+                    {pet.walk_schedule.map((walk: any, index: number) => (
+                      <div key={index} className="border-l-4 border-blue-500 pl-4 py-2">
+                        <p className="font-medium text-gray-900 font-body">
+                          {convertToUserTimezone(walk.start_time)} - {walk.duration}
+                        </p>
+                        {walk.instructions && (
+                          <p className="text-gray-600 font-body text-sm mt-1">{walk.instructions}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Grooming Schedule */}
+                {pet.grooming_schedule && pet.grooming_schedule.length > 0 && (
+                  <div className="bg-white rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-900 font-body mb-3 flex items-center">
+                      <svg
+                        className="w-5 h-5 text-purple-500 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+                        />
+                      </svg>
+                      Grooming Schedule
+                    </h4>
+                    {pet.grooming_schedule.map((grooming: any, index: number) => (
+                      <div key={index} className="border-l-4 border-purple-500 pl-4 py-2">
+                        <p className="font-medium text-gray-900 font-body">{grooming.activity}</p>
+                        {grooming.frequency && <p className="text-gray-600 font-body text-sm">{grooming.frequency}</p>}
+                        {grooming.instructions && (
+                          <p className="text-gray-600 font-body text-sm mt-1">{grooming.instructions}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+
+      default:
+        return <div>Section not found</div>
     }
-  }
-
-  const renderCarePlanReport = (pet: any) => {
-    const hasScheduleData =
-      (pet.feeding_schedule && pet.feeding_schedule.length > 0) ||
-      (pet.medication_schedule && pet.medication_schedule.length > 0) ||
-      (pet.walk_schedule && pet.walk_schedule.length > 0) ||
-      (pet.grooming_schedule && pet.grooming_schedule.length > 0)
-
-    if (!hasScheduleData) {
-      return (
-        <div className="text-center py-8">
-          <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-          <p className="text-gray-600 font-body">No care schedule available</p>
-        </div>
-      )
-    }
-
-    return (
-      <div className="space-y-6">
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <h3 className="text-lg font-semibold text-gray-900 font-body mb-2">Daily Care Schedule for {pet.pet_name}</h3>
-          <p className="text-gray-600 font-body text-sm">Complete runlist of daily activities and care instructions</p>
-        </div>
-
-        {/* Feeding Schedule */}
-        {pet.feeding_schedule && pet.feeding_schedule.length > 0 && (
-          <div>
-            <h4 className="text-md font-semibold text-gray-900 font-body mb-3 flex items-center gap-2">
-              <Utensils className="w-5 h-5 text-[#E75837]" />
-              Feeding Schedule
-            </h4>
-            <div className="space-y-3">
-              {pet.feeding_schedule.map((feeding: any, index: number) => (
-                <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h5 className="font-semibold text-gray-900 font-body">
-                        {feeding.time ? convertToUserTimezone(feeding.time) : "Time not specified"} - {feeding.amount}{" "}
-                        {feeding.food_name}
-                      </h5>
-                      <p className="text-gray-600 font-body text-sm mt-1">{feeding.instructions}</p>
-                    </div>
-                    <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                      Feeding
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Medication Schedule */}
-        {pet.medication_schedule && pet.medication_schedule.length > 0 && (
-          <div>
-            <h4 className="text-md font-semibold text-gray-900 font-body mb-3 flex items-center gap-2">
-              <Pill className="w-5 h-5 text-[#E75837]" />
-              Medication Schedule
-            </h4>
-            <div className="space-y-3">
-              {pet.medication_schedule.map((medication: any, index: number) => (
-                <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h5 className="font-semibold text-gray-900 font-body">Amount: {medication.amount}</h5>
-                      <p className="text-gray-600 font-body text-sm mt-1">
-                        Times:{" "}
-                        {medication.schedule_times?.map((time: string) => convertToUserTimezone(time)).join(", ")}
-                      </p>
-                    </div>
-                    <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                      Medication
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Walk Schedule */}
-        {pet.walk_schedule && pet.walk_schedule.length > 0 && (
-          <div>
-            <h4 className="text-md font-semibold text-gray-900 font-body mb-3 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-[#E75837]" />
-              Walk Schedule
-            </h4>
-            <div className="space-y-3">
-              {pet.walk_schedule.map((walk: any, index: number) => (
-                <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h5 className="font-semibold text-gray-900 font-body">
-                        {walk.start_time ? convertToUserTimezone(walk.start_time) : "Time not specified"} -{" "}
-                        {walk.typical_length_minutes} minutes
-                      </h5>
-                      <p className="text-gray-600 font-body text-sm mt-1">{walk.instructions}</p>
-                    </div>
-                    <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                      Exercise
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Grooming Schedule */}
-        {pet.grooming_schedule && pet.grooming_schedule.length > 0 && (
-          <div>
-            <h4 className="text-md font-semibold text-gray-900 font-body mb-3 flex items-center gap-2">
-              <Scissors className="w-5 h-5 text-[#E75837]" />
-              Grooming Schedule
-            </h4>
-            <div className="space-y-3">
-              {pet.grooming_schedule.map((grooming: any, index: number) => (
-                <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h5 className="font-semibold text-gray-900 font-body">
-                        {grooming.activity_name} {grooming.frequency && `- ${grooming.frequency}`}
-                      </h5>
-                      <p className="text-gray-600 font-body text-sm mt-1">{grooming.instructions}</p>
-                    </div>
-                    <span className="bg-orange-100 text-orange-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                      Grooming
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    )
   }
 
   const renderCareInstructionField = (label: string, value: string | undefined, icon: React.ReactNode) => {
@@ -1327,6 +1353,26 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                       >
                                         Food
                                       </button>
+                                      <button
+                                        onClick={() => setSelectedPetSection("vaccine-overview")}
+                                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
+                                          selectedPetSection === "vaccine-overview"
+                                            ? "bg-[#E75837] text-white"
+                                            : "text-gray-700 hover:bg-gray-100"
+                                        }`}
+                                      >
+                                        Vaccine Overview
+                                      </button>
+                                      <button
+                                        onClick={() => setSelectedPetSection("care-plan-report")}
+                                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
+                                          selectedPetSection === "care-plan-report"
+                                            ? "bg-[#E75837] text-white"
+                                            : "text-gray-700 hover:bg-gray-100"
+                                        }`}
+                                      >
+                                        Care Plan Report
+                                      </button>
                                     </nav>
                                   </div>
 
@@ -1334,14 +1380,15 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                   <div className="flex-1 p-6">
                                     <div className="flex items-center justify-between mb-6">
                                       <h3 className="text-xl font-bold text-gray-900 font-header capitalize">
-                                        {selectedPetSection} Information
+                                        {selectedPetSection === "care-plan-report"
+                                          ? "Care Plan Report"
+                                          : selectedPetSection === "vaccine-overview"
+                                            ? "Vaccine Overview"
+                                            : `${selectedPetSection} Information`}
                                       </h3>
                                     </div>
 
                                     {renderPetProfileSection(pet, selectedPetSection)}
-                                    {showCarePlan === pet.pet_id && (
-                                      <div className="mt-6 border-t pt-6">{renderCarePlanReport(pet)}</div>
-                                    )}
                                   </div>
                                 </div>
                               </div>
