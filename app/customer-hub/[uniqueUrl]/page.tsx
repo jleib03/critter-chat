@@ -997,7 +997,8 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                     {pet.grooming_schedule.map((grooming: any, index: number) => (
                       <div key={index} className="border-l-4 border-gray-300 pl-4 py-2">
                         <p className="font-medium text-gray-900 font-body">
-                          {grooming.activity} - {grooming.frequency}
+                          {grooming.activity_name}
+                          {grooming.frequency ? ` - ${grooming.frequency}` : ""}
                         </p>
                         {grooming.instructions && (
                           <p className="text-gray-600 font-body text-sm mt-1">{grooming.instructions}</p>
