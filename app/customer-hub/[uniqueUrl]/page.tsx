@@ -731,11 +731,21 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                         e.stopPropagation()
                                         router.push(`/customer-hub/${uniqueUrl}/pet/${pet.pet_id}`)
                                       }}
-                                      className="font-bold text-xl font-body text-gray-900 hover:text-[#E75837] transition-colors"
+                                      className="font-bold text-xl font-body text-gray-900 hover:text-[#E75837] transition-colors underline decoration-2 decoration-transparent hover:decoration-[#E75837]"
                                     >
                                       {pet.pet_name}
                                     </button>
                                     <p className="text-gray-600 font-body">{pet.pet_type}</p>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        router.push(`/customer-hub/${uniqueUrl}/pet/${pet.pet_id}`)
+                                      }}
+                                      className="text-sm text-[#E75837] hover:text-[#d64a2a] font-medium mt-1 flex items-center gap-1"
+                                    >
+                                      View Full Profile
+                                      <ChevronRight className="w-4 h-4" />
+                                    </button>
                                   </div>
                                 </div>
                                 <div className="text-[#E75837]">
