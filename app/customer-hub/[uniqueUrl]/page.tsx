@@ -136,6 +136,24 @@ interface CustomerData {
   bookings: Booking[]
   invoices?: Invoice[]
   payment_instructions?: string
+  onboarding_complete?: boolean
+  criteria_status?: {
+    personal_info_complete?: boolean
+    pets_created?: boolean
+    emergency_contacts_added?: boolean
+    policies_signed?: boolean
+  }
+  supporting_details?: {
+    pets?: {
+      count?: number
+      details?: Array<{
+        name?: string
+        type?: string
+      }>
+    }
+  }
+  email?: string
+  user_type?: string
 }
 
 export default function CustomerHub({ params }: { params: { uniqueUrl: string } }) {
@@ -160,6 +178,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
 
   const [selectedHealthSubSection, setSelectedHealthSubSection] = useState("medications")
   const [selectedFoodSubSection, setSelectedFoodSubSection] = useState("food")
+  const [selectedOnboardingSubSection, setSelectedOnboardingSubSection] = useState("user-information")
 
   const [showCarePlan, setShowCarePlan] = useState<string | null>(null)
 
@@ -432,12 +451,28 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
 
         let invoices: Invoice[] = []
         let payment_instructions = ""
+        let onboarding_complete = false
+        let criteria_status = {}
+        let supporting_details = {}
+        let email = ""
+        let user_type = ""
 
         // Search through all items to find invoices
         for (const item of data) {
           if (item.invoices && Array.isArray(item.invoices)) {
             invoices = item.invoices
             payment_instructions = item.payment_instructions || ""
+            break
+          }
+        }
+
+        for (const item of data) {
+          if (item.onboarding_complete !== undefined) {
+            onboarding_complete = item.onboarding_complete
+            criteria_status = item.criteria_status || {}
+            supporting_details = item.supporting_details || {}
+            email = item.email || ""
+            user_type = item.user_type || ""
             break
           }
         }
@@ -451,6 +486,11 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
           bookings,
           invoices,
           payment_instructions,
+          onboarding_complete,
+          criteria_status,
+          supporting_details,
+          email,
+          user_type,
         })
         setStep("data")
       } else {
@@ -847,6 +887,246 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                       <p className="text-gray-600 font-body">No treat information recorded</p>
                     </div>
                   )}
+                </div>
+              )}
+            </div>
+          </div>
+        )
+
+      case "onboarding":
+        return (
+          <div className="space-y-6">
+            {/* Overall Onboarding Status */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 font-body">Onboarding Status</h3>
+                <div
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    customerData?.onboarding_complete ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
+                  }`}
+                >
+                  {customerData?.onboarding_complete ? "Complete" : "In Progress"}
+                </div>
+              </div>
+
+              {/* Status Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <div
+                    className={`w-12 h-12 mx-auto mb-2 rounded-full flex items-center justify-center ${
+                      customerData?.criteria_status?.personal_info_complete
+                        ? "bg-green-100 text-green-600"
+                        : "bg-gray-100 text-gray-400"
+                    }`}
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-medium text-gray-900">User Info</p>
+                  <p className="text-xs text-gray-500">
+                    {customerData?.criteria_status?.personal_info_complete ? "Complete" : "Pending"}
+                  </p>
+                </div>
+
+                <div className="text-center">
+                  <div
+                    className={`w-12 h-12 mx-auto mb-2 rounded-full flex items-center justify-center ${
+                      customerData?.criteria_status?.pets_created
+                        ? "bg-green-100 text-green-600"
+                        : "bg-gray-100 text-gray-400"
+                    }`}
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                      />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-medium text-gray-900">Pets</p>
+                  <p className="text-xs text-gray-500">
+                    {customerData?.criteria_status?.pets_created ? "Complete" : "Pending"}
+                  </p>
+                </div>
+
+                <div className="text-center">
+                  <div
+                    className={`w-12 h-12 mx-auto mb-2 rounded-full flex items-center justify-center ${
+                      customerData?.criteria_status?.emergency_contacts_added
+                        ? "bg-green-100 text-green-600"
+                        : "bg-gray-100 text-gray-400"
+                    }`}
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                      />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-medium text-gray-900">Emergency</p>
+                  <p className="text-xs text-gray-500">
+                    {customerData?.criteria_status?.emergency_contacts_added ? "Complete" : "Pending"}
+                  </p>
+                </div>
+
+                <div className="text-center">
+                  <div
+                    className={`w-12 h-12 mx-auto mb-2 rounded-full flex items-center justify-center ${
+                      customerData?.criteria_status?.policies_signed
+                        ? "bg-green-100 text-green-600"
+                        : "bg-gray-100 text-gray-400"
+                    }`}
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-medium text-gray-900">Policies</p>
+                  <p className="text-xs text-gray-500">
+                    {customerData?.criteria_status?.policies_signed ? "Complete" : "Pending"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Sub-tabs Navigation */}
+            <div className="border-b border-gray-200">
+              <nav className="flex space-x-8">
+                <button
+                  onClick={() => setSelectedOnboardingSubSection("user-information")}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    selectedOnboardingSubSection === "user-information"
+                      ? "border-[#E75837] text-[#E75837]"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  User Information
+                </button>
+                <button
+                  onClick={() => setSelectedOnboardingSubSection("pets")}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    selectedOnboardingSubSection === "pets"
+                      ? "border-[#E75837] text-[#E75837]"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  Pets
+                </button>
+                <button
+                  onClick={() => setSelectedOnboardingSubSection("emergency-contact")}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    selectedOnboardingSubSection === "emergency-contact"
+                      ? "border-[#E75837] text-[#E75837]"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  Emergency Contact
+                </button>
+                <button
+                  onClick={() => setSelectedOnboardingSubSection("policy-documentation")}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    selectedOnboardingSubSection === "policy-documentation"
+                      ? "border-[#E75837] text-[#E75837]"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  Policy Documentation
+                </button>
+              </nav>
+            </div>
+
+            {/* Sub-section Content */}
+            <div className="space-y-4">
+              {selectedOnboardingSubSection === "user-information" && (
+                <div className="bg-gray-50 p-6 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 font-body mb-4">User Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Email</p>
+                      <p className="text-gray-900">{customerData?.email || "Not provided"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">User Type</p>
+                      <p className="text-gray-900">{customerData?.user_type || "Not specified"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Status</p>
+                      <p className="text-gray-900">
+                        {customerData?.criteria_status?.personal_info_complete ? "Complete" : "Incomplete"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {selectedOnboardingSubSection === "pets" && (
+                <div className="bg-gray-50 p-6 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 font-body mb-4">Pet Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Pets Created</p>
+                      <p className="text-gray-900">{customerData?.criteria_status?.pets_created ? "Yes" : "No"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Pet Count</p>
+                      <p className="text-gray-900">{customerData?.supporting_details?.pets?.count || 0}</p>
+                    </div>
+                  </div>
+                  {customerData?.supporting_details?.pets?.details && (
+                    <div className="mt-4">
+                      <p className="text-sm font-medium text-gray-500 mb-2">Pet Details</p>
+                      <div className="space-y-2">
+                        {customerData.supporting_details.pets.details.map((pet: any, index: number) => (
+                          <div key={index} className="bg-white p-3 rounded border">
+                            <p className="font-medium">{pet.name || "Unnamed Pet"}</p>
+                            <p className="text-sm text-gray-600">{pet.type || "Type not specified"}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {selectedOnboardingSubSection === "emergency-contact" && (
+                <div className="bg-gray-50 p-6 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 font-body mb-4">Emergency Contact</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Status</p>
+                      <p className="text-gray-900">
+                        {customerData?.criteria_status?.emergency_contacts_added ? "Added" : "Not Added"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {selectedOnboardingSubSection === "policy-documentation" && (
+                <div className="bg-gray-50 p-6 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 font-body mb-4">Policy Documentation</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Policies Signed</p>
+                      <p className="text-gray-900">{customerData?.criteria_status?.policies_signed ? "Yes" : "No"}</p>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -1317,6 +1597,16 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                         }`}
                                       >
                                         Care Plan Report
+                                      </button>
+                                      <button
+                                        onClick={() => setSelectedPetSection("onboarding")}
+                                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
+                                          selectedPetSection === "onboarding"
+                                            ? "bg-[#E75837] text-white"
+                                            : "text-gray-700 hover:bg-gray-100"
+                                        }`}
+                                      >
+                                        Onboarding
                                       </button>
                                     </nav>
                                   </div>
