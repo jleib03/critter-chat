@@ -1196,11 +1196,24 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                 unique_url: uniqueUrl,
                               }),
                             })
+
+                            if (!response.ok) {
+                              throw new Error(`HTTP error! status: ${response.status}`)
+                            }
+
+                            const contentType = response.headers.get("content-type")
+                            if (!contentType || !contentType.includes("application/json")) {
+                              throw new Error(
+                                "Server returned non-JSON response. The policy documentation endpoint may not be configured.",
+                              )
+                            }
+
                             const documents = await response.json()
                             setPolicyDocuments(documents)
                             setShowOnboardingForm("policy-documentation")
                           } catch (error) {
                             console.error("Error fetching documents:", error)
+                            alert("Unable to load policy documents. Please contact support or try again later.")
                           }
                         }}
                         className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium"
@@ -1324,7 +1337,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
-                          d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 4 0 01-4 4zM7 3H5a2 2 0 00-2 2v12a4 4 0 004 4h2a2 2 0 002-2V5a2 2 0 00-2-2z"
+                          d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 4 0 01-4 4zM7 3H5a2 2 0 00-2 2v12a4 4 0 004 4h2a2 2 0 002-2V5a2 2 2 0 00-2-2z"
                         />
                       </svg>
                       Grooming Schedule
@@ -2157,11 +2170,26 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                               unique_url: uniqueUrl,
                                             }),
                                           })
+
+                                          if (!response.ok) {
+                                            throw new Error(`HTTP error! status: ${response.status}`)
+                                          }
+
+                                          const contentType = response.headers.get("content-type")
+                                          if (!contentType || !contentType.includes("application/json")) {
+                                            throw new Error(
+                                              "Server returned non-JSON response. The policy documentation endpoint may not be configured.",
+                                            )
+                                          }
+
                                           const documents = await response.json()
                                           setPolicyDocuments(documents)
                                           setShowOnboardingForm("policy-documentation")
                                         } catch (error) {
                                           console.error("Error fetching documents:", error)
+                                          alert(
+                                            "Unable to load policy documents. Please contact support or try again later.",
+                                          )
                                         }
                                       }}
                                       className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-4 py-2 rounded-lg font-medium text-sm"
