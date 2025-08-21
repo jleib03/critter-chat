@@ -197,6 +197,8 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
 
   const [showOnboardingModal, setShowOnboardingModal] = useState(false)
   const [onboardingStep, setOnboardingStep] = useState(1)
+  const [onboardingLoading, setOnboardingLoading] = useState(false)
+  const [policyDocuments, setPolicyDocuments] = useState<any[]>([])
   const [onboardingData, setOnboardingData] = useState({
     personalInfo: {
       firstName: "",
@@ -1346,9 +1348,77 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
     )
   }
 
-  const handleCompleteOnboarding = () => {
+  const handleCompleteOnboarding = async () => {
+    setOnboardingLoading(true)
     setShowOnboardingModal(true)
     setOnboardingStep(1)
+
+    try {
+      const webhookUrl = getWebhookEndpoint("CUSTOMER_HUB")
+      logWebhookUsage("CUSTOMER_HUB", "run_onboarding")
+
+      const payload = {
+        action: "run_onboarding",
+        unique_url: uniqueUrl,
+        customer_email: email,
+        timestamp: new Date().toISOString(),
+      }
+
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log("[v0] Onboarding data received:", data)
+
+        // Extract user information
+        const userInfo = data.find((item: any) => item.email && item.user_type)
+        if (userInfo?.supporting_details?.personal_info) {
+          setOnboardingData((prev) => ({
+            ...prev,
+            personalInfo: {
+              firstName: userInfo.supporting_details.personal_info.first_name || "",
+              lastName: userInfo.supporting_details.personal_info.last_name || "",
+              email: userInfo.supporting_details.personal_info.email || "",
+              phone: "", // Phone not in current data structure
+            },
+          }))
+        }
+
+        // Extract pets data
+        const petsData = data.filter((item: any) => item.name && item.pet_type)
+        setOnboardingData((prev) => ({
+          ...prev,
+          pets: petsData,
+        }))
+
+        // Extract emergency contacts from pets data
+        const emergencyContacts = petsData.flatMap(
+          (pet: any) => pet.contacts?.filter((contact: any) => contact.contact_type === "Emergency Contact") || [],
+        )
+        if (emergencyContacts.length > 0) {
+          const firstContact = emergencyContacts[0]
+          setOnboardingData((prev) => ({
+            ...prev,
+            emergencyContact: {
+              contactName: firstContact.contact_name || "",
+              businessName: "",
+              address: "",
+              phoneNumber: "",
+              email: firstContact.email || "",
+              notes: "",
+            },
+          }))
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching onboarding data:", error)
+    } finally {
+      setOnboardingLoading(false)
+    }
   }
 
   const handleOnboardingNext = () => {
@@ -2183,244 +2253,313 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                   </button>
                 </div>
 
-                {/* Progress indicator */}
-                <div className="mb-8">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-600">Step {onboardingStep} of 4</span>
-                    <span className="text-sm font-medium text-gray-600">{Math.round((onboardingStep / 4) * 100)}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-[#E75837] h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${(onboardingStep / 4) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                {/* Step 1: Personal Information */}
-                {onboardingStep === 1 && (
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
-                          <input
-                            type="text"
-                            value={onboardingData.personalInfo.firstName}
-                            onChange={(e) =>
-                              setOnboardingData({
-                                ...onboardingData,
-                                personalInfo: { ...onboardingData.personalInfo, firstName: e.target.value },
-                              })
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
-                          <input
-                            type="text"
-                            value={onboardingData.personalInfo.lastName}
-                            onChange={(e) =>
-                              setOnboardingData({
-                                ...onboardingData,
-                                personalInfo: { ...onboardingData.personalInfo, lastName: e.target.value },
-                              })
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                          <input
-                            type="email"
-                            value={onboardingData.personalInfo.email}
-                            onChange={(e) =>
-                              setOnboardingData({
-                                ...onboardingData,
-                                personalInfo: { ...onboardingData.personalInfo, email: e.target.value },
-                              })
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                          <input
-                            type="tel"
-                            value={onboardingData.personalInfo.phone}
-                            onChange={(e) =>
-                              setOnboardingData({
-                                ...onboardingData,
-                                personalInfo: { ...onboardingData.personalInfo, phone: e.target.value },
-                              })
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                          />
-                        </div>
-                      </div>
-                    </div>
+                {onboardingLoading && (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E75837]"></div>
+                    <span className="ml-3 text-gray-600">Loading your information...</span>
                   </div>
                 )}
 
-                {/* Step 2: Pet Management */}
-                {onboardingStep === 2 && (
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Pet Information</h3>
-                      <p className="text-gray-600 mb-4">
-                        Add or manage your pets. This information helps us provide better care.
-                      </p>
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <p className="text-sm text-gray-600">
-                          Pet management functionality will be integrated with existing pet forms.
-                        </p>
+                {!onboardingLoading && (
+                  <>
+                    {/* Progress indicator */}
+                    <div className="mb-8">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-600">Step {onboardingStep} of 4</span>
+                        <span className="text-sm font-medium text-gray-600">
+                          {Math.round((onboardingStep / 4) * 100)}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-[#E75837] h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${(onboardingStep / 4) * 100}%` }}
+                        ></div>
                       </div>
                     </div>
-                  </div>
-                )}
 
-                {/* Step 3: Emergency Contact */}
-                {onboardingStep === 3 && (
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Emergency Contact</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Step 1: Personal Information */}
+                    {onboardingStep === 1 && (
+                      <div className="space-y-6">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Contact Name</label>
-                          <input
-                            type="text"
-                            value={onboardingData.emergencyContact.contactName}
-                            onChange={(e) =>
-                              setOnboardingData({
-                                ...onboardingData,
-                                emergencyContact: { ...onboardingData.emergencyContact, contactName: e.target.value },
-                              })
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Business Name</label>
-                          <input
-                            type="text"
-                            value={onboardingData.emergencyContact.businessName}
-                            onChange={(e) =>
-                              setOnboardingData({
-                                ...onboardingData,
-                                emergencyContact: { ...onboardingData.emergencyContact, businessName: e.target.value },
-                              })
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                          />
-                        </div>
-                        <div className="md:col-span-2">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                          <input
-                            type="text"
-                            value={onboardingData.emergencyContact.address}
-                            onChange={(e) =>
-                              setOnboardingData({
-                                ...onboardingData,
-                                emergencyContact: { ...onboardingData.emergencyContact, address: e.target.value },
-                              })
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                          <input
-                            type="tel"
-                            value={onboardingData.emergencyContact.phoneNumber}
-                            onChange={(e) =>
-                              setOnboardingData({
-                                ...onboardingData,
-                                emergencyContact: { ...onboardingData.emergencyContact, phoneNumber: e.target.value },
-                              })
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                          <input
-                            type="email"
-                            value={onboardingData.emergencyContact.email}
-                            onChange={(e) =>
-                              setOnboardingData({
-                                ...onboardingData,
-                                emergencyContact: { ...onboardingData.emergencyContact, email: e.target.value },
-                              })
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                          />
-                        </div>
-                        <div className="md:col-span-2">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
-                          <textarea
-                            value={onboardingData.emergencyContact.notes}
-                            onChange={(e) =>
-                              setOnboardingData({
-                                ...onboardingData,
-                                emergencyContact: { ...onboardingData.emergencyContact, notes: e.target.value },
-                              })
-                            }
-                            rows={3}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                          />
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                              <input
+                                type="text"
+                                value={onboardingData.personalInfo.firstName}
+                                onChange={(e) =>
+                                  setOnboardingData({
+                                    ...onboardingData,
+                                    personalInfo: { ...onboardingData.personalInfo, firstName: e.target.value },
+                                  })
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                              <input
+                                type="text"
+                                value={onboardingData.personalInfo.lastName}
+                                onChange={(e) =>
+                                  setOnboardingData({
+                                    ...onboardingData,
+                                    personalInfo: { ...onboardingData.personalInfo, lastName: e.target.value },
+                                  })
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                              <input
+                                type="email"
+                                value={onboardingData.personalInfo.email}
+                                onChange={(e) =>
+                                  setOnboardingData({
+                                    ...onboardingData,
+                                    personalInfo: { ...onboardingData.personalInfo, email: e.target.value },
+                                  })
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                              <input
+                                type="tel"
+                                value={onboardingData.personalInfo.phone}
+                                onChange={(e) =>
+                                  setOnboardingData({
+                                    ...onboardingData,
+                                    personalInfo: { ...onboardingData.personalInfo, phone: e.target.value },
+                                  })
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                              />
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                )}
+                    )}
 
-                {/* Step 4: Sign Policies */}
-                {onboardingStep === 4 && (
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Sign Policies</h3>
-                      <p className="text-gray-600 mb-4">
-                        Review and sign the required policies to complete your onboarding.
-                      </p>
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <p className="text-sm text-gray-600">
-                          Policy signing functionality will be integrated with existing policy management.
-                        </p>
+                    {/* Step 2: Pet Management */}
+                    {onboardingStep === 2 && (
+                      <div className="space-y-6">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Pet Information</h3>
+                          <p className="text-gray-600 mb-4">
+                            Review and manage your pets. This information helps us provide better care.
+                          </p>
+                          {onboardingData.pets.length > 0 ? (
+                            <div className="space-y-4">
+                              {onboardingData.pets.map((pet: any, index: number) => (
+                                <div key={index} className="bg-gray-50 p-4 rounded-lg border">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <h4 className="font-medium text-gray-900">{pet.name}</h4>
+                                      <p className="text-sm text-gray-600">
+                                        {pet.pet_type} • {pet.breed_name}
+                                      </p>
+                                      {pet.birthdate && (
+                                        <p className="text-sm text-gray-500">
+                                          Born: {new Date(pet.birthdate).toLocaleDateString()}
+                                        </p>
+                                      )}
+                                    </div>
+                                    <div className="text-sm text-green-600 font-medium">✓ Added</div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                              <p className="text-sm text-gray-600">
+                                No pets found. You can add pets after completing onboarding.
+                              </p>
+                            </div>
+                          )}
+                        </div>
                       </div>
+                    )}
+
+                    {/* Step 3: Emergency Contact */}
+                    {onboardingStep === 3 && (
+                      <div className="space-y-6">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Emergency Contact</h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Contact Name</label>
+                              <input
+                                type="text"
+                                value={onboardingData.emergencyContact.contactName}
+                                onChange={(e) =>
+                                  setOnboardingData({
+                                    ...onboardingData,
+                                    emergencyContact: {
+                                      ...onboardingData.emergencyContact,
+                                      contactName: e.target.value,
+                                    },
+                                  })
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Business Name</label>
+                              <input
+                                type="text"
+                                value={onboardingData.emergencyContact.businessName}
+                                onChange={(e) =>
+                                  setOnboardingData({
+                                    ...onboardingData,
+                                    emergencyContact: {
+                                      ...onboardingData.emergencyContact,
+                                      businessName: e.target.value,
+                                    },
+                                  })
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                              />
+                            </div>
+                            <div className="md:col-span-2">
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                              <input
+                                type="text"
+                                value={onboardingData.emergencyContact.address}
+                                onChange={(e) =>
+                                  setOnboardingData({
+                                    ...onboardingData,
+                                    emergencyContact: { ...onboardingData.emergencyContact, address: e.target.value },
+                                  })
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                              <input
+                                type="tel"
+                                value={onboardingData.emergencyContact.phoneNumber}
+                                onChange={(e) =>
+                                  setOnboardingData({
+                                    ...onboardingData,
+                                    emergencyContact: {
+                                      ...onboardingData.emergencyContact,
+                                      phoneNumber: e.target.value,
+                                    },
+                                  })
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                              <input
+                                type="email"
+                                value={onboardingData.emergencyContact.email}
+                                onChange={(e) =>
+                                  setOnboardingData({
+                                    ...onboardingData,
+                                    emergencyContact: { ...onboardingData.emergencyContact, email: e.target.value },
+                                  })
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                              />
+                            </div>
+                            <div className="md:col-span-2">
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                              <textarea
+                                value={onboardingData.emergencyContact.notes}
+                                onChange={(e) =>
+                                  setOnboardingData({
+                                    ...onboardingData,
+                                    emergencyContact: { ...onboardingData.emergencyContact, notes: e.target.value },
+                                  })
+                                }
+                                rows={3}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Step 4: Sign Policies */}
+                    {onboardingStep === 4 && (
+                      <div className="space-y-6">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Sign Policies</h3>
+                          <p className="text-gray-600 mb-4">
+                            Review and sign the required policies to complete your onboarding.
+                          </p>
+                          {policyDocuments.length > 0 ? (
+                            <div className="space-y-4">
+                              {policyDocuments.map((doc: any, index: number) => (
+                                <div key={index} className="bg-gray-50 p-4 rounded-lg border">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <h4 className="font-medium text-gray-900">{doc.name}</h4>
+                                      <p className="text-sm text-gray-600">Policy ID: {doc.policy_id}</p>
+                                    </div>
+                                    <div className="flex items-center space-x-3">
+                                      <button className="text-[#E75837] hover:text-[#E75837]/80 text-sm font-medium">
+                                        View Document
+                                      </button>
+                                      <label className="flex items-center">
+                                        <input type="checkbox" className="mr-2" />
+                                        <span className="text-sm">I acknowledge and agree</span>
+                                      </label>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                              <p className="text-sm text-gray-600">
+                                Policy documents will be loaded for review and signing.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Navigation buttons */}
+                    <div className="flex justify-between mt-8">
+                      <button
+                        onClick={handleOnboardingPrev}
+                        disabled={onboardingStep === 1}
+                        className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <ChevronLeft className="w-4 h-4 inline mr-1" />
+                        Previous
+                      </button>
+
+                      {onboardingStep < 4 ? (
+                        <button
+                          onClick={handleOnboardingNext}
+                          className="px-4 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#E75837]/90"
+                        >
+                          Next
+                          <ChevronRight className="w-4 h-4 inline ml-1" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={handleOnboardingSubmit}
+                          className="px-6 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#E75837]/90"
+                        >
+                          Complete Onboarding
+                        </button>
+                      )}
                     </div>
-                  </div>
+                  </>
                 )}
-
-                {/* Navigation buttons */}
-                <div className="flex justify-between mt-8">
-                  <button
-                    onClick={handleOnboardingPrev}
-                    disabled={onboardingStep === 1}
-                    className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ChevronLeft className="w-4 h-4 inline mr-1" />
-                    Previous
-                  </button>
-
-                  {onboardingStep < 4 ? (
-                    <button
-                      onClick={handleOnboardingNext}
-                      className="px-4 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#E75837]/90"
-                    >
-                      Next
-                      <ChevronRight className="w-4 h-4 inline ml-1" />
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleOnboardingSubmit}
-                      className="px-6 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#E75837]/90"
-                    >
-                      Complete Onboarding
-                    </button>
-                  )}
-                </div>
               </div>
             </div>
           </div>
