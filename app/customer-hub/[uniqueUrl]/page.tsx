@@ -18,8 +18,6 @@ import {
   Bird,
   ChevronLeft,
   ChevronRight,
-  Plus,
-  Shield,
   FileText,
   ChevronDown,
   ChevronUp,
@@ -28,7 +26,6 @@ import {
   AlertTriangle,
   Scale,
   Cookie,
-  CheckCircle,
 } from "lucide-react"
 import { getWebhookEndpoint, logWebhookUsage } from "../../../types/webhook-endpoints"
 
@@ -1532,1013 +1529,560 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                     ))}
                   </div>
                 )}
+
+                {/* General Notes */}
+                {(pet.general_health_notes ||
+                  pet.general_feeding_notes ||
+                  pet.general_exercise_and_play_notes ||
+                  pet.general_grooming_and_cleaning_notes ||
+                  pet.general_behavioral_notes ||
+                  pet.interactions_with_adults_notes ||
+                  pet.interactions_with_kids_notes ||
+                  pet.interactions_with_animals_notes ||
+                  pet.miscellaneous_notes) && (
+                  <div className="bg-white rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-900 font-body mb-3 flex items-center">
+                      <svg className="w-5 h-5 text-gray-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+                      </svg>
+                      Additional Notes
+                    </h4>
+                    {pet.general_health_notes && (
+                      <div className="border-l-4 border-gray-300 pl-4 py-2">
+                        <h5 className="font-medium text-gray-900 font-body">General Health Notes</h5>
+                        <p className="text-gray-600 font-body text-sm mt-1">{pet.general_health_notes}</p>
+                      </div>
+                    )}
+                    {pet.general_feeding_notes && (
+                      <div className="border-l-4 border-gray-300 pl-4 py-2">
+                        <h5 className="font-medium text-gray-900 font-body">General Feeding Notes</h5>
+                        <p className="text-gray-600 font-body text-sm mt-1">{pet.general_feeding_notes}</p>
+                      </div>
+                    )}
+                    {pet.general_exercise_and_play_notes && (
+                      <div className="border-l-4 border-gray-300 pl-4 py-2">
+                        <h5 className="font-medium text-gray-900 font-body">General Exercise and Play Notes</h5>
+                        <p className="text-gray-600 font-body text-sm mt-1">{pet.general_exercise_and_play_notes}</p>
+                      </div>
+                    )}
+                    {pet.general_grooming_and_cleaning_notes && (
+                      <div className="border-l-4 border-gray-300 pl-4 py-2">
+                        <h5 className="font-medium text-gray-900 font-body">General Grooming and Cleaning Notes</h5>
+                        <p className="text-gray-600 font-body text-sm mt-1">
+                          {pet.general_grooming_and_cleaning_notes}
+                        </p>
+                      </div>
+                    )}
+                    {pet.general_behavioral_notes && (
+                      <div className="border-l-4 border-gray-300 pl-4 py-2">
+                        <h5 className="font-medium text-gray-900 font-body">General Behavioral Notes</h5>
+                        <p className="text-gray-600 font-body text-sm mt-1">{pet.general_behavioral_notes}</p>
+                      </div>
+                    )}
+                    {pet.interactions_with_adults_notes && (
+                      <div className="border-l-4 border-gray-300 pl-4 py-2">
+                        <h5 className="font-medium text-gray-900 font-body">Interactions with Adults Notes</h5>
+                        <p className="text-gray-600 font-body text-sm mt-1">{pet.interactions_with_adults_notes}</p>
+                      </div>
+                    )}
+                    {pet.interactions_with_kids_notes && (
+                      <div className="border-l-4 border-gray-300 pl-4 py-2">
+                        <h5 className="font-medium text-gray-900 font-body">Interactions with Kids Notes</h5>
+                        <p className="text-gray-600 font-body text-sm mt-1">{pet.interactions_with_kids_notes}</p>
+                      </div>
+                    )}
+                    {pet.interactions_with_animals_notes && (
+                      <div className="border-l-4 border-gray-300 pl-4 py-2">
+                        <h5 className="font-medium text-gray-900 font-body">Interactions with Animals Notes</h5>
+                        <p className="text-gray-600 font-body text-sm mt-1">{pet.interactions_with_animals_notes}</p>
+                      </div>
+                    )}
+                    {pet.miscellaneous_notes && (
+                      <div className="border-l-4 border-gray-300 pl-4 py-2">
+                        <h5 className="font-medium text-gray-900 font-body">Miscellaneous Notes</h5>
+                        <p className="text-gray-600 font-body text-sm mt-1">{pet.miscellaneous_notes}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
         )
 
       default:
-        return <div>Section not found</div>
+        return <div className="text-gray-600">No content available for this section.</div>
     }
   }
 
-  const renderCareInstructionField = (label: string, value: string | undefined, icon: React.ReactNode) => {
-    if (!value || value.trim() === "") return null
-
-    return (
-      <div className="flex gap-3 p-4 bg-gray-50 rounded-lg">
-        <div className="text-[#E75837] mt-0.5">{icon}</div>
-        <div className="flex-1">
-          <h4 className="font-semibold text-gray-900 font-body mb-1">{label}</h4>
-          <p className="text-gray-700 font-body text-sm leading-relaxed">{value}</p>
-        </div>
-      </div>
-    )
-  }
-
-  const calendarDays = generateCalendarDays(currentDate)
-  const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ]
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-[#E75837] to-[#d04e30] text-white">
-        <div className="max-w-6xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button onClick={() => router.back()} className="p-2 hover:bg-white/20 rounded-lg transition-colors">
-                <ArrowLeft className="w-6 h-6" />
-              </button>
-              <div>
-                <h1 className="text-3xl font-bold font-title">Customer Portal</h1>
-                <p className="text-white/90 font-body">Access your booking information and pet details</p>
-              </div>
-            </div>
-            {step === "data" && customerData && (
-              <Link
-                href={`/schedule/${uniqueUrl}`}
-                className="bg-white text-[#E75837] py-2 px-6 rounded-lg font-medium hover:bg-gray-100 transition-colors font-body flex items-center gap-2"
-              >
-                <Plus className="w-5 h-5" />
-                New Appointment
-              </Link>
-            )}
-          </div>
-        </div>
+    <div className="container mx-auto py-10">
+      {/* Back Button */}
+      <Link href="/" className="inline-flex items-center mb-6 text-gray-600 hover:text-gray-800">
+        <ArrowLeft className="mr-2 h-5 w-5" />
+        Back to Home
+      </Link>
+
+      {/* Title and Tabs */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900 font-body">Customer Hub</h1>
+        <p className="text-gray-500 font-body">Welcome to your personalized customer portal.</p>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        {step === "email" && (
-          /* Email Input Form */
-          <div className="max-w-md mx-auto">
-            <div className="bg-white rounded-2xl shadow-lg p-8">
-              <form onSubmit={handleEmailSubmit} className="space-y-6">
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2 font-body">
-                    Enter your email address
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input
-                      type="email"
-                      id="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="your.email@example.com"
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent font-body"
-                      required
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <p className="text-sm text-gray-500 mt-2 font-body">
-                    We'll send you a verification code to access your information
-                  </p>
-                </div>
-
-                {error && (
-                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-600 font-body">{error}</p>
-                  </div>
+      {/* Email/Code Form */}
+      {step === "email" && (
+        <div className="max-w-md mx-auto">
+          <form onSubmit={handleEmailSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email address
+              </label>
+              <div className="mt-1">
+                <input
+                  type="email"
+                  id="email"
+                  className="shadow-sm focus:ring-[#E75837] focus:border-[#E75837] block w-full sm:text-sm border-gray-300 rounded-md"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <button
+                type="submit"
+                className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#E75837] hover:bg-[#E75837]/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E75837]"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  "Send Validation Code"
                 )}
+              </button>
+            </div>
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+          </form>
+        </div>
+      )}
 
+      {step === "code" && (
+        <div className="max-w-md mx-auto">
+          <form onSubmit={handleCodeSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="code" className="block text-sm font-medium text-gray-700">
+                Validation Code
+              </label>
+              <div className="mt-1">
+                <input
+                  type="text"
+                  id="code"
+                  className="shadow-sm focus:ring-[#E75837] focus:border-[#E75837] block w-full sm:text-sm border-gray-300 rounded-md"
+                  placeholder="Enter code"
+                  value={validationCode}
+                  onChange={(e) => setValidationCode(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <button
+                type="submit"
+                className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#E75837] hover:bg-[#E75837]/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E75837]"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  "Verify Code"
+                )}
+              </button>
+            </div>
+            <button onClick={resetForm} className="text-sm text-gray-500 hover:text-gray-700 focus:outline-none">
+              ← Back to Email
+            </button>
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+          </form>
+        </div>
+      )}
+
+      {/* Main Content */}
+      {step === "data" && customerData && (
+        <div className="space-y-8">
+          {/* Tabs */}
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+              <button
+                onClick={() => setActiveTab("pets")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "pets"
+                    ? "border-[#E75837] text-[#E75837]"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Pets
+              </button>
+              <button
+                onClick={() => setActiveTab("appointments")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "appointments"
+                    ? "border-[#E75837] text-[#E75837]"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Appointments
+              </button>
+              <button
+                onClick={() => setActiveTab("invoices")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "invoices"
+                    ? "border-[#E75837] text-[#E75837]"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Invoices
+              </button>
+              {customerData.onboarding_complete === false && (
                 <button
-                  type="submit"
-                  disabled={isLoading || !email.trim()}
-                  className="w-full bg-[#E75837] text-white py-3 px-6 rounded-lg font-medium hover:bg-[#d04e30] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-body flex items-center justify-center gap-2"
+                  onClick={() => setActiveTab("onboarding")}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === "onboarding"
+                      ? "border-[#E75837] text-[#E75837]"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
                 >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Sending verification code...
-                    </>
-                  ) : (
-                    <>
-                      <Mail className="w-5 h-5" />
-                      Send Verification Code
-                    </>
-                  )}
+                  Onboarding
                 </button>
-              </form>
-            </div>
+              )}
+            </nav>
           </div>
-        )}
 
-        {step === "code" && (
-          /* Validation Code Input Form */
-          <div className="max-w-md mx-auto">
-            <div className="bg-white rounded-2xl shadow-lg p-8">
-              <div className="text-center mb-6">
-                <Shield className="w-12 h-12 text-[#E75837] mx-auto mb-4" />
-                <h2 className="text-xl font-bold text-gray-900 font-header">Check Your Email</h2>
-                <p className="text-gray-600 font-body mt-2">
-                  We've sent a verification code to <span className="font-medium">{email}</span>
-                </p>
-              </div>
-
-              <form onSubmit={handleCodeSubmit} className="space-y-6">
-                <div>
-                  <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2 font-body">
-                    Enter verification code
-                  </label>
-                  <input
-                    type="text"
-                    id="code"
-                    value={validationCode}
-                    onChange={(e) => setValidationCode(e.target.value)}
-                    placeholder="Enter 6-digit code"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent font-body text-center text-lg tracking-widest"
-                    required
-                    disabled={isLoading}
-                    maxLength={6}
-                  />
-                </div>
-
-                {error && (
-                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-600 font-body">{error}</p>
-                  </div>
-                )}
-
-                <div className="space-y-3">
-                  <button
-                    type="submit"
-                    disabled={isLoading || !validationCode.trim()}
-                    className="w-full bg-[#E75837] text-white py-3 px-6 rounded-lg font-medium hover:bg-[#d04e30] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-body flex items-center justify-center gap-2"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        Verifying code...
-                      </>
-                    ) : (
-                      <>
-                        <User className="w-5 h-5" />
-                        Access My Portal
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setStep("email")}
-                    className="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-200 transition-colors font-body"
-                  >
-                    Use Different Email
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {step === "data" && customerData && (
-          /* Customer Information Display */
-          <div className="space-y-8">
-            {/* Tabbed Navigation */}
-            <div className="bg-white rounded-2xl shadow-lg">
-              <div className="border-b border-gray-200">
-                <nav className="flex space-x-8 px-8 pt-6">
-                  <button
-                    onClick={() => setActiveTab("pets")}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                      activeTab === "pets"
-                        ? "border-[#E75837] text-[#E75837]"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Heart className="w-4 h-4" />
-                      Pets
+          {/* Pets Tab */}
+          {activeTab === "pets" && (
+            <div className="space-y-6">
+              {customerData.pets.length > 0 ? (
+                customerData.pets.map((pet: Pet) => (
+                  <div key={pet.pet_id} className="bg-white shadow overflow-hidden rounded-lg">
+                    <div className="px-4 py-5 sm:px-6">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg leading-6 font-medium text-gray-900 font-body">
+                          {pet.pet_name}
+                          {getPetIcon(pet.pet_type)}
+                        </h3>
+                        <button
+                          onClick={() => togglePetExpansion(pet.pet_id)}
+                          className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E75837]"
+                        >
+                          {expandedPet === pet.pet_id ? (
+                            <>
+                              <ChevronUp className="mr-2 h-5 w-5" />
+                              Collapse
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="mr-2 h-5 w-5" />
+                              Expand
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      <p className="mt-1 max-w-2xl text-sm text-gray-500 font-body">
+                        {pet.pet_type} • {pet.breed_name}
+                      </p>
                     </div>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("appointments")}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                      activeTab === "appointments"
-                        ? "border-[#E75837] text-[#E75837]"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      Appointments
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("invoices")}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                      activeTab === "invoices"
-                        ? "border-[#E75837] text-[#E75837]"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4" />
-                      Invoices
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("onboarding")}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                      activeTab === "onboarding"
-                        ? "border-[#E75837] text-[#E75837]"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4" />
-                      Onboarding
-                    </div>
-                  </button>
-                </nav>
-              </div>
-
-              <div className="p-8">
-                {activeTab === "pets" && (
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6 font-header flex items-center gap-3">
-                      <Heart className="w-8 h-8 text-[#E75837]" />
-                      Your Pets
-                    </h2>
-                    {customerData.pets && customerData.pets.length > 0 ? (
-                      <div className="space-y-6">
-                        {customerData.pets.map((pet) => (
-                          <div
-                            key={pet.pet_id}
-                            className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-                          >
-                            <div
-                              onClick={() => togglePetExpansion(pet.pet_id)}
-                              className="w-full p-6 bg-gradient-to-br from-orange-50 to-pink-50 border-b border-orange-200 hover:from-orange-100 hover:to-pink-100 transition-colors cursor-pointer"
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-4">
-                                  <div className="w-12 h-12 bg-gradient-to-br from-[#E75837] to-[#D14420] rounded-full flex items-center justify-center shadow-md border-2 border-white">
-                                    <div className="text-white">{getPetIcon(pet.pet_type)}</div>
-                                  </div>
-                                  <div className="text-left">
-                                    <h3 className="font-semibold text-gray-900 text-lg header-font">{pet.pet_name}</h3>
-                                    <p className="text-gray-600 body-font text-sm">{pet.pet_type}</p>
-                                  </div>
-                                </div>
-                                <div className="text-[#E75837] hover:text-[#E75837]/80 transition-colors">
-                                  {expandedPet === pet.pet_id ? (
-                                    <ChevronUp className="h-5 w-5" />
-                                  ) : (
-                                    <ChevronDown className="h-5 w-5" />
-                                  )}
-                                </div>
-                              </div>
+                    {expandedPet === pet.pet_id && (
+                      <div className="border-t border-gray-200">
+                        <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                          <dt className="text-sm font-medium text-gray-500">Pet Profile Sections</dt>
+                          <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                            <div className="flex space-x-4">
+                              <button
+                                onClick={() => setSelectedPetSection("general")}
+                                className={`inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E75837] ${
+                                  selectedPetSection === "general" ? "bg-gray-100" : ""
+                                }`}
+                              >
+                                General
+                              </button>
+                              <button
+                                onClick={() => setSelectedPetSection("health")}
+                                className={`inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E75837] ${
+                                  selectedPetSection === "health" ? "bg-gray-100" : ""
+                                }`}
+                              >
+                                Health
+                              </button>
+                              <button
+                                onClick={() => setSelectedPetSection("food")}
+                                className={`inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E75837] ${
+                                  selectedPetSection === "food" ? "bg-gray-100" : ""
+                                }`}
+                              >
+                                Food
+                              </button>
+                              <button
+                                onClick={() => setSelectedPetSection("vaccine-overview")}
+                                className={`inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E75837] ${
+                                  selectedPetSection === "vaccine-overview" ? "bg-gray-100" : ""
+                                }`}
+                              >
+                                Vaccine Overview
+                              </button>
+                              <button
+                                onClick={() => setSelectedPetSection("care-plan-report")}
+                                className={`inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E75837] ${
+                                  selectedPetSection === "care-plan-report" ? "bg-gray-100" : ""
+                                }`}
+                              >
+                                Daily Care Plan
+                              </button>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12">
-                        <Heart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-600 font-body text-xl">No pets registered</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {activeTab === "appointments" && (
-                  <div>
-                    <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-2xl font-bold text-gray-900 font-header flex items-center gap-3">
-                        <Calendar className="w-8 h-8 text-[#E75837]" />
-                        Your Appointments
-                      </h2>
-                      <div className="flex items-center gap-4">
-                        <div className="flex bg-gray-100 rounded-lg p-1">
-                          <button
-                            onClick={() => setAppointmentView("calendar")}
-                            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                              appointmentView === "calendar"
-                                ? "bg-white text-[#E75837] shadow-sm"
-                                : "text-gray-600 hover:text-gray-900"
-                            }`}
-                          >
-                            Calendar
-                          </button>
-                          <button
-                            onClick={() => setAppointmentView("list")}
-                            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                              appointmentView === "list"
-                                ? "bg-white text-[#E75837] shadow-sm"
-                                : "text-gray-600 hover:text-gray-900"
-                            }`}
-                          >
-                            List
-                          </button>
+                          </dd>
                         </div>
-                        {appointmentView === "calendar" && (
-                          <>
-                            <button
-                              onClick={() =>
-                                setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))
-                              }
-                              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                              <ChevronLeft className="w-5 h-5" />
-                            </button>
-                            <h3 className="text-lg font-semibold font-body min-w-[200px] text-center">
-                              {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-                            </h3>
-                            <button
-                              onClick={() =>
-                                setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))
-                              }
-                              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                              <ChevronRight className="w-5 h-5" />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {customerData.bookings && customerData.bookings.length > 0 ? (
-                      <>
-                        {appointmentView === "calendar" ? (
-                          <>
-                            {/* Calendar Grid */}
-                            <div className="grid grid-cols-7 gap-1 mb-4">
-                              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                                <div key={day} className="p-3 text-center font-semibold text-gray-600 font-body">
-                                  {day}
-                                </div>
-                              ))}
-                            </div>
-
-                            <div className="grid grid-cols-7 gap-1">
-                              {calendarDays.map((day, index) => {
-                                const bookings = getBookingsForDate(day)
-                                const isCurrentMonth = day.getMonth() === currentDate.getMonth()
-                                const isToday = day.toDateString() === new Date().toDateString()
-
-                                return (
-                                  <div
-                                    key={index}
-                                    className={`min-h-[100px] p-2 border border-gray-200 ${
-                                      isCurrentMonth ? "bg-white" : "bg-gray-50"
-                                    } ${isToday ? "ring-2 ring-[#E75837]" : ""}`}
-                                  >
-                                    <div
-                                      className={`text-sm font-medium mb-1 ${isCurrentMonth ? "text-gray-900" : "text-gray-400"}`}
-                                    >
-                                      {day.getDate()}
-                                    </div>
-                                    <div className="space-y-1">
-                                      {bookings.map((booking) => (
-                                        <div
-                                          key={booking.booking_id}
-                                          className={`text-xs p-1 rounded border ${getServiceTypeColor(booking.service_types || "")}`}
-                                        >
-                                          <div className="font-medium truncate">
-                                            {convertToUserTimezone(booking.start)}
-                                          </div>
-                                          <div className="truncate">{booking.service_names || "Appointment"}</div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )
-                              })}
-                            </div>
-
-                            {/* Legend */}
-                            <div className="mt-6 flex flex-wrap gap-4">
-                              <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
-                                <span className="text-sm font-body">Walking</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 bg-purple-100 border border-purple-300 rounded"></div>
-                                <span className="text-sm font-body">Grooming</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 bg-blue-100 border border-blue-300 rounded"></div>
-                                <span className="text-sm font-body">Drop-in</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 bg-orange-100 border border-orange-300 rounded"></div>
-                                <span className="text-sm font-body">Other</span>
-                              </div>
-                            </div>
-                          </>
-                        ) : (
-                          /* Added list view for appointments */
-                          <div className="space-y-4 max-h-[600px] overflow-y-auto">
-                            {customerData.bookings
-                              .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
-                              .map((booking) => (
-                                <div
-                                  key={booking.booking_id}
-                                  className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                                >
-                                  <div className="flex items-start justify-between">
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-3 mb-2">
-                                        <div
-                                          className={`w-3 h-3 rounded-full ${
-                                            booking.service_types?.toLowerCase().includes("walking")
-                                              ? "bg-green-400"
-                                              : booking.service_types?.toLowerCase().includes("grooming")
-                                                ? "bg-purple-400"
-                                                : booking.service_types?.toLowerCase().includes("drop")
-                                                  ? "bg-blue-400"
-                                                  : "bg-orange-400"
-                                          }`}
-                                        ></div>
-                                        <h3 className="text-lg font-semibold text-gray-900 font-header">
-                                          {booking.service_names || "Appointment"}
-                                        </h3>
-                                      </div>
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 font-body">
-                                        <div>
-                                          <span className="font-medium">Date:</span>{" "}
-                                          {booking.booking_date_formatted ||
-                                            new Date(booking.start).toLocaleDateString()}
-                                        </div>
-                                        <div>
-                                          <span className="font-medium">Day:</span> {booking.day_of_week}
-                                        </div>
-                                        <div>
-                                          <span className="font-medium">Time:</span>{" "}
-                                          {convertToUserTimezone(booking.start)} - {convertToUserTimezone(booking.end)}
-                                        </div>
-                                        <div>
-                                          <span className="font-medium">Professional:</span> {booking.professional_name}
-                                        </div>
-                                        {booking.service_types && (
-                                          <div className="md:col-span-2">
-                                            <span className="font-medium">Service Type:</span> {booking.service_types}
-                                          </div>
-                                        )}
-                                        {booking.is_recurring && (
-                                          <div className="md:col-span-2">
-                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                              Recurring Appointment
-                                            </span>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <div className="text-center py-12">
-                        <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-600 font-body text-xl mb-2">No upcoming appointments scheduled</p>
-                        <p className="text-gray-500 font-body">Contact us to book your next appointment!</p>
+                        <div className="px-4 py-5 sm:px-6">{renderPetProfileSection(pet, selectedPetSection)}</div>
                       </div>
                     )}
                   </div>
-                )}
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <Dog className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600 font-body">No pets recorded</p>
+                </div>
+              )}
+            </div>
+          )}
 
-                {activeTab === "invoices" && (
-                  <div>
-                    <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-2xl font-bold text-gray-900 font-header flex items-center gap-3">
-                        <FileText className="w-8 h-8 text-[#E75837]" />
-                        Invoices
-                      </h2>
+          {/* Appointments Tab */}
+          {activeTab === "appointments" && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900 font-body">Appointments</h2>
+                <div className="flex space-x-4">
+                  <button
+                    onClick={() => setAppointmentView("calendar")}
+                    className={`px-3 py-2 rounded-md font-medium text-sm ${
+                      appointmentView === "calendar"
+                        ? "bg-[#E75837] text-white hover:bg-[#E75837]/80"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    Calendar
+                  </button>
+                  <button
+                    onClick={() => setAppointmentView("list")}
+                    className={`px-3 py-2 rounded-md font-medium text-sm ${
+                      appointmentView === "list"
+                        ? "bg-[#E75837] text-white hover:bg-[#E75837]/80"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    List
+                  </button>
+                </div>
+              </div>
+
+              {appointmentView === "calendar" && (
+                <div className="bg-white shadow overflow-hidden rounded-lg">
+                  <div className="px-4 py-5 sm:px-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg leading-6 font-medium text-gray-900 font-body">
+                        {currentDate.toLocaleString("default", { month: "long", year: "numeric" })}
+                      </h3>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => {
+                            const newDate = new Date(currentDate)
+                            newDate.setMonth(currentDate.getMonth() - 1)
+                            setCurrentDate(newDate)
+                          }}
+                          className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md"
+                        >
+                          <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newDate = new Date(currentDate)
+                            newDate.setMonth(currentDate.getMonth() + 1)
+                            setCurrentDate(newDate)
+                          }}
+                          className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md"
+                        >
+                          <ChevronRight className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
 
-                    {customerData.invoices && customerData.invoices.length > 0 ? (
-                      <div className="space-y-4">
-                        {customerData.invoices.map((invoice) => (
+                    <div className="grid grid-cols-7 gap-2">
+                      {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                        <div key={day} className="text-center text-gray-500 font-body">
+                          {day}
+                        </div>
+                      ))}
+
+                      {generateCalendarDays(currentDate).map((day, index) => {
+                        const bookingsForDay = getBookingsForDate(day)
+                        const isToday =
+                          day.getDate() === new Date().getDate() &&
+                          day.getMonth() === new Date().getMonth() &&
+                          day.getFullYear() === new Date().getFullYear()
+                        const isCurrentMonth = day.getMonth() === currentDate.getMonth()
+
+                        return (
                           <div
-                            key={invoice.invoice_number}
-                            className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow"
+                            key={index}
+                            className={`relative p-2 rounded-md ${
+                              isToday ? "bg-[#E75837] text-white" : "bg-gray-100 text-gray-700"
+                            } ${!isCurrentMonth ? "opacity-50" : ""}`}
                           >
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-4 mb-2">
-                                  <h3 className="text-lg font-bold text-gray-900 font-body">{invoice.amount}</h3>
-                                  <span className="text-gray-600 font-body">Due {invoice.due_date}</span>
-                                </div>
-                                <p className="text-gray-600 font-body">Invoice #{invoice.invoice_number}</p>
+                            <div className="text-sm text-center font-body">{day.getDate()}</div>
+                            {bookingsForDay.length > 0 && (
+                              <div className="absolute bottom-1 left-0 w-full px-1">
+                                {bookingsForDay.map((booking) => (
+                                  <div
+                                    key={booking.booking_id}
+                                    className={`text-xs font-medium text-white py-0.5 px-1 rounded-full mt-1 ${getServiceTypeColor(
+                                      booking.service_types || "",
+                                    )}`}
+                                  >
+                                    {convertToUserTimezone(booking.start)} - {booking.professional_name}
+                                  </div>
+                                ))}
                               </div>
-                              <div className="flex-shrink-0">
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {appointmentView === "list" && (
+                <div className="bg-white shadow overflow-hidden rounded-lg">
+                  <ul className="divide-y divide-gray-200">
+                    {customerData.bookings.length > 0 ? (
+                      customerData.bookings.map((booking: Booking) => (
+                        <li key={booking.booking_id}>
+                          <a href="#" className="block hover:bg-gray-50">
+                            <div className="px-4 py-4 sm:px-6">
+                              <div className="flex items-center justify-between">
+                                <p className="text-sm font-medium text-indigo-600 truncate font-body">
+                                  {booking.professional_name}
+                                </p>
+                                <div className="ml-2 flex-shrink-0">
+                                  <span
+                                    className={`px-2 py-0.5 rounded text-xs font-medium ${getServiceTypeColor(
+                                      booking.service_types || "",
+                                    )}`}
+                                  >
+                                    {booking.service_types}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="mt-2 sm:flex sm:justify-between">
+                                <div className="sm:flex">
+                                  <p className="flex items-center text-sm text-gray-500 font-body">
+                                    <User className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
+                                    {booking.customer_first_name} {booking.customer_last_name}
+                                  </p>
+                                  <p className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6 font-body">
+                                    <Calendar className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
+                                    <time dateTime={booking.start}>{booking.booking_date_formatted}</time>
+                                  </p>
+                                </div>
+                                <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 font-body">
+                                  <Mail className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
+                                  {convertToUserTimezone(booking.start)} - {convertToUserTimezone(booking.end)}
+                                </div>
+                              </div>
+                            </div>
+                          </a>
+                        </li>
+                      ))
+                    ) : (
+                      <div className="text-center py-8">
+                        <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                        <p className="text-gray-600 font-body">No appointments scheduled</p>
+                      </div>
+                    )}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Invoices Tab */}
+          {activeTab === "invoices" && (
+            <div className="space-y-6">
+              {customerData.invoices && customerData.invoices.length > 0 ? (
+                <div className="bg-white shadow overflow-hidden rounded-lg">
+                  <ul className="divide-y divide-gray-200">
+                    {customerData.invoices.map((invoice: Invoice) => (
+                      <li key={invoice.invoice_number}>
+                        <a href="#" className="block hover:bg-gray-50">
+                          <div className="px-4 py-4 sm:px-6">
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm font-medium text-indigo-600 truncate font-body">
+                                Invoice #{invoice.invoice_number}
+                              </p>
+                              <div className="ml-2 flex-shrink-0">
                                 <span
-                                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getStatusBadgeStyle(
-                                    invoice.status,
-                                  )}`}
+                                  className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusBadgeStyle(invoice.status)}`}
                                 >
                                   {invoice.status}
                                 </span>
                               </div>
                             </div>
-                          </div>
-                        ))}
-
-                        {customerData.payment_instructions && (
-                          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                            <p className="text-blue-800 font-body text-sm">
-                              <strong>Payment Instructions:</strong> {customerData.payment_instructions}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12">
-                        <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-600 font-body text-xl">No invoices found</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {activeTab === "onboarding" && (
-                  <div>
-                    <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-2xl font-bold text-gray-900 font-header flex items-center gap-3">
-                        <CheckCircle className="w-8 h-8 text-[#E75837]" />
-                        Onboarding Status
-                      </h2>
-                    </div>
-
-                    {customerData.onboarding_complete !== undefined ? (
-                      <div className="space-y-4">
-                        <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h3 className="text-lg font-bold text-gray-900 font-body">Onboarding Progress</h3>
-                              <p className="text-gray-600 font-body">
-                                {customerData.onboarding_complete
-                                  ? "You've completed the onboarding process!"
-                                  : "Complete the steps below to finish onboarding."}
-                              </p>
-                            </div>
-                            <div>
-                              {customerData.onboarding_complete ? (
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                                  Complete
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-                                  In Progress
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-                          <h3 className="text-lg font-bold text-gray-900 font-body mb-4">Required Steps</h3>
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                              <div className="flex-1">
-                                <h4 className="text-md font-semibold text-gray-900 font-body mb-1">
-                                  Complete Personal Information
-                                </h4>
-                                <p className="text-gray-600 font-body text-sm mb-2">
-                                  Provide your basic contact details.
+                            <div className="mt-2 sm:flex sm:justify-between">
+                              <div className="sm:flex">
+                                <p className="flex items-center text-sm text-gray-500 font-body">
+                                  <FileText className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
+                                  Due Date: {new Date(invoice.due_date).toLocaleDateString()}
                                 </p>
-                                {customerData.criteria_status?.personal_info_complete &&
-                                  customerData.supporting_details && (
-                                    <div className="text-xs text-gray-500">
-                                      <p>Email: {customerData.supporting_details.email}</p>
-                                      <p>User Type: {customerData.supporting_details.user_type}</p>
-                                    </div>
-                                  )}
                               </div>
-                              <div className="flex items-center gap-3">
-                                {customerData.criteria_status?.personal_info_complete ? (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                                    Complete
-                                  </span>
-                                ) : (
-                                  <>
-                                    <button
-                                      onClick={() => setShowOnboardingForm("user-information")}
-                                      className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-4 py-2 rounded-lg font-medium text-sm"
-                                    >
-                                      Start Section
-                                    </button>
-                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                                      Incomplete
-                                    </span>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                              <div className="flex-1">
-                                <h4 className="text-md font-semibold text-gray-900 font-body mb-1">Add Your Pets</h4>
-                                <p className="text-gray-600 font-body text-sm mb-2">
-                                  Tell us about your furry friends.
-                                </p>
-                                {customerData.criteria_status?.pets_created &&
-                                  customerData.supporting_details?.pets && (
-                                    <div className="text-xs text-gray-500">
-                                      <p>
-                                        Pets added:{" "}
-                                        {customerData.supporting_details.pets.details
-                                          ?.map((pet: any) => pet.pet_name)
-                                          .join(", ")}
-                                      </p>
-                                    </div>
-                                  )}
-                              </div>
-                              <div className="flex items-center gap-3">
-                                {customerData.criteria_status?.pets_created ? (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                                    Complete
-                                  </span>
-                                ) : (
-                                  <>
-                                    <button
-                                      onClick={() => setShowOnboardingForm("pets")}
-                                      className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-4 py-2 rounded-lg font-medium text-sm"
-                                    >
-                                      Start Section
-                                    </button>
-                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                                      Incomplete
-                                    </span>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                              <div className="flex-1">
-                                <h4 className="text-md font-semibold text-gray-900 font-body mb-1">
-                                  Add Emergency Contact
-                                </h4>
-                                <p className="text-gray-600 font-body text-sm mb-2">Provide an emergency contact.</p>
-                                {customerData.criteria_status?.emergency_contacts_added &&
-                                  customerData.supporting_details?.emergency_contacts && (
-                                    <div className="text-xs text-gray-500">
-                                      <p>
-                                        Emergency contacts: {customerData.supporting_details.emergency_contacts.length}{" "}
-                                        added
-                                      </p>
-                                    </div>
-                                  )}
-                              </div>
-                              <div className="flex items-center gap-3">
-                                {customerData.criteria_status?.emergency_contacts_added ? (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                                    Complete
-                                  </span>
-                                ) : (
-                                  <>
-                                    <button
-                                      onClick={() => setShowOnboardingForm("emergency-contact")}
-                                      className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-4 py-2 rounded-lg font-medium text-sm"
-                                    >
-                                      Start Section
-                                    </button>
-                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                                      Incomplete
-                                    </span>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                              <div className="flex-1">
-                                <h4 className="text-md font-semibold text-gray-900 font-body mb-1">Sign Policies</h4>
-                                <p className="text-gray-600 font-body text-sm mb-2">Review and sign our policies.</p>
-                                {customerData.criteria_status?.policies_signed && (
-                                  <div className="text-xs text-gray-500">
-                                    <p>All required policies signed</p>
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-3">
-                                {customerData.criteria_status?.policies_signed ? (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                                    Complete
-                                  </span>
-                                ) : (
-                                  <>
-                                    <button
-                                      onClick={async () => {
-                                        try {
-                                          const webhookUrl = getWebhookEndpoint("CUSTOMER_HUB")
-                                          logWebhookUsage("CUSTOMER_HUB", "onboarding_policy_documentation")
-
-                                          const response = await fetch(webhookUrl, {
-                                            method: "POST",
-                                            headers: { "Content-Type": "application/json" },
-                                            body: JSON.stringify({
-                                              action: "onboarding_policy_documentation",
-                                              unique_url: uniqueUrl,
-                                            }),
-                                          })
-
-                                          if (!response.ok) {
-                                            throw new Error(`HTTP error! status: ${response.status}`)
-                                          }
-
-                                          const contentType = response.headers.get("content-type")
-                                          if (!contentType || !contentType.includes("application/json")) {
-                                            throw new Error(
-                                              "Server returned non-JSON response. The policy documentation endpoint may not be configured.",
-                                            )
-                                          }
-
-                                          const documents = await response.json()
-                                          console.log("[v0] Policy documents received:", documents)
-                                          console.log("[v0] Policy documents length:", documents?.length)
-                                          setPolicyDocuments(documents)
-                                          setShowOnboardingForm("policy-documentation")
-                                        } catch (error) {
-                                          console.error("Error fetching documents:", error)
-                                          alert(
-                                            "Unable to load policy documents. Please contact support or try again later.",
-                                          )
-                                        }
-                                      }}
-                                      className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-4 py-2 rounded-lg font-medium text-sm"
-                                    >
-                                      Start Section
-                                    </button>
-                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                                      Incomplete
-                                    </span>
-                                  </>
-                                )}
+                              <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 font-body">
+                                <Scale className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
+                                Amount: ${invoice.amount}
                               </div>
                             </div>
                           </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-12">
-                        <CheckCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-600 font-body text-xl">No onboarding information found</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Back button */}
-            <div className="text-center">
-              <button
-                onClick={resetForm}
-                className="bg-gray-100 text-gray-700 py-3 px-8 rounded-lg font-medium hover:bg-gray-200 transition-colors font-body"
-              >
-                Look up different email
-              </button>
-            </div>
-          </div>
-        )}
-
-        {showOnboardingForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-              {showOnboardingForm === "emergency-contact" && (
-                <div>
-                  <h3 className="text-xl font-semibold mb-4">Add Emergency Contact</h3>
-                  <form
-                    onSubmit={async (e) => {
-                      e.preventDefault()
-                      try {
-                        const response = await fetch("/api/webhook", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            action: "customer_hub_onboarding",
-                            unique_url: uniqueUrl,
-                            section: "emergency_contact",
-                            data: emergencyContactForm,
-                          }),
-                        })
-                        if (response.ok) {
-                          setShowOnboardingForm(null)
-                          window.location.reload() // Re-initialize hub
-                        }
-                      } catch (error) {
-                        console.error("Error submitting emergency contact:", error)
-                      }
-                    }}
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
-                        <input
-                          type="text"
-                          value={emergencyContactForm.contact_name}
-                          onChange={(e) =>
-                            setEmergencyContactForm({ ...emergencyContactForm, contact_name: e.target.value })
-                          }
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Business Name</label>
-                        <input
-                          type="text"
-                          value={emergencyContactForm.business_name}
-                          onChange={(e) =>
-                            setEmergencyContactForm({ ...emergencyContactForm, business_name: e.target.value })
-                          }
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                        <input
-                          type="text"
-                          value={emergencyContactForm.address}
-                          onChange={(e) =>
-                            setEmergencyContactForm({ ...emergencyContactForm, address: e.target.value })
-                          }
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                        <input
-                          type="tel"
-                          value={emergencyContactForm.phone_number}
-                          onChange={(e) =>
-                            setEmergencyContactForm({ ...emergencyContactForm, phone_number: e.target.value })
-                          }
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                        <input
-                          type="email"
-                          value={emergencyContactForm.email}
-                          onChange={(e) => setEmergencyContactForm({ ...emergencyContactForm, email: e.target.value })}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                        <textarea
-                          value={emergencyContactForm.notes}
-                          onChange={(e) => setEmergencyContactForm({ ...emergencyContactForm, notes: e.target.value })}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                          rows={3}
-                        />
-                      </div>
-                    </div>
-                    <div className="flex justify-end gap-3 mt-6">
-                      <button
-                        type="button"
-                        onClick={() => setShowOnboardingForm(null)}
-                        className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
-                      >
-                        Save Contact
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              )}
-
-              {showOnboardingForm === "policy-documentation" && (
-                <div>
-                  <h3 className="text-xl font-semibold mb-4">Review and Sign Policies</h3>
-                  <div className="space-y-4 mb-6">
-                    {policyDocuments.map((doc: any, index: number) => (
-                      <div key={index} className="border border-gray-200 rounded-lg p-4">
-                        <h4 className="font-medium mb-2">{doc.title}</h4>
-                        <div className="text-sm text-gray-600 mb-3" dangerouslySetInnerHTML={{ __html: doc.content }} />
-                        <label className="flex items-center">
-                          <input
-                            type="checkbox"
-                            checked={acknowledgedPolicies.includes(doc.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setAcknowledgedPolicies([...acknowledgedPolicies, doc.id])
-                              } else {
-                                setAcknowledgedPolicies(acknowledgedPolicies.filter((id) => id !== doc.id))
-                              }
-                            }}
-                            className="mr-2"
-                          />
-                          <span className="text-sm">I acknowledge and agree to this policy</span>
-                        </label>
-                      </div>
+                        </a>
+                      </li>
                     ))}
-                  </div>
-                  <div className="flex justify-end gap-3">
-                    <button
-                      onClick={() => setShowOnboardingForm(null)}
-                      className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={async () => {
-                        try {
-                          const response = await fetch("/api/webhook", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              action: "customer_hub_onboarding",
-                              unique_url: uniqueUrl,
-                              section: "policies",
-                              data: { acknowledged_policies: acknowledgedPolicies, signed: true },
-                            }),
-                          })
-                          if (response.ok) {
-                            setShowOnboardingForm(null)
-                            window.location.reload() // Re-initialize hub
-                          }
-                        } catch (error) {
-                          console.error("Error submitting policies:", error)
-                        }
-                      }}
-                      disabled={acknowledgedPolicies.length !== policyDocuments.length}
-                      className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Sign Policies
-                    </button>
-                  </div>
+                  </ul>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600 font-body">No invoices available</p>
                 </div>
               )}
 
-              {(showOnboardingForm === "user-information" || showOnboardingForm === "pets") && (
-                <div>
-                  <h3 className="text-xl font-semibold mb-4">
-                    {showOnboardingForm === "user-information"
-                      ? "Complete Personal Information"
-                      : "Add Pet Information"}
-                  </h3>
-                  <p className="text-gray-600 mb-4">
-                    This section will use similar forms to the existing pet management functionality. Implementation can
-                    reuse existing components from the pet onboarding flow.
-                  </p>
-                  <div className="flex justify-end gap-3">
-                    <button
-                      onClick={() => setShowOnboardingForm(null)}
-                      className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={() => setShowOnboardingForm(null)}
-                      className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
-                    >
-                      Continue
-                    </button>
+              {customerData.payment_instructions && (
+                <div className="bg-white shadow overflow-hidden rounded-lg">
+                  <div className="px-4 py-5 sm:px-6">
+                    <h3 className="text-lg font-medium text-gray-900 font-body">Payment Instructions</h3>
+                    <p className="mt-1 max-w-2xl text-sm text-gray-500 font-body">
+                      {customerData.payment_instructions}
+                    </p>
                   </div>
                 </div>
               )}
             </div>
-          </div>
-        )}
-      </div>
+          )}
+
+          {/* Onboarding Tab */}
+          {activeTab === "onboarding" && renderPetProfileSection(null, "onboarding")}
+        </div>
+      )}
     </div>
   )
 }
