@@ -162,6 +162,7 @@ interface CustomerData {
   }
   email?: string
   user_type?: string
+  signature?: string
 }
 
 export default function CustomerHub({ params }: { params: { uniqueUrl: string } }) {
@@ -220,6 +221,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
     },
     pets: [] as any[],
     policyAcknowledgments: {} as any,
+    signature: "",
   })
 
   useEffect(() => {
@@ -496,6 +498,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
         let supporting_details = {}
         let email = ""
         let user_type = ""
+        let signature = ""
 
         // Search through all items to find invoices
         for (const item of data) {
@@ -513,6 +516,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
             supporting_details = item.supporting_details || {}
             email = item.email || ""
             user_type = item.user_type || ""
+            signature = item.signature || ""
             break
           }
         }
@@ -531,6 +535,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
           supporting_details,
           email,
           user_type,
+          signature,
         })
         setStep("data")
       } else {
@@ -2859,7 +2864,6 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                       </div>
                     )}
 
-                    {/* Step 4: Sign Policies */}
                     {onboardingStep === 4 && (
                       <div className="space-y-6">
                         <div>
@@ -2874,16 +2878,14 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                   <div className="flex items-start justify-between mb-4">
                                     <div className="flex-1">
                                       <h4 className="text-lg font-medium text-gray-900 mb-2">{doc.name}</h4>
-                                      <p className="text-sm text-gray-600">Policy ID: {doc.policy_id}</p>
                                       {doc.description && (
                                         <p className="text-sm text-gray-600 mt-1">{doc.description}</p>
                                       )}
                                     </div>
                                     <button
                                       onClick={() => {
-                                        // Open document for viewing using document_filename
-                                        if (doc.document_filename) {
-                                          window.open(`/api/documents/${doc.document_filename}`, "_blank")
+                                        if (doc.signed_url) {
+                                          window.open(doc.signed_url, "_blank")
                                         }
                                       }}
                                       className="flex items-center px-4 py-2 text-[#E75837] border border-[#E75837] rounded-lg hover:bg-[#E75837] hover:text-white transition-colors text-sm font-medium"
@@ -2917,14 +2919,43 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                 </div>
                               ))}
 
+                              <div className="mt-6 p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
+                                <h4 className="text-lg font-medium text-gray-900 mb-4">Digital Signature</h4>
+                                <div className="space-y-4">
+                                  <div>
+                                    <label htmlFor="signature" className="block text-sm font-medium text-gray-700 mb-2">
+                                      Type your full name to serve as your digital signature *
+                                    </label>
+                                    <input
+                                      type="text"
+                                      id="signature"
+                                      value={onboardingData.signature || ""}
+                                      onChange={(e) => {
+                                        setOnboardingData({
+                                          ...onboardingData,
+                                          signature: e.target.value,
+                                        })
+                                      }}
+                                      placeholder="Enter your full name"
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-[#E75837]"
+                                      required
+                                    />
+                                  </div>
+                                  <p className="text-xs text-gray-500">
+                                    By typing your name above, you are providing your digital signature and confirming
+                                    that you have read and agree to all policy documents listed above.
+                                  </p>
+                                </div>
+                              </div>
+
                               <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
                                 <div className="flex items-start">
                                   <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 mr-3 flex-shrink-0" />
                                   <div>
                                     <h4 className="text-sm font-medium text-amber-800">Important Notice</h4>
                                     <p className="text-sm text-amber-700 mt-1">
-                                      You must review and acknowledge all policy documents above to complete your
-                                      onboarding process.
+                                      You must review and acknowledge all policy documents above and provide your
+                                      digital signature to complete your onboarding process.
                                     </p>
                                   </div>
                                 </div>
@@ -2964,7 +2995,10 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                           onClick={handleOnboardingSubmit}
                           disabled={
                             policyDocuments.length > 0 &&
-                            !policyDocuments.every((doc: any) => onboardingData.policyAcknowledgments[doc.policy_id])
+                            (!policyDocuments.every(
+                              (doc: any) => onboardingData.policyAcknowledgments[doc.policy_id],
+                            ) ||
+                              !onboardingData.signature?.trim())
                           }
                           className="px-6 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#E75837]/90 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
