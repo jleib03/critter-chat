@@ -1445,7 +1445,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
 
     if (!typeItem) return []
 
-    const expectedCategory = `${typeItem.label} Breed`
+    const expectedCategory = typeItem.label
     console.log("[v0] Looking for category:", expectedCategory)
 
     const breeds = picklistData.filter(
