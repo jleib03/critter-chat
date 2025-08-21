@@ -1988,8 +1988,8 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                     <div className="text-xs text-gray-500">
                                       <p>
                                         Pets added:{" "}
-                                        {customerData.supporting_details.pets
-                                          .map((pet: any) => pet.pet_name)
+                                        {customerData.supporting_details.pets.details
+                                          ?.map((pet: any) => pet.pet_name)
                                           .join(", ")}
                                       </p>
                                     </div>
