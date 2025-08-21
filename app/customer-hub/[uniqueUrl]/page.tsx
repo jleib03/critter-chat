@@ -32,6 +32,7 @@ import {
   X,
   PlusCircle,
   MinusCircle,
+  AlertCircle,
 } from "lucide-react"
 import { getWebhookEndpoint, logWebhookUsage } from "../../../types/webhook-endpoints"
 
@@ -201,6 +202,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
   const [onboardingStep, setOnboardingStep] = useState(1)
   const [onboardingLoading, setOnboardingLoading] = useState(false)
   const [policyDocuments, setPolicyDocuments] = useState<any[]>([])
+  const [picklistData, setPicklistData] = useState<any[]>([])
   const [onboardingData, setOnboardingData] = useState({
     personalInfo: {
       firstName: "",
@@ -1377,6 +1379,12 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
         const data = await response.json()
         console.log("[v0] Onboarding data received:", data)
 
+        const picklists = data.filter((item: any) => item.table_name && item.picklist_type)
+        setPicklistData(picklists)
+
+        const policies = data.filter((item: any) => item.name && item.policy_id && item.document_filename)
+        setPolicyDocuments(policies)
+
         // Extract user information
         const userInfo = data.find((item: any) => item.email && item.user_type)
         if (userInfo?.supporting_details?.personal_info) {
@@ -1422,6 +1430,17 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
     } finally {
       setOnboardingLoading(false)
     }
+  }
+
+  const getPetTypes = () => {
+    return picklistData.filter((item: any) => item.picklist_type === "type")
+  }
+
+  const getBreedsByType = (petType: string) => {
+    const typeItem = getPetTypes().find((item: any) => item.label === petType)
+    if (!typeItem) return []
+
+    return picklistData.filter((item: any) => item.picklist_type === "breed" && item.category === typeItem.category)
   }
 
   const handleOnboardingNext = () => {
@@ -2434,12 +2453,11 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                         className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
                                       >
                                         <option value="">Select type</option>
-                                        <option value="Dog">Dog</option>
-                                        <option value="Cat">Cat</option>
-                                        <option value="Bird">Bird</option>
-                                        <option value="Fish">Fish</option>
-                                        <option value="Rabbit">Rabbit</option>
-                                        <option value="Other">Other</option>
+                                        {getPetTypes().map((type: any) => (
+                                          <option key={type.value} value={type.label}>
+                                            {type.label}
+                                          </option>
+                                        ))}
                                       </select>
                                     </div>
                                   </div>
@@ -2448,8 +2466,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                       Breed/Variety*
                                     </label>
-                                    <input
-                                      type="text"
+                                    <select
                                       value={pet.breed_name || ""}
                                       onChange={(e) => {
                                         const updatedPets = [...onboardingData.pets]
@@ -2457,8 +2474,19 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                         setOnboardingData({ ...onboardingData, pets: updatedPets })
                                       }}
                                       className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                                      placeholder="Enter breed or variety"
-                                    />
+                                      disabled={!pet.pet_type}
+                                    >
+                                      <option value="">Select breed</option>
+                                      {pet.pet_type &&
+                                        getBreedsByType(pet.pet_type).map((breed: any) => (
+                                          <option key={breed.value} value={breed.label}>
+                                            {breed.label}
+                                          </option>
+                                        ))}
+                                    </select>
+                                    {!pet.pet_type && (
+                                      <p className="text-sm text-gray-500 mt-1">Please select a pet type first</p>
+                                    )}
                                   </div>
 
                                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -2822,57 +2850,77 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                     {onboardingStep === 4 && (
                       <div className="space-y-6">
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Sign Policies</h3>
-                          <p className="text-gray-600 mb-4">
-                            Review and sign the required policies to complete your onboarding.
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Review and Sign Policies</h3>
+                          <p className="text-gray-600 mb-6">
+                            Please review each policy document and acknowledge your agreement to complete onboarding.
                           </p>
                           {policyDocuments.length > 0 ? (
                             <div className="space-y-4">
                               {policyDocuments.map((doc: any, index: number) => (
-                                <div key={index} className="bg-gray-50 p-4 rounded-lg border">
-                                  <div className="flex items-center justify-between">
-                                    <div>
-                                      <h4 className="font-medium text-gray-900">{doc.name}</h4>
+                                <div key={index} className="p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
+                                  <div className="flex items-start justify-between mb-4">
+                                    <div className="flex-1">
+                                      <h4 className="text-lg font-medium text-gray-900 mb-2">{doc.name}</h4>
                                       <p className="text-sm text-gray-600">Policy ID: {doc.policy_id}</p>
+                                      {doc.description && (
+                                        <p className="text-sm text-gray-600 mt-1">{doc.description}</p>
+                                      )}
                                     </div>
-                                    <div className="flex items-center space-x-3">
-                                      <button
-                                        onClick={() => {
-                                          // Open document for viewing
-                                          if (doc.document_filename) {
-                                            window.open(`/api/documents/${doc.document_filename}`, "_blank")
-                                          }
+                                    <button
+                                      onClick={() => {
+                                        // Open document for viewing using document_filename
+                                        if (doc.document_filename) {
+                                          window.open(`/api/documents/${doc.document_filename}`, "_blank")
+                                        }
+                                      }}
+                                      className="flex items-center px-4 py-2 text-[#E75837] border border-[#E75837] rounded-lg hover:bg-[#E75837] hover:text-white transition-colors text-sm font-medium"
+                                    >
+                                      <FileText className="w-4 h-4 mr-2" />
+                                      View Document
+                                    </button>
+                                  </div>
+
+                                  <div className="border-t pt-4">
+                                    <label className="flex items-start space-x-3">
+                                      <input
+                                        type="checkbox"
+                                        className="mt-1 h-4 w-4 text-[#E75837] focus:ring-[#E75837] border-gray-300 rounded"
+                                        checked={onboardingData.policyAcknowledgments[doc.policy_id] || false}
+                                        onChange={(e) => {
+                                          const updatedAcknowledgments = { ...onboardingData.policyAcknowledgments }
+                                          updatedAcknowledgments[doc.policy_id] = e.target.checked
+                                          setOnboardingData({
+                                            ...onboardingData,
+                                            policyAcknowledgments: updatedAcknowledgments,
+                                          })
                                         }}
-                                        className="text-[#E75837] hover:text-[#E75837]/80 text-sm font-medium"
-                                      >
-                                        View Document
-                                      </button>
-                                      <label className="flex items-center">
-                                        <input
-                                          type="checkbox"
-                                          className="mr-2"
-                                          onChange={(e) => {
-                                            // Track policy acknowledgments
-                                            const updatedAcknowledgments = { ...onboardingData.policyAcknowledgments }
-                                            updatedAcknowledgments[doc.policy_id] = e.target.checked
-                                            setOnboardingData({
-                                              ...onboardingData,
-                                              policyAcknowledgments: updatedAcknowledgments,
-                                            })
-                                          }}
-                                        />
-                                        <span className="text-sm">I acknowledge and agree</span>
-                                      </label>
-                                    </div>
+                                      />
+                                      <span className="text-sm text-gray-700 leading-5">
+                                        I acknowledge that I have read, understood, and agree to the terms and
+                                        conditions outlined in the <strong>{doc.name}</strong>.
+                                      </span>
+                                    </label>
                                   </div>
                                 </div>
                               ))}
+
+                              <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                                <div className="flex items-start">
+                                  <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 mr-3 flex-shrink-0" />
+                                  <div>
+                                    <h4 className="text-sm font-medium text-amber-800">Important Notice</h4>
+                                    <p className="text-sm text-amber-700 mt-1">
+                                      You must review and acknowledge all policy documents above to complete your
+                                      onboarding process.
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
                           ) : (
-                            <div className="bg-gray-50 p-4 rounded-lg">
-                              <p className="text-sm text-gray-600">
-                                Policy documents will be loaded for review and signing.
-                              </p>
+                            <div className="text-center py-8 bg-gray-50 rounded-lg">
+                              <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                              <p className="text-gray-600">Loading policy documents...</p>
                             </div>
                           )}
                         </div>
@@ -2901,7 +2949,11 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                       ) : (
                         <button
                           onClick={handleOnboardingSubmit}
-                          className="px-6 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#E75837]/90"
+                          disabled={
+                            policyDocuments.length > 0 &&
+                            !policyDocuments.every((doc: any) => onboardingData.policyAcknowledgments[doc.policy_id])
+                          }
+                          className="px-6 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#E75837]/90 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Complete Onboarding
                         </button>
