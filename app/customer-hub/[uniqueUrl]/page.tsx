@@ -1440,7 +1440,9 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
     const typeItem = getPetTypes().find((item: any) => item.label === petType)
     if (!typeItem) return []
 
-    return picklistData.filter((item: any) => item.picklist_type === "breed" && item.category === typeItem.category)
+    return picklistData.filter(
+      (item: any) => item.picklist_type === "breed" && item.category === `${typeItem.label} Breed`,
+    )
   }
 
   const handleOnboardingNext = () => {
@@ -2388,7 +2390,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                 }
                                 setOnboardingData({
                                   ...onboardingData,
-                                  pets: [...onboardingData.pets, newPet],
+                                  pets: [newPet, ...onboardingData.pets],
                                 })
                               }}
                               className="flex items-center px-4 py-2 bg-[#E75837] text-white text-sm rounded-lg hover:bg-[#E75837]/90 transition-colors"
