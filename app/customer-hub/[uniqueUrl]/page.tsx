@@ -1175,56 +1175,128 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
               )}
 
               {selectedOnboardingSubSection === "policy-documentation" && (
-                <div className="bg-gray-50 p-6 rounded-lg">
-                  <h4 className="font-semibold text-gray-900 font-body mb-4">Policy Documentation</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Policies Signed</p>
-                      <p className="text-gray-900">{customerData?.criteria_status?.policies_signed ? "Yes" : "No"}</p>
-                    </div>
+                <div>
+                  <h3 className="text-xl font-semibold mb-4">Review and Sign Policies</h3>
+                  <div className="space-y-4 mb-6">
+                    {policyDocuments.map((doc: any, index: number) => (
+                      <div key={doc.policy_id || index} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-medium text-lg">{doc.name}</h4>
+                          <a
+                            href={`https://your-aws-bucket.s3.amazonaws.com/${doc.document_filename}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[#E75837] hover:text-[#E75837]/80 text-sm font-medium flex items-center gap-1"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                              />
+                            </svg>
+                            View Document
+                          </a>
+                        </div>
+                        {doc.description && <p className="text-sm text-gray-600 mb-3">{doc.description}</p>}
+                        <div className="bg-gray-50 p-3 rounded border">
+                          <label className="flex items-start gap-3">
+                            <input
+                              type="checkbox"
+                              checked={acknowledgedPolicies.includes(doc.policy_id.toString())}
+                              onChange={(e) => {
+                                const policyId = doc.policy_id.toString()
+                                if (e.target.checked) {
+                                  setAcknowledgedPolicies([...acknowledgedPolicies, policyId])
+                                } else {
+                                  setAcknowledgedPolicies(acknowledgedPolicies.filter((id) => id !== policyId))
+                                }
+                              }}
+                              className="mt-1 h-4 w-4 text-[#E75837] focus:ring-[#E75837] border-gray-300 rounded"
+                            />
+                            <span className="text-sm text-gray-700">
+                              I have read, understood, and agree to the terms outlined in this {doc.name.toLowerCase()}.
+                              I acknowledge that I am legally bound by these terms.
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  {!customerData?.criteria_status?.policies_signed && (
-                    <div className="mt-4">
-                      <button
-                        onClick={async () => {
-                          try {
-                            const webhookUrl = getWebhookEndpoint("CUSTOMER_HUB")
-                            logWebhookUsage("CUSTOMER_HUB", "onboarding_policy_documentation")
+                  <div className="flex justify-end gap-3">
+                    <button
+                      onClick={() => setShowOnboardingForm(null)}
+                      className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const webhookUrl = getWebhookEndpoint("CUSTOMER_HUB")
+                          logWebhookUsage("CUSTOMER_HUB", "customer_hub_onboarding")
 
-                            const response = await fetch(webhookUrl, {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({
-                                action: "onboarding_policy_documentation",
-                                unique_url: uniqueUrl,
-                              }),
-                            })
-
-                            if (!response.ok) {
-                              throw new Error(`HTTP error! status: ${response.status}`)
-                            }
-
-                            const contentType = response.headers.get("content-type")
-                            if (!contentType || !contentType.includes("application/json")) {
-                              throw new Error(
-                                "Server returned non-JSON response. The policy documentation endpoint may not be configured.",
-                              )
-                            }
-
-                            const documents = await response.json()
-                            setPolicyDocuments(documents)
-                            setShowOnboardingForm("policy-documentation")
-                          } catch (error) {
-                            console.error("Error fetching documents:", error)
-                            alert("Unable to load policy documents. Please contact support or try again later.")
+                          const response = await fetch(webhookUrl, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              action: "customer_hub_onboarding",
+                              unique_url: uniqueUrl,
+                              section: "policies",
+                              data: {
+                                acknowledged_policy_ids: acknowledgedPolicies.map((id) => Number.parseInt(id)),
+                                signed: true,
+                              },
+                            }),
+                          })
+                          if (response.ok) {
+                            setShowOnboardingForm(null)
+                            setPolicyDocuments([])
+                            setAcknowledgedPolicies([])
+                            window.location.reload() // Re-initialize hub
+                          } else {
+                            throw new Error("Failed to submit policy acknowledgments")
                           }
-                        }}
-                        className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium"
-                      >
-                        Start Section
-                      </button>
-                    </div>
-                  )}
+                        } catch (error) {
+                          console.error("Error submitting policies:", error)
+                          alert("Failed to submit policy acknowledgments. Please try again.")
+                        }
+                      }}
+                      disabled={acknowledgedPolicies.length !== policyDocuments.length}
+                      className="px-4 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#E75837]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Sign All Policies ({acknowledgedPolicies.length}/{policyDocuments.length})
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {(showOnboardingForm === "user-information" || showOnboardingForm === "pets") && (
+                <div>
+                  <h3 className="text-xl font-semibold mb-4">
+                    {showOnboardingForm === "user-information"
+                      ? "Complete Personal Information"
+                      : "Add Pet Information"}
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    This section will use similar forms to the existing pet management functionality. Implementation can
+                    reuse existing components from the pet onboarding flow.
+                  </p>
+                  <div className="flex justify-end gap-3">
+                    <button
+                      onClick={() => setShowOnboardingForm(null)}
+                      className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => setShowOnboardingForm(null)}
+                      className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                    >
+                      Continue
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
