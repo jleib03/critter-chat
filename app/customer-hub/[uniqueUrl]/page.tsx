@@ -18,6 +18,8 @@ import {
   Bird,
   ChevronLeft,
   ChevronRight,
+  Plus,
+  Shield,
   FileText,
   ChevronDown,
   ChevronUp,
@@ -26,6 +28,8 @@ import {
   AlertTriangle,
   Scale,
   Cookie,
+  CheckCircle,
+  X,
 } from "lucide-react"
 import { getWebhookEndpoint, logWebhookUsage } from "../../../types/webhook-endpoints"
 
@@ -191,17 +195,25 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
 
   const [showCarePlan, setShowCarePlan] = useState<string | null>(null)
 
-  const [showOnboardingForm, setShowOnboardingForm] = useState<string | null>(null)
-  const [emergencyContactForm, setEmergencyContactForm] = useState({
-    contact_name: "",
-    business_name: "",
-    address: "",
-    phone_number: "",
-    email: "",
-    notes: "",
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false)
+  const [onboardingStep, setOnboardingStep] = useState(1)
+  const [onboardingData, setOnboardingData] = useState({
+    personalInfo: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+    },
+    emergencyContact: {
+      contactName: "",
+      businessName: "",
+      address: "",
+      phoneNumber: "",
+      email: "",
+      notes: "",
+    },
+    pets: [] as any[],
   })
-  const [policyDocuments, setPolicyDocuments] = useState<any[]>([])
-  const [acknowledgedPolicies, setAcknowledgedPolicies] = useState<string[]>([])
 
   useEffect(() => {
     setProfessionalName("Professional") // Placeholder
@@ -1093,16 +1105,6 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                       </p>
                     </div>
                   </div>
-                  {!customerData?.criteria_status?.personal_info_complete && (
-                    <div className="mt-4">
-                      <button
-                        onClick={() => setShowOnboardingForm("user-information")}
-                        className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium"
-                      >
-                        Start Section
-                      </button>
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -1134,16 +1136,6 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                       </div>
                     </div>
                   )}
-                  {!customerData?.criteria_status?.pets_created && (
-                    <div className="mt-4">
-                      <button
-                        onClick={() => setShowOnboardingForm("pets")}
-                        className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium"
-                      >
-                        Start Section
-                      </button>
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -1158,243 +1150,17 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                       </p>
                     </div>
                   </div>
-                  {!customerData?.criteria_status?.emergency_contacts_added && (
-                    <div className="mt-4">
-                      <button
-                        onClick={() => setShowOnboardingForm("emergency-contact")}
-                        className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium"
-                      >
-                        Start Section
-                      </button>
-                    </div>
-                  )}
                 </div>
               )}
 
               {selectedOnboardingSubSection === "policy-documentation" && (
-                <div>
-                  <h3 className="text-xl font-semibold mb-4">Review and Sign Policies</h3>
-                  {console.log("[v0] Rendering policy documents:", policyDocuments)}
-                  <div className="space-y-4 mb-6">
-                    {policyDocuments.map((doc: any, index: number) => (
-                      <div key={doc.policy_id || index} className="border border-gray-200 rounded-lg p-4">
-                        {console.log("[v0] Rendering document:", doc)}
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="font-medium text-lg">{doc.name}</h4>
-                          <a
-                            href={`https://your-aws-bucket.s3.amazonaws.com/${doc.document_filename}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[#E75837] hover:text-[#E75837]/80 text-sm font-medium flex items-center gap-1"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                              />
-                            </svg>
-                            View Document
-                          </a>
-                        </div>
-                        {doc.description && <p className="text-sm text-gray-600 mb-3">{doc.description}</p>}
-                        <div className="bg-gray-50 p-3 rounded border">
-                          <label className="flex items-start gap-3">
-                            <input
-                              type="checkbox"
-                              checked={acknowledgedPolicies.includes(doc.policy_id.toString())}
-                              onChange={(e) => {
-                                const policyId = doc.policy_id.toString()
-                                if (e.target.checked) {
-                                  setAcknowledgedPolicies([...acknowledgedPolicies, policyId])
-                                } else {
-                                  setAcknowledgedPolicies(acknowledgedPolicies.filter((id) => id !== policyId))
-                                }
-                              }}
-                              className="mt-1 h-4 w-4 text-[#E75837] focus:ring-[#E75837] border-gray-300 rounded"
-                            />
-                            <span className="text-sm text-gray-700">
-                              I have read, understood, and agree to the terms outlined in this {doc.name.toLowerCase()}.
-                              I acknowledge that I am legally bound by these terms.
-                            </span>
-                          </label>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex justify-end gap-3">
-                    <button
-                      onClick={() => setShowOnboardingForm(null)}
-                      className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={async () => {
-                        try {
-                          const webhookUrl = getWebhookEndpoint("CUSTOMER_HUB")
-                          logWebhookUsage("CUSTOMER_HUB", "customer_hub_onboarding")
-
-                          const response = await fetch(webhookUrl, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              action: "customer_hub_onboarding",
-                              unique_url: uniqueUrl,
-                              section: "policies",
-                              data: {
-                                acknowledged_policy_ids: acknowledgedPolicies.map((id) => Number.parseInt(id)),
-                                signed: true,
-                              },
-                            }),
-                          })
-                          if (response.ok) {
-                            setShowOnboardingForm(null)
-                            setPolicyDocuments([])
-                            setAcknowledgedPolicies([])
-                            window.location.reload() // Re-initialize hub
-                          } else {
-                            throw new Error("Failed to submit policy acknowledgments")
-                          }
-                        } catch (error) {
-                          console.error("Error submitting policies:", error)
-                          alert("Failed to submit policy acknowledgments. Please try again.")
-                        }
-                      }}
-                      disabled={acknowledgedPolicies.length !== policyDocuments.length}
-                      className="px-4 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#E75837]/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Sign All Policies ({acknowledgedPolicies.length}/{policyDocuments.length})
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {(showOnboardingForm === "user-information" || showOnboardingForm === "pets") && (
-                <div>
-                  <h3 className="text-xl font-semibold mb-4">
-                    {showOnboardingForm === "user-information"
-                      ? "Complete Personal Information"
-                      : "Add Pet Information"}
-                  </h3>
-                  <p className="text-gray-600 mb-4">
-                    This section will use similar forms to the existing pet management functionality. Implementation can
-                    reuse existing components from the pet onboarding flow.
-                  </p>
-                  <div className="flex justify-end gap-3">
-                    <button
-                      onClick={() => setShowOnboardingForm(null)}
-                      className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={() => setShowOnboardingForm(null)}
-                      className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
-                    >
-                      Continue
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {showOnboardingForm === "policies" && (
-                <div>
-                  <h3 className="text-xl font-semibold mb-4">Review and Sign Policies</h3>
-                  {console.log("[v0] Rendering policy documents:", policyDocuments)}
-                  <div className="space-y-4 mb-6">
-                    {policyDocuments.map((doc: any, index: number) => (
-                      <div key={doc.policy_id || index} className="border border-gray-200 rounded-lg p-4">
-                        {console.log("[v0] Rendering document:", doc)}
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="font-medium text-lg">{doc.name}</h4>
-                          <a
-                            href={`https://your-aws-bucket.s3.amazonaws.com/${doc.document_filename}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[#E75837] hover:text-[#E75837]/80 text-sm font-medium flex items-center gap-1"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                              />
-                            </svg>
-                            View Document
-                          </a>
-                        </div>
-                        {doc.description && <p className="text-sm text-gray-600 mb-3">{doc.description}</p>}
-                        <div className="bg-gray-50 p-3 rounded border">
-                          <label className="flex items-start gap-3">
-                            <input
-                              type="checkbox"
-                              checked={acknowledgedPolicies.includes(doc.policy_id.toString())}
-                              onChange={(e) => {
-                                const policyId = doc.policy_id.toString()
-                                if (e.target.checked) {
-                                  setAcknowledgedPolicies([...acknowledgedPolicies, policyId])
-                                } else {
-                                  setAcknowledgedPolicies(acknowledgedPolicies.filter((id) => id !== policyId))
-                                }
-                              }}
-                              className="mt-1 h-4 w-4 text-[#E75837] focus:ring-[#E75837] border-gray-300 rounded"
-                            />
-                            <span className="text-sm text-gray-700">
-                              I have read, understood, and agree to the terms outlined in this {doc.name.toLowerCase()}.
-                              I acknowledge that I am legally bound by these terms.
-                            </span>
-                          </label>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex justify-end gap-3">
-                    <button
-                      onClick={() => setShowOnboardingForm(null)}
-                      className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={async () => {
-                        try {
-                          const webhookUrl = getWebhookEndpoint("CUSTOMER_HUB")
-                          logWebhookUsage("CUSTOMER_HUB", "customer_hub_onboarding")
-
-                          const response = await fetch(webhookUrl, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              action: "customer_hub_onboarding",
-                              unique_url: uniqueUrl,
-                              section: "policies",
-                              data: {
-                                acknowledged_policy_ids: acknowledgedPolicies.map((id) => Number.parseInt(id)),
-                                signed: true,
-                              },
-                            }),
-                          })
-                          if (response.ok) {
-                            setShowOnboardingForm(null)
-                            setPolicyDocuments([])
-                            setAcknowledgedPolicies([])
-                            window.location.reload() // Re-initialize hub
-                          } else {
-                            throw new Error("Failed to submit policy acknowledgments")
-                          }
-                        } catch (error) {
-                          console.error("Error submitting policies:", error)
-                          alert("Failed to submit policy acknowledgments. Please try again.")
-                        }
-                      }}
-                      disabled={acknowledgedPolicies.length !== policyDocuments.length}
-                      className="px-4 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#E75837]/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Sign All Policies ({acknowledgedPolicies.length}/{policyDocuments.length})
-                    </button>
+                <div className="bg-gray-50 p-6 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 font-body mb-4">Policy Documentation</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Policies Signed</p>
+                      <p className="text-gray-900">{customerData?.criteria_status?.policies_signed ? "Yes" : "No"}</p>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1511,7 +1277,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
-                          d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 4 0 01-4 4zM7 3H5a2 2 0 00-2 2v12a4 4 0 004 4h2a2 2 0 002-2V5a2 2 2 0 00-2-2z"
+                          d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 4 0 01-4 4zM7 3H5a2 2 0 00-2 2v12a4 4 0 004 4h2a2 2 0 002-2V5a2 2 0 00-2-2z"
                         />
                       </svg>
                       Grooming Schedule
@@ -1529,560 +1295,1137 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                     ))}
                   </div>
                 )}
-
-                {/* General Notes */}
-                {(pet.general_health_notes ||
-                  pet.general_feeding_notes ||
-                  pet.general_exercise_and_play_notes ||
-                  pet.general_grooming_and_cleaning_notes ||
-                  pet.general_behavioral_notes ||
-                  pet.interactions_with_adults_notes ||
-                  pet.interactions_with_kids_notes ||
-                  pet.interactions_with_animals_notes ||
-                  pet.miscellaneous_notes) && (
-                  <div className="bg-white rounded-lg p-4">
-                    <h4 className="font-semibold text-gray-900 font-body mb-3 flex items-center">
-                      <svg className="w-5 h-5 text-gray-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
-                      </svg>
-                      Additional Notes
-                    </h4>
-                    {pet.general_health_notes && (
-                      <div className="border-l-4 border-gray-300 pl-4 py-2">
-                        <h5 className="font-medium text-gray-900 font-body">General Health Notes</h5>
-                        <p className="text-gray-600 font-body text-sm mt-1">{pet.general_health_notes}</p>
-                      </div>
-                    )}
-                    {pet.general_feeding_notes && (
-                      <div className="border-l-4 border-gray-300 pl-4 py-2">
-                        <h5 className="font-medium text-gray-900 font-body">General Feeding Notes</h5>
-                        <p className="text-gray-600 font-body text-sm mt-1">{pet.general_feeding_notes}</p>
-                      </div>
-                    )}
-                    {pet.general_exercise_and_play_notes && (
-                      <div className="border-l-4 border-gray-300 pl-4 py-2">
-                        <h5 className="font-medium text-gray-900 font-body">General Exercise and Play Notes</h5>
-                        <p className="text-gray-600 font-body text-sm mt-1">{pet.general_exercise_and_play_notes}</p>
-                      </div>
-                    )}
-                    {pet.general_grooming_and_cleaning_notes && (
-                      <div className="border-l-4 border-gray-300 pl-4 py-2">
-                        <h5 className="font-medium text-gray-900 font-body">General Grooming and Cleaning Notes</h5>
-                        <p className="text-gray-600 font-body text-sm mt-1">
-                          {pet.general_grooming_and_cleaning_notes}
-                        </p>
-                      </div>
-                    )}
-                    {pet.general_behavioral_notes && (
-                      <div className="border-l-4 border-gray-300 pl-4 py-2">
-                        <h5 className="font-medium text-gray-900 font-body">General Behavioral Notes</h5>
-                        <p className="text-gray-600 font-body text-sm mt-1">{pet.general_behavioral_notes}</p>
-                      </div>
-                    )}
-                    {pet.interactions_with_adults_notes && (
-                      <div className="border-l-4 border-gray-300 pl-4 py-2">
-                        <h5 className="font-medium text-gray-900 font-body">Interactions with Adults Notes</h5>
-                        <p className="text-gray-600 font-body text-sm mt-1">{pet.interactions_with_adults_notes}</p>
-                      </div>
-                    )}
-                    {pet.interactions_with_kids_notes && (
-                      <div className="border-l-4 border-gray-300 pl-4 py-2">
-                        <h5 className="font-medium text-gray-900 font-body">Interactions with Kids Notes</h5>
-                        <p className="text-gray-600 font-body text-sm mt-1">{pet.interactions_with_kids_notes}</p>
-                      </div>
-                    )}
-                    {pet.interactions_with_animals_notes && (
-                      <div className="border-l-4 border-gray-300 pl-4 py-2">
-                        <h5 className="font-medium text-gray-900 font-body">Interactions with Animals Notes</h5>
-                        <p className="text-gray-600 font-body text-sm mt-1">{pet.interactions_with_animals_notes}</p>
-                      </div>
-                    )}
-                    {pet.miscellaneous_notes && (
-                      <div className="border-l-4 border-gray-300 pl-4 py-2">
-                        <h5 className="font-medium text-gray-900 font-body">Miscellaneous Notes</h5>
-                        <p className="text-gray-600 font-body text-sm mt-1">{pet.miscellaneous_notes}</p>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
           </div>
         )
 
       default:
-        return <div className="text-gray-600">No content available for this section.</div>
+        return <div>Section not found</div>
+    }
+  }
+
+  const renderCareInstructionField = (label: string, value: string | undefined, icon: React.ReactNode) => {
+    if (!value || value.trim() === "") return null
+
+    return (
+      <div className="flex gap-3 p-4 bg-gray-50 rounded-lg">
+        <div className="text-[#E75837] mt-0.5">{icon}</div>
+        <div className="flex-1">
+          <h4 className="font-semibold text-gray-900 font-body mb-1">{label}</h4>
+          <p className="text-gray-700 font-body text-sm leading-relaxed">{value}</p>
+        </div>
+      </div>
+    )
+  }
+
+  const calendarDays = generateCalendarDays(currentDate)
+  const monthNames = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ]
+
+  const isOnboardingIncomplete = () => {
+    if (!customerData?.criteria_status) return false
+
+    return (
+      !customerData.criteria_status.personal_info_complete ||
+      !customerData.criteria_status.pets_created ||
+      !customerData.criteria_status.emergency_contacts_added ||
+      !customerData.criteria_status.policies_signed
+    )
+  }
+
+  const handleCompleteOnboarding = () => {
+    setShowOnboardingModal(true)
+    setOnboardingStep(1)
+  }
+
+  const handleOnboardingNext = () => {
+    if (onboardingStep < 4) {
+      setOnboardingStep(onboardingStep + 1)
+    }
+  }
+
+  const handleOnboardingPrev = () => {
+    if (onboardingStep > 1) {
+      setOnboardingStep(onboardingStep - 1)
+    }
+  }
+
+  const handleOnboardingSubmit = async () => {
+    try {
+      const webhookUrl = getWebhookEndpoint("CUSTOMER_HUB")
+      logWebhookUsage("CUSTOMER_HUB", "customer_hub_onboarding")
+
+      const payload = {
+        action: "customer_hub_onboarding",
+        unique_url: uniqueUrl,
+        customer_email: email,
+        onboarding_data: onboardingData,
+        timestamp: new Date().toISOString(),
+      }
+
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+
+      if (response.ok) {
+        setShowOnboardingModal(false)
+        // Refresh the customer data
+        window.location.reload()
+      }
+    } catch (error) {
+      console.error("Error submitting onboarding:", error)
     }
   }
 
   return (
-    <div className="container mx-auto py-10">
-      {/* Back Button */}
-      <Link href="/" className="inline-flex items-center mb-6 text-gray-600 hover:text-gray-800">
-        <ArrowLeft className="mr-2 h-5 w-5" />
-        Back to Home
-      </Link>
-
-      {/* Title and Tabs */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 font-body">Customer Hub</h1>
-        <p className="text-gray-500 font-body">Welcome to your personalized customer portal.</p>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-[#E75837] to-[#d04e30] text-white">
+        <div className="max-w-6xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button onClick={() => router.back()} className="p-2 hover:bg-white/20 rounded-lg transition-colors">
+                <ArrowLeft className="w-6 h-6" />
+              </button>
+              <div>
+                <h1 className="text-3xl font-bold font-title">Customer Portal</h1>
+                <p className="text-white/90 font-body">Access your booking information and pet details</p>
+              </div>
+            </div>
+            {step === "data" && customerData && (
+              <Link
+                href={`/schedule/${uniqueUrl}`}
+                className="bg-white text-[#E75837] py-2 px-6 rounded-lg font-medium hover:bg-gray-100 transition-colors font-body flex items-center gap-2"
+              >
+                <Plus className="w-5 h-5" />
+                New Appointment
+              </Link>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Email/Code Form */}
-      {step === "email" && (
-        <div className="max-w-md mx-auto">
-          <form onSubmit={handleEmailSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
-              </label>
-              <div className="mt-1">
-                <input
-                  type="email"
-                  id="email"
-                  className="shadow-sm focus:ring-[#E75837] focus:border-[#E75837] block w-full sm:text-sm border-gray-300 rounded-md"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-            <div>
-              <button
-                type="submit"
-                className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#E75837] hover:bg-[#E75837]/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E75837]"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Sending...
-                  </>
-                ) : (
-                  "Send Validation Code"
-                )}
-              </button>
-            </div>
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-          </form>
-        </div>
-      )}
-
-      {step === "code" && (
-        <div className="max-w-md mx-auto">
-          <form onSubmit={handleCodeSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="code" className="block text-sm font-medium text-gray-700">
-                Validation Code
-              </label>
-              <div className="mt-1">
-                <input
-                  type="text"
-                  id="code"
-                  className="shadow-sm focus:ring-[#E75837] focus:border-[#E75837] block w-full sm:text-sm border-gray-300 rounded-md"
-                  placeholder="Enter code"
-                  value={validationCode}
-                  onChange={(e) => setValidationCode(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-            <div>
-              <button
-                type="submit"
-                className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#E75837] hover:bg-[#E75837]/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E75837]"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Verifying...
-                  </>
-                ) : (
-                  "Verify Code"
-                )}
-              </button>
-            </div>
-            <button onClick={resetForm} className="text-sm text-gray-500 hover:text-gray-700 focus:outline-none">
-              ← Back to Email
-            </button>
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-          </form>
-        </div>
-      )}
-
-      {/* Main Content */}
-      {step === "data" && customerData && (
-        <div className="space-y-8">
-          {/* Tabs */}
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-              <button
-                onClick={() => setActiveTab("pets")}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "pets"
-                    ? "border-[#E75837] text-[#E75837]"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                Pets
-              </button>
-              <button
-                onClick={() => setActiveTab("appointments")}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "appointments"
-                    ? "border-[#E75837] text-[#E75837]"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                Appointments
-              </button>
-              <button
-                onClick={() => setActiveTab("invoices")}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "invoices"
-                    ? "border-[#E75837] text-[#E75837]"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                Invoices
-              </button>
-              {customerData.onboarding_complete === false && (
-                <button
-                  onClick={() => setActiveTab("onboarding")}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === "onboarding"
-                      ? "border-[#E75837] text-[#E75837]"
-                      : "border-transparent text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  Onboarding
-                </button>
-              )}
-            </nav>
-          </div>
-
-          {/* Pets Tab */}
-          {activeTab === "pets" && (
-            <div className="space-y-6">
-              {customerData.pets.length > 0 ? (
-                customerData.pets.map((pet: Pet) => (
-                  <div key={pet.pet_id} className="bg-white shadow overflow-hidden rounded-lg">
-                    <div className="px-4 py-5 sm:px-6">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg leading-6 font-medium text-gray-900 font-body">
-                          {pet.pet_name}
-                          {getPetIcon(pet.pet_type)}
-                        </h3>
-                        <button
-                          onClick={() => togglePetExpansion(pet.pet_id)}
-                          className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E75837]"
-                        >
-                          {expandedPet === pet.pet_id ? (
-                            <>
-                              <ChevronUp className="mr-2 h-5 w-5" />
-                              Collapse
-                            </>
-                          ) : (
-                            <>
-                              <ChevronDown className="mr-2 h-5 w-5" />
-                              Expand
-                            </>
-                          )}
-                        </button>
-                      </div>
-                      <p className="mt-1 max-w-2xl text-sm text-gray-500 font-body">
-                        {pet.pet_type} • {pet.breed_name}
-                      </p>
-                    </div>
-                    {expandedPet === pet.pet_id && (
-                      <div className="border-t border-gray-200">
-                        <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                          <dt className="text-sm font-medium text-gray-500">Pet Profile Sections</dt>
-                          <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                            <div className="flex space-x-4">
-                              <button
-                                onClick={() => setSelectedPetSection("general")}
-                                className={`inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E75837] ${
-                                  selectedPetSection === "general" ? "bg-gray-100" : ""
-                                }`}
-                              >
-                                General
-                              </button>
-                              <button
-                                onClick={() => setSelectedPetSection("health")}
-                                className={`inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E75837] ${
-                                  selectedPetSection === "health" ? "bg-gray-100" : ""
-                                }`}
-                              >
-                                Health
-                              </button>
-                              <button
-                                onClick={() => setSelectedPetSection("food")}
-                                className={`inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E75837] ${
-                                  selectedPetSection === "food" ? "bg-gray-100" : ""
-                                }`}
-                              >
-                                Food
-                              </button>
-                              <button
-                                onClick={() => setSelectedPetSection("vaccine-overview")}
-                                className={`inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E75837] ${
-                                  selectedPetSection === "vaccine-overview" ? "bg-gray-100" : ""
-                                }`}
-                              >
-                                Vaccine Overview
-                              </button>
-                              <button
-                                onClick={() => setSelectedPetSection("care-plan-report")}
-                                className={`inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E75837] ${
-                                  selectedPetSection === "care-plan-report" ? "bg-gray-100" : ""
-                                }`}
-                              >
-                                Daily Care Plan
-                              </button>
-                            </div>
-                          </dd>
-                        </div>
-                        <div className="px-4 py-5 sm:px-6">{renderPetProfileSection(pet, selectedPetSection)}</div>
-                      </div>
-                    )}
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        {step === "email" && (
+          /* Email Input Form */
+          <div className="max-w-md mx-auto">
+            <div className="bg-white rounded-2xl shadow-lg p-8">
+              <form onSubmit={handleEmailSubmit} className="space-y-6">
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2 font-body">
+                    Enter your email address
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="email"
+                      id="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="your.email@example.com"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent font-body"
+                      required
+                      disabled={isLoading}
+                    />
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-8">
-                  <Dog className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-600 font-body">No pets recorded</p>
+                  <p className="text-sm text-gray-500 mt-2 font-body">
+                    We'll send you a verification code to access your information
+                  </p>
                 </div>
-              )}
-            </div>
-          )}
 
-          {/* Appointments Tab */}
-          {activeTab === "appointments" && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900 font-body">Appointments</h2>
-                <div className="flex space-x-4">
-                  <button
-                    onClick={() => setAppointmentView("calendar")}
-                    className={`px-3 py-2 rounded-md font-medium text-sm ${
-                      appointmentView === "calendar"
-                        ? "bg-[#E75837] text-white hover:bg-[#E75837]/80"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                  >
-                    Calendar
-                  </button>
-                  <button
-                    onClick={() => setAppointmentView("list")}
-                    className={`px-3 py-2 rounded-md font-medium text-sm ${
-                      appointmentView === "list"
-                        ? "bg-[#E75837] text-white hover:bg-[#E75837]/80"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                  >
-                    List
-                  </button>
-                </div>
+                {error && (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-red-600 font-body">{error}</p>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isLoading || !email.trim()}
+                  className="w-full bg-[#E75837] text-white py-3 px-6 rounded-lg font-medium hover:bg-[#d04e30] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-body flex items-center justify-center gap-2"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Sending verification code...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="w-5 h-5" />
+                      Send Verification Code
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {step === "code" && (
+          /* Validation Code Input Form */
+          <div className="max-w-md mx-auto">
+            <div className="bg-white rounded-2xl shadow-lg p-8">
+              <div className="text-center mb-6">
+                <Shield className="w-12 h-12 text-[#E75837] mx-auto mb-4" />
+                <h2 className="text-xl font-bold text-gray-900 font-header">Check Your Email</h2>
+                <p className="text-gray-600 font-body mt-2">
+                  We've sent a verification code to <span className="font-medium">{email}</span>
+                </p>
               </div>
 
-              {appointmentView === "calendar" && (
-                <div className="bg-white shadow overflow-hidden rounded-lg">
-                  <div className="px-4 py-5 sm:px-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg leading-6 font-medium text-gray-900 font-body">
-                        {currentDate.toLocaleString("default", { month: "long", year: "numeric" })}
-                      </h3>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => {
-                            const newDate = new Date(currentDate)
-                            newDate.setMonth(currentDate.getMonth() - 1)
-                            setCurrentDate(newDate)
-                          }}
-                          className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md"
-                        >
-                          <ChevronLeft className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            const newDate = new Date(currentDate)
-                            newDate.setMonth(currentDate.getMonth() + 1)
-                            setCurrentDate(newDate)
-                          }}
-                          className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md"
-                        >
-                          <ChevronRight className="w-5 h-5" />
-                        </button>
-                      </div>
+              <form onSubmit={handleCodeSubmit} className="space-y-6">
+                <div>
+                  <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2 font-body">
+                    Enter verification code
+                  </label>
+                  <input
+                    type="text"
+                    id="code"
+                    value={validationCode}
+                    onChange={(e) => setValidationCode(e.target.value)}
+                    placeholder="Enter 6-digit code"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent font-body text-center text-lg tracking-widest"
+                    required
+                    disabled={isLoading}
+                    maxLength={6}
+                  />
+                </div>
+
+                {error && (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-red-600 font-body">{error}</p>
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  <button
+                    type="submit"
+                    disabled={isLoading || !validationCode.trim()}
+                    className="w-full bg-[#E75837] text-white py-3 px-6 rounded-lg font-medium hover:bg-[#d04e30] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-body flex items-center justify-center gap-2"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Verifying code...
+                      </>
+                    ) : (
+                      <>
+                        <User className="w-5 h-5" />
+                        Access My Portal
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setStep("email")}
+                    className="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-200 transition-colors font-body"
+                  >
+                    Use Different Email
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {step === "data" && customerData && (
+          /* Customer Information Display */
+          <div className="space-y-8">
+            {/* Tabbed Navigation */}
+            <div className="bg-white rounded-2xl shadow-lg">
+              <div className="border-b border-gray-200">
+                <nav className="flex space-x-8 px-8 pt-6">
+                  <button
+                    onClick={() => setActiveTab("pets")}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                      activeTab === "pets"
+                        ? "border-[#E75837] text-[#E75837]"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Heart className="w-4 h-4" />
+                      Pets
                     </div>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("appointments")}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                      activeTab === "appointments"
+                        ? "border-[#E75837] text-[#E75837]"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      Appointments
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("invoices")}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                      activeTab === "invoices"
+                        ? "border-[#E75837] text-[#E75837]"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      Invoices
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("onboarding")}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                      activeTab === "onboarding"
+                        ? "border-[#E75837] text-[#E75837]"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4" />
+                      Onboarding
+                    </div>
+                  </button>
+                </nav>
+              </div>
 
-                    <div className="grid grid-cols-7 gap-2">
-                      {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                        <div key={day} className="text-center text-gray-500 font-body">
-                          {day}
-                        </div>
-                      ))}
-
-                      {generateCalendarDays(currentDate).map((day, index) => {
-                        const bookingsForDay = getBookingsForDate(day)
-                        const isToday =
-                          day.getDate() === new Date().getDate() &&
-                          day.getMonth() === new Date().getMonth() &&
-                          day.getFullYear() === new Date().getFullYear()
-                        const isCurrentMonth = day.getMonth() === currentDate.getMonth()
-
-                        return (
+              <div className="p-8">
+                {activeTab === "pets" && (
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6 font-header flex items-center gap-3">
+                      <Heart className="w-8 h-8 text-[#E75837]" />
+                      Your Pets
+                    </h2>
+                    {customerData.pets && customerData.pets.length > 0 ? (
+                      <div className="space-y-6">
+                        {customerData.pets.map((pet) => (
                           <div
-                            key={index}
-                            className={`relative p-2 rounded-md ${
-                              isToday ? "bg-[#E75837] text-white" : "bg-gray-100 text-gray-700"
-                            } ${!isCurrentMonth ? "opacity-50" : ""}`}
+                            key={pet.pet_id}
+                            className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                           >
-                            <div className="text-sm text-center font-body">{day.getDate()}</div>
-                            {bookingsForDay.length > 0 && (
-                              <div className="absolute bottom-1 left-0 w-full px-1">
-                                {bookingsForDay.map((booking) => (
-                                  <div
-                                    key={booking.booking_id}
-                                    className={`text-xs font-medium text-white py-0.5 px-1 rounded-full mt-1 ${getServiceTypeColor(
-                                      booking.service_types || "",
-                                    )}`}
-                                  >
-                                    {convertToUserTimezone(booking.start)} - {booking.professional_name}
+                            <button
+                              onClick={() => togglePetExpansion(pet.pet_id)}
+                              className="w-full p-6 bg-gradient-to-br from-orange-50 to-pink-50 border-b border-orange-200 hover:from-orange-100 hover:to-pink-100 transition-colors"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-4">
+                                  <div className="w-12 h-12 bg-gradient-to-br from-[#E75837] to-[#D14420] rounded-full flex items-center justify-center shadow-md border-2 border-white">
+                                    <div className="text-white">{getPetIcon(pet.pet_type)}</div>
                                   </div>
-                                ))}
+                                  <div className="text-left">
+                                    <h3 className="font-semibold text-gray-900 text-lg header-font">{pet.pet_name}</h3>
+                                    <p className="text-gray-600 body-font text-sm">{pet.pet_type}</p>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => togglePetExpansion(pet.pet_id)}
+                                  className="text-[#E75837] hover:text-[#E75837]/80 transition-colors"
+                                >
+                                  {expandedPet === pet.pet_id ? (
+                                    <ChevronUp className="h-5 w-5" />
+                                  ) : (
+                                    <ChevronDown className="h-5 w-5" />
+                                  )}
+                                </button>
+                              </div>
+                            </button>
+
+                            {expandedPet === pet.pet_id && (
+                              <div className="bg-gray-50">
+                                <div className="flex">
+                                  {/* Sidebar Navigation */}
+                                  <div className="w-48 bg-white border-r border-gray-200 p-4">
+                                    <nav className="space-y-2">
+                                      <button
+                                        onClick={() => setSelectedSection("general")}
+                                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
+                                          selectedSection === "general"
+                                            ? "bg-[#E75837] text-white"
+                                            : "text-gray-700 hover:bg-gray-100"
+                                        }`}
+                                      >
+                                        General
+                                      </button>
+                                      <button
+                                        onClick={() => setSelectedSection("health")}
+                                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
+                                          selectedSection === "health"
+                                            ? "bg-[#E75837] text-white"
+                                            : "text-gray-700 hover:bg-gray-100"
+                                        }`}
+                                      >
+                                        Health
+                                      </button>
+                                      <button
+                                        onClick={() => setSelectedSection("food")}
+                                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
+                                          selectedSection === "food"
+                                            ? "bg-[#E75837] text-white"
+                                            : "text-gray-700 hover:bg-gray-100"
+                                        }`}
+                                      >
+                                        Food
+                                      </button>
+                                      <button
+                                        onClick={() => setSelectedSection("vaccine-overview")}
+                                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
+                                          selectedSection === "vaccine-overview"
+                                            ? "bg-[#E75837] text-white"
+                                            : "text-gray-700 hover:bg-gray-100"
+                                        }`}
+                                      >
+                                        Vaccine Overview
+                                      </button>
+                                      <button
+                                        onClick={() => setSelectedSection("care-plan-report")}
+                                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
+                                          selectedSection === "care-plan-report"
+                                            ? "bg-[#E75837] text-white"
+                                            : "text-gray-700 hover:bg-gray-100"
+                                        }`}
+                                      >
+                                        Care Plan Report
+                                      </button>
+                                    </nav>
+                                  </div>
+
+                                  {/* Main Content */}
+                                  <div className="flex-1 p-6">
+                                    <div className="flex items-center justify-between mb-6">
+                                      <h3 className="text-xl font-bold text-gray-900 font-header capitalize">
+                                        {selectedSection === "care-plan-report"
+                                          ? "Care Plan Report"
+                                          : selectedSection === "vaccine-overview"
+                                            ? "Vaccine Overview"
+                                            : `${selectedSection} Information`}
+                                      </h3>
+                                    </div>
+
+                                    {renderPetProfileSection(pet, selectedSection)}
+                                  </div>
+                                </div>
                               </div>
                             )}
                           </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {appointmentView === "list" && (
-                <div className="bg-white shadow overflow-hidden rounded-lg">
-                  <ul className="divide-y divide-gray-200">
-                    {customerData.bookings.length > 0 ? (
-                      customerData.bookings.map((booking: Booking) => (
-                        <li key={booking.booking_id}>
-                          <a href="#" className="block hover:bg-gray-50">
-                            <div className="px-4 py-4 sm:px-6">
-                              <div className="flex items-center justify-between">
-                                <p className="text-sm font-medium text-indigo-600 truncate font-body">
-                                  {booking.professional_name}
-                                </p>
-                                <div className="ml-2 flex-shrink-0">
-                                  <span
-                                    className={`px-2 py-0.5 rounded text-xs font-medium ${getServiceTypeColor(
-                                      booking.service_types || "",
-                                    )}`}
-                                  >
-                                    {booking.service_types}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="mt-2 sm:flex sm:justify-between">
-                                <div className="sm:flex">
-                                  <p className="flex items-center text-sm text-gray-500 font-body">
-                                    <User className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
-                                    {booking.customer_first_name} {booking.customer_last_name}
-                                  </p>
-                                  <p className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6 font-body">
-                                    <Calendar className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
-                                    <time dateTime={booking.start}>{booking.booking_date_formatted}</time>
-                                  </p>
-                                </div>
-                                <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 font-body">
-                                  <Mail className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
-                                  {convertToUserTimezone(booking.start)} - {convertToUserTimezone(booking.end)}
-                                </div>
-                              </div>
-                            </div>
-                          </a>
-                        </li>
-                      ))
+                        ))}
+                      </div>
                     ) : (
-                      <div className="text-center py-8">
-                        <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                        <p className="text-gray-600 font-body">No appointments scheduled</p>
+                      <div className="text-center py-12">
+                        <Heart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <p className="text-gray-600 font-body text-xl">No pets registered</p>
                       </div>
                     )}
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
+                  </div>
+                )}
 
-          {/* Invoices Tab */}
-          {activeTab === "invoices" && (
-            <div className="space-y-6">
-              {customerData.invoices && customerData.invoices.length > 0 ? (
-                <div className="bg-white shadow overflow-hidden rounded-lg">
-                  <ul className="divide-y divide-gray-200">
-                    {customerData.invoices.map((invoice: Invoice) => (
-                      <li key={invoice.invoice_number}>
-                        <a href="#" className="block hover:bg-gray-50">
-                          <div className="px-4 py-4 sm:px-6">
+                {activeTab === "appointments" && (
+                  <div>
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-2xl font-bold text-gray-900 font-header flex items-center gap-3">
+                        <Calendar className="w-8 h-8 text-[#E75837]" />
+                        Your Appointments
+                      </h2>
+                      <div className="flex items-center gap-4">
+                        <div className="flex bg-gray-100 rounded-lg p-1">
+                          <button
+                            onClick={() => setAppointmentView("calendar")}
+                            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                              appointmentView === "calendar"
+                                ? "bg-white text-[#E75837] shadow-sm"
+                                : "text-gray-600 hover:text-gray-900"
+                            }`}
+                          >
+                            Calendar
+                          </button>
+                          <button
+                            onClick={() => setAppointmentView("list")}
+                            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                              appointmentView === "list"
+                                ? "bg-white text-[#E75837] shadow-sm"
+                                : "text-gray-600 hover:text-gray-900"
+                            }`}
+                          >
+                            List
+                          </button>
+                        </div>
+                        {appointmentView === "calendar" && (
+                          <>
+                            <button
+                              onClick={() =>
+                                setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))
+                              }
+                              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                              <ChevronLeft className="w-5 h-5" />
+                            </button>
+                            <h3 className="text-lg font-semibold font-body min-w-[200px] text-center">
+                              {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                            </h3>
+                            <button
+                              onClick={() =>
+                                setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))
+                              }
+                              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                              <ChevronRight className="w-5 h-5" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {customerData.bookings && customerData.bookings.length > 0 ? (
+                      <>
+                        {appointmentView === "calendar" ? (
+                          <>
+                            {/* Calendar Grid */}
+                            <div className="grid grid-cols-7 gap-1 mb-4">
+                              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                                <div key={day} className="p-3 text-center font-semibold text-gray-600 font-body">
+                                  {day}
+                                </div>
+                              ))}
+                            </div>
+
+                            <div className="grid grid-cols-7 gap-1">
+                              {calendarDays.map((day, index) => {
+                                const bookings = getBookingsForDate(day)
+                                const isCurrentMonth = day.getMonth() === currentDate.getMonth()
+                                const isToday = day.toDateString() === new Date().toDateString()
+
+                                return (
+                                  <div
+                                    key={index}
+                                    className={`min-h-[100px] p-2 border border-gray-200 ${
+                                      isCurrentMonth ? "bg-white" : "bg-gray-50"
+                                    } ${isToday ? "ring-2 ring-[#E75837]" : ""}`}
+                                  >
+                                    <div
+                                      className={`text-sm font-medium mb-1 ${isCurrentMonth ? "text-gray-900" : "text-gray-400"}`}
+                                    >
+                                      {day.getDate()}
+                                    </div>
+                                    <div className="space-y-1">
+                                      {bookings.map((booking) => (
+                                        <div
+                                          key={booking.booking_id}
+                                          className={`text-xs p-1 rounded border ${getServiceTypeColor(booking.service_types || "")}`}
+                                        >
+                                          <div className="font-medium truncate">
+                                            {convertToUserTimezone(booking.start)}
+                                          </div>
+                                          <div className="truncate">{booking.service_names || "Appointment"}</div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+
+                            {/* Legend */}
+                            <div className="mt-6 flex flex-wrap gap-4">
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
+                                <span className="text-sm font-body">Walking</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 bg-purple-100 border border-purple-300 rounded"></div>
+                                <span className="text-sm font-body">Grooming</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 bg-blue-100 border border-blue-300 rounded"></div>
+                                <span className="text-sm font-body">Drop-in</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 bg-orange-100 border border-orange-300 rounded"></div>
+                                <span className="text-sm font-body">Other</span>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          /* Added list view for appointments */
+                          <div className="space-y-4 max-h-[600px] overflow-y-auto">
+                            {customerData.bookings
+                              .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+                              .map((booking) => (
+                                <div
+                                  key={booking.booking_id}
+                                  className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                                >
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-3 mb-2">
+                                        <div
+                                          className={`w-3 h-3 rounded-full ${
+                                            booking.service_types?.toLowerCase().includes("walking")
+                                              ? "bg-green-400"
+                                              : booking.service_types?.toLowerCase().includes("grooming")
+                                                ? "bg-purple-400"
+                                                : booking.service_types?.toLowerCase().includes("drop")
+                                                  ? "bg-blue-400"
+                                                  : "bg-orange-400"
+                                          }`}
+                                        ></div>
+                                        <h3 className="text-lg font-semibold text-gray-900 font-header">
+                                          {booking.service_names || "Appointment"}
+                                        </h3>
+                                      </div>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 font-body">
+                                        <div>
+                                          <span className="font-medium">Date:</span>{" "}
+                                          {booking.booking_date_formatted ||
+                                            new Date(booking.start).toLocaleDateString()}
+                                        </div>
+                                        <div>
+                                          <span className="font-medium">Day:</span> {booking.day_of_week}
+                                        </div>
+                                        <div>
+                                          <span className="font-medium">Time:</span>{" "}
+                                          {convertToUserTimezone(booking.start)} - {convertToUserTimezone(booking.end)}
+                                        </div>
+                                        <div>
+                                          <span className="font-medium">Professional:</span> {booking.professional_name}
+                                        </div>
+                                        {booking.service_types && (
+                                          <div className="md:col-span-2">
+                                            <span className="font-medium">Service Type:</span> {booking.service_types}
+                                          </div>
+                                        )}
+                                        {booking.is_recurring && (
+                                          <div className="md:col-span-2">
+                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                              Recurring Appointment
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="text-center py-12">
+                        <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <p className="text-gray-600 font-body text-xl mb-2">No upcoming appointments scheduled</p>
+                        <p className="text-gray-500 font-body">Contact us to book your next appointment!</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === "invoices" && (
+                  <div>
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-2xl font-bold text-gray-900 font-header flex items-center gap-3">
+                        <FileText className="w-8 h-8 text-[#E75837]" />
+                        Invoices
+                      </h2>
+                    </div>
+
+                    {customerData.invoices && customerData.invoices.length > 0 ? (
+                      <div className="space-y-4">
+                        {customerData.invoices.map((invoice) => (
+                          <div
+                            key={invoice.invoice_number}
+                            className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow"
+                          >
                             <div className="flex items-center justify-between">
-                              <p className="text-sm font-medium text-indigo-600 truncate font-body">
-                                Invoice #{invoice.invoice_number}
-                              </p>
-                              <div className="ml-2 flex-shrink-0">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-4 mb-2">
+                                  <h3 className="text-lg font-bold text-gray-900 font-body">{invoice.amount}</h3>
+                                  <span className="text-gray-600 font-body">Due {invoice.due_date}</span>
+                                </div>
+                                <p className="text-gray-600 font-body">Invoice #{invoice.invoice_number}</p>
+                              </div>
+                              <div className="flex-shrink-0">
                                 <span
-                                  className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusBadgeStyle(invoice.status)}`}
+                                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getStatusBadgeStyle(
+                                    invoice.status,
+                                  )}`}
                                 >
                                   {invoice.status}
                                 </span>
                               </div>
                             </div>
-                            <div className="mt-2 sm:flex sm:justify-between">
-                              <div className="sm:flex">
-                                <p className="flex items-center text-sm text-gray-500 font-body">
-                                  <FileText className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
-                                  Due Date: {new Date(invoice.due_date).toLocaleDateString()}
+                          </div>
+                        ))}
+
+                        {customerData.payment_instructions && (
+                          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p className="text-blue-800 font-body text-sm">
+                              <strong>Payment Instructions:</strong> {customerData.payment_instructions}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12">
+                        <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <p className="text-gray-600 font-body text-xl">No invoices found</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === "onboarding" && (
+                  <div>
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-2xl font-bold text-gray-900 font-header flex items-center gap-3">
+                        <CheckCircle className="w-8 h-8 text-[#E75837]" />
+                        Onboarding Status
+                      </h2>
+                      {isOnboardingIncomplete() && (
+                        <button
+                          onClick={handleCompleteOnboarding}
+                          className="bg-[#E75837] text-white px-6 py-2 rounded-lg font-medium hover:bg-[#E75837]/90 transition-colors"
+                        >
+                          Complete Onboarding
+                        </button>
+                      )}
+                    </div>
+
+                    {customerData.onboarding_complete !== undefined ? (
+                      <div className="space-y-4">
+                        <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="text-lg font-bold text-gray-900 font-body">Onboarding Progress</h3>
+                              <p className="text-gray-600 font-body">
+                                {customerData.onboarding_complete
+                                  ? "You've completed the onboarding process!"
+                                  : "Complete the steps below to finish onboarding."}
+                              </p>
+                            </div>
+                            <div>
+                              {customerData.onboarding_complete ? (
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                  Complete
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                                  In Progress
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* ... existing Required Steps section ... */}
+                        <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
+                          <h3 className="text-lg font-bold text-gray-900 font-body mb-4">Required Steps</h3>
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                              <div className="flex-1">
+                                <h4 className="text-md font-semibold text-gray-900 font-body mb-1">
+                                  Complete Personal Information
+                                </h4>
+                                <p className="text-gray-600 font-body text-sm mb-2">
+                                  Provide your basic contact details.
                                 </p>
+                                {customerData.criteria_status?.personal_info_complete &&
+                                  customerData.supporting_details && (
+                                    <div className="text-xs text-gray-500">
+                                      <p>Email: {customerData.supporting_details.email}</p>
+                                      <p>User Type: {customerData.supporting_details.user_type}</p>
+                                    </div>
+                                  )}
                               </div>
-                              <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 font-body">
-                                <Scale className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
-                                Amount: ${invoice.amount}
+                              <div>
+                                {customerData.criteria_status?.personal_info_complete ? (
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                    Complete
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                    Incomplete
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                              <div className="flex-1">
+                                <h4 className="text-md font-semibold text-gray-900 font-body mb-1">Add Your Pets</h4>
+                                <p className="text-gray-600 font-body text-sm mb-2">
+                                  Tell us about your furry friends.
+                                </p>
+                                {customerData.criteria_status?.pets_created &&
+                                  customerData.supporting_details?.pets && (
+                                    <div className="text-xs text-gray-500">
+                                      <p>
+                                        Pets added:{" "}
+                                        {customerData.supporting_details.pets.details
+                                          ?.map((pet: any) => pet.pet_name)
+                                          .join(", ")}
+                                      </p>
+                                    </div>
+                                  )}
+                              </div>
+                              <div>
+                                {customerData.criteria_status?.pets_created ? (
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                    Complete
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                    Incomplete
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                              <div className="flex-1">
+                                <h4 className="text-md font-semibold text-gray-900 font-body mb-1">
+                                  Add Emergency Contact
+                                </h4>
+                                <p className="text-gray-600 font-body text-sm mb-2">Provide an emergency contact.</p>
+                                {customerData.criteria_status?.emergency_contacts_added &&
+                                  customerData.supporting_details?.emergency_contacts && (
+                                    <div className="text-xs text-gray-500">
+                                      <p>
+                                        Emergency contacts: {customerData.supporting_details.emergency_contacts.length}{" "}
+                                        added
+                                      </p>
+                                    </div>
+                                  )}
+                              </div>
+                              <div>
+                                {customerData.criteria_status?.emergency_contacts_added ? (
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                    Complete
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                    Incomplete
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                              <div className="flex-1">
+                                <h4 className="text-md font-semibold text-gray-900 font-body mb-1">Sign Policies</h4>
+                                <p className="text-gray-600 font-body text-sm mb-2">Review and sign our policies.</p>
+                                {customerData.criteria_status?.policies_signed && (
+                                  <div className="text-xs text-gray-500">
+                                    <p>All required policies signed</p>
+                                  </div>
+                                )}
+                              </div>
+                              <div>
+                                {customerData.criteria_status?.policies_signed ? (
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                    Complete
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                    Incomplete
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-600 font-body">No invoices available</p>
-                </div>
-              )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-12">
+                        <CheckCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <p className="text-gray-600 font-body text-xl">No onboarding information found</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
 
-              {customerData.payment_instructions && (
-                <div className="bg-white shadow overflow-hidden rounded-lg">
-                  <div className="px-4 py-5 sm:px-6">
-                    <h3 className="text-lg font-medium text-gray-900 font-body">Payment Instructions</h3>
-                    <p className="mt-1 max-w-2xl text-sm text-gray-500 font-body">
-                      {customerData.payment_instructions}
-                    </p>
+            {/* Back button */}
+            <div className="text-center">
+              <button
+                onClick={resetForm}
+                className="bg-gray-100 text-gray-700 py-3 px-8 rounded-lg font-medium hover:bg-gray-200 transition-colors font-body"
+              >
+                Look up different email
+              </button>
+            </div>
+          </div>
+        )}
+
+        {showOnboardingModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900">Complete Onboarding</h2>
+                  <button onClick={() => setShowOnboardingModal(false)} className="text-gray-400 hover:text-gray-600">
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                {/* Progress indicator */}
+                <div className="mb-8">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-600">Step {onboardingStep} of 4</span>
+                    <span className="text-sm font-medium text-gray-600">{Math.round((onboardingStep / 4) * 100)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-[#E75837] h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${(onboardingStep / 4) * 100}%` }}
+                    ></div>
                   </div>
                 </div>
-              )}
-            </div>
-          )}
 
-          {/* Onboarding Tab */}
-          {activeTab === "onboarding" && renderPetProfileSection(null, "onboarding")}
-        </div>
-      )}
+                {/* Step 1: Personal Information */}
+                {onboardingStep === 1 && (
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                          <input
+                            type="text"
+                            value={onboardingData.personalInfo.firstName}
+                            onChange={(e) =>
+                              setOnboardingData({
+                                ...onboardingData,
+                                personalInfo: { ...onboardingData.personalInfo, firstName: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                          <input
+                            type="text"
+                            value={onboardingData.personalInfo.lastName}
+                            onChange={(e) =>
+                              setOnboardingData({
+                                ...onboardingData,
+                                personalInfo: { ...onboardingData.personalInfo, lastName: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                          <input
+                            type="email"
+                            value={onboardingData.personalInfo.email}
+                            onChange={(e) =>
+                              setOnboardingData({
+                                ...onboardingData,
+                                personalInfo: { ...onboardingData.personalInfo, email: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                          <input
+                            type="tel"
+                            value={onboardingData.personalInfo.phone}
+                            onChange={(e) =>
+                              setOnboardingData({
+                                ...onboardingData,
+                                personalInfo: { ...onboardingData.personalInfo, phone: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 2: Pet Management */}
+                {onboardingStep === 2 && (
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Pet Information</h3>
+                      <p className="text-gray-600 mb-4">
+                        Add or manage your pets. This information helps us provide better care.
+                      </p>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <p className="text-sm text-gray-600">
+                          Pet management functionality will be integrated with existing pet forms.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 3: Emergency Contact */}
+                {onboardingStep === 3 && (
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Emergency Contact</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Contact Name</label>
+                          <input
+                            type="text"
+                            value={onboardingData.emergencyContact.contactName}
+                            onChange={(e) =>
+                              setOnboardingData({
+                                ...onboardingData,
+                                emergencyContact: { ...onboardingData.emergencyContact, contactName: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Business Name</label>
+                          <input
+                            type="text"
+                            value={onboardingData.emergencyContact.businessName}
+                            onChange={(e) =>
+                              setOnboardingData({
+                                ...onboardingData,
+                                emergencyContact: { ...onboardingData.emergencyContact, businessName: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                          <input
+                            type="text"
+                            value={onboardingData.emergencyContact.address}
+                            onChange={(e) =>
+                              setOnboardingData({
+                                ...onboardingData,
+                                emergencyContact: { ...onboardingData.emergencyContact, address: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                          <input
+                            type="tel"
+                            value={onboardingData.emergencyContact.phoneNumber}
+                            onChange={(e) =>
+                              setOnboardingData({
+                                ...onboardingData,
+                                emergencyContact: { ...onboardingData.emergencyContact, phoneNumber: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                          <input
+                            type="email"
+                            value={onboardingData.emergencyContact.email}
+                            onChange={(e) =>
+                              setOnboardingData({
+                                ...onboardingData,
+                                emergencyContact: { ...onboardingData.emergencyContact, email: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                          <textarea
+                            value={onboardingData.emergencyContact.notes}
+                            onChange={(e) =>
+                              setOnboardingData({
+                                ...onboardingData,
+                                emergencyContact: { ...onboardingData.emergencyContact, notes: e.target.value },
+                              })
+                            }
+                            rows={3}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 4: Sign Policies */}
+                {onboardingStep === 4 && (
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Sign Policies</h3>
+                      <p className="text-gray-600 mb-4">
+                        Review and sign the required policies to complete your onboarding.
+                      </p>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <p className="text-sm text-gray-600">
+                          Policy signing functionality will be integrated with existing policy management.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Navigation buttons */}
+                <div className="flex justify-between mt-8">
+                  <button
+                    onClick={handleOnboardingPrev}
+                    disabled={onboardingStep === 1}
+                    className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft className="w-4 h-4 inline mr-1" />
+                    Previous
+                  </button>
+
+                  {onboardingStep < 4 ? (
+                    <button
+                      onClick={handleOnboardingNext}
+                      className="px-4 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#E75837]/90"
+                    >
+                      Next
+                      <ChevronRight className="w-4 h-4 inline ml-1" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleOnboardingSubmit}
+                      className="px-6 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#E75837]/90"
+                    >
+                      Complete Onboarding
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
