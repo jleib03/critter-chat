@@ -1437,12 +1437,23 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
   }
 
   const getBreedsByType = (petType: string) => {
+    console.log("[v0] Getting breeds for pet type:", petType)
+    console.log("[v0] Available picklist data:", picklistData)
+
     const typeItem = getPetTypes().find((item: any) => item.label === petType)
+    console.log("[v0] Found type item:", typeItem)
+
     if (!typeItem) return []
 
-    return picklistData.filter(
-      (item: any) => item.picklist_type === "breed" && item.category === `${typeItem.label} Breed`,
+    const expectedCategory = `${typeItem.label} Breed`
+    console.log("[v0] Looking for category:", expectedCategory)
+
+    const breeds = picklistData.filter(
+      (item: any) => item.picklist_type === "breed" && item.category === expectedCategory,
     )
+
+    console.log("[v0] Found breeds:", breeds)
+    return breeds
   }
 
   const handleOnboardingNext = () => {
