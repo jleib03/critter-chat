@@ -2032,15 +2032,23 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                     </div>
                                   )}
                               </div>
-                              <div>
+                              <div className="flex items-center gap-3">
                                 {customerData.criteria_status?.personal_info_complete ? (
                                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
                                     Complete
                                   </span>
                                 ) : (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                                    Incomplete
-                                  </span>
+                                  <>
+                                    <button
+                                      onClick={() => setShowOnboardingForm("user-information")}
+                                      className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-4 py-2 rounded-lg font-medium text-sm"
+                                    >
+                                      Start Section
+                                    </button>
+                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                      Incomplete
+                                    </span>
+                                  </>
                                 )}
                               </div>
                             </div>
@@ -2063,15 +2071,23 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                     </div>
                                   )}
                               </div>
-                              <div>
+                              <div className="flex items-center gap-3">
                                 {customerData.criteria_status?.pets_created ? (
                                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
                                     Complete
                                   </span>
                                 ) : (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                                    Incomplete
-                                  </span>
+                                  <>
+                                    <button
+                                      onClick={() => setShowOnboardingForm("pets")}
+                                      className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-4 py-2 rounded-lg font-medium text-sm"
+                                    >
+                                      Start Section
+                                    </button>
+                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                      Incomplete
+                                    </span>
+                                  </>
                                 )}
                               </div>
                             </div>
@@ -2092,15 +2108,23 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                     </div>
                                   )}
                               </div>
-                              <div>
+                              <div className="flex items-center gap-3">
                                 {customerData.criteria_status?.emergency_contacts_added ? (
                                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
                                     Complete
                                   </span>
                                 ) : (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                                    Incomplete
-                                  </span>
+                                  <>
+                                    <button
+                                      onClick={() => setShowOnboardingForm("emergency-contact")}
+                                      className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-4 py-2 rounded-lg font-medium text-sm"
+                                    >
+                                      Start Section
+                                    </button>
+                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                      Incomplete
+                                    </span>
+                                  </>
                                 )}
                               </div>
                             </div>
@@ -2115,15 +2139,39 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                   </div>
                                 )}
                               </div>
-                              <div>
+                              <div className="flex items-center gap-3">
                                 {customerData.criteria_status?.policies_signed ? (
                                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
                                     Complete
                                   </span>
                                 ) : (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                                    Incomplete
-                                  </span>
+                                  <>
+                                    <button
+                                      onClick={async () => {
+                                        try {
+                                          const response = await fetch("/api/webhook", {
+                                            method: "POST",
+                                            headers: { "Content-Type": "application/json" },
+                                            body: JSON.stringify({
+                                              action: "onboarding_get_documents",
+                                              unique_url: uniqueUrl,
+                                            }),
+                                          })
+                                          const documents = await response.json()
+                                          setPolicyDocuments(documents)
+                                          setShowOnboardingForm("policy-documentation")
+                                        } catch (error) {
+                                          console.error("Error fetching documents:", error)
+                                        }
+                                      }}
+                                      className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-4 py-2 rounded-lg font-medium text-sm"
+                                    >
+                                      Start Section
+                                    </button>
+                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                      Incomplete
+                                    </span>
+                                  </>
                                 )}
                               </div>
                             </div>
