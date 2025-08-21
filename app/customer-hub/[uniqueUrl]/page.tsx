@@ -30,6 +30,8 @@ import {
   Cookie,
   CheckCircle,
   X,
+  PlusCircle,
+  MinusCircle,
 } from "lucide-react"
 import { getWebhookEndpoint, logWebhookUsage } from "../../../types/webhook-endpoints"
 
@@ -2354,7 +2356,6 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                             <h3 className="text-lg font-semibold text-gray-900">Pet Information</h3>
                             <button
                               onClick={() => {
-                                // Add new pet functionality
                                 const newPet = {
                                   name: "",
                                   pet_type: "",
@@ -2371,72 +2372,22 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                   pets: [...onboardingData.pets, newPet],
                                 })
                               }}
-                              className="px-3 py-1 bg-[#E75837] text-white text-sm rounded-lg hover:bg-[#E75837]/90"
+                              className="flex items-center px-4 py-2 bg-[#E75837] text-white text-sm rounded-lg hover:bg-[#E75837]/90 transition-colors"
                             >
-                              + Add New Pet
+                              <PlusCircle className="w-4 h-4 mr-1" />
+                              Add New Pet
                             </button>
                           </div>
-                          <p className="text-gray-600 mb-4">
+                          <p className="text-gray-600 mb-6">
                             Review and manage your pets. This information helps us provide better care.
                           </p>
                           {onboardingData.pets.length > 0 ? (
-                            <div className="space-y-4">
+                            <div className="space-y-6">
                               {onboardingData.pets.map((pet: any, index: number) => (
-                                <div key={index} className="bg-gray-50 p-4 rounded-lg border">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex-1">
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        <div>
-                                          <label className="block text-xs font-medium text-gray-600 mb-1">
-                                            Pet Name
-                                          </label>
-                                          <input
-                                            type="text"
-                                            value={pet.name || ""}
-                                            onChange={(e) => {
-                                              const updatedPets = [...onboardingData.pets]
-                                              updatedPets[index] = { ...updatedPets[index], name: e.target.value }
-                                              setOnboardingData({ ...onboardingData, pets: updatedPets })
-                                            }}
-                                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#E75837] focus:border-transparent"
-                                            placeholder="Enter pet name"
-                                          />
-                                        </div>
-                                        <div>
-                                          <label className="block text-xs font-medium text-gray-600 mb-1">
-                                            Type & Breed
-                                          </label>
-                                          <div className="flex space-x-2">
-                                            <input
-                                              type="text"
-                                              value={pet.pet_type || ""}
-                                              onChange={(e) => {
-                                                const updatedPets = [...onboardingData.pets]
-                                                updatedPets[index] = { ...updatedPets[index], pet_type: e.target.value }
-                                                setOnboardingData({ ...onboardingData, pets: updatedPets })
-                                              }}
-                                              className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#E75837] focus:border-transparent"
-                                              placeholder="Type"
-                                            />
-                                            <input
-                                              type="text"
-                                              value={pet.breed_name || ""}
-                                              onChange={(e) => {
-                                                const updatedPets = [...onboardingData.pets]
-                                                updatedPets[index] = {
-                                                  ...updatedPets[index],
-                                                  breed_name: e.target.value,
-                                                }
-                                                setOnboardingData({ ...onboardingData, pets: updatedPets })
-                                              }}
-                                              className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#E75837] focus:border-transparent"
-                                              placeholder="Breed"
-                                            />
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <div className="ml-4 flex items-center space-x-2">
+                                <div key={index} className="p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
+                                  <div className="flex justify-between items-center mb-4">
+                                    <h4 className="text-lg font-medium text-gray-900">Pet #{index + 1}</h4>
+                                    {onboardingData.pets.length > 1 && (
                                       <button
                                         onClick={() => {
                                           const updatedPets = onboardingData.pets.filter(
@@ -2444,20 +2395,162 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                           )
                                           setOnboardingData({ ...onboardingData, pets: updatedPets })
                                         }}
-                                        className="text-red-500 hover:text-red-700 text-sm"
+                                        className="text-red-500 hover:text-red-700 flex items-center text-sm"
                                       >
+                                        <MinusCircle className="w-4 h-4 mr-1" />
                                         Remove
                                       </button>
+                                    )}
+                                  </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">Pet Name*</label>
+                                      <input
+                                        type="text"
+                                        value={pet.name || ""}
+                                        onChange={(e) => {
+                                          const updatedPets = [...onboardingData.pets]
+                                          updatedPets[index] = { ...updatedPets[index], name: e.target.value }
+                                          setOnboardingData({ ...onboardingData, pets: updatedPets })
+                                        }}
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                        placeholder="Pet's name"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">Pet Type*</label>
+                                      <select
+                                        value={pet.pet_type || ""}
+                                        onChange={(e) => {
+                                          const updatedPets = [...onboardingData.pets]
+                                          updatedPets[index] = {
+                                            ...updatedPets[index],
+                                            pet_type: e.target.value,
+                                            breed_name: "", // Reset breed when type changes
+                                          }
+                                          setOnboardingData({ ...onboardingData, pets: updatedPets })
+                                        }}
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                      >
+                                        <option value="">Select type</option>
+                                        <option value="Dog">Dog</option>
+                                        <option value="Cat">Cat</option>
+                                        <option value="Bird">Bird</option>
+                                        <option value="Fish">Fish</option>
+                                        <option value="Rabbit">Rabbit</option>
+                                        <option value="Other">Other</option>
+                                      </select>
+                                    </div>
+                                  </div>
+
+                                  <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                      Breed/Variety*
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={pet.breed_name || ""}
+                                      onChange={(e) => {
+                                        const updatedPets = [...onboardingData.pets]
+                                        updatedPets[index] = { ...updatedPets[index], breed_name: e.target.value }
+                                        setOnboardingData({ ...onboardingData, pets: updatedPets })
+                                      }}
+                                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                      placeholder="Enter breed or variety"
+                                    />
+                                  </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">Sex*</label>
+                                      <select
+                                        value={pet.sex || ""}
+                                        onChange={(e) => {
+                                          const updatedPets = [...onboardingData.pets]
+                                          updatedPets[index] = { ...updatedPets[index], sex: e.target.value }
+                                          setOnboardingData({ ...onboardingData, pets: updatedPets })
+                                        }}
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                      >
+                                        <option value="">Select sex</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                      </select>
+                                    </div>
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">Weight*</label>
+                                      <input
+                                        type="text"
+                                        value={pet.weight || ""}
+                                        onChange={(e) => {
+                                          const updatedPets = [...onboardingData.pets]
+                                          updatedPets[index] = { ...updatedPets[index], weight: e.target.value }
+                                          setOnboardingData({ ...onboardingData, pets: updatedPets })
+                                        }}
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                        placeholder="e.g., 25 lbs"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Spayed/Neutered*
+                                      </label>
+                                      <select
+                                        value={pet.spayed_neutered || ""}
+                                        onChange={(e) => {
+                                          const updatedPets = [...onboardingData.pets]
+                                          updatedPets[index] = {
+                                            ...updatedPets[index],
+                                            spayed_neutered: e.target.value,
+                                          }
+                                          setOnboardingData({ ...onboardingData, pets: updatedPets })
+                                        }}
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                      >
+                                        <option value="">Select status</option>
+                                        <option value="Yes">Yes</option>
+                                        <option value="No">No</option>
+                                        <option value="N/A">N/A</option>
+                                      </select>
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">Birth Date</label>
+                                      <input
+                                        type="date"
+                                        value={pet.birthdate || ""}
+                                        onChange={(e) => {
+                                          const updatedPets = [...onboardingData.pets]
+                                          updatedPets[index] = { ...updatedPets[index], birthdate: e.target.value }
+                                          setOnboardingData({ ...onboardingData, pets: updatedPets })
+                                        }}
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">Chip ID</label>
+                                      <input
+                                        type="text"
+                                        value={pet.chip_id || ""}
+                                        onChange={(e) => {
+                                          const updatedPets = [...onboardingData.pets]
+                                          updatedPets[index] = { ...updatedPets[index], chip_id: e.target.value }
+                                          setOnboardingData({ ...onboardingData, pets: updatedPets })
+                                        }}
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                        placeholder="Microchip ID"
+                                      />
                                     </div>
                                   </div>
                                 </div>
                               ))}
                             </div>
                           ) : (
-                            <div className="bg-gray-50 p-4 rounded-lg">
-                              <p className="text-sm text-gray-600">
-                                No pets found. Click "Add New Pet" to add your first pet.
-                              </p>
+                            <div className="text-center py-8 text-gray-500">
+                              <p>No pets added yet. Click "Add New Pet" to get started.</p>
                             </div>
                           )}
                         </div>
@@ -2472,110 +2565,255 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                             <h3 className="text-lg font-semibold text-gray-900">Emergency Contact</h3>
                             <button
                               onClick={() => {
-                                // For now, we'll focus on the primary emergency contact
-                                // This could be expanded to support multiple contacts
+                                const newContact = {
+                                  contactName: "",
+                                  businessName: "",
+                                  address: "",
+                                  phoneNumber: "",
+                                  email: "",
+                                  notes: "",
+                                }
+                                setOnboardingData({
+                                  ...onboardingData,
+                                  emergencyContacts: [
+                                    ...(onboardingData.emergencyContacts || [onboardingData.emergencyContact]),
+                                    newContact,
+                                  ],
+                                })
                               }}
-                              className="px-3 py-1 bg-gray-200 text-gray-600 text-sm rounded-lg hover:bg-gray-300"
-                              disabled
+                              className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors"
                             >
-                              + Add Another Contact
+                              <PlusCircle className="w-4 h-4 mr-1" />
+                              Add Another Contact
                             </button>
                           </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">Contact Name</label>
-                              <input
-                                type="text"
-                                value={onboardingData.emergencyContact.contactName}
-                                onChange={(e) =>
-                                  setOnboardingData({
-                                    ...onboardingData,
-                                    emergencyContact: {
-                                      ...onboardingData.emergencyContact,
-                                      contactName: e.target.value,
-                                    },
-                                  })
-                                }
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                              />
+
+                          {onboardingData.emergencyContacts ? (
+                            <div className="space-y-6">
+                              {onboardingData.emergencyContacts.map((contact: any, index: number) => (
+                                <div key={index} className="p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
+                                  <div className="flex justify-between items-center mb-4">
+                                    <h4 className="text-lg font-medium text-gray-900">Emergency Contact {index + 1}</h4>
+                                    {onboardingData.emergencyContacts.length > 1 && (
+                                      <button
+                                        onClick={() => {
+                                          const updatedContacts = onboardingData.emergencyContacts.filter(
+                                            (_: any, i: number) => i !== index,
+                                          )
+                                          setOnboardingData({ ...onboardingData, emergencyContacts: updatedContacts })
+                                        }}
+                                        className="text-red-500 hover:text-red-700 flex items-center text-sm"
+                                      >
+                                        <MinusCircle className="w-4 h-4 mr-1" />
+                                        Remove
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Contact Name
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={contact.contactName || ""}
+                                        onChange={(e) => {
+                                          const updatedContacts = [...onboardingData.emergencyContacts]
+                                          updatedContacts[index] = {
+                                            ...updatedContacts[index],
+                                            contactName: e.target.value,
+                                          }
+                                          setOnboardingData({ ...onboardingData, emergencyContacts: updatedContacts })
+                                        }}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Business Name
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={contact.businessName || ""}
+                                        onChange={(e) => {
+                                          const updatedContacts = [...onboardingData.emergencyContacts]
+                                          updatedContacts[index] = {
+                                            ...updatedContacts[index],
+                                            businessName: e.target.value,
+                                          }
+                                          setOnboardingData({ ...onboardingData, emergencyContacts: updatedContacts })
+                                        }}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                      />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                      <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                                      <input
+                                        type="text"
+                                        value={contact.address || ""}
+                                        onChange={(e) => {
+                                          const updatedContacts = [...onboardingData.emergencyContacts]
+                                          updatedContacts[index] = {
+                                            ...updatedContacts[index],
+                                            address: e.target.value,
+                                          }
+                                          setOnboardingData({ ...onboardingData, emergencyContacts: updatedContacts })
+                                        }}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Phone Number
+                                      </label>
+                                      <input
+                                        type="tel"
+                                        value={contact.phoneNumber || ""}
+                                        onChange={(e) => {
+                                          const updatedContacts = [...onboardingData.emergencyContacts]
+                                          updatedContacts[index] = {
+                                            ...updatedContacts[index],
+                                            phoneNumber: e.target.value,
+                                          }
+                                          setOnboardingData({ ...onboardingData, emergencyContacts: updatedContacts })
+                                        }}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                      <input
+                                        type="email"
+                                        value={contact.email || ""}
+                                        onChange={(e) => {
+                                          const updatedContacts = [...onboardingData.emergencyContacts]
+                                          updatedContacts[index] = { ...updatedContacts[index], email: e.target.value }
+                                          setOnboardingData({ ...onboardingData, emergencyContacts: updatedContacts })
+                                        }}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                      />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                      <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                                      <textarea
+                                        value={contact.notes || ""}
+                                        onChange={(e) => {
+                                          const updatedContacts = [...onboardingData.emergencyContacts]
+                                          updatedContacts[index] = { ...updatedContacts[index], notes: e.target.value }
+                                          setOnboardingData({ ...onboardingData, emergencyContacts: updatedContacts })
+                                        }}
+                                        rows={3}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">Business Name</label>
-                              <input
-                                type="text"
-                                value={onboardingData.emergencyContact.businessName}
-                                onChange={(e) =>
-                                  setOnboardingData({
-                                    ...onboardingData,
-                                    emergencyContact: {
-                                      ...onboardingData.emergencyContact,
-                                      businessName: e.target.value,
-                                    },
-                                  })
-                                }
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                              />
+                          ) : (
+                            // Fallback to single contact if emergencyContacts array doesn't exist
+                            <div className="p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Contact Name</label>
+                                  <input
+                                    type="text"
+                                    value={onboardingData.emergencyContact.contactName}
+                                    onChange={(e) =>
+                                      setOnboardingData({
+                                        ...onboardingData,
+                                        emergencyContact: {
+                                          ...onboardingData.emergencyContact,
+                                          contactName: e.target.value,
+                                        },
+                                      })
+                                    }
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Business Name</label>
+                                  <input
+                                    type="text"
+                                    value={onboardingData.emergencyContact.businessName}
+                                    onChange={(e) =>
+                                      setOnboardingData({
+                                        ...onboardingData,
+                                        emergencyContact: {
+                                          ...onboardingData.emergencyContact,
+                                          businessName: e.target.value,
+                                        },
+                                      })
+                                    }
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                  />
+                                </div>
+                                <div className="md:col-span-2">
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                                  <input
+                                    type="text"
+                                    value={onboardingData.emergencyContact.address}
+                                    onChange={(e) =>
+                                      setOnboardingData({
+                                        ...onboardingData,
+                                        emergencyContact: {
+                                          ...onboardingData.emergencyContact,
+                                          address: e.target.value,
+                                        },
+                                      })
+                                    }
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                                  <input
+                                    type="tel"
+                                    value={onboardingData.emergencyContact.phoneNumber}
+                                    onChange={(e) =>
+                                      setOnboardingData({
+                                        ...onboardingData,
+                                        emergencyContact: {
+                                          ...onboardingData.emergencyContact,
+                                          phoneNumber: e.target.value,
+                                        },
+                                      })
+                                    }
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                  <input
+                                    type="email"
+                                    value={onboardingData.emergencyContact.email}
+                                    onChange={(e) =>
+                                      setOnboardingData({
+                                        ...onboardingData,
+                                        emergencyContact: { ...onboardingData.emergencyContact, email: e.target.value },
+                                      })
+                                    }
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                  />
+                                </div>
+                                <div className="md:col-span-2">
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                                  <textarea
+                                    value={onboardingData.emergencyContact.notes}
+                                    onChange={(e) =>
+                                      setOnboardingData({
+                                        ...onboardingData,
+                                        emergencyContact: { ...onboardingData.emergencyContact, notes: e.target.value },
+                                      })
+                                    }
+                                    rows={3}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                  />
+                                </div>
+                              </div>
                             </div>
-                            <div className="md:col-span-2">
-                              <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                              <input
-                                type="text"
-                                value={onboardingData.emergencyContact.address}
-                                onChange={(e) =>
-                                  setOnboardingData({
-                                    ...onboardingData,
-                                    emergencyContact: { ...onboardingData.emergencyContact, address: e.target.value },
-                                  })
-                                }
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                              <input
-                                type="tel"
-                                value={onboardingData.emergencyContact.phoneNumber}
-                                onChange={(e) =>
-                                  setOnboardingData({
-                                    ...onboardingData,
-                                    emergencyContact: {
-                                      ...onboardingData.emergencyContact,
-                                      phoneNumber: e.target.value,
-                                    },
-                                  })
-                                }
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                              <input
-                                type="email"
-                                value={onboardingData.emergencyContact.email}
-                                onChange={(e) =>
-                                  setOnboardingData({
-                                    ...onboardingData,
-                                    emergencyContact: { ...onboardingData.emergencyContact, email: e.target.value },
-                                  })
-                                }
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                              />
-                            </div>
-                            <div className="md:col-span-2">
-                              <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
-                              <textarea
-                                value={onboardingData.emergencyContact.notes}
-                                onChange={(e) =>
-                                  setOnboardingData({
-                                    ...onboardingData,
-                                    emergencyContact: { ...onboardingData.emergencyContact, notes: e.target.value },
-                                  })
-                                }
-                                rows={3}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                              />
-                            </div>
-                          </div>
+                          )}
                         </div>
                       </div>
                     )}
