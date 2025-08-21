@@ -1097,17 +1097,19 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-500">Pet Count</p>
-                      <p className="text-gray-900">{customerData?.supporting_details?.pets?.count || 0}</p>
+                      <p className="text-gray-900">{customerData?.pets?.length || 0}</p>
                     </div>
                   </div>
-                  {customerData?.supporting_details?.pets?.details && (
+                  {customerData?.pets && customerData?.pets.length > 0 && (
                     <div className="mt-4">
                       <p className="text-sm font-medium text-gray-500 mb-2">Pet Details</p>
                       <div className="space-y-2">
-                        {customerData.supporting_details.pets.details.map((pet: any, index: number) => (
+                        {customerData.pets.map((pet: any, index: number) => (
                           <div key={index} className="bg-white p-3 rounded border">
-                            <p className="font-medium">{pet.name || "Unnamed Pet"}</p>
-                            <p className="text-sm text-gray-600">{pet.type || "Type not specified"}</p>
+                            <p className="font-medium">{pet.pet_name || "Unnamed Pet"}</p>
+                            <p className="text-sm text-gray-600">
+                              {pet.pet_type || "Type not specified"} {pet.breed_name ? `• ${pet.breed_name}` : ""}
+                            </p>
                           </div>
                         ))}
                       </div>
