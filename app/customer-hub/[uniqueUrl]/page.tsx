@@ -1177,9 +1177,11 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
               {selectedOnboardingSubSection === "policy-documentation" && (
                 <div>
                   <h3 className="text-xl font-semibold mb-4">Review and Sign Policies</h3>
+                  {console.log("[v0] Rendering policy documents:", policyDocuments)}
                   <div className="space-y-4 mb-6">
                     {policyDocuments.map((doc: any, index: number) => (
                       <div key={doc.policy_id || index} className="border border-gray-200 rounded-lg p-4">
+                        {console.log("[v0] Rendering document:", doc)}
                         <div className="flex items-center justify-between mb-3">
                           <h4 className="font-medium text-lg">{doc.name}</h4>
                           <a
@@ -2181,6 +2183,8 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                           }
 
                                           const documents = await response.json()
+                                          console.log("[v0] Policy documents received:", documents)
+                                          console.log("[v0] Policy documents length:", documents?.length)
                                           setPolicyDocuments(documents)
                                           setShowOnboardingForm("policy-documentation")
                                         } catch (error) {
