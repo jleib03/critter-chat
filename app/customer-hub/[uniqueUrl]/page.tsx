@@ -1188,7 +1188,10 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                       <button
                         onClick={async () => {
                           try {
-                            const response = await fetch("/api/webhook", {
+                            const webhookUrl = getWebhookEndpoint("CUSTOMER_HUB")
+                            logWebhookUsage("CUSTOMER_HUB", "onboarding_policy_documentation")
+
+                            const response = await fetch(webhookUrl, {
                               method: "POST",
                               headers: { "Content-Type": "application/json" },
                               body: JSON.stringify({
@@ -2082,7 +2085,10 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                     <button
                                       onClick={async () => {
                                         try {
-                                          const response = await fetch("/api/webhook", {
+                                          const webhookUrl = getWebhookEndpoint("CUSTOMER_HUB")
+                                          logWebhookUsage("CUSTOMER_HUB", "onboarding_policy_documentation")
+
+                                          const response = await fetch(webhookUrl, {
                                             method: "POST",
                                             headers: { "Content-Type": "application/json" },
                                             body: JSON.stringify({
