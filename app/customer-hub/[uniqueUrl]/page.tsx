@@ -215,6 +215,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
       notes: "",
     },
     pets: [] as any[],
+    policyAcknowledgments: {} as any,
   })
 
   useEffect(() => {
@@ -2349,7 +2350,32 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                     {onboardingStep === 2 && (
                       <div className="space-y-6">
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Pet Information</h3>
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold text-gray-900">Pet Information</h3>
+                            <button
+                              onClick={() => {
+                                // Add new pet functionality
+                                const newPet = {
+                                  name: "",
+                                  pet_type: "",
+                                  breed_name: "",
+                                  birthdate: "",
+                                  sex: "",
+                                  spayed_neutered: "",
+                                  weight: "",
+                                  chip_id: "",
+                                  gotcha_date: "",
+                                }
+                                setOnboardingData({
+                                  ...onboardingData,
+                                  pets: [...onboardingData.pets, newPet],
+                                })
+                              }}
+                              className="px-3 py-1 bg-[#E75837] text-white text-sm rounded-lg hover:bg-[#E75837]/90"
+                            >
+                              + Add New Pet
+                            </button>
+                          </div>
                           <p className="text-gray-600 mb-4">
                             Review and manage your pets. This information helps us provide better care.
                           </p>
@@ -2358,18 +2384,71 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                               {onboardingData.pets.map((pet: any, index: number) => (
                                 <div key={index} className="bg-gray-50 p-4 rounded-lg border">
                                   <div className="flex items-center justify-between">
-                                    <div>
-                                      <h4 className="font-medium text-gray-900">{pet.name}</h4>
-                                      <p className="text-sm text-gray-600">
-                                        {pet.pet_type} • {pet.breed_name}
-                                      </p>
-                                      {pet.birthdate && (
-                                        <p className="text-sm text-gray-500">
-                                          Born: {new Date(pet.birthdate).toLocaleDateString()}
-                                        </p>
-                                      )}
+                                    <div className="flex-1">
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <div>
+                                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                                            Pet Name
+                                          </label>
+                                          <input
+                                            type="text"
+                                            value={pet.name || ""}
+                                            onChange={(e) => {
+                                              const updatedPets = [...onboardingData.pets]
+                                              updatedPets[index] = { ...updatedPets[index], name: e.target.value }
+                                              setOnboardingData({ ...onboardingData, pets: updatedPets })
+                                            }}
+                                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#E75837] focus:border-transparent"
+                                            placeholder="Enter pet name"
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                                            Type & Breed
+                                          </label>
+                                          <div className="flex space-x-2">
+                                            <input
+                                              type="text"
+                                              value={pet.pet_type || ""}
+                                              onChange={(e) => {
+                                                const updatedPets = [...onboardingData.pets]
+                                                updatedPets[index] = { ...updatedPets[index], pet_type: e.target.value }
+                                                setOnboardingData({ ...onboardingData, pets: updatedPets })
+                                              }}
+                                              className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#E75837] focus:border-transparent"
+                                              placeholder="Type"
+                                            />
+                                            <input
+                                              type="text"
+                                              value={pet.breed_name || ""}
+                                              onChange={(e) => {
+                                                const updatedPets = [...onboardingData.pets]
+                                                updatedPets[index] = {
+                                                  ...updatedPets[index],
+                                                  breed_name: e.target.value,
+                                                }
+                                                setOnboardingData({ ...onboardingData, pets: updatedPets })
+                                              }}
+                                              className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#E75837] focus:border-transparent"
+                                              placeholder="Breed"
+                                            />
+                                          </div>
+                                        </div>
+                                      </div>
                                     </div>
-                                    <div className="text-sm text-green-600 font-medium">✓ Added</div>
+                                    <div className="ml-4 flex items-center space-x-2">
+                                      <button
+                                        onClick={() => {
+                                          const updatedPets = onboardingData.pets.filter(
+                                            (_: any, i: number) => i !== index,
+                                          )
+                                          setOnboardingData({ ...onboardingData, pets: updatedPets })
+                                        }}
+                                        className="text-red-500 hover:text-red-700 text-sm"
+                                      >
+                                        Remove
+                                      </button>
+                                    </div>
                                   </div>
                                 </div>
                               ))}
@@ -2377,7 +2456,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                           ) : (
                             <div className="bg-gray-50 p-4 rounded-lg">
                               <p className="text-sm text-gray-600">
-                                No pets found. You can add pets after completing onboarding.
+                                No pets found. Click "Add New Pet" to add your first pet.
                               </p>
                             </div>
                           )}
@@ -2389,7 +2468,19 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                     {onboardingStep === 3 && (
                       <div className="space-y-6">
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Emergency Contact</h3>
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold text-gray-900">Emergency Contact</h3>
+                            <button
+                              onClick={() => {
+                                // For now, we'll focus on the primary emergency contact
+                                // This could be expanded to support multiple contacts
+                              }}
+                              className="px-3 py-1 bg-gray-200 text-gray-600 text-sm rounded-lg hover:bg-gray-300"
+                              disabled
+                            >
+                              + Add Another Contact
+                            </button>
+                          </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-2">Contact Name</label>
@@ -2507,11 +2598,31 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                       <p className="text-sm text-gray-600">Policy ID: {doc.policy_id}</p>
                                     </div>
                                     <div className="flex items-center space-x-3">
-                                      <button className="text-[#E75837] hover:text-[#E75837]/80 text-sm font-medium">
+                                      <button
+                                        onClick={() => {
+                                          // Open document for viewing
+                                          if (doc.document_filename) {
+                                            window.open(`/api/documents/${doc.document_filename}`, "_blank")
+                                          }
+                                        }}
+                                        className="text-[#E75837] hover:text-[#E75837]/80 text-sm font-medium"
+                                      >
                                         View Document
                                       </button>
                                       <label className="flex items-center">
-                                        <input type="checkbox" className="mr-2" />
+                                        <input
+                                          type="checkbox"
+                                          className="mr-2"
+                                          onChange={(e) => {
+                                            // Track policy acknowledgments
+                                            const updatedAcknowledgments = { ...onboardingData.policyAcknowledgments }
+                                            updatedAcknowledgments[doc.policy_id] = e.target.checked
+                                            setOnboardingData({
+                                              ...onboardingData,
+                                              policyAcknowledgments: updatedAcknowledgments,
+                                            })
+                                          }}
+                                        />
                                         <span className="text-sm">I acknowledge and agree</span>
                                       </label>
                                     </div>
