@@ -28,6 +28,7 @@ import {
   AlertTriangle,
   Scale,
   Cookie,
+  CheckCircle,
 } from "lucide-react"
 import { getWebhookEndpoint, logWebhookUsage } from "../../../types/webhook-endpoints"
 
@@ -157,16 +158,16 @@ interface CustomerData {
 }
 
 export default function CustomerHub({ params }: { params: { uniqueUrl: string } }) {
-  const [step, setStep] = useState<"email" | "code" | "data">("email")
+  const [activeTab, setActiveTab] = useState<"pets" | "appointments" | "invoices" | "onboarding">("pets")
   const [email, setEmail] = useState("")
   const [code, setCode] = useState("")
   const [error, setError] = useState("")
   const [customerData, setCustomerData] = useState<CustomerData | null>(null)
-  const [activeTab, setActiveTab] = useState<"pets" | "appointments" | "invoices">("pets")
   const [expandedPet, setExpandedPet] = useState<string | null>(null)
   const [selectedPetSection, setSelectedPetSection] = useState<string>("general")
   const [currentDate, setCurrentDate] = useState(new Date())
   const [appointmentView, setAppointmentView] = useState<"calendar" | "list">("calendar")
+  const [step, setStep] = useState<"email" | "code" | "data">("email")
 
   const router = useRouter()
   const uniqueUrl = params.uniqueUrl as string
@@ -176,9 +177,17 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
   const [isLoading, setIsLoading] = useState(false)
   const [professionalName, setProfessionalName] = useState("")
 
-  const [selectedHealthSubSection, setSelectedHealthSubSection] = useState("medications")
-  const [selectedFoodSubSection, setSelectedFoodSubSection] = useState("food")
-  const [selectedOnboardingSubSection, setSelectedOnboardingSubSection] = useState("user-information")
+  const [selectedSection, setSelectedSection] = useState<
+    "general" | "health" | "food" | "vaccine-overview" | "care-plan-report"
+  >("general")
+  const [selectedHealthSubSection, setSelectedHealthTab] = useState<
+    "medications" | "conditions" | "allergies" | "weight"
+  >("medications")
+  const [selectedFoodSubSection, setSelectedFoodTab] = useState<"food" | "treats">("food")
+
+  const [selectedOnboardingSubSection, setSelectedOnboardingSection] = useState<
+    "user-information" | "pets" | "emergency-contact" | "policy-documentation"
+  >("user-information")
 
   const [showCarePlan, setShowCarePlan] = useState<string | null>(null)
 
@@ -643,7 +652,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
             <div className="border-b border-gray-200">
               <nav className="flex space-x-8">
                 <button
-                  onClick={() => setSelectedHealthSubSection("medications")}
+                  onClick={() => setSelectedHealthTab("medications")}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
                     selectedHealthSubSection === "medications"
                       ? "border-[#E75837] text-[#E75837]"
@@ -653,7 +662,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                   Medications
                 </button>
                 <button
-                  onClick={() => setSelectedHealthSubSection("conditions")}
+                  onClick={() => setSelectedHealthTab("conditions")}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
                     selectedHealthSubSection === "conditions"
                       ? "border-[#E75837] text-[#E75837]"
@@ -663,7 +672,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                   Conditions
                 </button>
                 <button
-                  onClick={() => setSelectedHealthSubSection("allergies")}
+                  onClick={() => setSelectedHealthTab("allergies")}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
                     selectedHealthSubSection === "allergies"
                       ? "border-[#E75837] text-[#E75837]"
@@ -673,7 +682,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                   Allergies
                 </button>
                 <button
-                  onClick={() => setSelectedHealthSubSection("weight")}
+                  onClick={() => setSelectedHealthTab("weight")}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
                     selectedHealthSubSection === "weight"
                       ? "border-[#E75837] text-[#E75837]"
@@ -809,7 +818,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
             <div className="border-b border-gray-200">
               <nav className="flex space-x-8">
                 <button
-                  onClick={() => setSelectedFoodSubSection("food")}
+                  onClick={() => setSelectedFoodTab("food")}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
                     selectedFoodSubSection === "food"
                       ? "border-[#E75837] text-[#E75837]"
@@ -819,7 +828,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                   Food
                 </button>
                 <button
-                  onClick={() => setSelectedFoodSubSection("treats")}
+                  onClick={() => setSelectedFoodTab("treats")}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
                     selectedFoodSubSection === "treats"
                       ? "border-[#E75837] text-[#E75837]"
@@ -1009,7 +1018,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
             <div className="border-b border-gray-200">
               <nav className="flex space-x-8">
                 <button
-                  onClick={() => setSelectedOnboardingSubSection("user-information")}
+                  onClick={() => setSelectedOnboardingSection("user-information")}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
                     selectedOnboardingSubSection === "user-information"
                       ? "border-[#E75837] text-[#E75837]"
@@ -1019,7 +1028,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                   User Information
                 </button>
                 <button
-                  onClick={() => setSelectedOnboardingSubSection("pets")}
+                  onClick={() => setSelectedOnboardingSection("pets")}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
                     selectedOnboardingSubSection === "pets"
                       ? "border-[#E75837] text-[#E75837]"
@@ -1029,7 +1038,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                   Pets
                 </button>
                 <button
-                  onClick={() => setSelectedOnboardingSubSection("emergency-contact")}
+                  onClick={() => setSelectedOnboardingSection("emergency-contact")}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
                     selectedOnboardingSubSection === "emergency-contact"
                       ? "border-[#E75837] text-[#E75837]"
@@ -1039,7 +1048,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                   Emergency Contact
                 </button>
                 <button
-                  onClick={() => setSelectedOnboardingSubSection("policy-documentation")}
+                  onClick={() => setSelectedOnboardingSection("policy-documentation")}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
                     selectedOnboardingSubSection === "policy-documentation"
                       ? "border-[#E75837] text-[#E75837]"
@@ -1242,7 +1251,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
-                          d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM7 3H5a2 2 0 00-2 2v12a4 4 0 004 4h2a2 2 0 002-2V5a2 2 0 00-2-2z"
+                          d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 4 0 01-4 4zM7 3H5a2 2 0 00-2 2v12a4 4 0 004 4h2a2 2 0 002-2V5a2 2 0 00-2-2z"
                         />
                       </svg>
                       Grooming Schedule
@@ -1498,6 +1507,19 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                       Invoices
                     </div>
                   </button>
+                  <button
+                    onClick={() => setActiveTab("onboarding")}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                      activeTab === "onboarding"
+                        ? "border-[#E75837] text-[#E75837]"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4" />
+                      Onboarding
+                    </div>
+                  </button>
                 </nav>
               </div>
 
@@ -1549,9 +1571,9 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                   <div className="w-48 bg-white border-r border-gray-200 p-4">
                                     <nav className="space-y-2">
                                       <button
-                                        onClick={() => setSelectedPetSection("general")}
+                                        onClick={() => setSelectedSection("general")}
                                         className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
-                                          selectedPetSection === "general"
+                                          selectedSection === "general"
                                             ? "bg-[#E75837] text-white"
                                             : "text-gray-700 hover:bg-gray-100"
                                         }`}
@@ -1559,9 +1581,9 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                         General
                                       </button>
                                       <button
-                                        onClick={() => setSelectedPetSection("health")}
+                                        onClick={() => setSelectedSection("health")}
                                         className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
-                                          selectedPetSection === "health"
+                                          selectedSection === "health"
                                             ? "bg-[#E75837] text-white"
                                             : "text-gray-700 hover:bg-gray-100"
                                         }`}
@@ -1569,9 +1591,9 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                         Health
                                       </button>
                                       <button
-                                        onClick={() => setSelectedPetSection("food")}
+                                        onClick={() => setSelectedSection("food")}
                                         className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
-                                          selectedPetSection === "food"
+                                          selectedSection === "food"
                                             ? "bg-[#E75837] text-white"
                                             : "text-gray-700 hover:bg-gray-100"
                                         }`}
@@ -1579,9 +1601,9 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                         Food
                                       </button>
                                       <button
-                                        onClick={() => setSelectedPetSection("vaccine-overview")}
+                                        onClick={() => setSelectedSection("vaccine-overview")}
                                         className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
-                                          selectedPetSection === "vaccine-overview"
+                                          selectedSection === "vaccine-overview"
                                             ? "bg-[#E75837] text-white"
                                             : "text-gray-700 hover:bg-gray-100"
                                         }`}
@@ -1589,24 +1611,14 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                         Vaccine Overview
                                       </button>
                                       <button
-                                        onClick={() => setSelectedPetSection("care-plan-report")}
+                                        onClick={() => setSelectedSection("care-plan-report")}
                                         className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
-                                          selectedPetSection === "care-plan-report"
+                                          selectedSection === "care-plan-report"
                                             ? "bg-[#E75837] text-white"
                                             : "text-gray-700 hover:bg-gray-100"
                                         }`}
                                       >
                                         Care Plan Report
-                                      </button>
-                                      <button
-                                        onClick={() => setSelectedPetSection("onboarding")}
-                                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
-                                          selectedPetSection === "onboarding"
-                                            ? "bg-[#E75837] text-white"
-                                            : "text-gray-700 hover:bg-gray-100"
-                                        }`}
-                                      >
-                                        Onboarding
                                       </button>
                                     </nav>
                                   </div>
@@ -1615,15 +1627,15 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                   <div className="flex-1 p-6">
                                     <div className="flex items-center justify-between mb-6">
                                       <h3 className="text-xl font-bold text-gray-900 font-header capitalize">
-                                        {selectedPetSection === "care-plan-report"
+                                        {selectedSection === "care-plan-report"
                                           ? "Care Plan Report"
-                                          : selectedPetSection === "vaccine-overview"
+                                          : selectedSection === "vaccine-overview"
                                             ? "Vaccine Overview"
-                                            : `${selectedPetSection} Information`}
+                                            : `${selectedSection} Information`}
                                       </h3>
                                     </div>
 
-                                    {renderPetProfileSection(pet, selectedPetSection)}
+                                    {renderPetProfileSection(pet, selectedSection)}
                                   </div>
                                 </div>
                               </div>
@@ -1888,6 +1900,137 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                       <div className="text-center py-12">
                         <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                         <p className="text-gray-600 font-body text-xl">No invoices found</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === "onboarding" && (
+                  <div>
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-2xl font-bold text-gray-900 font-header flex items-center gap-3">
+                        <CheckCircle className="w-8 h-8 text-[#E75837]" />
+                        Onboarding Status
+                      </h2>
+                    </div>
+
+                    {customerData.onboarding_complete !== undefined ? (
+                      <div className="space-y-4">
+                        <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="text-lg font-bold text-gray-900 font-body">Onboarding Progress</h3>
+                              <p className="text-gray-600 font-body">
+                                {customerData.onboarding_complete
+                                  ? "You've completed the onboarding process!"
+                                  : "Complete the steps below to finish onboarding."}
+                              </p>
+                            </div>
+                            <div>
+                              {customerData.onboarding_complete ? (
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                  Complete
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                                  In Progress
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
+                          <h3 className="text-lg font-bold text-gray-900 font-body mb-4">Required Steps</h3>
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h4 className="text-md font-semibold text-gray-900 font-body">
+                                  {customerData.criteria_status?.personal_info_complete ? "✅" : "☐"} Complete Personal
+                                  Information
+                                </h4>
+                                <p className="text-gray-600 font-body">Provide your basic contact details.</p>
+                              </div>
+                              <div>
+                                {customerData.criteria_status?.personal_info_complete ? (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Complete
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    Incomplete
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h4 className="text-md font-semibold text-gray-900 font-body">
+                                  {customerData.criteria_status?.pets_created ? "✅" : "☐"} Add Your Pets
+                                </h4>
+                                <p className="text-gray-600 font-body">Tell us about your furry friends.</p>
+                              </div>
+                              <div>
+                                {customerData.criteria_status?.pets_created ? (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Complete
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    Incomplete
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h4 className="text-md font-semibold text-gray-900 font-body">
+                                  {customerData.criteria_status?.emergency_contacts_added ? "✅" : "☐"} Add Emergency
+                                  Contact
+                                </h4>
+                                <p className="text-gray-600 font-body">Provide an emergency contact.</p>
+                              </div>
+                              <div>
+                                {customerData.criteria_status?.emergency_contacts_added ? (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Complete
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    Incomplete
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h4 className="text-md font-semibold text-gray-900 font-body">
+                                  {customerData.criteria_status?.policies_signed ? "✅" : "☐"} Sign Policies
+                                </h4>
+                                <p className="text-gray-600 font-body">Review and sign our policies.</p>
+                              </div>
+                              <div>
+                                {customerData.criteria_status?.policies_signed ? (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Complete
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    Incomplete
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-12">
+                        <CheckCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <p className="text-gray-600 font-body text-xl">No onboarding information found</p>
                       </div>
                     )}
                   </div>
