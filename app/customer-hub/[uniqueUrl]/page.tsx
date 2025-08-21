@@ -5,35 +5,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import {
-  ArrowLeft,
-  Mail,
-  User,
-  Calendar,
-  Heart,
-  Loader2,
-  Dog,
-  Cat,
-  Fish,
-  Bird,
-  ChevronLeft,
-  ChevronRight,
-  Plus,
-  Shield,
-  FileText,
-  ChevronDown,
-  ChevronUp,
-  Pill,
-  Utensils,
-  AlertTriangle,
-  Scale,
-  Cookie,
-  CheckCircle,
-  X,
-  PlusCircle,
-  MinusCircle,
-  AlertCircle,
-} from "lucide-react"
+import { ArrowLeft, Mail, User, Calendar, Heart, Loader2, Dog, Cat, Fish, Bird, ChevronLeft, ChevronRight, Plus, Shield, FileText, ChevronDown, ChevronUp, Pill, Utensils, AlertTriangle, Scale, Cookie, CheckCircle, X, PlusCircle, MinusCircle, AlertCircle } from 'lucide-react'
 import { getWebhookEndpoint, logWebhookUsage } from "../../../types/webhook-endpoints"
 
 interface Pet {
@@ -1382,12 +1354,19 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
 
       if (response.ok) {
         const data = await response.json()
+
         console.log("[v0] Onboarding data received:", data)
 
         const picklists = data.filter((item: any) => item.table_name && item.picklist_type)
         setPicklistData(picklists)
 
-        const policies = data.filter((item: any) => item.name && item.policy_id && item.signed_url)
+        let policies: any[] = []
+        data.forEach((item: any) => {
+          if (item.signed_urls && Array.isArray(item.signed_urls)) {
+            policies = [...policies, ...item.signed_urls]
+          }
+        })
+        console.log("[v0] Extracted policy documents:", policies)
         setPolicyDocuments(policies)
 
         // Extract user information
