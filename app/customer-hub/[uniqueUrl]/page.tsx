@@ -194,6 +194,18 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
 
   const [showCarePlan, setShowCarePlan] = useState<string | null>(null)
 
+  const [showOnboardingForm, setShowOnboardingForm] = useState<string | null>(null)
+  const [emergencyContactForm, setEmergencyContactForm] = useState({
+    contact_name: "",
+    business_name: "",
+    address: "",
+    phone_number: "",
+    email: "",
+    notes: "",
+  })
+  const [policyDocuments, setPolicyDocuments] = useState<any[]>([])
+  const [acknowledgedPolicies, setAcknowledgedPolicies] = useState<string[]>([])
+
   useEffect(() => {
     setProfessionalName("Professional") // Placeholder
   }, [uniqueUrl])
@@ -1084,6 +1096,16 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                       </p>
                     </div>
                   </div>
+                  {!customerData?.criteria_status?.personal_info_complete && (
+                    <div className="mt-4">
+                      <button
+                        onClick={() => setShowOnboardingForm("user-information")}
+                        className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium"
+                      >
+                        Start Section
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1115,6 +1137,16 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                       </div>
                     </div>
                   )}
+                  {!customerData?.criteria_status?.pets_created && (
+                    <div className="mt-4">
+                      <button
+                        onClick={() => setShowOnboardingForm("pets")}
+                        className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium"
+                      >
+                        Start Section
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1129,6 +1161,16 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                       </p>
                     </div>
                   </div>
+                  {!customerData?.criteria_status?.emergency_contacts_added && (
+                    <div className="mt-4">
+                      <button
+                        onClick={() => setShowOnboardingForm("emergency-contact")}
+                        className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium"
+                      >
+                        Start Section
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1141,6 +1183,32 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                       <p className="text-gray-900">{customerData?.criteria_status?.policies_signed ? "Yes" : "No"}</p>
                     </div>
                   </div>
+                  {!customerData?.criteria_status?.policies_signed && (
+                    <div className="mt-4">
+                      <button
+                        onClick={async () => {
+                          try {
+                            const response = await fetch("/api/webhook", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                action: "onboarding_get_documents",
+                                unique_url: uniqueUrl,
+                              }),
+                            })
+                            const documents = await response.json()
+                            setPolicyDocuments(documents)
+                            setShowOnboardingForm("policy-documentation")
+                          } catch (error) {
+                            console.error("Error fetching documents:", error)
+                          }
+                        }}
+                        className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium"
+                      >
+                        Start Section
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -2081,6 +2149,214 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
               >
                 Look up different email
               </button>
+            </div>
+          </div>
+        )}
+
+        {showOnboardingForm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              {showOnboardingForm === "emergency-contact" && (
+                <div>
+                  <h3 className="text-xl font-semibold mb-4">Add Emergency Contact</h3>
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault()
+                      try {
+                        const response = await fetch("/api/webhook", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            action: "customer_hub_onboarding",
+                            unique_url: uniqueUrl,
+                            section: "emergency_contact",
+                            data: emergencyContactForm,
+                          }),
+                        })
+                        if (response.ok) {
+                          setShowOnboardingForm(null)
+                          window.location.reload() // Re-initialize hub
+                        }
+                      } catch (error) {
+                        console.error("Error submitting emergency contact:", error)
+                      }
+                    }}
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
+                        <input
+                          type="text"
+                          value={emergencyContactForm.contact_name}
+                          onChange={(e) =>
+                            setEmergencyContactForm({ ...emergencyContactForm, contact_name: e.target.value })
+                          }
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Business Name</label>
+                        <input
+                          type="text"
+                          value={emergencyContactForm.business_name}
+                          onChange={(e) =>
+                            setEmergencyContactForm({ ...emergencyContactForm, business_name: e.target.value })
+                          }
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                        <input
+                          type="text"
+                          value={emergencyContactForm.address}
+                          onChange={(e) =>
+                            setEmergencyContactForm({ ...emergencyContactForm, address: e.target.value })
+                          }
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                        <input
+                          type="tel"
+                          value={emergencyContactForm.phone_number}
+                          onChange={(e) =>
+                            setEmergencyContactForm({ ...emergencyContactForm, phone_number: e.target.value })
+                          }
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input
+                          type="email"
+                          value={emergencyContactForm.email}
+                          onChange={(e) => setEmergencyContactForm({ ...emergencyContactForm, email: e.target.value })}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                        <textarea
+                          value={emergencyContactForm.notes}
+                          onChange={(e) => setEmergencyContactForm({ ...emergencyContactForm, notes: e.target.value })}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-3 mt-6">
+                      <button
+                        type="button"
+                        onClick={() => setShowOnboardingForm(null)}
+                        className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                      >
+                        Save Contact
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {showOnboardingForm === "policy-documentation" && (
+                <div>
+                  <h3 className="text-xl font-semibold mb-4">Review and Sign Policies</h3>
+                  <div className="space-y-4 mb-6">
+                    {policyDocuments.map((doc: any, index: number) => (
+                      <div key={index} className="border border-gray-200 rounded-lg p-4">
+                        <h4 className="font-medium mb-2">{doc.title}</h4>
+                        <div className="text-sm text-gray-600 mb-3" dangerouslySetInnerHTML={{ __html: doc.content }} />
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={acknowledgedPolicies.includes(doc.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setAcknowledgedPolicies([...acknowledgedPolicies, doc.id])
+                              } else {
+                                setAcknowledgedPolicies(acknowledgedPolicies.filter((id) => id !== doc.id))
+                              }
+                            }}
+                            className="mr-2"
+                          />
+                          <span className="text-sm">I acknowledge and agree to this policy</span>
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-end gap-3">
+                    <button
+                      onClick={() => setShowOnboardingForm(null)}
+                      className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const response = await fetch("/api/webhook", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              action: "customer_hub_onboarding",
+                              unique_url: uniqueUrl,
+                              section: "policies",
+                              data: { acknowledged_policies: acknowledgedPolicies, signed: true },
+                            }),
+                          })
+                          if (response.ok) {
+                            setShowOnboardingForm(null)
+                            window.location.reload() // Re-initialize hub
+                          }
+                        } catch (error) {
+                          console.error("Error submitting policies:", error)
+                        }
+                      }}
+                      disabled={acknowledgedPolicies.length !== policyDocuments.length}
+                      className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Sign Policies
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {(showOnboardingForm === "user-information" || showOnboardingForm === "pets") && (
+                <div>
+                  <h3 className="text-xl font-semibold mb-4">
+                    {showOnboardingForm === "user-information"
+                      ? "Complete Personal Information"
+                      : "Add Pet Information"}
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    This section will use similar forms to the existing pet management functionality. Implementation can
+                    reuse existing components from the pet onboarding flow.
+                  </p>
+                  <div className="flex justify-end gap-3">
+                    <button
+                      onClick={() => setShowOnboardingForm(null)}
+                      className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => setShowOnboardingForm(null)}
+                      className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                    >
+                      Continue
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
