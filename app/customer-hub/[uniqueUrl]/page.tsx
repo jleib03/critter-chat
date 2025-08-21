@@ -1192,7 +1192,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                               method: "POST",
                               headers: { "Content-Type": "application/json" },
                               body: JSON.stringify({
-                                action: "onboarding_get_documents",
+                                action: "onboarding_policy_documentation",
                                 unique_url: uniqueUrl,
                               }),
                             })
@@ -2153,7 +2153,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                             method: "POST",
                                             headers: { "Content-Type": "application/json" },
                                             body: JSON.stringify({
-                                              action: "onboarding_get_documents",
+                                              action: "onboarding_policy_documentation",
                                               unique_url: uniqueUrl,
                                             }),
                                           })
