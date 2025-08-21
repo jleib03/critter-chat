@@ -1387,7 +1387,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
         const picklists = data.filter((item: any) => item.table_name && item.picklist_type)
         setPicklistData(picklists)
 
-        const policies = data.filter((item: any) => item.name && item.policy_id && item.document_filename)
+        const policies = data.filter((item: any) => item.name && item.policy_id && item.signed_url)
         setPolicyDocuments(policies)
 
         // Extract user information
