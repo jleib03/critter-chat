@@ -1623,9 +1623,9 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                             key={pet.pet_id}
                             className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                           >
-                            <button
+                            <div
                               onClick={() => togglePetExpansion(pet.pet_id)}
-                              className="w-full p-6 bg-gradient-to-br from-orange-50 to-pink-50 border-b border-orange-200 hover:from-orange-100 hover:to-pink-100 transition-colors"
+                              className="w-full p-6 bg-gradient-to-br from-orange-50 to-pink-50 border-b border-orange-200 hover:from-orange-100 hover:to-pink-100 transition-colors cursor-pointer"
                             >
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-4">
@@ -1637,95 +1637,15 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                     <p className="text-gray-600 body-font text-sm">{pet.pet_type}</p>
                                   </div>
                                 </div>
-                                <button
-                                  onClick={() => togglePetExpansion(pet.pet_id)}
-                                  className="text-[#E75837] hover:text-[#E75837]/80 transition-colors"
-                                >
+                                <div className="text-[#E75837] hover:text-[#E75837]/80 transition-colors">
                                   {expandedPet === pet.pet_id ? (
                                     <ChevronUp className="h-5 w-5" />
                                   ) : (
                                     <ChevronDown className="h-5 w-5" />
                                   )}
-                                </button>
-                              </div>
-                            </button>
-
-                            {expandedPet === pet.pet_id && (
-                              <div className="bg-gray-50">
-                                <div className="flex">
-                                  {/* Sidebar Navigation */}
-                                  <div className="w-48 bg-white border-r border-gray-200 p-4">
-                                    <nav className="space-y-2">
-                                      <button
-                                        onClick={() => setSelectedSection("general")}
-                                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
-                                          selectedSection === "general"
-                                            ? "bg-[#E75837] text-white"
-                                            : "text-gray-700 hover:bg-gray-100"
-                                        }`}
-                                      >
-                                        General
-                                      </button>
-                                      <button
-                                        onClick={() => setSelectedSection("health")}
-                                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
-                                          selectedSection === "health"
-                                            ? "bg-[#E75837] text-white"
-                                            : "text-gray-700 hover:bg-gray-100"
-                                        }`}
-                                      >
-                                        Health
-                                      </button>
-                                      <button
-                                        onClick={() => setSelectedSection("food")}
-                                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
-                                          selectedSection === "food"
-                                            ? "bg-[#E75837] text-white"
-                                            : "text-gray-700 hover:bg-gray-100"
-                                        }`}
-                                      >
-                                        Food
-                                      </button>
-                                      <button
-                                        onClick={() => setSelectedSection("vaccine-overview")}
-                                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
-                                          selectedSection === "vaccine-overview"
-                                            ? "bg-[#E75837] text-white"
-                                            : "text-gray-700 hover:bg-gray-100"
-                                        }`}
-                                      >
-                                        Vaccine Overview
-                                      </button>
-                                      <button
-                                        onClick={() => setSelectedSection("care-plan-report")}
-                                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
-                                          selectedSection === "care-plan-report"
-                                            ? "bg-[#E75837] text-white"
-                                            : "text-gray-700 hover:bg-gray-100"
-                                        }`}
-                                      >
-                                        Care Plan Report
-                                      </button>
-                                    </nav>
-                                  </div>
-
-                                  {/* Main Content */}
-                                  <div className="flex-1 p-6">
-                                    <div className="flex items-center justify-between mb-6">
-                                      <h3 className="text-xl font-bold text-gray-900 font-header capitalize">
-                                        {selectedSection === "care-plan-report"
-                                          ? "Care Plan Report"
-                                          : selectedSection === "vaccine-overview"
-                                            ? "Vaccine Overview"
-                                            : `${selectedSection} Information`}
-                                      </h3>
-                                    </div>
-
-                                    {renderPetProfileSection(pet, selectedSection)}
-                                  </div>
                                 </div>
                               </div>
-                            )}
+                            </div>
                           </div>
                         ))}
                       </div>
