@@ -5,7 +5,35 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Mail, User, Calendar, Heart, Loader2, Dog, Cat, Fish, Bird, ChevronLeft, ChevronRight, Plus, Shield, FileText, ChevronDown, ChevronUp, Pill, Utensils, AlertTriangle, Scale, Cookie, CheckCircle, X, PlusCircle, MinusCircle, AlertCircle } from 'lucide-react'
+import {
+  ArrowLeft,
+  Mail,
+  User,
+  Calendar,
+  Heart,
+  Loader2,
+  Dog,
+  Cat,
+  Fish,
+  Bird,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Shield,
+  FileText,
+  ChevronDown,
+  ChevronUp,
+  Pill,
+  Utensils,
+  AlertTriangle,
+  Scale,
+  Cookie,
+  CheckCircle,
+  X,
+  PlusCircle,
+  MinusCircle,
+  AlertCircle,
+} from "lucide-react"
 import { getWebhookEndpoint, logWebhookUsage } from "../../../types/webhook-endpoints"
 
 interface Pet {
@@ -195,6 +223,10 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
     policyAcknowledgments: {} as any,
     signature: "",
   })
+
+  const [originalOnboardingData, setOriginalOnboardingData] = useState<any>(null)
+
+  const [loadingOnboardingData, setLoadingOnboardingData] = useState(false)
 
   useEffect(() => {
     setProfessionalName("Professional") // Placeholder
@@ -1331,10 +1363,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
   }
 
   const handleCompleteOnboarding = async () => {
-    setOnboardingLoading(true)
-    setShowOnboardingModal(true)
-    setOnboardingStep(1)
-
+    setLoadingOnboardingData(true)
     try {
       const webhookUrl = getWebhookEndpoint("CUSTOMER_HUB")
       logWebhookUsage("CUSTOMER_HUB", "run_onboarding")
@@ -1354,116 +1383,163 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
 
       if (response.ok) {
         const data = await response.json()
-
         console.log("[v0] Onboarding data received:", data)
 
-        const picklists = data.filter((item: any) => item.table_name && item.picklist_type)
-        setPicklistData(picklists)
-
-        let policies: any[] = []
-        data.forEach((item: any) => {
-          if (item.signed_urls && Array.isArray(item.signed_urls)) {
-            policies = [...policies, ...item.signed_urls]
-          }
-        })
-        console.log("[v0] Extracted policy documents:", policies)
-        setPolicyDocuments(policies)
-
-        // Extract user information
-        const userInfo = data.find((item: any) => item.email && item.user_type)
-        if (userInfo?.supporting_details?.personal_info) {
-          setOnboardingData((prev) => ({
-            ...prev,
-            personalInfo: {
-              firstName: userInfo.supporting_details.personal_info.first_name || "",
-              lastName: userInfo.supporting_details.personal_info.last_name || "",
-              email: userInfo.supporting_details.personal_info.email || "",
-              phone: "", // Phone not in current data structure
-            },
-          }))
-        }
+        // Store original data for comparison during submission
+        setOriginalOnboardingData(JSON.parse(JSON.stringify(data)))
 
         // Extract pets data
-        const petsData = data.filter((item: any) => item.name && item.pet_type)
-        setOnboardingData((prev) => ({
-          ...prev,
-          pets: petsData,
-        }))
+        const petsData = data.filter((item: any) => item.pet_id && item.pet_name)
+        console.log("[v0] Pets data:", petsData)
 
-        // Extract emergency contacts from pets data
-        const emergencyContacts = petsData.flatMap(
-          (pet: any) => pet.contacts?.filter((contact: any) => contact.contact_type === "Emergency Contact") || [],
-        )
-        if (emergencyContacts.length > 0) {
-          const firstContact = emergencyContacts[0]
-          setOnboardingData((prev) => ({
-            ...prev,
-            emergencyContact: {
-              contactName: firstContact.contact_name || "",
-              businessName: "",
-              address: "",
-              phoneNumber: "",
-              email: firstContact.email || "",
-              notes: "",
+        // Extract picklist data
+        const picklistData = data.filter((item: any) => item.picklist_type)
+        console.log("[v0] Picklist data:", picklistData)
+        setPicklistData(picklistData)
+
+        // Extract policy documents from signed_urls array
+        const policyDocumentsData = data.find((item: any) => item.signed_urls)?.signed_urls || []
+        console.log("[v0] Policy documents:", policyDocumentsData)
+        setPolicyDocuments(policyDocumentsData)
+
+        // Pre-populate form with existing data
+        if (data.length > 0) {
+          const userData = data.find((item: any) => item.first_name || item.last_name)
+          const emergencyContactData = data.find((item: any) => item.contact_name)
+
+          setOnboardingData({
+            personalInfo: {
+              firstName: userData?.first_name || "",
+              lastName: userData?.last_name || "",
+              email: userData?.email || email,
+              phone: userData?.phone || "",
             },
-          }))
+            emergencyContact: {
+              contactName: emergencyContactData?.contact_name || "",
+              businessName: emergencyContactData?.business_name || "",
+              address: emergencyContactData?.address || "",
+              phoneNumber: emergencyContactData?.phone_number || "",
+              email: emergencyContactData?.email || "",
+              notes: emergencyContactData?.notes || "",
+            },
+            pets: petsData.map((pet: any) => ({
+              id: pet.pet_id,
+              name: pet.pet_name,
+              type: pet.type_id,
+              breed: pet.dog_breed_id || pet.cat_breed_id || pet.bird_breed_id || pet.fish_breed_id || "",
+              sex: pet.sex_id,
+              weight: pet.weight || "",
+              spayedNeutered: pet.spayed_or_neutered || "",
+              birthDate: pet.birthdate || "",
+              chipId: pet.chip_id || "",
+              isExisting: true, // Mark as existing record
+            })),
+            policyAcknowledgments: {},
+            signature: "",
+          })
         }
+
+        setShowOnboardingModal(true)
       }
     } catch (error) {
       console.error("Error fetching onboarding data:", error)
     } finally {
-      setOnboardingLoading(false)
-    }
-  }
-
-  const getPetTypes = () => {
-    return picklistData.filter((item: any) => item.picklist_type === "type")
-  }
-
-  const getBreedsByType = (petType: string) => {
-    console.log("[v0] Getting breeds for pet type:", petType)
-    console.log("[v0] Available picklist data:", picklistData)
-
-    const typeItem = getPetTypes().find((item: any) => item.label === petType)
-    console.log("[v0] Found type item:", typeItem)
-
-    if (!typeItem) return []
-
-    const expectedCategory = typeItem.label
-    console.log("[v0] Looking for category:", expectedCategory)
-
-    const breeds = picklistData.filter(
-      (item: any) => item.picklist_type === "breed" && item.category === expectedCategory,
-    )
-
-    console.log("[v0] Found breeds:", breeds)
-    return breeds
-  }
-
-  const handleOnboardingNext = () => {
-    if (onboardingStep < 4) {
-      setOnboardingStep(onboardingStep + 1)
-    }
-  }
-
-  const handleOnboardingPrev = () => {
-    if (onboardingStep > 1) {
-      setOnboardingStep(onboardingStep - 1)
+      setLoadingOnboardingData(false)
     }
   }
 
   const handleOnboardingSubmit = async () => {
     try {
       const webhookUrl = getWebhookEndpoint("CUSTOMER_HUB")
-      logWebhookUsage("CUSTOMER_HUB", "customer_hub_onboarding")
+      logWebhookUsage("CUSTOMER_HUB", "submit_onboarding")
+
+      // Categorize pets into new vs updated
+      const newPets = onboardingData.pets.filter((pet: any) => !pet.isExisting)
+      const updatedPets = onboardingData.pets.filter((pet: any) => pet.isExisting)
+
+      // Determine if personal info or emergency contact are updates
+      const originalUserData = originalOnboardingData?.find((item: any) => item.first_name || item.last_name)
+      const originalEmergencyData = originalOnboardingData?.find((item: any) => item.contact_name)
+
+      const personalInfoIsUpdate = !!(originalUserData?.first_name || originalUserData?.last_name)
+      const emergencyContactIsUpdate = !!originalEmergencyData?.contact_name
 
       const payload = {
-        action: "customer_hub_onboarding",
+        action: "submit_onboarding",
         unique_url: uniqueUrl,
         customer_email: email,
-        onboarding_data: onboardingData,
+        submission_data: {
+          personal_information: {
+            data: onboardingData.personalInfo,
+            action_type: personalInfoIsUpdate ? "update" : "create",
+            database_fields: {
+              first_name: onboardingData.personalInfo.firstName,
+              last_name: onboardingData.personalInfo.lastName,
+              email: onboardingData.personalInfo.email,
+              phone: onboardingData.personalInfo.phone,
+            },
+          },
+          emergency_contacts: {
+            data: onboardingData.emergencyContact,
+            action_type: emergencyContactIsUpdate ? "update" : "create",
+            database_fields: {
+              contact_name: onboardingData.emergencyContact.contactName,
+              business_name: onboardingData.emergencyContact.businessName,
+              address: onboardingData.emergencyContact.address,
+              phone_number: onboardingData.emergencyContact.phoneNumber,
+              email: onboardingData.emergencyContact.email,
+              notes: onboardingData.emergencyContact.notes,
+            },
+          },
+          pets: {
+            new_records: newPets.map((pet: any) => ({
+              data: pet,
+              action_type: "create",
+              database_fields: {
+                pet_name: pet.name,
+                type_id: pet.type,
+                breed_id: pet.breed,
+                sex_id: pet.sex,
+                weight: pet.weight,
+                spayed_or_neutered: pet.spayedNeutered,
+                birthdate: pet.birthDate,
+                chip_id: pet.chipId,
+              },
+            })),
+            updated_records: updatedPets.map((pet: any) => ({
+              data: pet,
+              action_type: "update",
+              pet_id: pet.id,
+              database_fields: {
+                pet_name: pet.name,
+                type_id: pet.type,
+                breed_id: pet.breed,
+                sex_id: pet.sex,
+                weight: pet.weight,
+                spayed_or_neutered: pet.spayedNeutered,
+                birthdate: pet.birthDate,
+                chip_id: pet.chipId,
+              },
+            })),
+          },
+          policy_acknowledgments: {
+            data: onboardingData.policyAcknowledgments,
+            signature: onboardingData.signature,
+            action_type: "create",
+            database_fields: {
+              policies_signed: true,
+              signature: onboardingData.signature,
+              signed_date: new Date().toISOString(),
+              policy_ids: Object.keys(onboardingData.policyAcknowledgments).filter(
+                (id) => onboardingData.policyAcknowledgments[id],
+              ),
+            },
+          },
+        },
         timestamp: new Date().toISOString(),
       }
+
+      console.log("[v0] Submitting onboarding data:", payload)
 
       const response = await fetch(webhookUrl, {
         method: "POST",
@@ -1472,13 +1548,75 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
       })
 
       if (response.ok) {
+        const updatedData = await response.json()
+        console.log("[v0] Updated onboarding data received:", updatedData)
+
         setShowOnboardingModal(false)
-        // Refresh the customer data
+        // Refresh the customer data to reflect updates
         window.location.reload()
+      } else {
+        console.error("Failed to submit onboarding:", response.statusText)
       }
     } catch (error) {
       console.error("Error submitting onboarding:", error)
     }
+  }
+
+  const getPetTypes = () => {
+    return [
+      { value: "Dog", label: "Dog" },
+      { value: "Cat", label: "Cat" },
+      { value: "Bird", label: "Bird" },
+      { value: "Fish", label: "Fish" },
+      { value: "Other", label: "Other" },
+    ]
+  }
+
+  const getBreedsByType = (petType: string) => {
+    switch (petType) {
+      case "Dog":
+        return [
+          { value: "Labrador Retriever", label: "Labrador Retriever" },
+          { value: "German Shepherd", label: "German Shepherd" },
+          { value: "Golden Retriever", label: "Golden Retriever" },
+          { value: "Bulldog", label: "Bulldog" },
+          { value: "Poodle", label: "Poodle" },
+        ]
+      case "Cat":
+        return [
+          { value: "Maine Coon", label: "Maine Coon" },
+          { value: "Siamese", label: "Siamese" },
+          { value: "Persian", label: "Persian" },
+          { value: "Bengal", label: "Bengal" },
+          { value: "Ragdoll", label: "Ragdoll" },
+        ]
+      case "Bird":
+        return [
+          { value: "Parrot", label: "Parrot" },
+          { value: "Canary", label: "Canary" },
+          { value: "Finch", label: "Finch" },
+          { value: "Cockatiel", label: "Cockatiel" },
+          { value: "Lovebird", label: "Lovebird" },
+        ]
+      case "Fish":
+        return [
+          { value: "Goldfish", label: "Goldfish" },
+          { value: "Betta", label: "Betta" },
+          { value: "Guppy", label: "Guppy" },
+          { value: "Angelfish", label: "Angelfish" },
+          { value: "Molly", label: "Molly" },
+        ]
+      default:
+        return [{ value: "Unknown", label: "Unknown" }]
+    }
+  }
+
+  const handleOnboardingPrev = () => {
+    setOnboardingStep(onboardingStep - 1)
+  }
+
+  const handleOnboardingNext = () => {
+    setOnboardingStep(onboardingStep + 1)
   }
 
   return (
@@ -2142,37 +2280,6 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                               </div>
                               <div>
                                 {customerData.criteria_status?.personal_info_complete ? (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                                    Complete
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                                    Incomplete
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                              <div className="flex-1">
-                                <h4 className="text-md font-semibold text-gray-900 font-body mb-1">Add Your Pets</h4>
-                                <p className="text-gray-600 font-body text-sm mb-2">
-                                  Tell us about your furry friends.
-                                </p>
-                                {customerData.criteria_status?.pets_created &&
-                                  customerData.supporting_details?.pets && (
-                                    <div className="text-xs text-gray-500">
-                                      <p>
-                                        Pets added:{" "}
-                                        {customerData.supporting_details.pets.details
-                                          ?.map((pet: any) => pet.pet_name)
-                                          .join(", ")}
-                                      </p>
-                                    </div>
-                                  )}
-                              </div>
-                              <div>
-                                {customerData.criteria_status?.pets_created ? (
                                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
                                     Complete
                                   </span>
