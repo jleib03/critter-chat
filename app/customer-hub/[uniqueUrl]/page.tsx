@@ -1670,56 +1670,86 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
         return changedPets
       }
 
-      // Analyze emergency contact changes
       const emergencyContactAnalysis = () => {
+        const changedContacts = []
+
+        // Check for new emergency contacts in the emergencyContacts array
+        if (onboardingData.emergencyContacts && onboardingData.emergencyContacts.length > 0) {
+          for (const currentContact of onboardingData.emergencyContacts) {
+            // Skip existing contacts (those with isExisting flag)
+            if (currentContact.isExisting) {
+              continue
+            }
+
+            // This is a new contact if it has data and no isExisting flag
+            if (currentContact.contactName) {
+              changedContacts.push({
+                action: "create",
+                contact_data: {
+                  contact_name: currentContact.contactName,
+                  business_name: currentContact.businessName,
+                  address: currentContact.address,
+                  phone_number: currentContact.phoneNumber,
+                  email: currentContact.email,
+                  notes: currentContact.notes,
+                },
+                database_fields: {
+                  table: "pet_contacts",
+                  primary_key: "id",
+                  fields_to_update: ["contact_name", "business_name", "address", "phone_number", "email", "notes"],
+                },
+              })
+            }
+          }
+        }
+
+        // Also check the single emergencyContact field for backward compatibility
         const originalContact = originalData.emergencyContacts[0] || {}
         const currentContact = onboardingData.emergencyContact
 
-        const contactFieldsToCheck = ["contact_name", "business_name", "address", "phone_number", "email", "notes"]
-        const contactHasChanges = hasChanges(
-          {
-            contact_name: originalContact.contact_name,
-            business_name: originalContact.business_name,
-            address: originalContact.address,
-            phone_number: originalContact.phone_number,
-            email: originalContact.email,
-            notes: originalContact.notes,
-          },
-          {
-            contact_name: currentContact.contactName,
-            business_name: currentContact.businessName,
-            address: currentContact.address,
-            phone_number: currentContact.phoneNumber,
-            email: currentContact.email,
-            notes: currentContact.notes,
-          },
-          contactFieldsToCheck,
-        )
+        if (currentContact.contactName) {
+          const contactFieldsToCheck = ["contact_name", "business_name", "address", "phone_number", "email", "notes"]
+          const contactHasChanges = hasChanges(
+            {
+              contact_name: originalContact.contact_name,
+              business_name: originalContact.business_name,
+              address: originalContact.address,
+              phone_number: originalContact.phone_number,
+              email: originalContact.email,
+              notes: originalContact.notes,
+            },
+            {
+              contact_name: currentContact.contactName,
+              business_name: currentContact.businessName,
+              address: currentContact.address,
+              phone_number: currentContact.phoneNumber,
+              email: currentContact.email,
+              notes: currentContact.notes,
+            },
+            contactFieldsToCheck,
+          )
 
-        if (!contactHasChanges && originalContact.contact_name) {
-          return null // No changes to existing contact
+          if (contactHasChanges || !originalContact.contact_name) {
+            changedContacts.push({
+              action: originalContact.contact_name ? "update" : "create",
+              contact_data: {
+                contact_name: currentContact.contactName,
+                business_name: currentContact.businessName,
+                address: currentContact.address,
+                phone_number: currentContact.phoneNumber,
+                email: currentContact.email,
+                notes: currentContact.notes,
+              },
+              database_fields: {
+                table: "pet_contacts",
+                primary_key: "id",
+                fields_to_update: ["contact_name", "business_name", "address", "phone_number", "email", "notes"],
+              },
+            })
+          }
         }
 
-        if (!currentContact.contactName) {
-          return null // No contact information provided
-        }
-
-        return {
-          action: originalContact.contact_name ? "update" : "create",
-          contact_data: {
-            contact_name: currentContact.contactName,
-            business_name: currentContact.businessName,
-            address: currentContact.address,
-            phone_number: currentContact.phoneNumber,
-            email: currentContact.email,
-            notes: currentContact.notes,
-          },
-          database_fields: {
-            table: "pet_contacts",
-            primary_key: "id",
-            fields_to_update: ["contact_name", "business_name", "address", "phone_number", "email", "notes"],
-          },
-        }
+        return changedContacts
       }
 
       // Build submission analysis with only changed data
@@ -1736,8 +1766,8 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
       }
 
       const emergencyContact = emergencyContactAnalysis()
-      if (emergencyContact) {
-        submissionAnalysis.emergency_contact = emergencyContact
+      if (emergencyContact.length > 0) {
+        submissionAnalysis.emergency_contacts = emergencyContact
       }
 
       // Policy acknowledgments are always new
@@ -1770,7 +1800,11 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
           new_pets: pets.filter((p) => p.action === "create").length,
           updated_pets: pets.filter((p) => p.action === "update").length,
           unchanged_pets: onboardingData.pets.length - pets.length,
-          has_emergency_contact: !!onboardingData.emergencyContact.contactName,
+          has_emergency_contact: !!(
+            onboardingData.emergencyContact.contactName ||
+            (onboardingData.emergencyContacts &&
+              onboardingData.emergencyContacts.some((c) => c.contactName && !c.isExisting))
+          ),
           policies_acknowledged: Object.keys(onboardingData.policyAcknowledgments).length,
           signature_provided: !!onboardingData.signature,
         },
@@ -1790,7 +1824,9 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
 
         if (
           updatedData.status === "onboarding_submitted_successfully" ||
-          updatedData.message === "onboarding_submitted_successfully"
+          updatedData.message === "onboarding_submitted_successfully" ||
+          (Array.isArray(updatedData) &&
+            updatedData.some((item) => item.output === "onboarding_submitted_successfully"))
         ) {
           try {
             console.log("[v0] Sending reinitialize_customer_hub webhook...")
