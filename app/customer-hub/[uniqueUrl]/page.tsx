@@ -32,6 +32,7 @@ import {
   X,
   PlusCircle,
   MinusCircle,
+  AlertCircle,
 } from "lucide-react"
 import { getWebhookEndpoint, logWebhookUsage } from "../../../types/webhook-endpoints"
 
@@ -222,12 +223,6 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
     policyAcknowledgments: {} as any,
     signature: "",
   })
-
-  const [originalOnboardingData, setOriginalOnboardingData] = useState<any>(null)
-
-  const [loadingOnboardingData, setLoadingOnboardingData] = useState(false)
-
-  const [submittingOnboarding, setSubmittingOnboarding] = useState(false)
 
   useEffect(() => {
     setProfessionalName("Professional") // Placeholder
@@ -480,17 +475,21 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
             medication_schedule: petData.medication_schedule || [],
             walk_schedule: petData.walk_schedule || [],
             grooming_schedule: petData.grooming_schedule || [],
-            sleep_instructions: petData.sleep_instructions,
-            play_instructions: petData.play_instructions,
-            general_health_notes: petData.general_health_notes,
-            general_feeding_notes: petData.general_feeding_notes,
-            general_exercise_and_play_notes: petData.general_exercise_and_play_notes,
-            general_grooming_and_cleaning_notes: petData.general_grooming_and_cleaning_notes,
-            general_behavioral_notes: petData.general_behavioral_notes,
-            interactions_with_adults_notes: petData.interactions_with_adults_notes,
-            interactions_with_kids_notes: petData.interactions_with_kids_notes,
-            interactions_with_animals_notes: petData.interactions_with_animals_notes,
-            miscellaneous_notes: petData.miscellaneous_notes,
+            sleep_instructions: petInfo.sleep_instructions || petData.sleep_instructions,
+            play_instructions: petInfo.play_instructions || petData.play_instructions,
+            general_health_notes: petInfo.general_health_notes || petData.general_health_notes,
+            general_feeding_notes: petInfo.general_feeding_notes || petData.general_feeding_notes,
+            general_exercise_and_play_notes:
+              petInfo.general_exercise_and_play_notes || petData.general_exercise_and_play_notes,
+            general_grooming_and_cleaning_notes:
+              petInfo.general_grooming_and_cleaning_notes || petData.general_grooming_and_cleaning_notes,
+            general_behavioral_notes: petInfo.general_behavioral_notes || petData.general_behavioral_notes,
+            interactions_with_adults_notes:
+              petInfo.interactions_with_adults_notes || petData.interactions_with_adults_notes,
+            interactions_with_kids_notes: petInfo.interactions_with_kids_notes || petData.interactions_with_kids_notes,
+            interactions_with_animals_notes:
+              petInfo.interactions_with_animals_notes || petData.interactions_with_animals_notes,
+            miscellaneous_notes: petInfo.miscellaneous_notes || petData.miscellaneous_notes,
           }
         })
 
@@ -1364,7 +1363,10 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
   }
 
   const handleCompleteOnboarding = async () => {
-    setLoadingOnboardingData(true)
+    setOnboardingLoading(true)
+    setShowOnboardingModal(true)
+    setOnboardingStep(1)
+
     try {
       const webhookUrl = getWebhookEndpoint("CUSTOMER_HUB")
       logWebhookUsage("CUSTOMER_HUB", "run_onboarding")
@@ -1384,174 +1386,208 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
 
       if (response.ok) {
         const data = await response.json()
+
         console.log("[v0] Onboarding data received:", data)
 
-        // Store original data for comparison during submission
-        setOriginalOnboardingData(JSON.parse(JSON.stringify(data)))
+        const picklists = data.filter((item: any) => item.table_name && item.picklist_type)
+        setPicklistData(picklists)
 
-        const petsData = data.filter((item: any) => item.id && item.name && item.type_id)
-        console.log("[v0] Pets data:", petsData)
+        let policies: any[] = []
+        data.forEach((item: any) => {
+          if (item.signed_urls && Array.isArray(item.signed_urls)) {
+            policies = [...policies, ...item.signed_urls]
+          }
+        })
+        console.log("[v0] Extracted policy documents:", policies)
+        setPolicyDocuments(policies)
 
-        // Extract picklist data
-        const picklistData = data.filter((item: any) => item.picklist_type)
-        console.log("[v0] Picklist data:", picklistData)
-        setPicklistData(picklistData)
-
-        // Extract policy documents from signed_urls array
-        const policyDocumentsData = data.find((item: any) => item.signed_urls)?.signed_urls || []
-        console.log("[v0] Policy documents:", policyDocumentsData)
-        setPolicyDocuments(policyDocumentsData)
-
-        // Pre-populate form with existing data
-        if (data.length > 0) {
-          const userData = data.find((item: any) => item.first_name || item.last_name)
-          const emergencyContactData = data.find((item: any) => item.contact_name)
-
-          setOnboardingData({
+        // Extract user information
+        const userInfo = data.find((item: any) => item.email && item.user_type)
+        if (userInfo?.supporting_details?.personal_info) {
+          setOnboardingData((prev) => ({
+            ...prev,
             personalInfo: {
-              firstName: userData?.first_name || "",
-              lastName: userData?.last_name || "",
-              email: userData?.email || email,
-              phone: userData?.phone || "",
+              firstName: userInfo.supporting_details.personal_info.first_name || "",
+              lastName: userInfo.supporting_details.personal_info.last_name || "",
+              email: userInfo.supporting_details.personal_info.email || "",
+              phone: "", // Phone not in current data structure
             },
-            emergencyContact: {
-              contactName: emergencyContactData?.contact_name || "",
-              businessName: emergencyContactData?.business_name || "",
-              address: emergencyContactData?.address || "",
-              phoneNumber: emergencyContactData?.phone_number || "",
-              email: emergencyContactData?.email || "",
-              notes: emergencyContactData?.notes || "",
-            },
-            pets: petsData.map((pet: any) => ({
-              id: pet.id,
-              name: pet.name,
-              pet_type:
-                picklistData.find((p: any) => p.value === pet.type_id?.toString() && p.picklist_type === "type")
-                  ?.label || "",
-              breed_name:
-                picklistData.find(
-                  (p: any) =>
-                    (p.value === pet.dog_breed_id?.toString() && p.picklist_type === "breed") ||
-                    (p.value === pet.cat_breed_id?.toString() && p.picklist_type === "breed") ||
-                    (p.value === pet.bird_breed_id?.toString() && p.picklist_type === "breed") ||
-                    (p.value === pet.fish_breed_id?.toString() && p.picklist_type === "breed"),
-                )?.label || "",
-              sex:
-                picklistData.find((p: any) => p.value === pet.sex_id?.toString() && p.picklist_type === "sex")?.label ||
-                "",
-              weight: pet.weight || "",
-              spayed_neutered: pet.spayed_or_neutered || "",
-              birthdate: pet.birthdate || "",
-              chip_id: pet.chip_id || "",
-              isExisting: true, // Mark as existing record
-            })),
-            policyAcknowledgments: {},
-            signature: "",
-          })
+          }))
         }
 
-        setShowOnboardingModal(true)
+        // Extract pets data
+        const petsData = data.filter((item: any) => item.name && item.pet_type)
+        setOnboardingData((prev) => ({
+          ...prev,
+          pets: petsData,
+        }))
+
+        // Extract emergency contacts from pets data
+        const emergencyContacts = petsData.flatMap(
+          (pet: any) => pet.contacts?.filter((contact: any) => contact.contact_type === "Emergency Contact") || [],
+        )
+        if (emergencyContacts.length > 0) {
+          const firstContact = emergencyContacts[0]
+          setOnboardingData((prev) => ({
+            ...prev,
+            emergencyContact: {
+              contactName: firstContact.contact_name || "",
+              businessName: "",
+              address: "",
+              phoneNumber: "",
+              email: firstContact.email || "",
+              notes: "",
+            },
+          }))
+        }
       }
     } catch (error) {
       console.error("Error fetching onboarding data:", error)
     } finally {
-      setLoadingOnboardingData(false)
+      setOnboardingLoading(false)
     }
   }
 
-  const handleSubmitOnboarding = async () => {
-    setSubmittingOnboarding(true)
+  const getPetTypes = () => {
+    return picklistData.filter((item: any) => item.picklist_type === "type")
+  }
+
+  const getBreedsByType = (petType: string) => {
+    console.log("[v0] Getting breeds for pet type:", petType)
+    console.log("[v0] Available picklist data:", picklistData)
+
+    const typeItem = getPetTypes().find((item: any) => item.label === petType)
+    console.log("[v0] Found type item:", typeItem)
+
+    if (!typeItem) return []
+
+    const expectedCategory = typeItem.label
+    console.log("[v0] Looking for category:", expectedCategory)
+
+    const breeds = picklistData.filter(
+      (item: any) => item.picklist_type === "breed" && item.category === expectedCategory,
+    )
+
+    console.log("[v0] Found breeds:", breeds)
+    return breeds
+  }
+
+  const handleOnboardingNext = () => {
+    if (onboardingStep < 4) {
+      setOnboardingStep(onboardingStep + 1)
+    }
+  }
+
+  const handleOnboardingPrev = () => {
+    if (onboardingStep > 1) {
+      setOnboardingStep(onboardingStep - 1)
+    }
+  }
+
+  const handleOnboardingSubmit = async () => {
+    setOnboardingLoading(true)
+
     try {
       const webhookUrl = getWebhookEndpoint("CUSTOMER_HUB")
       logWebhookUsage("CUSTOMER_HUB", "submit_onboarding")
 
-      // Categorize pets into new vs updated
-      const newPets = onboardingData.pets.filter((pet: any) => !pet.isExisting)
-      const updatedPets = onboardingData.pets.filter((pet: any) => pet.isExisting)
+      // Track original data for comparison
+      const originalData = {
+        personalInfo: customerData?.supporting_details?.personal_info || {},
+        pets: customerData?.pets || [],
+        emergencyContacts: customerData?.emergency_contacts || [],
+      }
 
-      // Determine if personal info or emergency contact are updates
-      const originalUserData = originalOnboardingData?.find((item: any) => item.first_name || item.last_name)
-      const originalEmergencyData = originalOnboardingData?.find((item: any) => item.contact_name)
-
-      const personalInfoIsUpdate = !!(originalUserData?.first_name || originalUserData?.last_name)
-      const emergencyContactIsUpdate = !!originalEmergencyData?.contact_name
+      // Analyze changes and categorize records
+      const submissionAnalysis = {
+        personal_information: {
+          action: originalData.personalInfo.first_name || originalData.personalInfo.last_name ? "update" : "create",
+          changes: {
+            first_name: onboardingData.personalInfo.firstName,
+            last_name: onboardingData.personalInfo.lastName,
+            email: onboardingData.personalInfo.email,
+            phone: onboardingData.personalInfo.phone,
+          },
+          database_fields: {
+            table: "users",
+            primary_key: "id",
+            fields_to_update: ["first_name", "last_name", "email", "phone"],
+          },
+        },
+        pets: onboardingData.pets.map((pet: any, index: number) => {
+          const isExisting = originalData.pets.some((origPet: any) => origPet.id === pet.id)
+          return {
+            action: isExisting ? "update" : "create",
+            pet_data: {
+              id: pet.id || null,
+              name: pet.name,
+              pet_type: pet.pet_type,
+              breed_name: pet.breed_name,
+              sex: pet.sex,
+              weight: pet.weight,
+              spayed_neutered: pet.spayed_neutered,
+              birth_date: pet.birth_date,
+              chip_id: pet.chip_id,
+            },
+            database_fields: {
+              table: "pets",
+              primary_key: "id",
+              fields_to_update: isExisting
+                ? ["name", "pet_type", "breed_name", "sex", "weight", "spayed_neutered", "birth_date", "chip_id"]
+                : "all_fields",
+            },
+          }
+        }),
+        emergency_contact: {
+          action: originalData.emergencyContacts.length > 0 ? "update" : "create",
+          contact_data: {
+            contact_name: onboardingData.emergencyContact.contactName,
+            business_name: onboardingData.emergencyContact.businessName,
+            address: onboardingData.emergencyContact.address,
+            phone_number: onboardingData.emergencyContact.phoneNumber,
+            email: onboardingData.emergencyContact.email,
+            notes: onboardingData.emergencyContact.notes,
+          },
+          database_fields: {
+            table: "pet_contacts",
+            primary_key: "id",
+            fields_to_update: ["contact_name", "business_name", "address", "phone_number", "email", "notes"],
+          },
+        },
+        policy_acknowledgments: {
+          action: "create",
+          policies: Object.keys(onboardingData.policyAcknowledgments).map((policyId) => ({
+            policy_id: Number.parseInt(policyId),
+            acknowledged: onboardingData.policyAcknowledgments[policyId],
+            signature: onboardingData.signature,
+            acknowledged_at: new Date().toISOString(),
+          })),
+          database_fields: {
+            table: "business_policy_acknowledgments",
+            primary_key: "id",
+            fields_to_update: ["policy_id", "user_id", "signed", "signed_at", "signature"],
+          },
+        },
+      }
 
       const payload = {
         action: "submit_onboarding",
         unique_url: uniqueUrl,
         customer_email: email,
-        submission_data: {
-          personal_information: {
-            data: onboardingData.personalInfo,
-            action_type: personalInfoIsUpdate ? "update" : "create",
-            database_fields: {
-              first_name: onboardingData.personalInfo.firstName,
-              last_name: onboardingData.personalInfo.lastName,
-              email: onboardingData.personalInfo.email,
-              phone: onboardingData.personalInfo.phone,
-            },
-          },
-          emergency_contacts: {
-            data: onboardingData.emergencyContact,
-            action_type: emergencyContactIsUpdate ? "update" : "create",
-            database_fields: {
-              contact_name: onboardingData.emergencyContact.contactName,
-              business_name: onboardingData.emergencyContact.businessName,
-              address: onboardingData.emergencyContact.address,
-              phone_number: onboardingData.emergencyContact.phoneNumber,
-              email: onboardingData.emergencyContact.email,
-              notes: onboardingData.emergencyContact.notes,
-            },
-          },
-          pets: {
-            new_records: newPets.map((pet: any) => ({
-              data: pet,
-              action_type: "create",
-              database_fields: {
-                pet_name: pet.name,
-                type_id: pet.pet_type,
-                breed_id: pet.breed_name,
-                sex_id: pet.sex,
-                weight: pet.weight,
-                spayed_or_neutered: pet.spayed_neutered,
-                birthdate: pet.birthdate,
-                chip_id: pet.chip_id,
-              },
-            })),
-            updated_records: updatedPets.map((pet: any) => ({
-              data: pet,
-              action_type: "update",
-              pet_id: pet.id,
-              database_fields: {
-                pet_name: pet.name,
-                type_id: pet.pet_type,
-                breed_id: pet.breed_name,
-                sex_id: pet.sex,
-                weight: pet.weight,
-                spayed_or_neutered: pet.spayed_neutered,
-                birthdate: pet.birthdate,
-                chip_id: pet.chip_id,
-              },
-            })),
-          },
-          policy_acknowledgments: {
-            data: onboardingData.policyAcknowledgments,
-            signature: onboardingData.signature,
-            action_type: "create",
-            database_fields: {
-              policies_signed: true,
-              signature: onboardingData.signature,
-              signed_date: new Date().toISOString(),
-              policy_ids: Object.keys(onboardingData.policyAcknowledgments).filter(
-                (id) => onboardingData.policyAcknowledgments[id],
-              ),
-            },
-          },
-        },
+        submission_analysis: submissionAnalysis,
+        raw_onboarding_data: onboardingData, // Keep original data for reference
         timestamp: new Date().toISOString(),
+        metadata: {
+          total_pets: onboardingData.pets.length,
+          new_pets: submissionAnalysis.pets.filter((p) => p.action === "create").length,
+          updated_pets: submissionAnalysis.pets.filter((p) => p.action === "update").length,
+          has_emergency_contact: !!onboardingData.emergencyContact.contactName,
+          policies_acknowledged: Object.keys(onboardingData.policyAcknowledgments).length,
+          signature_provided: !!onboardingData.signature,
+        },
       }
 
-      console.log("[v0] Submitting onboarding data:", payload)
+      console.log("[v0] Submitting onboarding with analysis:", payload)
 
       const response = await fetch(webhookUrl, {
         method: "POST",
@@ -1561,85 +1597,23 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
 
       if (response.ok) {
         const updatedData = await response.json()
-        console.log("[v0] Updated onboarding data received:", updatedData)
-
-        // Refresh the customer data
-        await fetchCustomerData()
+        console.log("[v0] Onboarding submission successful, received updated data:", updatedData)
 
         setShowOnboardingModal(false)
         setOnboardingStep(1)
 
-        // Reset form data
-        setOnboardingData({
-          personalInfo: { firstName: "", lastName: "", email: "", phone: "" },
-          emergencyContact: { contactName: "", businessName: "", address: "", phoneNumber: "", email: "", notes: "" },
-          pets: [],
-          policyAcknowledgments: {},
-          signature: "",
-        })
+        // Refresh the customer data to reflect updates
+        window.location.reload()
+      } else {
+        console.error("Failed to submit onboarding:", response.statusText)
+        alert("Failed to submit onboarding. Please try again.")
       }
     } catch (error) {
       console.error("Error submitting onboarding:", error)
+      alert("An error occurred while submitting. Please try again.")
     } finally {
-      setSubmittingOnboarding(false)
+      setOnboardingLoading(false)
     }
-  }
-
-  const getPetTypes = () => {
-    return [
-      { value: "Dog", label: "Dog" },
-      { value: "Cat", label: "Cat" },
-      { value: "Bird", label: "Bird" },
-      { value: "Fish", label: "Fish" },
-      { value: "Other", label: "Other" },
-    ]
-  }
-
-  const getBreedsByType = (petType: string) => {
-    switch (petType) {
-      case "Dog":
-        return [
-          { value: "Labrador Retriever", label: "Labrador Retriever" },
-          { value: "German Shepherd", label: "German Shepherd" },
-          { value: "Golden Retriever", label: "Golden Retriever" },
-          { value: "Bulldog", label: "Bulldog" },
-          { value: "Poodle", label: "Poodle" },
-        ]
-      case "Cat":
-        return [
-          { value: "Maine Coon", label: "Maine Coon" },
-          { value: "Siamese", label: "Siamese" },
-          { value: "Persian", label: "Persian" },
-          { value: "Bengal", label: "Bengal" },
-          { value: "Ragdoll", label: "Ragdoll" },
-        ]
-      case "Bird":
-        return [
-          { value: "Parrot", label: "Parrot" },
-          { value: "Canary", label: "Canary" },
-          { value: "Finch", label: "Finch" },
-          { value: "Cockatiel", label: "Cockatiel" },
-          { value: "Lovebird", label: "Lovebird" },
-        ]
-      case "Fish":
-        return [
-          { value: "Goldfish", label: "Goldfish" },
-          { value: "Betta", label: "Betta" },
-          { value: "Guppy", label: "Guppy" },
-          { value: "Angelfish", label: "Angelfish" },
-          { value: "Molly", label: "Molly" },
-        ]
-      default:
-        return [{ value: "Unknown", label: "Unknown" }]
-    }
-  }
-
-  const handleOnboardingPrev = () => {
-    setOnboardingStep(onboardingStep - 1)
-  }
-
-  const handleOnboardingNext = () => {
-    setOnboardingStep(onboardingStep + 1)
   }
 
   return (
@@ -2281,109 +2255,119 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                           </div>
                         </div>
 
-                        {/* Required Steps */}
-                        <div className="bg-white border border-gray-200 rounded-lg p-6">
-                          <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-semibold text-gray-900 font-body">Required Steps</h3>
-                            {isOnboardingIncomplete() && (
-                              <button
-                                onClick={handleCompleteOnboarding}
-                                disabled={loadingOnboardingData}
-                                className="flex items-center px-4 py-2 bg-[#E75837] text-white text-sm rounded-lg hover:bg-[#E75837]/90 transition-colors disabled:opacity-50"
-                              >
-                                {loadingOnboardingData ? (
-                                  <>
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                    Loading...
-                                  </>
-                                ) : (
-                                  <>
-                                    <CheckCircle className="w-4 h-4 mr-2" />
-                                    Complete Onboarding
-                                  </>
-                                )}
-                              </button>
-                            )}
-                          </div>
-
+                        {/* ... existing Required Steps section ... */}
+                        <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
+                          <h3 className="text-lg font-bold text-gray-900 font-body mb-4">Required Steps</h3>
                           <div className="space-y-4">
-                            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                              <div>
-                                <h4 className="font-medium text-gray-900">Complete Personal Information</h4>
-                                <p className="text-sm text-gray-600">Provide your basic contact details.</p>
-                                {customerData?.criteria_status?.personal_info_complete && (
-                                  <div className="mt-2 text-sm text-gray-600">
-                                    <p>Email: {customerData?.email || "Not provided"}</p>
-                                    <p>User Type: {customerData?.user_type || "Not specified"}</p>
-                                  </div>
-                                )}
+                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                              <div className="flex-1">
+                                <h4 className="text-md font-semibold text-gray-900 font-body mb-1">
+                                  Complete Personal Information
+                                </h4>
+                                <p className="text-gray-600 font-body text-sm mb-2">
+                                  Provide your basic contact details.
+                                </p>
+                                {customerData.criteria_status?.personal_info_complete &&
+                                  customerData.supporting_details && (
+                                    <div className="text-xs text-gray-500">
+                                      <p>Email: {customerData.supporting_details.email}</p>
+                                      <p>User Type: {customerData.supporting_details.user_type}</p>
+                                    </div>
+                                  )}
                               </div>
-                              <div
-                                className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                  customerData?.criteria_status?.personal_info_complete
-                                    ? "bg-green-100 text-green-800"
-                                    : "bg-red-100 text-red-800"
-                                }`}
-                              >
-                                {customerData?.criteria_status?.personal_info_complete ? "Complete" : "Incomplete"}
+                              <div>
+                                {customerData.criteria_status?.personal_info_complete ? (
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                    Complete
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                    Incomplete
+                                  </span>
+                                )}
                               </div>
                             </div>
 
-                            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                              <div>
-                                <h4 className="font-medium text-gray-900">Add Your Pets</h4>
-                                <p className="text-sm text-gray-600">Tell us about your furry friends.</p>
-                                {customerData?.criteria_status?.pets_created &&
-                                  customerData?.pets &&
-                                  customerData?.pets.length > 0 && (
-                                    <div className="mt-2 text-sm text-gray-600">
+                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                              <div className="flex-1">
+                                <h4 className="text-md font-semibold text-gray-900 font-body mb-1">Add Your Pets</h4>
+                                <p className="text-gray-600 font-body text-sm mb-2">
+                                  Tell us about your furry friends.
+                                </p>
+                                {customerData.criteria_status?.pets_created &&
+                                  customerData.supporting_details?.pets && (
+                                    <div className="text-xs text-gray-500">
                                       <p>
                                         Pets added:{" "}
-                                        {customerData.pets.map((pet: any) => pet.pet_name || "Unnamed Pet").join(", ")}
+                                        {customerData.supporting_details.pets.details
+                                          ?.map((pet: any) => pet.pet_name)
+                                          .join(", ")}
                                       </p>
                                     </div>
                                   )}
                               </div>
-                              <div
-                                className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                  customerData?.criteria_status?.pets_created
-                                    ? "bg-green-100 text-green-800"
-                                    : "bg-red-100 text-red-800"
-                                }`}
-                              >
-                                {customerData?.criteria_status?.pets_created ? "Complete" : "Incomplete"}
+                              <div>
+                                {customerData.criteria_status?.pets_created ? (
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                    Complete
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                    Incomplete
+                                  </span>
+                                )}
                               </div>
                             </div>
 
-                            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                              <div>
-                                <h4 className="font-medium text-gray-900">Add Emergency Contact</h4>
-                                <p className="text-sm text-gray-600">Provide an emergency contact.</p>
+                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                              <div className="flex-1">
+                                <h4 className="text-md font-semibold text-gray-900 font-body mb-1">
+                                  Add Emergency Contact
+                                </h4>
+                                <p className="text-gray-600 font-body text-sm mb-2">Provide an emergency contact.</p>
+                                {customerData.criteria_status?.emergency_contacts_added &&
+                                  customerData.supporting_details?.emergency_contacts && (
+                                    <div className="text-xs text-gray-500">
+                                      <p>
+                                        Emergency contacts: {customerData.supporting_details.emergency_contacts.length}{" "}
+                                        added
+                                      </p>
+                                    </div>
+                                  )}
                               </div>
-                              <div
-                                className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                  customerData?.criteria_status?.emergency_contacts_added
-                                    ? "bg-green-100 text-green-800"
-                                    : "bg-red-100 text-red-800"
-                                }`}
-                              >
-                                {customerData?.criteria_status?.emergency_contacts_added ? "Complete" : "Incomplete"}
+                              <div>
+                                {customerData.criteria_status?.emergency_contacts_added ? (
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                    Complete
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                    Incomplete
+                                  </span>
+                                )}
                               </div>
                             </div>
 
-                            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                              <div>
-                                <h4 className="font-medium text-gray-900">Sign Policies</h4>
-                                <p className="text-sm text-gray-600">Review and sign our policies.</p>
+                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                              <div className="flex-1">
+                                <h4 className="text-md font-semibold text-gray-900 font-body mb-1">Sign Policies</h4>
+                                <p className="text-gray-600 font-body text-sm mb-2">Review and sign our policies.</p>
+                                {customerData.criteria_status?.policies_signed && (
+                                  <div className="text-xs text-gray-500">
+                                    <p>All required policies signed</p>
+                                  </div>
+                                )}
                               </div>
-                              <div
-                                className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                  customerData?.criteria_status?.policies_signed
-                                    ? "bg-green-100 text-green-800"
-                                    : "bg-red-100 text-red-800"
-                                }`}
-                              >
-                                {customerData?.criteria_status?.policies_signed ? "Complete" : "Incomplete"}
+                              <div>
+                                {customerData.criteria_status?.policies_signed ? (
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                    Complete
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                    Incomplete
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -2423,36 +2407,31 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                   </button>
                 </div>
 
-                {/* Progress indicator */}
-                <div className="mb-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">Step {onboardingStep} of 4</span>
-                    <span className="text-sm font-medium text-gray-700">{Math.round((onboardingStep / 4) * 100)}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-[#E75837] h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${(onboardingStep / 4) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                {submittingOnboarding ? (
+                {onboardingLoading && (
                   <div className="flex items-center justify-center py-8">
-                    <div className="text-center">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#E75837] mx-auto mb-4"></div>
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">Processing Your Onboarding</h3>
-                      <p className="text-gray-600 mb-4">
-                        We're saving your information and updating your profile. This may take a few moments...
-                      </p>
-                      <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                        <div className="bg-[#E75837] h-2 rounded-full animate-pulse" style={{ width: "75%" }}></div>
-                      </div>
-                      <p className="text-sm text-gray-500">Please don't close this window</p>
-                    </div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E75837]"></div>
+                    <span className="ml-3 text-gray-600">Loading your information...</span>
                   </div>
-                ) : (
+                )}
+
+                {!onboardingLoading && (
                   <>
+                    {/* Progress indicator */}
+                    <div className="mb-8">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-600">Step {onboardingStep} of 4</span>
+                        <span className="text-sm font-medium text-gray-600">
+                          {Math.round((onboardingStep / 4) * 100)}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-[#E75837] h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${(onboardingStep / 4) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
                     {/* Step 1: Personal Information */}
                     {onboardingStep === 1 && (
                       <div className="space-y-6">
@@ -2575,7 +2554,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                     )}
                                   </div>
 
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                     <div>
                                       <label className="block text-sm font-medium text-gray-700 mb-1">Pet Name*</label>
                                       <input
@@ -2605,22 +2584,501 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                         }}
                                         className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
                                       >
-                                        <option value="">Select pet type</option>
-                                        {getPetTypes().map((type) => (
-                                          <option key={type.value} value={type.value}>
+                                        <option value="">Select type</option>
+                                        {getPetTypes().map((type: any) => (
+                                          <option key={type.value} value={type.label}>
                                             {type.label}
                                           </option>
                                         ))}
                                       </select>
                                     </div>
                                   </div>
+
+                                  <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                      Breed/Variety*
+                                    </label>
+                                    <select
+                                      value={pet.breed_name || ""}
+                                      onChange={(e) => {
+                                        const updatedPets = [...onboardingData.pets]
+                                        updatedPets[index] = { ...updatedPets[index], breed_name: e.target.value }
+                                        setOnboardingData({ ...onboardingData, pets: updatedPets })
+                                      }}
+                                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                      disabled={!pet.pet_type}
+                                    >
+                                      <option value="">Select breed</option>
+                                      {pet.pet_type &&
+                                        getBreedsByType(pet.pet_type).map((breed: any) => (
+                                          <option key={breed.value} value={breed.label}>
+                                            {breed.label}
+                                          </option>
+                                        ))}
+                                    </select>
+                                    {!pet.pet_type && (
+                                      <p className="text-sm text-gray-500 mt-1">Please select a pet type first</p>
+                                    )}
+                                  </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">Sex*</label>
+                                      <select
+                                        value={pet.sex || ""}
+                                        onChange={(e) => {
+                                          const updatedPets = [...onboardingData.pets]
+                                          updatedPets[index] = { ...updatedPets[index], sex: e.target.value }
+                                          setOnboardingData({ ...onboardingData, pets: updatedPets })
+                                        }}
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                      >
+                                        <option value="">Select sex</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                      </select>
+                                    </div>
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">Weight*</label>
+                                      <input
+                                        type="text"
+                                        value={pet.weight || ""}
+                                        onChange={(e) => {
+                                          const updatedPets = [...onboardingData.pets]
+                                          updatedPets[index] = { ...updatedPets[index], weight: e.target.value }
+                                          setOnboardingData({ ...onboardingData, pets: updatedPets })
+                                        }}
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                        placeholder="e.g., 25 lbs"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Spayed/Neutered*
+                                      </label>
+                                      <select
+                                        value={pet.spayed_neutered || ""}
+                                        onChange={(e) => {
+                                          const updatedPets = [...onboardingData.pets]
+                                          updatedPets[index] = {
+                                            ...updatedPets[index],
+                                            spayed_neutered: e.target.value,
+                                          }
+                                          setOnboardingData({ ...onboardingData, pets: updatedPets })
+                                        }}
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                      >
+                                        <option value="">Select status</option>
+                                        <option value="Yes">Yes</option>
+                                        <option value="No">No</option>
+                                        <option value="N/A">N/A</option>
+                                      </select>
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">Birth Date</label>
+                                      <input
+                                        type="date"
+                                        value={pet.birthdate || ""}
+                                        onChange={(e) => {
+                                          const updatedPets = [...onboardingData.pets]
+                                          updatedPets[index] = { ...updatedPets[index], birthdate: e.target.value }
+                                          setOnboardingData({ ...onboardingData, pets: updatedPets })
+                                        }}
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">Chip ID</label>
+                                      <input
+                                        type="text"
+                                        value={pet.chip_id || ""}
+                                        onChange={(e) => {
+                                          const updatedPets = [...onboardingData.pets]
+                                          updatedPets[index] = { ...updatedPets[index], chip_id: e.target.value }
+                                          setOnboardingData({ ...onboardingData, pets: updatedPets })
+                                        }}
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                        placeholder="Microchip ID"
+                                      />
+                                    </div>
+                                  </div>
                                 </div>
                               ))}
                             </div>
                           ) : (
-                            <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
-                              <Heart className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                              <p className="text-gray-600">No pets added yet. Click "Add New Pet" to get started.</p>
+                            <div className="text-center py-8 text-gray-500">
+                              <p>No pets added yet. Click "Add New Pet" to get started.</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Step 3: Emergency Contact */}
+                    {onboardingStep === 3 && (
+                      <div className="space-y-6">
+                        <div>
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold text-gray-900">Emergency Contact</h3>
+                            <button
+                              onClick={() => {
+                                const newContact = {
+                                  contactName: "",
+                                  businessName: "",
+                                  address: "",
+                                  phoneNumber: "",
+                                  email: "",
+                                  notes: "",
+                                }
+                                setOnboardingData({
+                                  ...onboardingData,
+                                  emergencyContacts: [
+                                    ...(onboardingData.emergencyContacts || [onboardingData.emergencyContact]),
+                                    newContact,
+                                  ],
+                                })
+                              }}
+                              className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors"
+                            >
+                              <PlusCircle className="w-4 h-4 mr-1" />
+                              Add Another Contact
+                            </button>
+                          </div>
+
+                          {onboardingData.emergencyContacts ? (
+                            <div className="space-y-6">
+                              {onboardingData.emergencyContacts.map((contact: any, index: number) => (
+                                <div key={index} className="p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
+                                  <div className="flex justify-between items-center mb-4">
+                                    <h4 className="text-lg font-medium text-gray-900">Emergency Contact {index + 1}</h4>
+                                    {onboardingData.emergencyContacts.length > 1 && (
+                                      <button
+                                        onClick={() => {
+                                          const updatedContacts = onboardingData.emergencyContacts.filter(
+                                            (_: any, i: number) => i !== index,
+                                          )
+                                          setOnboardingData({ ...onboardingData, emergencyContacts: updatedContacts })
+                                        }}
+                                        className="text-red-500 hover:text-red-700 flex items-center text-sm"
+                                      >
+                                        <MinusCircle className="w-4 h-4 mr-1" />
+                                        Remove
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Contact Name
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={contact.contactName || ""}
+                                        onChange={(e) => {
+                                          const updatedContacts = [...onboardingData.emergencyContacts]
+                                          updatedContacts[index] = {
+                                            ...updatedContacts[index],
+                                            contactName: e.target.value,
+                                          }
+                                          setOnboardingData({ ...onboardingData, emergencyContacts: updatedContacts })
+                                        }}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Business Name
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={contact.businessName || ""}
+                                        onChange={(e) => {
+                                          const updatedContacts = [...onboardingData.emergencyContacts]
+                                          updatedContacts[index] = {
+                                            ...updatedContacts[index],
+                                            businessName: e.target.value,
+                                          }
+                                          setOnboardingData({ ...onboardingData, emergencyContacts: updatedContacts })
+                                        }}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                      />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                      <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                                      <input
+                                        type="text"
+                                        value={contact.address || ""}
+                                        onChange={(e) => {
+                                          const updatedContacts = [...onboardingData.emergencyContacts]
+                                          updatedContacts[index] = {
+                                            ...updatedContacts[index],
+                                            address: e.target.value,
+                                          }
+                                          setOnboardingData({ ...onboardingData, emergencyContacts: updatedContacts })
+                                        }}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Phone Number
+                                      </label>
+                                      <input
+                                        type="tel"
+                                        value={contact.phoneNumber || ""}
+                                        onChange={(e) => {
+                                          const updatedContacts = [...onboardingData.emergencyContacts]
+                                          updatedContacts[index] = {
+                                            ...updatedContacts[index],
+                                            phoneNumber: e.target.value,
+                                          }
+                                          setOnboardingData({ ...onboardingData, emergencyContacts: updatedContacts })
+                                        }}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                      <input
+                                        type="email"
+                                        value={contact.email || ""}
+                                        onChange={(e) => {
+                                          const updatedContacts = [...onboardingData.emergencyContacts]
+                                          updatedContacts[index] = { ...updatedContacts[index], email: e.target.value }
+                                          setOnboardingData({ ...onboardingData, emergencyContacts: updatedContacts })
+                                        }}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                      />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                      <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                                      <textarea
+                                        value={contact.notes || ""}
+                                        onChange={(e) => {
+                                          const updatedContacts = [...onboardingData.emergencyContacts]
+                                          updatedContacts[index] = { ...updatedContacts[index], notes: e.target.value }
+                                          setOnboardingData({ ...onboardingData, emergencyContacts: updatedContacts })
+                                        }}
+                                        rows={3}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            // Fallback to single contact if emergencyContacts array doesn't exist
+                            <div className="p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Contact Name</label>
+                                  <input
+                                    type="text"
+                                    value={onboardingData.emergencyContact.contactName}
+                                    onChange={(e) =>
+                                      setOnboardingData({
+                                        ...onboardingData,
+                                        emergencyContact: {
+                                          ...onboardingData.emergencyContact,
+                                          contactName: e.target.value,
+                                        },
+                                      })
+                                    }
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Business Name</label>
+                                  <input
+                                    type="text"
+                                    value={onboardingData.emergencyContact.businessName}
+                                    onChange={(e) =>
+                                      setOnboardingData({
+                                        ...onboardingData,
+                                        emergencyContact: {
+                                          ...onboardingData.emergencyContact,
+                                          businessName: e.target.value,
+                                        },
+                                      })
+                                    }
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                  />
+                                </div>
+                                <div className="md:col-span-2">
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                                  <input
+                                    type="text"
+                                    value={onboardingData.emergencyContact.address}
+                                    onChange={(e) =>
+                                      setOnboardingData({
+                                        ...onboardingData,
+                                        emergencyContact: {
+                                          ...onboardingData.emergencyContact,
+                                          address: e.target.value,
+                                        },
+                                      })
+                                    }
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                                  <input
+                                    type="tel"
+                                    value={onboardingData.emergencyContact.phoneNumber}
+                                    onChange={(e) =>
+                                      setOnboardingData({
+                                        ...onboardingData,
+                                        emergencyContact: {
+                                          ...onboardingData.emergencyContact,
+                                          phoneNumber: e.target.value,
+                                        },
+                                      })
+                                    }
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                  <input
+                                    type="email"
+                                    value={onboardingData.emergencyContact.email}
+                                    onChange={(e) =>
+                                      setOnboardingData({
+                                        ...onboardingData,
+                                        emergencyContact: { ...onboardingData.emergencyContact, email: e.target.value },
+                                      })
+                                    }
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                  />
+                                </div>
+                                <div className="md:col-span-2">
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                                  <textarea
+                                    value={onboardingData.emergencyContact.notes}
+                                    onChange={(e) =>
+                                      setOnboardingData({
+                                        ...onboardingData,
+                                        emergencyContact: { ...onboardingData.emergencyContact, notes: e.target.value },
+                                      })
+                                    }
+                                    rows={3}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {onboardingStep === 4 && (
+                      <div className="space-y-6">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Review and Sign Policies</h3>
+                          <p className="text-gray-600 mb-6">
+                            Please review each policy document and acknowledge your agreement to complete onboarding.
+                          </p>
+                          {policyDocuments.length > 0 ? (
+                            <div className="space-y-4">
+                              {policyDocuments.map((doc: any, index: number) => (
+                                <div key={index} className="p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
+                                  <div className="flex items-start justify-between mb-4">
+                                    <div className="flex-1">
+                                      <h4 className="text-lg font-medium text-gray-900 mb-2">{doc.name}</h4>
+                                      {doc.description && (
+                                        <p className="text-sm text-gray-600 mt-1">{doc.description}</p>
+                                      )}
+                                    </div>
+                                    <button
+                                      onClick={() => {
+                                        if (doc.signed_url) {
+                                          window.open(doc.signed_url, "_blank")
+                                        }
+                                      }}
+                                      className="flex items-center px-4 py-2 text-[#E75837] border border-[#E75837] rounded-lg hover:bg-[#E75837] hover:text-white transition-colors text-sm font-medium"
+                                    >
+                                      <FileText className="w-4 h-4 mr-2" />
+                                      View Document
+                                    </button>
+                                  </div>
+
+                                  <div className="border-t pt-4">
+                                    <label className="flex items-start space-x-3">
+                                      <input
+                                        type="checkbox"
+                                        className="mt-1 h-4 w-4 text-[#E75837] focus:ring-[#E75837] border-gray-300 rounded"
+                                        checked={onboardingData.policyAcknowledgments[doc.policy_id] || false}
+                                        onChange={(e) => {
+                                          const updatedAcknowledgments = { ...onboardingData.policyAcknowledgments }
+                                          updatedAcknowledgments[doc.policy_id] = e.target.checked
+                                          setOnboardingData({
+                                            ...onboardingData,
+                                            policyAcknowledgments: updatedAcknowledgments,
+                                          })
+                                        }}
+                                      />
+                                      <span className="text-sm text-gray-700 leading-5">
+                                        I acknowledge that I have read, understood, and agree to the terms and
+                                        conditions outlined in the <strong>{doc.name}</strong>.
+                                      </span>
+                                    </label>
+                                  </div>
+                                </div>
+                              ))}
+
+                              <div className="mt-6 p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
+                                <h4 className="text-lg font-medium text-gray-900 mb-4">Digital Signature</h4>
+                                <div className="space-y-4">
+                                  <div>
+                                    <label htmlFor="signature" className="block text-sm font-medium text-gray-700 mb-2">
+                                      Type your full name to serve as your digital signature *
+                                    </label>
+                                    <input
+                                      type="text"
+                                      id="signature"
+                                      value={onboardingData.signature || ""}
+                                      onChange={(e) => {
+                                        setOnboardingData({
+                                          ...onboardingData,
+                                          signature: e.target.value,
+                                        })
+                                      }}
+                                      placeholder="Enter your full name"
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-[#E75837]"
+                                      required
+                                    />
+                                  </div>
+                                  <p className="text-xs text-gray-500">
+                                    By typing your name above, you are providing your digital signature and confirming
+                                    that you have read and agree to all policy documents listed above.
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                                <div className="flex items-start">
+                                  <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 mr-3 flex-shrink-0" />
+                                  <div>
+                                    <h4 className="text-sm font-medium text-amber-800">Important Notice</h4>
+                                    <p className="text-sm text-amber-700 mt-1">
+                                      You must review and acknowledge all policy documents above and provide your
+                                      digital signature to complete your onboarding process.
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-center py-8 bg-gray-50 rounded-lg">
+                              <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                              <p className="text-gray-600">Loading policy documents...</p>
                             </div>
                           )}
                         </div>
@@ -2628,41 +3086,37 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                     )}
 
                     {/* Navigation buttons */}
-                    <div className="flex justify-between pt-6 border-t border-gray-200">
+                    <div className="flex justify-between mt-8">
                       <button
                         onClick={handleOnboardingPrev}
                         disabled={onboardingStep === 1}
-                        className="flex items-center px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <ChevronLeft className="w-4 h-4 mr-1" />
+                        <ChevronLeft className="w-4 h-4 inline mr-1" />
                         Previous
                       </button>
 
                       {onboardingStep < 4 ? (
                         <button
                           onClick={handleOnboardingNext}
-                          className="flex items-center px-6 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#E75837]/90 transition-colors"
+                          className="px-4 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#E75837]/90"
                         >
                           Next
-                          <ChevronRight className="w-4 h-4 ml-1" />
+                          <ChevronRight className="w-4 h-4 inline ml-1" />
                         </button>
                       ) : (
                         <button
-                          onClick={handleSubmitOnboarding}
-                          disabled={submittingOnboarding}
-                          className="flex items-center px-6 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#E75837]/90 transition-colors disabled:opacity-50"
+                          onClick={handleOnboardingSubmit}
+                          disabled={
+                            policyDocuments.length > 0 &&
+                            (!policyDocuments.every(
+                              (doc: any) => onboardingData.policyAcknowledgments[doc.policy_id],
+                            ) ||
+                              !onboardingData.signature?.trim())
+                          }
+                          className="px-6 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#E75837]/90 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {submittingOnboarding ? (
-                            <>
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Submitting...
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle className="w-4 h-4 mr-2" />
-                              Complete Onboarding
-                            </>
-                          )}
+                          Complete Onboarding
                         </button>
                       )}
                     </div>
@@ -2675,163 +3129,4 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
       </div>
     </div>
   )
-
-  async function fetchCustomerData() {
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const webhookUrl = getWebhookEndpoint("CUSTOMER_HUB")
-      logWebhookUsage("CUSTOMER_HUB", "initialize_customer_hub")
-
-      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-
-      const payload = {
-        action: "initialize_customer_hub",
-        unique_url: uniqueUrl,
-        professional_name: professionalName,
-        customer_email: email.trim(),
-        generated_code: generatedCode,
-        user_submitted_code: validationCode.trim(),
-        timestamp: new Date().toISOString(),
-        timezone: userTimezone,
-      }
-
-      const response = await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
-      }
-
-      const data = await response.json()
-
-      if (Array.isArray(data) && data.length > 0 && data[0].Output === "Incorrect Code, Please Try Again") {
-        setError("Incorrect code, please try again or go back and request a new code")
-        return
-      }
-
-      if (Array.isArray(data) && data.length > 0) {
-        console.log("[v0] Full webhook response:", JSON.stringify(data, null, 2))
-
-        const firstItem = data[0]
-        console.log("[v0] First item:", JSON.stringify(firstItem, null, 2))
-
-        const basicPets = firstItem?.pets || []
-        console.log("[v0] Basic pets from first item:", JSON.stringify(basicPets, null, 2))
-
-        const detailedPetItems = data.filter((item) => item.pet && item.pet.pet_id)
-        console.log("[v0] Detailed pet items:", JSON.stringify(detailedPetItems, null, 2))
-
-        const petItems = data.filter((item) => {
-          // Check if item has pet data with required fields
-          return (
-            (item.pet_name && item.pet_name.trim() !== "") ||
-            (item.name && item.name.trim() !== "") ||
-            (item.pet && item.pet.pet_name && item.pet.pet_name.trim() !== "")
-          )
-        })
-
-        const pets = petItems.map((petData: any) => {
-          // Handle different pet data structures
-          const petInfo = petData.pet || petData
-
-          return {
-            pet_name: petInfo.pet_name || petData.name || "",
-            pet_id: petInfo.pet_id || petData.id || "",
-            pet_type: petInfo.pet_type || petData.pet_type || "",
-            birthdate: petInfo.birthdate || petData.birthdate,
-            chip_id: petInfo.chip_id || petData.chip_id,
-            spayed_or_neutered: petInfo.spayed_or_neutered || petData.spayed_or_neutered,
-            sex: petInfo.pet_sex || petData.pet_sex,
-            breed_name: petInfo.breed_name || petData.breed_name,
-            gotcha_date: petInfo.gotcha_date || petData.gotcha_date,
-            contacts: petData.contacts || [],
-            foods: petData.foods || [],
-            treats: petData.treats || [],
-            weights: petData.weights || [],
-            supplies: petData.supplies || [],
-            medications: petData.medications || [],
-            conditions: petData.conditions || [],
-            allergies: petData.allergies || [],
-            feeding_schedule: petData.feeding_schedule || [],
-            medication_schedule: petData.medication_schedule || [],
-            walk_schedule: petData.walk_schedule || [],
-            grooming_schedule: petData.grooming_schedule || [],
-            sleep_instructions: petData.sleep_instructions,
-            play_instructions: petData.play_instructions,
-            general_health_notes: petData.general_health_notes,
-            general_feeding_notes: petData.general_feeding_notes,
-            general_exercise_and_play_notes: petData.general_exercise_and_play_notes,
-            general_grooming_and_cleaning_notes: petData.general_grooming_and_cleaning_notes,
-            general_behavioral_notes: petData.general_behavioral_notes,
-            interactions_with_adults_notes: petData.interactions_with_adults_notes,
-            interactions_with_kids_notes: petData.interactions_with_kids_notes,
-            interactions_with_animals_notes: petData.interactions_with_animals_notes,
-            miscellaneous_notes: petData.miscellaneous_notes,
-          }
-        })
-
-        console.log("[v0] Final processed pets:", JSON.stringify(pets, null, 2))
-
-        let invoices: Invoice[] = []
-        let payment_instructions = ""
-        let onboarding_complete = false
-        let criteria_status = {}
-        let supporting_details = {}
-        let email = ""
-        let user_type = ""
-        let signature = ""
-
-        // Search through all items to find invoices
-        for (const item of data) {
-          if (item.invoices && Array.isArray(item.invoices)) {
-            invoices = item.invoices
-            payment_instructions = item.payment_instructions || ""
-            break
-          }
-        }
-
-        for (const item of data) {
-          if (item.onboarding_complete !== undefined) {
-            onboarding_complete = item.onboarding_complete
-            criteria_status = item.criteria_status || {}
-            supporting_details = item.supporting_details || {}
-            email = item.email || ""
-            user_type = item.user_type || ""
-            signature = item.signature || ""
-            break
-          }
-        }
-
-        console.log("[v0] Extracted invoices:", JSON.stringify(invoices, null, 2))
-
-        const bookings = data.filter((item) => item.booking_id && !item.pet && !item.invoices) || []
-
-        setCustomerData({
-          pets,
-          bookings,
-          invoices,
-          payment_instructions,
-          onboarding_complete,
-          criteria_status,
-          supporting_details,
-          email,
-          user_type,
-          signature,
-        })
-        setStep("data")
-      } else {
-        setError("Incorrect validation code. Please try again.")
-      }
-    } catch (err) {
-      console.error("Error validating code:", err)
-      setError("Incorrect validation code. Please try again.")
-    } finally {
-      setIsLoading(false)
-    }
-  }
 }
