@@ -1425,13 +1425,24 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
             pets: petsData.map((pet: any) => ({
               id: pet.pet_id,
               name: pet.pet_name,
-              type: pet.type_id,
-              breed: pet.dog_breed_id || pet.cat_breed_id || pet.bird_breed_id || pet.fish_breed_id || "",
-              sex: pet.sex_id,
+              pet_type:
+                picklistData.find((p: any) => p.value === pet.type_id?.toString() && p.picklist_type === "type")
+                  ?.label || "",
+              breed_name:
+                picklistData.find(
+                  (p: any) =>
+                    (p.value === pet.dog_breed_id?.toString() && p.picklist_type === "breed") ||
+                    (p.value === pet.cat_breed_id?.toString() && p.picklist_type === "breed") ||
+                    (p.value === pet.bird_breed_id?.toString() && p.picklist_type === "breed") ||
+                    (p.value === pet.fish_breed_id?.toString() && p.picklist_type === "breed"),
+                )?.label || "",
+              sex:
+                picklistData.find((p: any) => p.value === pet.sex_id?.toString() && p.picklist_type === "sex")?.label ||
+                "",
               weight: pet.weight || "",
-              spayedNeutered: pet.spayed_or_neutered || "",
-              birthDate: pet.birthdate || "",
-              chipId: pet.chip_id || "",
+              spayed_neutered: pet.spayed_or_neutered || "",
+              birthdate: pet.birthdate || "",
+              chip_id: pet.chip_id || "",
               isExisting: true, // Mark as existing record
             })),
             policyAcknowledgments: {},
@@ -1497,13 +1508,13 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
               action_type: "create",
               database_fields: {
                 pet_name: pet.name,
-                type_id: pet.type,
-                breed_id: pet.breed,
+                type_id: pet.pet_type,
+                breed_id: pet.breed_name,
                 sex_id: pet.sex,
                 weight: pet.weight,
-                spayed_or_neutered: pet.spayedNeutered,
-                birthdate: pet.birthDate,
-                chip_id: pet.chipId,
+                spayed_or_neutered: pet.spayed_neutered,
+                birthdate: pet.birthdate,
+                chip_id: pet.chip_id,
               },
             })),
             updated_records: updatedPets.map((pet: any) => ({
@@ -1512,13 +1523,13 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
               pet_id: pet.id,
               database_fields: {
                 pet_name: pet.name,
-                type_id: pet.type,
-                breed_id: pet.breed,
+                type_id: pet.pet_type,
+                breed_id: pet.breed_name,
                 sex_id: pet.sex,
                 weight: pet.weight,
-                spayed_or_neutered: pet.spayedNeutered,
-                birthdate: pet.birthDate,
-                chip_id: pet.chipId,
+                spayed_or_neutered: pet.spayed_neutered,
+                birthdate: pet.birthdate,
+                chip_id: pet.chip_id,
               },
             })),
           },
@@ -2258,88 +2269,109 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                           </div>
                         </div>
 
-                        {/* ... existing Required Steps section ... */}
-                        <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-                          <h3 className="text-lg font-bold text-gray-900 font-body mb-4">Required Steps</h3>
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                              <div className="flex-1">
-                                <h4 className="text-md font-semibold text-gray-900 font-body mb-1">
-                                  Complete Personal Information
-                                </h4>
-                                <p className="text-gray-600 font-body text-sm mb-2">
-                                  Provide your basic contact details.
-                                </p>
-                                {customerData.criteria_status?.personal_info_complete &&
-                                  customerData.supporting_details && (
-                                    <div className="text-xs text-gray-500">
-                                      <p>Email: {customerData.supporting_details.email}</p>
-                                      <p>User Type: {customerData.supporting_details.user_type}</p>
-                                    </div>
-                                  )}
-                              </div>
-                              <div>
-                                {customerData.criteria_status?.personal_info_complete ? (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                                    Complete
-                                  </span>
+                        {/* Required Steps */}
+                        <div className="bg-white border border-gray-200 rounded-lg p-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold text-gray-900 font-body">Required Steps</h3>
+                            {isOnboardingIncomplete() && (
+                              <button
+                                onClick={handleCompleteOnboarding}
+                                disabled={loadingOnboardingData}
+                                className="flex items-center px-4 py-2 bg-[#E75837] text-white text-sm rounded-lg hover:bg-[#E75837]/90 transition-colors disabled:opacity-50"
+                              >
+                                {loadingOnboardingData ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                    Loading...
+                                  </>
                                 ) : (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                                    Incomplete
-                                  </span>
+                                  <>
+                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                    Complete Onboarding
+                                  </>
                                 )}
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                              <div>
+                                <h4 className="font-medium text-gray-900">Complete Personal Information</h4>
+                                <p className="text-sm text-gray-600">Provide your basic contact details.</p>
+                                {customerData?.criteria_status?.personal_info_complete && (
+                                  <div className="mt-2 text-sm text-gray-600">
+                                    <p>Email: {customerData?.email || "Not provided"}</p>
+                                    <p>User Type: {customerData?.user_type || "Not specified"}</p>
+                                  </div>
+                                )}
+                              </div>
+                              <div
+                                className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                  customerData?.criteria_status?.personal_info_complete
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-red-100 text-red-800"
+                                }`}
+                              >
+                                {customerData?.criteria_status?.personal_info_complete ? "Complete" : "Incomplete"}
                               </div>
                             </div>
 
-                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                              <div className="flex-1">
-                                <h4 className="text-md font-semibold text-gray-900 font-body mb-1">
-                                  Add Emergency Contact
-                                </h4>
-                                <p className="text-gray-600 font-body text-sm mb-2">Provide an emergency contact.</p>
-                                {customerData.criteria_status?.emergency_contacts_added &&
-                                  customerData.supporting_details?.emergency_contacts && (
-                                    <div className="text-xs text-gray-500">
+                            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                              <div>
+                                <h4 className="font-medium text-gray-900">Add Your Pets</h4>
+                                <p className="text-sm text-gray-600">Tell us about your furry friends.</p>
+                                {customerData?.criteria_status?.pets_created &&
+                                  customerData?.pets &&
+                                  customerData?.pets.length > 0 && (
+                                    <div className="mt-2 text-sm text-gray-600">
                                       <p>
-                                        Emergency contacts: {customerData.supporting_details.emergency_contacts.length}{" "}
-                                        added
+                                        Pets added:{" "}
+                                        {customerData.pets.map((pet: any) => pet.pet_name || "Unnamed Pet").join(", ")}
                                       </p>
                                     </div>
                                   )}
                               </div>
-                              <div>
-                                {customerData.criteria_status?.emergency_contacts_added ? (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                                    Complete
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                                    Incomplete
-                                  </span>
-                                )}
+                              <div
+                                className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                  customerData?.criteria_status?.pets_created
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-red-100 text-red-800"
+                                }`}
+                              >
+                                {customerData?.criteria_status?.pets_created ? "Complete" : "Incomplete"}
                               </div>
                             </div>
 
-                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                              <div className="flex-1">
-                                <h4 className="text-md font-semibold text-gray-900 font-body mb-1">Sign Policies</h4>
-                                <p className="text-gray-600 font-body text-sm mb-2">Review and sign our policies.</p>
-                                {customerData.criteria_status?.policies_signed && (
-                                  <div className="text-xs text-gray-500">
-                                    <p>All required policies signed</p>
-                                  </div>
-                                )}
-                              </div>
+                            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                               <div>
-                                {customerData.criteria_status?.policies_signed ? (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                                    Complete
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                                    Incomplete
-                                  </span>
-                                )}
+                                <h4 className="font-medium text-gray-900">Add Emergency Contact</h4>
+                                <p className="text-sm text-gray-600">Provide an emergency contact.</p>
+                              </div>
+                              <div
+                                className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                  customerData?.criteria_status?.emergency_contacts_added
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-red-100 text-red-800"
+                                }`}
+                              >
+                                {customerData?.criteria_status?.emergency_contacts_added ? "Complete" : "Incomplete"}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                              <div>
+                                <h4 className="font-medium text-gray-900">Sign Policies</h4>
+                                <p className="text-sm text-gray-600">Review and sign our policies.</p>
+                              </div>
+                              <div
+                                className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                  customerData?.criteria_status?.policies_signed
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-red-100 text-red-800"
+                                }`}
+                              >
+                                {customerData?.criteria_status?.policies_signed ? "Complete" : "Incomplete"}
                               </div>
                             </div>
                           </div>
