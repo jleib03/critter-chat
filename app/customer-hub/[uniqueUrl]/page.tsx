@@ -1498,63 +1498,230 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
         emergencyContacts: customerData?.emergency_contacts || [],
       }
 
-      // Analyze changes and categorize records
-      const submissionAnalysis = {
-        personal_information: {
-          action: originalData.personalInfo.first_name || originalData.personalInfo.last_name ? "update" : "create",
+      // Helper function to compare objects and detect changes
+      const hasChanges = (original: any, current: any, fieldsToCheck: string[]) => {
+        return fieldsToCheck.some((field) => {
+          const originalValue = original[field] || ""
+          const currentValue = current[field] || ""
+          return originalValue !== currentValue
+        })
+      }
+
+      // Analyze personal information changes
+      const personalInfoAnalysis = () => {
+        const originalPersonal = originalData.personalInfo
+        const currentPersonal = onboardingData.personalInfo
+
+        const fieldsToCheck = ["first_name", "last_name", "email", "phone"]
+        const personalHasChanges = hasChanges(
+          {
+            first_name: originalPersonal.first_name,
+            last_name: originalPersonal.last_name,
+            email: originalPersonal.email,
+            phone: originalPersonal.phone,
+          },
+          {
+            first_name: currentPersonal.firstName,
+            last_name: currentPersonal.lastName,
+            email: currentPersonal.email,
+            phone: currentPersonal.phone,
+          },
+          fieldsToCheck,
+        )
+
+        if (!personalHasChanges && (originalPersonal.first_name || originalPersonal.last_name)) {
+          return null // No changes to existing data
+        }
+
+        return {
+          action: originalPersonal.first_name || originalPersonal.last_name ? "update" : "create",
           changes: {
-            first_name: onboardingData.personalInfo.firstName,
-            last_name: onboardingData.personalInfo.lastName,
-            email: onboardingData.personalInfo.email,
-            phone: onboardingData.personalInfo.phone,
+            first_name: currentPersonal.firstName,
+            last_name: currentPersonal.lastName,
+            email: currentPersonal.email,
+            phone: currentPersonal.phone,
           },
           database_fields: {
             table: "users",
             primary_key: "id",
             fields_to_update: ["first_name", "last_name", "email", "phone"],
           },
-        },
-        pets: onboardingData.pets.map((pet: any, index: number) => {
-          const isExisting = originalData.pets.some((origPet: any) => origPet.id === pet.id)
-          return {
-            action: isExisting ? "update" : "create",
-            pet_data: {
-              id: pet.id || null,
-              name: pet.name,
-              pet_type: pet.pet_type,
-              breed_name: pet.breed_name,
-              sex: pet.sex,
-              weight: pet.weight,
-              spayed_neutered: pet.spayed_neutered,
-              birth_date: pet.birth_date,
-              chip_id: pet.chip_id,
-            },
-            database_fields: {
-              table: "pets",
-              primary_key: "id",
-              fields_to_update: isExisting
-                ? ["name", "pet_type", "breed_name", "sex", "weight", "spayed_neutered", "birth_date", "chip_id"]
-                : "all_fields",
-            },
+        }
+      }
+
+      // Analyze pet changes
+      const petAnalysis = () => {
+        const changedPets = []
+
+        for (const currentPet of onboardingData.pets) {
+          const originalPet = originalData.pets.find((p: any) => p.id === currentPet.id)
+
+          if (!originalPet) {
+            // This is a new pet created during onboarding
+            changedPets.push({
+              action: "create",
+              pet_data: {
+                name: currentPet.name,
+                pet_type: currentPet.pet_type,
+                breed_name: currentPet.breed_name,
+                sex: currentPet.sex,
+                weight: currentPet.weight,
+                spayed_neutered: currentPet.spayed_neutered,
+                birth_date: currentPet.birth_date,
+                chip_id: currentPet.chip_id,
+              },
+              database_fields: {
+                table: "pets",
+                primary_key: "id",
+                fields_to_update: "all_fields",
+              },
+            })
+          } else {
+            // Check if existing pet has changes
+            const petFieldsToCheck = [
+              "name",
+              "pet_type",
+              "breed_name",
+              "sex",
+              "weight",
+              "spayed_neutered",
+              "birth_date",
+              "chip_id",
+            ]
+            const petHasChanges = hasChanges(
+              {
+                name: originalPet.name,
+                pet_type: originalPet.pet_type,
+                breed_name: originalPet.breed_name,
+                sex: originalPet.pet_sex,
+                weight: originalPet.weight,
+                spayed_neutered: originalPet.spayed_or_neutered,
+                birth_date: originalPet.birthdate,
+                chip_id: originalPet.chip_id,
+              },
+              {
+                name: currentPet.name,
+                pet_type: currentPet.pet_type,
+                breed_name: currentPet.breed_name,
+                sex: currentPet.sex,
+                weight: currentPet.weight,
+                spayed_neutered: currentPet.spayed_neutered,
+                birth_date: currentPet.birth_date,
+                chip_id: currentPet.chip_id,
+              },
+              petFieldsToCheck,
+            )
+
+            if (petHasChanges) {
+              changedPets.push({
+                action: "update",
+                pet_data: {
+                  id: currentPet.id,
+                  name: currentPet.name,
+                  pet_type: currentPet.pet_type,
+                  breed_name: currentPet.breed_name,
+                  sex: currentPet.sex,
+                  weight: currentPet.weight,
+                  spayed_neutered: currentPet.spayed_neutered,
+                  birth_date: currentPet.birth_date,
+                  chip_id: currentPet.chip_id,
+                },
+                database_fields: {
+                  table: "pets",
+                  primary_key: "id",
+                  fields_to_update: [
+                    "name",
+                    "pet_type",
+                    "breed_name",
+                    "sex",
+                    "weight",
+                    "spayed_neutered",
+                    "birth_date",
+                    "chip_id",
+                  ],
+                },
+              })
+            }
+            // If no changes, don't include this pet in the submission
           }
-        }),
-        emergency_contact: {
-          action: originalData.emergencyContacts.length > 0 ? "update" : "create",
+        }
+
+        return changedPets
+      }
+
+      // Analyze emergency contact changes
+      const emergencyContactAnalysis = () => {
+        const originalContact = originalData.emergencyContacts[0] || {}
+        const currentContact = onboardingData.emergencyContact
+
+        const contactFieldsToCheck = ["contact_name", "business_name", "address", "phone_number", "email", "notes"]
+        const contactHasChanges = hasChanges(
+          {
+            contact_name: originalContact.contact_name,
+            business_name: originalContact.business_name,
+            address: originalContact.address,
+            phone_number: originalContact.phone_number,
+            email: originalContact.email,
+            notes: originalContact.notes,
+          },
+          {
+            contact_name: currentContact.contactName,
+            business_name: currentContact.businessName,
+            address: currentContact.address,
+            phone_number: currentContact.phoneNumber,
+            email: currentContact.email,
+            notes: currentContact.notes,
+          },
+          contactFieldsToCheck,
+        )
+
+        if (!contactHasChanges && originalContact.contact_name) {
+          return null // No changes to existing contact
+        }
+
+        if (!currentContact.contactName) {
+          return null // No contact information provided
+        }
+
+        return {
+          action: originalContact.contact_name ? "update" : "create",
           contact_data: {
-            contact_name: onboardingData.emergencyContact.contactName,
-            business_name: onboardingData.emergencyContact.businessName,
-            address: onboardingData.emergencyContact.address,
-            phone_number: onboardingData.emergencyContact.phoneNumber,
-            email: onboardingData.emergencyContact.email,
-            notes: onboardingData.emergencyContact.notes,
+            contact_name: currentContact.contactName,
+            business_name: currentContact.businessName,
+            address: currentContact.address,
+            phone_number: currentContact.phoneNumber,
+            email: currentContact.email,
+            notes: currentContact.notes,
           },
           database_fields: {
             table: "pet_contacts",
             primary_key: "id",
             fields_to_update: ["contact_name", "business_name", "address", "phone_number", "email", "notes"],
           },
-        },
-        policy_acknowledgments: {
+        }
+      }
+
+      // Build submission analysis with only changed data
+      const submissionAnalysis: any = {}
+
+      const personalInfo = personalInfoAnalysis()
+      if (personalInfo) {
+        submissionAnalysis.personal_information = personalInfo
+      }
+
+      const pets = petAnalysis()
+      if (pets.length > 0) {
+        submissionAnalysis.pets = pets
+      }
+
+      const emergencyContact = emergencyContactAnalysis()
+      if (emergencyContact) {
+        submissionAnalysis.emergency_contact = emergencyContact
+      }
+
+      // Policy acknowledgments are always new
+      if (Object.keys(onboardingData.policyAcknowledgments).length > 0) {
+        submissionAnalysis.policy_acknowledgments = {
           action: "create",
           policies: Object.keys(onboardingData.policyAcknowledgments).map((policyId) => ({
             policy_id: Number.parseInt(policyId),
@@ -1567,7 +1734,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
             primary_key: "id",
             fields_to_update: ["policy_id", "user_id", "signed", "signed_at", "signature"],
           },
-        },
+        }
       }
 
       const payload = {
@@ -1579,8 +1746,9 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
         timestamp: new Date().toISOString(),
         metadata: {
           total_pets: onboardingData.pets.length,
-          new_pets: submissionAnalysis.pets.filter((p) => p.action === "create").length,
-          updated_pets: submissionAnalysis.pets.filter((p) => p.action === "update").length,
+          new_pets: pets.filter((p) => p.action === "create").length,
+          updated_pets: pets.filter((p) => p.action === "update").length,
+          unchanged_pets: onboardingData.pets.length - pets.length,
           has_emergency_contact: !!onboardingData.emergencyContact.contactName,
           policies_acknowledged: Object.keys(onboardingData.policyAcknowledgments).length,
           signature_provided: !!onboardingData.signature,
