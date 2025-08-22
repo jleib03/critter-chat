@@ -1415,11 +1415,25 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
           }))
         }
 
-        // Extract pets data
         const petsData = data.filter((item: any) => item.name && item.pet_type)
+        const processedPets = petsData.map((pet: any) => ({
+          // Preserve original ID for comparison
+          id: pet.id,
+          name: pet.name,
+          pet_type: pet.pet_type,
+          breed_name: pet.breed_name,
+          sex: pet.pet_sex,
+          weight: pet.weight || "",
+          spayed_neutered: pet.spayed_or_neutered,
+          birth_date: pet.birthdate,
+          chip_id: pet.chip_id,
+          // Mark as existing for tracking
+          isExisting: true,
+        }))
+
         setOnboardingData((prev) => ({
           ...prev,
-          pets: petsData,
+          pets: processedPets,
         }))
 
         // Extract emergency contacts from pets data
@@ -1428,6 +1442,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
         )
         if (emergencyContacts.length > 0) {
           const firstContact = emergencyContacts[0]
+
           setOnboardingData((prev) => ({
             ...prev,
             emergencyContact: {
@@ -1549,15 +1564,13 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
         }
       }
 
-      // Analyze pet changes
       const petAnalysis = () => {
         const changedPets = []
 
         for (const currentPet of onboardingData.pets) {
-          const originalPet = originalData.pets.find((p: any) => p.id === currentPet.id)
-
-          if (!originalPet) {
-            // This is a new pet created during onboarding
+          // Check if this pet has an existing ID (was loaded from database)
+          if (!currentPet.id || !currentPet.isExisting) {
+            // This is a new pet created during onboarding (no existing ID)
             changedPets.push({
               action: "create",
               pet_data: {
@@ -1577,46 +1590,33 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
               },
             })
           } else {
-            // Check if existing pet has changes
-            const petFieldsToCheck = [
-              "name",
-              "pet_type",
-              "breed_name",
-              "sex",
-              "weight",
-              "spayed_neutered",
-              "birth_date",
-              "chip_id",
-            ]
-            const petHasChanges = hasChanges(
-              {
-                name: originalPet.name,
-                pet_type: originalPet.pet_type,
-                breed_name: originalPet.breed_name,
-                sex: originalPet.pet_sex,
-                weight: originalPet.weight,
-                spayed_neutered: originalPet.spayed_or_neutered,
-                birth_date: originalPet.birthdate,
-                chip_id: originalPet.chip_id,
-              },
-              {
-                name: currentPet.name,
-                pet_type: currentPet.pet_type,
-                breed_name: currentPet.breed_name,
-                sex: currentPet.sex,
-                weight: currentPet.weight,
-                spayed_neutered: currentPet.spayed_neutered,
-                birth_date: currentPet.birth_date,
-                chip_id: currentPet.chip_id,
-              },
-              petFieldsToCheck,
-            )
+            // This is an existing pet - find the original data for comparison
+            const originalPet = originalData.pets.find((p: any) => p.id === currentPet.id)
 
-            if (petHasChanges) {
-              changedPets.push({
-                action: "update",
-                pet_data: {
-                  id: currentPet.id,
+            if (originalPet) {
+              // Check if existing pet has changes
+              const petFieldsToCheck = [
+                "name",
+                "pet_type",
+                "breed_name",
+                "sex",
+                "weight",
+                "spayed_neutered",
+                "birth_date",
+                "chip_id",
+              ]
+              const petHasChanges = hasChanges(
+                {
+                  name: originalPet.name,
+                  pet_type: originalPet.pet_type,
+                  breed_name: originalPet.breed_name,
+                  sex: originalPet.pet_sex,
+                  weight: originalPet.weight || "",
+                  spayed_neutered: originalPet.spayed_or_neutered,
+                  birth_date: originalPet.birthdate,
+                  chip_id: originalPet.chip_id,
+                },
+                {
                   name: currentPet.name,
                   pet_type: currentPet.pet_type,
                   breed_name: currentPet.breed_name,
@@ -1626,23 +1626,42 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                   birth_date: currentPet.birth_date,
                   chip_id: currentPet.chip_id,
                 },
-                database_fields: {
-                  table: "pets",
-                  primary_key: "id",
-                  fields_to_update: [
-                    "name",
-                    "pet_type",
-                    "breed_name",
-                    "sex",
-                    "weight",
-                    "spayed_neutered",
-                    "birth_date",
-                    "chip_id",
-                  ],
-                },
-              })
+                petFieldsToCheck,
+              )
+
+              // Only include in submission if there are actual changes
+              if (petHasChanges) {
+                changedPets.push({
+                  action: "update",
+                  pet_data: {
+                    id: currentPet.id,
+                    name: currentPet.name,
+                    pet_type: currentPet.pet_type,
+                    breed_name: currentPet.breed_name,
+                    sex: currentPet.sex,
+                    weight: currentPet.weight,
+                    spayed_neutered: currentPet.spayed_neutered,
+                    birth_date: currentPet.birth_date,
+                    chip_id: currentPet.chip_id,
+                  },
+                  database_fields: {
+                    table: "pets",
+                    primary_key: "id",
+                    fields_to_update: [
+                      "name",
+                      "pet_type",
+                      "breed_name",
+                      "sex",
+                      "weight",
+                      "spayed_neutered",
+                      "birth_date",
+                      "chip_id",
+                    ],
+                  },
+                })
+              }
+              // If no changes detected, pet is excluded from submission
             }
-            // If no changes, don't include this pet in the submission
           }
         }
 
