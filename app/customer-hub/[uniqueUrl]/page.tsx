@@ -1788,6 +1788,37 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
         const updatedData = await response.json()
         console.log("[v0] Onboarding submission successful, received updated data:", updatedData)
 
+        if (
+          updatedData.status === "onboarding_submitted_successfully" ||
+          updatedData.message === "onboarding_submitted_successfully"
+        ) {
+          try {
+            console.log("[v0] Sending reinitialize_customer_hub webhook...")
+
+            const reinitializePayload = {
+              action: "reinitialize_customer_hub",
+              unique_url: uniqueUrl,
+              customer_email: email,
+              timestamp: new Date().toISOString(),
+            }
+
+            const reinitializeResponse = await fetch(webhookUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(reinitializePayload),
+            })
+
+            if (reinitializeResponse.ok) {
+              const reinitializedData = await reinitializeResponse.json()
+              console.log("[v0] Customer hub reinitialized successfully:", reinitializedData)
+            } else {
+              console.error("Failed to reinitialize customer hub:", reinitializeResponse.statusText)
+            }
+          } catch (reinitializeError) {
+            console.error("Error reinitializing customer hub:", reinitializeError)
+          }
+        }
+
         setShowOnboardingModal(false)
         setOnboardingStep(1)
 
