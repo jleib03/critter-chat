@@ -1436,25 +1436,27 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
           pets: processedPets,
         }))
 
-        // Extract emergency contacts from pets data
         const emergencyContacts = petsData.flatMap(
           (pet: any) => pet.contacts?.filter((contact: any) => contact.contact_type === "Emergency Contact") || [],
         )
-        if (emergencyContacts.length > 0) {
-          const firstContact = emergencyContacts[0]
 
-          setOnboardingData((prev) => ({
-            ...prev,
-            emergencyContact: {
-              contactName: firstContact.contact_name || "",
-              businessName: "",
-              address: "",
-              phoneNumber: "",
-              email: firstContact.email || "",
-              notes: "",
-            },
-          }))
-        }
+        const processedEmergencyContacts = emergencyContacts.map((contact: any) => ({
+          // Preserve original ID for comparison
+          id: contact.id,
+          contactName: contact.contact_name || "",
+          businessName: contact.business_name || "",
+          address: contact.address || "",
+          phoneNumber: contact.phone_number || "",
+          email: contact.email || "",
+          notes: contact.notes || "",
+          // Mark as existing for tracking
+          isExisting: true,
+        }))
+
+        setOnboardingData((prev) => ({
+          ...prev,
+          emergencyContacts: processedEmergencyContacts,
+        }))
       }
     } catch (error) {
       console.error("Error fetching onboarding data:", error)
