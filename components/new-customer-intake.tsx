@@ -96,7 +96,7 @@ export default function NewCustomerIntake({
   const [resolvedProfessionalName, setResolvedProfessionalName] = useState<string | null>(
     initialProfessionalName || null,
   )
-  const [petPicklists, setPetPicklists] = useState<PetPicklists>({ types: [], breeds: {} })
+  const [picklistData, setPicklistData] = useState<PicklistItem[]>([])
 
   useEffect(() => {
     const fetchProfessionalName = async () => {
@@ -119,28 +119,20 @@ export default function NewCustomerIntake({
 
           const data = await response.json()
           console.log("Raw response:", JSON.stringify(data))
-          console.log("Parsed data:", data)
-          console.log("Data type:", typeof data)
-          console.log("Data keys:", Object.keys(data))
-          console.log("Checking data.name:", data.name)
-          console.log("Checking data.professional_name:", data.professional_name)
-          console.log("Checking data.professional_id:", data.professional_id)
 
           let name = null
-          const picklists: PetPicklists = { types: [], breeds: {} }
+          let extractedPicklistData: PicklistItem[] = []
 
           let dataArray: any[] = []
           if (Array.isArray(data)) {
             dataArray = data
           } else if (typeof data === "object" && data !== null) {
-            // Check if it's an object with numeric keys (like {0: {...}, 1: {...}, etc.})
             const keys = Object.keys(data)
             const isNumericKeys = keys.every((key) => !isNaN(Number(key)))
             if (isNumericKeys && keys.length > 0) {
               dataArray = Object.values(data)
               console.log("Converted object with numeric keys to array, length:", dataArray.length)
             } else if (data.name) {
-              // Single object with name property
               name = data.name
               console.log("Found name in object format:", name)
             }
@@ -156,39 +148,8 @@ export default function NewCustomerIntake({
               console.log("Found ID in dataArray[0].id:", dataArray[0].id)
             }
 
-            console.log("[v0] Starting to parse picklist data from array...")
-            console.log("[v0] Array length:", dataArray.length)
-
-            for (let i = 1; i < dataArray.length; i++) {
-              const item = dataArray[i]
-              console.log(`[v0] Processing item ${i}:`, JSON.stringify(item))
-
-              if (item.picklist_type === "type" && item.category === "Pet Type") {
-                console.log(`[v0] ✓ Adding pet type: ${item.label}`)
-                picklists.types.push(item)
-                console.log(`[v0] Pet types array now has ${picklists.types.length} items`)
-              } else if (item.picklist_type === "breed") {
-                const petType = item.category
-                console.log(`[v0] ✓ Adding breed ${item.label} to category ${petType}`)
-                if (!picklists.breeds[petType]) {
-                  picklists.breeds[petType] = []
-                  console.log(`[v0] Created new breed category: ${petType}`)
-                }
-                picklists.breeds[petType].push(item)
-                console.log(`[v0] Category ${petType} now has ${picklists.breeds[petType].length} breeds`)
-              } else {
-                console.log(`[v0] ⚠️ Skipping item - picklist_type: ${item.picklist_type}, category: ${item.category}`)
-              }
-            }
-
-            console.log("[v0] Finished parsing picklist data")
-            console.log("[v0] Final pet types count:", picklists.types.length)
-            console.log(
-              "[v0] Final pet types:",
-              picklists.types.map((t) => t.label),
-            )
-            console.log("[v0] Final breeds categories:", Object.keys(picklists.breeds))
-            console.log("[v0] Full picklists object:", JSON.stringify(picklists))
+            console.log("[v0] Extracted picklistData:", dataArray.slice(1))
+            extractedPicklistData = dataArray.slice(1)
           } else if (typeof data === "string") {
             name = data
             console.log("Found name as string:", name)
@@ -198,11 +159,9 @@ export default function NewCustomerIntake({
           }
 
           console.log("[v0] Setting resolved professional name:", name)
-          console.log("[v0] Setting pet picklists:", JSON.stringify(picklists))
+          console.log("[v0] Setting picklist data length:", extractedPicklistData.length)
           setResolvedProfessionalName(name)
-          setPetPicklists(picklists)
-
-          console.log("[v0] State update called - picklists should now be set")
+          setPicklistData(extractedPicklistData)
         } catch (err) {
           console.error("Error fetching professional:", err)
           setError(err instanceof Error ? err.message : "Failed to fetch professional")
@@ -323,7 +282,7 @@ export default function NewCustomerIntake({
           professionalId={initialProfessionalId}
           professionalName={resolvedProfessionalName || initialProfessionalName}
           userInfo={initialUserInfo && initialUserInfo.firstName ? initialUserInfo : null}
-          petPicklists={petPicklists}
+          picklistData={picklistData}
         />
       )}
       {currentStep === "submitting" && (
