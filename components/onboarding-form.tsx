@@ -643,24 +643,11 @@ export default function OnboardingForm({
                     required
                   >
                     <option value="">Select type</option>
-                    {petPicklists.types.length > 0 ? (
-                      petPicklists.types.map((type) => (
-                        <option key={type.value} value={type.label}>
-                          {type.label}
-                        </option>
-                      ))
-                    ) : (
-                      // Fallback to hardcoded options if no picklist data
-                      <>
-                        <option value="Dog">Dog</option>
-                        <option value="Cat">Cat</option>
-                        <option value="Bird">Bird</option>
-                        <option value="Fish">Fish</option>
-                        <option value="Reptile">Reptile</option>
-                        <option value="Small Animal">Small Animal</option>
-                        <option value="Other">Other</option>
-                      </>
-                    )}
+                    {petPicklists.types.map((type) => (
+                      <option key={type.value} value={type.label}>
+                        {type.label}
+                      </option>
+                    ))}
                   </select>
                   {formErrors.pets?.[index]?.type && (
                     <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].type}</p>
