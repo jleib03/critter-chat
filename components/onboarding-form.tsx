@@ -53,7 +53,20 @@ export default function OnboardingForm({
     city?: string
     state?: string
     zipCode?: string
-    pets?: { [key: number]: { name?: string; type?: string; breed?: string; age?: string } }
+    pets?: {
+      [key: number]: {
+        name?: string
+        type?: string
+        breed?: string
+        sex?: string
+        birthMonth?: string
+        birthDay?: string
+        birthYear?: string
+        weight?: string
+        spayedNeuteredStatus?: string
+        notes?: string
+      }
+    }
   }>({})
 
   const [formData, setFormData] = useState<OnboardingFormData>({
@@ -71,8 +84,12 @@ export default function OnboardingForm({
         name: "",
         type: "",
         breed: "",
-        age: "",
-        isSpayedOrNeutered: false,
+        sex: "",
+        birthMonth: "",
+        birthDay: "",
+        birthYear: "",
+        weight: "",
+        spayedNeuteredStatus: "",
         notes: "",
       },
     ],
@@ -137,8 +154,12 @@ export default function OnboardingForm({
           name: "",
           type: "",
           breed: "",
-          age: "",
-          isSpayedOrNeutered: false,
+          sex: "",
+          birthMonth: "",
+          birthDay: "",
+          birthYear: "",
+          weight: "",
+          spayedNeuteredStatus: "",
           notes: "",
         },
       ],
@@ -207,11 +228,35 @@ export default function OnboardingForm({
       if (!formData.state.trim()) errors.state = "State is required"
       if (!formData.zipCode.trim()) errors.zipCode = "ZIP code is required"
     } else if (currentStep === 3) {
-      const petErrors: { [key: number]: { name?: string; type?: string; breed?: string; age?: string } } = {}
+      const petErrors: {
+        [key: number]: {
+          name?: string
+          type?: string
+          breed?: string
+          sex?: string
+          birthMonth?: string
+          birthDay?: string
+          birthYear?: string
+          weight?: string
+          spayedNeuteredStatus?: string
+          notes?: string
+        }
+      } = {}
       let hasPetErrors = false
 
       formData.pets.forEach((pet, index) => {
-        const petError: { name?: string; type?: string; breed?: string; age?: string } = {}
+        const petError: {
+          name?: string
+          type?: string
+          breed?: string
+          sex?: string
+          birthMonth?: string
+          birthDay?: string
+          birthYear?: string
+          weight?: string
+          spayedNeuteredStatus?: string
+          notes?: string
+        } = {}
 
         if (!pet.name.trim()) {
           petError.name = "Pet name is required"
@@ -228,8 +273,33 @@ export default function OnboardingForm({
           hasPetErrors = true
         }
 
-        if (!pet.age.trim()) {
-          petError.age = "Age is required"
+        if (!pet.sex.trim()) {
+          petError.sex = "Sex is required"
+          hasPetErrors = true
+        }
+
+        if (!pet.birthMonth.trim()) {
+          petError.birthMonth = "Birth month is required"
+          hasPetErrors = true
+        }
+
+        if (!pet.birthDay.trim()) {
+          petError.birthDay = "Birth day is required"
+          hasPetErrors = true
+        }
+
+        if (!pet.birthYear.trim()) {
+          petError.birthYear = "Birth year is required"
+          hasPetErrors = true
+        }
+
+        if (!pet.weight.trim()) {
+          petError.weight = "Weight is required"
+          hasPetErrors = true
+        }
+
+        if (!pet.spayedNeuteredStatus.trim()) {
+          petError.spayedNeuteredStatus = "Spayed/Neutered status is required"
           hasPetErrors = true
         }
 
@@ -609,38 +679,112 @@ export default function OnboardingForm({
                 </div>
                 <div>
                   <label
-                    htmlFor={`petAge-${index}`}
+                    htmlFor={`petSex-${index}`}
                     className="block text-sm font-medium text-gray-700 mb-1 header-font"
                   >
-                    Age*
+                    Sex*
                   </label>
-                  <input
-                    type="text"
-                    id={`petAge-${index}`}
-                    value={pet.age}
-                    onChange={(e) => updatePetData(index, "age", e.target.value)}
-                    className={`w-full p-3 border ${formErrors.pets?.[index]?.age ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
-                    placeholder="e.g., 3 years"
+                  <select
+                    id={`petSex-${index}`}
+                    value={pet.sex}
+                    onChange={(e) => updatePetData(index, "sex", e.target.value)}
+                    className={`w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
                     required
-                  />
-                  {formErrors.pets?.[index]?.age && (
-                    <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].age}</p>
-                  )}
+                  >
+                    <option value="">Select sex</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div className="flex items-center">
-                  <label className="flex items-center body-font">
-                    <input
-                      type="checkbox"
-                      checked={pet.isSpayedOrNeutered}
-                      onChange={(e) => updatePetData(index, "isSpayedOrNeutered", e.target.checked)}
-                      className="mr-2 h-4 w-4 text-[#E75837] focus:ring-2 focus:ring-[#E75837] border-gray-300 rounded"
-                    />
-                    Spayed/Neutered
-                  </label>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 header-font">Birth Date</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <select
+                      value={pet.birthMonth}
+                      onChange={(e) => updatePetData(index, "birthMonth", e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
+                    >
+                      <option value="">Month</option>
+                      <option value="01">January</option>
+                      <option value="02">February</option>
+                      <option value="03">March</option>
+                      <option value="04">April</option>
+                      <option value="05">May</option>
+                      <option value="06">June</option>
+                      <option value="07">July</option>
+                      <option value="08">August</option>
+                      <option value="09">September</option>
+                      <option value="10">October</option>
+                      <option value="11">November</option>
+                      <option value="12">December</option>
+                    </select>
+                    <select
+                      value={pet.birthDay}
+                      onChange={(e) => updatePetData(index, "birthDay", e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
+                    >
+                      <option value="">Day</option>
+                      {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                        <option key={day} value={day.toString().padStart(2, "0")}>
+                          {day}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={pet.birthYear}
+                      onChange={(e) => updatePetData(index, "birthYear", e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
+                    >
+                      <option value="">Year</option>
+                      {Array.from({ length: 25 }, (_, i) => new Date().getFullYear() - i).map((year) => (
+                        <option key={year} value={year.toString()}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
+                <div>
+                  <label
+                    htmlFor={`petWeight-${index}`}
+                    className="block text-sm font-medium text-gray-700 mb-1 header-font"
+                  >
+                    Weight*
+                  </label>
+                  <input
+                    type="text"
+                    id={`petWeight-${index}`}
+                    value={pet.weight}
+                    onChange={(e) => updatePetData(index, "weight", e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
+                    placeholder="e.g., 25 lbs"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label
+                  htmlFor={`petSpayedNeutered-${index}`}
+                  className="block text-sm font-medium text-gray-700 mb-1 header-font"
+                >
+                  Spayed/Neutered*
+                </label>
+                <select
+                  id={`petSpayedNeutered-${index}`}
+                  value={pet.spayedNeuteredStatus}
+                  onChange={(e) => updatePetData(index, "spayedNeuteredStatus", e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
+                  required
+                >
+                  <option value="">Select status</option>
+                  <option value="Spayed">Spayed</option>
+                  <option value="Neutered">Neutered</option>
+                  <option value="Not Spayed/Neutered">Not Spayed/Neutered</option>
+                </select>
               </div>
 
               <div>
@@ -661,7 +805,6 @@ export default function OnboardingForm({
               </div>
             </div>
           ))}
-
           <button
             type="button"
             onClick={addPet}
