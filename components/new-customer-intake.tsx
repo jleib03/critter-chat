@@ -118,29 +118,51 @@ export default function NewCustomerIntake({
           }
 
           const data = await response.json()
-          console.log("Response data:", JSON.stringify(data))
+          console.log("Raw response:", JSON.stringify(data))
+          console.log("Parsed data:", data)
+          console.log("Data type:", typeof data)
+          console.log("Data keys:", Object.keys(data))
+          console.log("Checking data.name:", data.name)
+          console.log("Checking data.professional_name:", data.professional_name)
+          console.log("Checking data.professional_id:", data.professional_id)
 
           let name = null
           const picklists: PetPicklists = { types: [], breeds: {} }
 
           if (Array.isArray(data) && data.length > 0) {
+            console.log("Data is an array, checking first element:", data[0])
             if (data[0].name) {
               name = data[0].name
-              console.log("Found name in array format:", name)
+              console.log("Found name in data[0].name:", name)
+            }
+            if (data[0].id) {
+              console.log("Found ID in data[0].id:", data[0].id)
             }
 
+            console.log("[v0] Starting to parse picklist data from array...")
             for (let i = 1; i < data.length; i++) {
               const item = data[i]
+              console.log(`[v0] Processing item ${i}:`, item)
+
               if (item.picklist_type === "type" && item.category === "Pet Type") {
+                console.log(`[v0] Adding pet type: ${item.label}`)
                 picklists.types.push(item)
               } else if (item.picklist_type === "breed") {
                 const petType = item.category
+                console.log(`[v0] Adding breed ${item.label} to category ${petType}`)
                 if (!picklists.breeds[petType]) {
                   picklists.breeds[petType] = []
                 }
                 picklists.breeds[petType].push(item)
               }
             }
+            console.log("[v0] Finished parsing picklist data")
+            console.log("[v0] Final pet types count:", picklists.types.length)
+            console.log(
+              "[v0] Final pet types:",
+              picklists.types.map((t) => t.label),
+            )
+            console.log("[v0] Final breeds categories:", Object.keys(picklists.breeds))
           } else if (data.name) {
             name = data.name
             console.log("Found name in object format:", name)
@@ -152,14 +174,10 @@ export default function NewCustomerIntake({
             throw new Error("Professional not found")
           }
 
+          console.log("[v0] Setting resolved professional name:", name)
+          console.log("[v0] Setting pet picklists:", picklists)
           setResolvedProfessionalName(name)
           setPetPicklists(picklists)
-          console.log("[v0] Parsed picklists:", picklists)
-          console.log("[v0] Pet types count:", picklists.types.length)
-          console.log(
-            "[v0] Pet types:",
-            picklists.types.map((t) => t.label),
-          )
         } catch (err) {
           console.error("Error fetching professional:", err)
           setError(err instanceof Error ? err.message : "Failed to fetch professional")
