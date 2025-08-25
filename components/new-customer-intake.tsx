@@ -157,22 +157,30 @@ export default function NewCustomerIntake({
             }
 
             console.log("[v0] Starting to parse picklist data from array...")
+            console.log("[v0] Array length:", dataArray.length)
+
             for (let i = 1; i < dataArray.length; i++) {
               const item = dataArray[i]
-              console.log(`[v0] Processing item ${i}:`, item)
+              console.log(`[v0] Processing item ${i}:`, JSON.stringify(item))
 
               if (item.picklist_type === "type" && item.category === "Pet Type") {
-                console.log(`[v0] Adding pet type: ${item.label}`)
+                console.log(`[v0] ✓ Adding pet type: ${item.label}`)
                 picklists.types.push(item)
+                console.log(`[v0] Pet types array now has ${picklists.types.length} items`)
               } else if (item.picklist_type === "breed") {
                 const petType = item.category
-                console.log(`[v0] Adding breed ${item.label} to category ${petType}`)
+                console.log(`[v0] ✓ Adding breed ${item.label} to category ${petType}`)
                 if (!picklists.breeds[petType]) {
                   picklists.breeds[petType] = []
+                  console.log(`[v0] Created new breed category: ${petType}`)
                 }
                 picklists.breeds[petType].push(item)
+                console.log(`[v0] Category ${petType} now has ${picklists.breeds[petType].length} breeds`)
+              } else {
+                console.log(`[v0] ⚠️ Skipping item - picklist_type: ${item.picklist_type}, category: ${item.category}`)
               }
             }
+
             console.log("[v0] Finished parsing picklist data")
             console.log("[v0] Final pet types count:", picklists.types.length)
             console.log(
@@ -180,6 +188,7 @@ export default function NewCustomerIntake({
               picklists.types.map((t) => t.label),
             )
             console.log("[v0] Final breeds categories:", Object.keys(picklists.breeds))
+            console.log("[v0] Full picklists object:", JSON.stringify(picklists))
           } else if (typeof data === "string") {
             name = data
             console.log("Found name as string:", name)
@@ -189,9 +198,11 @@ export default function NewCustomerIntake({
           }
 
           console.log("[v0] Setting resolved professional name:", name)
-          console.log("[v0] Setting pet picklists:", picklists)
+          console.log("[v0] Setting pet picklists:", JSON.stringify(picklists))
           setResolvedProfessionalName(name)
           setPetPicklists(picklists)
+
+          console.log("[v0] State update called - picklists should now be set")
         } catch (err) {
           console.error("Error fetching professional:", err)
           setError(err instanceof Error ? err.message : "Failed to fetch professional")
