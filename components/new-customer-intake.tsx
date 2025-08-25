@@ -111,7 +111,6 @@ export default function NewCustomerIntake({
           const response = await fetch(
             `${webhookUrl}?professionalId=${initialProfessionalId}&action=initialize_onboarding`,
           )
-          console.log("Response status:", response.status)
 
           if (!response.ok) {
             throw new Error(`Failed to fetch professional: ${response.status}`)
@@ -131,35 +130,25 @@ export default function NewCustomerIntake({
             const isNumericKeys = keys.every((key) => !isNaN(Number(key)))
             if (isNumericKeys && keys.length > 0) {
               dataArray = Object.values(data)
-              console.log("Converted object with numeric keys to array, length:", dataArray.length)
             } else if (data.name) {
               name = data.name
-              console.log("Found name in object format:", name)
             }
           }
 
           if (dataArray.length > 0) {
-            console.log("Data is an array, checking first element:", dataArray[0])
             if (dataArray[0].name) {
               name = dataArray[0].name
-              console.log("Found name in dataArray[0].name:", name)
-            }
-            if (dataArray[0].id) {
-              console.log("Found ID in dataArray[0].id:", dataArray[0].id)
             }
 
-            console.log("[v0] Extracted picklistData:", dataArray.slice(1))
             extractedPicklistData = dataArray.slice(1)
+            console.log("[v0] Extracted picklistData:", extractedPicklistData)
           } else if (typeof data === "string") {
             name = data
-            console.log("Found name as string:", name)
           } else {
             console.error("Unexpected response format:", data)
             throw new Error("Professional not found")
           }
 
-          console.log("[v0] Setting resolved professional name:", name)
-          console.log("[v0] Setting picklist data length:", extractedPicklistData.length)
           setResolvedProfessionalName(name)
           setPicklistData(extractedPicklistData)
         } catch (err) {

@@ -17,6 +17,11 @@ type PicklistItem = {
   category: string
 }
 
+type PetPicklists = {
+  types: PicklistItem[]
+  breeds: { [petType: string]: PicklistItem[] }
+}
+
 type OnboardingFormProps = {
   onSubmit: (data: OnboardingFormData) => void
   onCancel: () => void
@@ -24,7 +29,7 @@ type OnboardingFormProps = {
   professionalId?: string
   professionalName?: string
   userInfo?: UserInfo | null
-  picklistData?: PicklistItem[]
+  petPicklists?: PetPicklists
 }
 
 export default function OnboardingForm({
@@ -34,19 +39,15 @@ export default function OnboardingForm({
   professionalId,
   professionalName,
   userInfo,
-  picklistData = [],
+  petPicklists = { types: [], breeds: {} },
 }: OnboardingFormProps) {
-  console.log("[v0] OnboardingForm received picklistData:", picklistData)
-  console.log("[v0] picklistData length:", picklistData.length)
-  console.log("[v0] picklistData sample:", picklistData.slice(0, 3))
-
-  const petTypes = picklistData.filter((item) => item.picklist_type === "type" && item.category === "Pet Type")
-  const breedOptions = picklistData.filter((item) => item.picklist_type === "breed")
-
-  console.log("[v0] Filtered petTypes:", petTypes)
-  console.log("[v0] petTypes length:", petTypes.length)
-  console.log("[v0] Filtered breedOptions:", breedOptions)
-  console.log("[v0] breedOptions length:", breedOptions.length)
+  console.log("[v0] OnboardingForm received petPicklists:", petPicklists)
+  console.log("[v0] Pet types count:", petPicklists.types.length)
+  console.log(
+    "[v0] Pet types:",
+    petPicklists.types.map((t) => ({ label: t.label, value: t.value })),
+  )
+  console.log("[v0] Breeds data:", Object.keys(petPicklists.breeds))
 
   const [currentStep, setCurrentStep] = useState(skipProfessionalStep ? 2 : 1)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -327,6 +328,7 @@ export default function OnboardingForm({
   const getAvailableBreeds = (petType: string): PicklistItem[] => {
     console.log("[v0] Getting breeds for pet type:", petType)
 
+    // Normalize the pet type for matching (remove spaces, convert to lowercase)
     const normalizedPetType = petType
       .toLowerCase()
       .replace(/\s+/g, "")
@@ -334,14 +336,21 @@ export default function OnboardingForm({
 
     console.log("[v0] Normalized pet type:", normalizedPetType)
 
-    const matchingBreeds = breedOptions.filter((breed) => {
-      const normalizedCategory = breed.category
+    // Find breeds by checking if the normalized category matches the normalized pet type
+    const matchingBreeds: PicklistItem[] = []
+
+    Object.keys(petPicklists.breeds).forEach((category) => {
+      const normalizedCategory = category
         .toLowerCase()
         .replace(/\s+/g, "")
         .replace(/[^a-z0-9]/g, "")
 
-      console.log("[v0] Checking breed category:", breed.category, "normalized:", normalizedCategory)
-      return normalizedCategory === normalizedPetType
+      console.log("[v0] Checking category:", category, "normalized:", normalizedCategory)
+
+      if (normalizedCategory === normalizedPetType) {
+        console.log("[v0] Found matching category:", category, "with breeds:", petPicklists.breeds[category].length)
+        matchingBreeds.push(...petPicklists.breeds[category])
+      }
     })
 
     console.log("[v0] Total matching breeds found:", matchingBreeds.length)
@@ -654,7 +663,7 @@ export default function OnboardingForm({
                     required
                   >
                     <option value="">Select type</option>
-                    {petTypes.map((type) => (
+                    {petPicklists.types.map((type) => (
                       <option key={type.value} value={type.label}>
                         {type.label}
                       </option>
