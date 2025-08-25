@@ -3,7 +3,7 @@
 // Using variables to make future updates easier
 const SCHEDULE_SETUP_URL = "https://jleib03.app.n8n.cloud/webhook/0bed0042-ae72-4e94-a924-ff026b804f23"
 const CHAT_LANDING_AND_ONBOARDING_URL = "https://jleib03.app.n8n.cloud/webhook/803d260b-1b17-4abf-8079-2d40225c29b0"
-const NEW_CUSTOMER_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
+const NEW_CUSTOMER_URL = "https://jleib03.app.n8n.cloud/webhook-test/a306584e-8637-4284-8a41-ecd5d24dc255"
 
 export const WEBHOOK_ENDPOINTS = {
   // For schedule, booking, and professional config setup

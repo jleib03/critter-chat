@@ -3,7 +3,7 @@ import { useParams, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import NewCustomerIntake from "../../../components/new-customer-intake"
 import Header from "../../../components/header"
-import { Loader2 } from 'lucide-react'
+import { Loader2 } from "lucide-react"
 import { getWebhookEndpoint, logWebhookUsage } from "../../../types/webhook-endpoints"
 
 export default function ProfessionalSpecificPage() {
@@ -35,7 +35,7 @@ export default function ProfessionalSpecificPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            action: "get_professional_name",
+            action: "initialize_onboarding",
             uniqueUrl: uniqueUrl,
           }),
         })

@@ -4,15 +4,25 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { getWebhookEndpoint, logWebhookUsage } from "../types/webhook-endpoints"
 import OnboardingForm from "./onboarding-form"
-import ServiceSelection from "./service-selection"
-import RequestScheduling from "./request-scheduling"
 import Confirmation from "./confirmation"
-import type { OnboardingFormData } from "../types/booking"
 
 type UserInfo = {
   email: string
   firstName: string
   lastName: string
+}
+
+type PicklistItem = {
+  table_name: string
+  picklist_type: "type" | "breed"
+  value: string
+  label: string
+  category: string
+}
+
+type PetPicklists = {
+  types: PicklistItem[]
+  breeds: { [petType: string]: PicklistItem[] }
 }
 
 type NewCustomerIntakeProps = {
@@ -26,9 +36,7 @@ type NewCustomerIntakeProps = {
   skipProfessionalStep?: boolean
 }
 
-// More conservative function to determine if a service is an add-on
 const isAddOnService = (category: string, serviceName: string): boolean => {
-  // Normalize text for comparison (lowercase, remove special characters)
   const normalizeText = (text: string): string => {
     return text
       .toLowerCase()
@@ -39,25 +47,15 @@ const isAddOnService = (category: string, serviceName: string): boolean => {
   const normalizedCategory = normalizeText(category)
   const normalizedName = normalizeText(serviceName)
 
-  // First, check if the original category explicitly indicates add-on
   const addOnCategoryPatterns = ["addon", "add on", "add-on", "add_on", "addons", "add ons", "add-ons", "add_ons"]
 
-  // If category explicitly mentions add-on, trust it
   for (const pattern of addOnCategoryPatterns) {
     if (normalizedCategory.includes(pattern)) {
       return true
     }
   }
 
-  // Only check service name for very specific add-on indicators
-  // Be more conservative - only look for explicit add-on mentions in the name
-  const explicitAddOnInName = [
-    "add on",
-    "add-on",
-    "addon",
-    ": add", // matches "Transportation: Add On"
-    "add :", // matches "Add: Transportation"
-  ]
+  const explicitAddOnInName = ["add on", "add-on", "addon", ": add", "add :"]
 
   for (const pattern of explicitAddOnInName) {
     if (normalizedName.includes(pattern)) {
@@ -65,12 +63,7 @@ const isAddOnService = (category: string, serviceName: string): boolean => {
     }
   }
 
-  // Check for very specific patterns that are almost always add-ons
-  const specificAddOnPatterns = [
-    /^multiple\s+\w+.*add/i, // "Multiple Dogs: Add on"
-    /^additional\s+\w+/i, // "Additional Feeding" (but not "No additional description")
-    /^extra\s+\w+/i, // "Extra Walk Time"
-  ]
+  const specificAddOnPatterns = [/^multiple\s+\w+.*add/i, /^additional\s+\w+/i, /^extra\s+\w+/i]
 
   for (const pattern of specificAddOnPatterns) {
     if (pattern.test(serviceName)) {
@@ -78,7 +71,6 @@ const isAddOnService = (category: string, serviceName: string): boolean => {
     }
   }
 
-  // Default to main service if no clear add-on indicators
   return false
 }
 
@@ -94,11 +86,8 @@ export default function NewCustomerIntake({
 }: NewCustomerIntakeProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [currentStep, setCurrentStep] = useState<"form" | "services" | "scheduling" | "confirmation" | "submitting" | "success">("form")
+  const [currentStep, setCurrentStep] = useState<"form" | "submitting" | "success">("form")
   const [formData, setFormData] = useState<any>(null)
-  const [servicesData, setServicesData] = useState<any>(null)
-  const [serviceSelectionData, setServiceSelectionData] = useState<any>(null)
-  const [schedulingData, setSchedulingData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
@@ -107,8 +96,8 @@ export default function NewCustomerIntake({
   const [resolvedProfessionalName, setResolvedProfessionalName] = useState<string | null>(
     initialProfessionalName || null,
   )
+  const [petPicklists, setPetPicklists] = useState<PetPicklists>({ types: [], breeds: {} })
 
-  // If we have a professional ID but no name, fetch the name
   useEffect(() => {
     const fetchProfessionalName = async () => {
       if (initialProfessionalId && !initialProfessionalName) {
@@ -119,7 +108,9 @@ export default function NewCustomerIntake({
           const webhookUrl = getWebhookEndpoint("NEW_CUSTOMER_ONBOARDING")
           logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "fetch_professional_name")
 
-          const response = await fetch(`${webhookUrl}?professionalId=${initialProfessionalId}`)
+          const response = await fetch(
+            `${webhookUrl}?professionalId=${initialProfessionalId}&action=initialize_onboarding`,
+          )
           console.log("Response status:", response.status)
 
           if (!response.ok) {
@@ -129,18 +120,31 @@ export default function NewCustomerIntake({
           const data = await response.json()
           console.log("Response data:", JSON.stringify(data))
 
-          // Handle different response formats
           let name = null
-          if (Array.isArray(data) && data.length > 0 && data[0].name) {
-            // If response is an array with objects containing name
-            name = data[0].name
-            console.log("Found name in array format:", name)
+          const picklists: PetPicklists = { types: [], breeds: {} }
+
+          if (Array.isArray(data) && data.length > 0) {
+            if (data[0].name) {
+              name = data[0].name
+              console.log("Found name in array format:", name)
+            }
+
+            for (let i = 1; i < data.length; i++) {
+              const item = data[i]
+              if (item.picklist_type === "type" && item.category === "Pet Type") {
+                picklists.types.push(item)
+              } else if (item.picklist_type === "breed") {
+                const petType = item.category
+                if (!picklists.breeds[petType]) {
+                  picklists.breeds[petType] = []
+                }
+                picklists.breeds[petType].push(item)
+              }
+            }
           } else if (data.name) {
-            // If response is an object with name property
             name = data.name
             console.log("Found name in object format:", name)
           } else if (typeof data === "string") {
-            // If response is a string
             name = data
             console.log("Found name as string:", name)
           } else {
@@ -149,6 +153,8 @@ export default function NewCustomerIntake({
           }
 
           setResolvedProfessionalName(name)
+          setPetPicklists(picklists)
+          console.log("Parsed picklists:", picklists)
         } catch (err) {
           console.error("Error fetching professional:", err)
           setError(err instanceof Error ? err.message : "Failed to fetch professional")
@@ -162,18 +168,17 @@ export default function NewCustomerIntake({
   }, [initialProfessionalId, initialProfessionalName])
 
   const handleFormSubmit = async (data: any) => {
-    // Merge the user info from landing page with additional form data
     const combinedData = {
       ...data,
     }
 
     setFormData(combinedData)
-    setIsLoading(true)
-    logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "retrieve_services")
+    setCurrentStep("submitting")
+    logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "final_intake_submission")
 
     const payload = {
       message: {
-        text: "New customer intake - retrieve services",
+        text: "New customer final intake submission",
         userId: USER_ID.current,
         timestamp: new Date().toISOString(),
         userInfo: {
@@ -183,184 +188,8 @@ export default function NewCustomerIntake({
           selectedAction: "new_customer_intake",
         },
         formData: combinedData,
-        professionalID: initialProfessionalId, // Use the actual professional_id from the lookup
-        type: "new_customer_get_services",
-        source: "critter_booking_site",
-      },
-    }
-
-    try {
-      const response = await fetch(getWebhookEndpoint("NEW_CUSTOMER_ONBOARDING"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      })
-
-      if (response.ok) {
-        const responseData = await response.json()
-        console.log("Webhook response:", responseData)
-
-        // Parse services from the response message
-        if (responseData.message) {
-          try {
-            const parsedMessage = JSON.parse(responseData.message)
-
-            if (parsedMessage.type === "service_list" && parsedMessage.items) {
-              // Convert the webhook format to our component format
-              const services = parsedMessage.items.map((item: any, index: number) => {
-                // Extract duration and price from details array
-                let duration = "Not specified"
-                let price = "Contact for pricing"
-                let description = "No description provided"
-
-                if (item.details && Array.isArray(item.details)) {
-                  item.details.forEach((detail: string) => {
-                    if (detail.startsWith("Duration:")) {
-                      duration = detail.replace("Duration:", "").trim()
-                    } else if (detail.startsWith("Price:")) {
-                      price = detail.replace("Price:", "").trim()
-                    } else if (
-                      !detail.includes("No description provided") &&
-                      !detail.includes("No additional description")
-                    ) {
-                      description = detail
-                    }
-                  })
-                }
-
-                // Use conservative category detection
-                const originalCategory = item.category || "Other Services"
-                const detectedCategory = isAddOnService(originalCategory, item.name) ? "Add-On" : originalCategory
-
-                console.log(
-                  `Service: "${item.name}" | Original Category: "${originalCategory}" | Detected: "${detectedCategory}"`,
-                )
-
-                return {
-                  id: (index + 1).toString(),
-                  name: item.name,
-                  description: description === "No description provided" ? "No additional description" : description,
-                  duration: duration,
-                  price: price,
-                  category: detectedCategory,
-                  selected: false,
-                }
-              })
-
-              setServicesData(services)
-              console.log("Parsed services:", services)
-            } else {
-              console.log("No service_list found in response, using mock data")
-              // Fallback to mock data
-              setServicesData([
-                {
-                  id: "1",
-                  name: "Dog Walking",
-                  description: "30-minute neighborhood walk",
-                  duration: "30 minutes",
-                  price: "$25",
-                  category: "Main Service",
-                  selected: false,
-                },
-                {
-                  id: "2",
-                  name: "Pet Sitting",
-                  description: "In-home pet care while you're away",
-                  duration: "Per day",
-                  price: "$50",
-                  category: "Main Service",
-                  selected: false,
-                },
-                {
-                  id: "3",
-                  name: "Additional Feeding",
-                  description: "Extra feeding service",
-                  duration: "15 minutes",
-                  price: "$10",
-                  category: "Add-On",
-                  selected: false,
-                },
-              ])
-            }
-          } catch (parseError) {
-            console.error("Error parsing webhook message:", parseError)
-            console.log("Raw message:", responseData.message)
-            // Use mock data as fallback
-            setServicesData([
-              {
-                id: "1",
-                name: "Service information unavailable",
-                description: "Please contact your professional directly",
-                duration: "Varies",
-                price: "Contact for pricing",
-                category: "Main Service",
-                selected: false,
-              },
-            ])
-          }
-        } else {
-          console.log("No message in response, using mock data")
-          // Fallback to mock data if no message
-          setServicesData([
-            {
-              id: "1",
-              name: "Dog Walking",
-              description: "30-minute neighborhood walk",
-              duration: "30 minutes",
-              price: "$25",
-              category: "Main Service",
-              selected: false,
-            },
-          ])
-        }
-
-        setCurrentStep("services")
-      } else {
-        console.error("Webhook request failed:", response.status)
-      }
-    } catch (error) {
-      console.error("Error sending webhook request:", error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleServiceSelection = (data: any) => {
-    setServiceSelectionData(data)
-    setCurrentStep("scheduling")
-  }
-
-  const handleSchedulingSubmit = (data: any) => {
-    setSchedulingData(data)
-    setCurrentStep("confirmation")
-  }
-
-  const handleConfirmationSubmit = async (data: any) => {
-    setCurrentStep("submitting") // Show submitting screen
-    logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "final_intake_submission")
-
-    const payload = {
-      message: {
-        text: "New customer final intake submission",
-        userId: USER_ID.current,
-        timestamp: new Date().toISOString(),
-        userInfo: formData
-          ? {
-              firstName: formData.firstName,
-              lastName: formData.lastName,
-              email: formData.email,
-              selectedAction: "new_customer_intake",
-            }
-          : {
-              selectedAction: "new_customer_intake",
-            },
-        formData: formData,
-        petData: formData?.pets || [], // Include pet information in webhook
-        serviceData: serviceSelectionData,
-        schedulingData: schedulingData,
-        professionalID: initialProfessionalId, // Use the actual professional_id from the lookup
+        petData: combinedData?.pets || [],
+        professionalID: initialProfessionalId,
         type: "new_customer_final_intake_submission",
         source: "critter_booking_site",
       },
@@ -379,55 +208,13 @@ export default function NewCustomerIntake({
         setCurrentStep("success")
       } else {
         console.error("Webhook request failed:", response.status)
-        setCurrentStep("confirmation") // Go back to confirmation on error
+        setCurrentStep("form")
+        setError("There was an error submitting your request. Please try again.")
       }
     } catch (error) {
       console.error("Error sending webhook request:", error)
-      setCurrentStep("confirmation") // Go back to confirmation on error
-    }
-  }
-
-  const handleBackToServices = () => {
-    setCurrentStep("services")
-  }
-
-  const handleBackToScheduling = () => {
-    setCurrentStep("scheduling")
-  }
-
-  const handleSubmit = async (data: OnboardingFormData) => {
-    setIsSubmitting(true)
-    setError(null)
-
-    try {
-      // If we have an initialProfessionalName, use it
-      const dataToSubmit = initialProfessionalName ? { ...data, professionalName: initialProfessionalName } : data
-
-      logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "onboarding_submission")
-
-      const response = await fetch(getWebhookEndpoint("NEW_CUSTOMER_ONBOARDING"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          action: "new_customer_onboarding",
-          professionalId: initialProfessionalId, // Use the actual professional_id from the lookup
-          formData: dataToSubmit,
-          petData: dataToSubmit.pets || [], // Include pet information
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status}`)
-      }
-
-      setIsComplete(true)
-    } catch (err) {
-      console.error("Error submitting form:", err)
-      setError("There was an error submitting your information. Please try again.")
-    } finally {
-      setIsSubmitting(false)
+      setCurrentStep("form")
+      setError("There was an error submitting your request. Please try again.")
     }
   }
 
@@ -435,7 +222,6 @@ export default function NewCustomerIntake({
     router.push("/")
   }
 
-  // Extract user info from query params if available
   const queryUserInfo = searchParams.get("userInfo")
     ? JSON.parse(decodeURIComponent(searchParams.get("userInfo") as string))
     : null
@@ -489,29 +275,7 @@ export default function NewCustomerIntake({
           professionalId={initialProfessionalId}
           professionalName={resolvedProfessionalName || initialProfessionalName}
           userInfo={initialUserInfo && initialUserInfo.firstName ? initialUserInfo : null}
-        />
-      )}
-      {currentStep === "services" && servicesData && (
-        <ServiceSelection
-          services={servicesData}
-          onSubmit={handleServiceSelection}
-          onBack={() => setCurrentStep("form")}
-        />
-      )}
-      {currentStep === "scheduling" && (
-        <RequestScheduling
-          onSubmit={handleSchedulingSubmit}
-          onBack={handleBackToServices}
-        />
-      )}
-      {currentStep === "confirmation" && (
-        <Confirmation
-          onSubmit={handleConfirmationSubmit}
-          onCancel={onCancel}
-          onBack={handleBackToScheduling}
-          formData={formData}
-          serviceData={serviceSelectionData}
-          schedulingData={schedulingData}
+          petPicklists={petPicklists}
         />
       )}
       {currentStep === "submitting" && (
