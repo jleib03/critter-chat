@@ -587,33 +587,22 @@ export default function OnboardingForm({
                   >
                     Breed/Variety*
                   </label>
-                  {pet.type && getAvailableBreeds(pet.type).length > 0 ? (
-                    <select
-                      id={`petBreed-${index}`}
-                      value={pet.breed}
-                      onChange={(e) => updatePetData(index, "breed", e.target.value)}
-                      className={`w-full p-3 border ${formErrors.pets?.[index]?.breed ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
-                      required
-                    >
-                      <option value="">Select breed</option>
-                      {getAvailableBreeds(pet.type).map((breed) => (
+                  <select
+                    id={`petBreed-${index}`}
+                    value={pet.breed}
+                    onChange={(e) => updatePetData(index, "breed", e.target.value)}
+                    className={`w-full p-3 border ${formErrors.pets?.[index]?.breed ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
+                    disabled={!pet.type}
+                    required
+                  >
+                    <option value="">{pet.type ? "Select breed" : "Select pet type first"}</option>
+                    {pet.type &&
+                      getAvailableBreeds(pet.type).map((breed) => (
                         <option key={breed.value} value={breed.label}>
                           {breed.label}
                         </option>
                       ))}
-                    </select>
-                  ) : (
-                    <input
-                      type="text"
-                      id={`petBreed-${index}`}
-                      value={pet.breed}
-                      onChange={(e) => updatePetData(index, "breed", e.target.value)}
-                      className={`w-full p-3 border ${formErrors.pets?.[index]?.breed ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
-                      placeholder={pet.type ? "Select pet type first" : "e.g., Labrador, Siamese"}
-                      disabled={!pet.type}
-                      required
-                    />
-                  )}
+                  </select>
                   {formErrors.pets?.[index]?.breed && (
                     <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].breed}</p>
                   )}
