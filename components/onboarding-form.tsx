@@ -41,6 +41,14 @@ export default function OnboardingForm({
   userInfo,
   petPicklists = { types: [], breeds: {} },
 }: OnboardingFormProps) {
+  console.log("[v0] OnboardingForm received petPicklists:", petPicklists)
+  console.log("[v0] Pet types count:", petPicklists.types.length)
+  console.log(
+    "[v0] Pet types:",
+    petPicklists.types.map((t) => ({ label: t.label, value: t.value })),
+  )
+  console.log("[v0] Breeds data:", Object.keys(petPicklists.breeds))
+
   const [currentStep, setCurrentStep] = useState(skipProfessionalStep ? 2 : 1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formErrors, setFormErrors] = useState<{
@@ -318,11 +326,15 @@ export default function OnboardingForm({
   }
 
   const getAvailableBreeds = (petType: string): PicklistItem[] => {
+    console.log("[v0] Getting breeds for pet type:", petType)
+
     // Normalize the pet type for matching (remove spaces, convert to lowercase)
     const normalizedPetType = petType
       .toLowerCase()
       .replace(/\s+/g, "")
       .replace(/[^a-z0-9]/g, "")
+
+    console.log("[v0] Normalized pet type:", normalizedPetType)
 
     // Find breeds by checking if the normalized category matches the normalized pet type
     const matchingBreeds: PicklistItem[] = []
@@ -332,11 +344,16 @@ export default function OnboardingForm({
         .toLowerCase()
         .replace(/\s+/g, "")
         .replace(/[^a-z0-9]/g, "")
+
+      console.log("[v0] Checking category:", category, "normalized:", normalizedCategory)
+
       if (normalizedCategory === normalizedPetType) {
+        console.log("[v0] Found matching category:", category, "with breeds:", petPicklists.breeds[category].length)
         matchingBreeds.push(...petPicklists.breeds[category])
       }
     })
 
+    console.log("[v0] Total matching breeds found:", matchingBreeds.length)
     return matchingBreeds
   }
 
@@ -638,7 +655,10 @@ export default function OnboardingForm({
                   <select
                     id={`petType-${index}`}
                     value={pet.type}
-                    onChange={(e) => updatePetData(index, "type", e.target.value)}
+                    onChange={(e) => {
+                      console.log("[v0] Pet type selected:", e.target.value)
+                      updatePetData(index, "type", e.target.value)
+                    }}
                     className={`w-full p-3 border ${formErrors.pets?.[index]?.type ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
                     required
                   >
@@ -694,7 +714,7 @@ export default function OnboardingForm({
                     id={`petSex-${index}`}
                     value={pet.sex}
                     onChange={(e) => updatePetData(index, "sex", e.target.value)}
-                    className={`w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font"
                     required
                   >
                     <option value="">Select sex</option>

@@ -154,7 +154,12 @@ export default function NewCustomerIntake({
 
           setResolvedProfessionalName(name)
           setPetPicklists(picklists)
-          console.log("Parsed picklists:", picklists)
+          console.log("[v0] Parsed picklists:", picklists)
+          console.log("[v0] Pet types count:", picklists.types.length)
+          console.log(
+            "[v0] Pet types:",
+            picklists.types.map((t) => t.label),
+          )
         } catch (err) {
           console.error("Error fetching professional:", err)
           setError(err instanceof Error ? err.message : "Failed to fetch professional")
