@@ -318,7 +318,26 @@ export default function OnboardingForm({
   }
 
   const getAvailableBreeds = (petType: string): PicklistItem[] => {
-    return petPicklists.breeds[petType] || []
+    // Normalize the pet type for matching (remove spaces, convert to lowercase)
+    const normalizedPetType = petType
+      .toLowerCase()
+      .replace(/\s+/g, "")
+      .replace(/[^a-z0-9]/g, "")
+
+    // Find breeds by checking if the normalized category matches the normalized pet type
+    const matchingBreeds: PicklistItem[] = []
+
+    Object.keys(petPicklists.breeds).forEach((category) => {
+      const normalizedCategory = category
+        .toLowerCase()
+        .replace(/\s+/g, "")
+        .replace(/[^a-z0-9]/g, "")
+      if (normalizedCategory === normalizedPetType) {
+        matchingBreeds.push(...petPicklists.breeds[category])
+      }
+    })
+
+    return matchingBreeds
   }
 
   return (
