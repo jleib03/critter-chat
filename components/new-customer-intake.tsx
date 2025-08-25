@@ -96,7 +96,10 @@ export default function NewCustomerIntake({
   const [resolvedProfessionalName, setResolvedProfessionalName] = useState<string | null>(
     initialProfessionalName || null,
   )
-  const [picklistData, setPicklistData] = useState<PicklistItem[]>([])
+  const [petPicklists, setPetPicklists] = useState<PetPicklists>({
+    types: [],
+    breeds: {},
+  })
 
   useEffect(() => {
     const fetchProfessionalName = async () => {
@@ -142,6 +145,25 @@ export default function NewCustomerIntake({
 
             extractedPicklistData = dataArray.slice(1)
             console.log("[v0] Extracted picklistData:", extractedPicklistData)
+
+            const types: PicklistItem[] = []
+            const breeds: { [petType: string]: PicklistItem[] } = {}
+
+            extractedPicklistData.forEach((item) => {
+              if (item.picklist_type === "type" && item.category === "Pet Type") {
+                types.push(item)
+              } else if (item.picklist_type === "breed") {
+                if (!breeds[item.category]) {
+                  breeds[item.category] = []
+                }
+                breeds[item.category].push(item)
+              }
+            })
+
+            console.log("[v0] Parsed pet types:", types)
+            console.log("[v0] Parsed breeds:", breeds)
+
+            setPetPicklists({ types, breeds })
           } else if (typeof data === "string") {
             name = data
           } else {
@@ -150,7 +172,6 @@ export default function NewCustomerIntake({
           }
 
           setResolvedProfessionalName(name)
-          setPicklistData(extractedPicklistData)
         } catch (err) {
           console.error("Error fetching professional:", err)
           setError(err instanceof Error ? err.message : "Failed to fetch professional")
@@ -271,7 +292,7 @@ export default function NewCustomerIntake({
           professionalId={initialProfessionalId}
           professionalName={resolvedProfessionalName || initialProfessionalName}
           userInfo={initialUserInfo && initialUserInfo.firstName ? initialUserInfo : null}
-          picklistData={picklistData}
+          petPicklists={petPicklists}
         />
       )}
       {currentStep === "submitting" && (
