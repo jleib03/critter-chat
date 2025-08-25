@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { PlusCircle, MinusCircle, ArrowRight, ArrowLeft, Loader2 } from "lucide-react"
 import type { OnboardingFormData, PetFormData } from "../types/booking"
 
@@ -9,6 +9,14 @@ type UserInfo = {
   lastName: string
 }
 
+type PicklistItem = {
+  table_name: string
+  picklist_type: "type" | "breed"
+  value: string
+  label: string
+  category: string
+}
+
 type OnboardingFormProps = {
   onSubmit: (data: OnboardingFormData) => void
   onCancel: () => void
@@ -16,6 +24,7 @@ type OnboardingFormProps = {
   professionalId?: string
   professionalName?: string
   userInfo?: UserInfo | null
+  picklistData?: PicklistItem[]
 }
 
 export default function OnboardingForm({
@@ -25,9 +34,17 @@ export default function OnboardingForm({
   professionalId,
   professionalName,
   userInfo,
+  picklistData = [],
 }: OnboardingFormProps) {
+  console.log("[v0] OnboardingForm received picklistData:", picklistData)
+  console.log("[v0] picklistData length:", picklistData.length)
+  console.log("[v0] picklistData sample:", picklistData.slice(0, 3))
+
   const [currentStep, setCurrentStep] = useState(skipProfessionalStep ? 2 : 1)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const [availableBreeds, setAvailableBreeds] = useState<{ [petIndex: number]: PicklistItem[] }>({})
+
   const [formErrors, setFormErrors] = useState<{
     professionalName?: string
     firstName?: string
@@ -38,7 +55,20 @@ export default function OnboardingForm({
     city?: string
     state?: string
     zipCode?: string
-    pets?: { [key: number]: { name?: string; type?: string; breed?: string; age?: string } }
+    pets?: {
+      [key: number]: {
+        name?: string
+        type?: string
+        breed?: string
+        age?: string
+        sex?: string
+        birthMonth?: string
+        birthDay?: string
+        birthYear?: string
+        weight?: string
+        spayedNeutered?: string
+      }
+    }
   }>({})
 
   const [formData, setFormData] = useState<OnboardingFormData>({
@@ -57,11 +87,48 @@ export default function OnboardingForm({
         type: "",
         breed: "",
         age: "",
-        isSpayedOrNeutered: false,
+        spayedNeutered: "",
         notes: "",
+        sex: "",
+        birthMonth: "",
+        birthDay: "",
+        birthYear: "",
+        weight: "",
       },
     ],
   })
+
+  const petTypes = useMemo(() => {
+    const filtered = picklistData.filter((item) => item.picklist_type === "type" && item.category === "Pet Type")
+    console.log("[v0] Filtered petTypes:", filtered)
+    console.log("[v0] petTypes length:", filtered.length)
+    return filtered
+  }, [picklistData])
+
+  const breedOptions = useMemo(() => {
+    const filtered = picklistData.filter((item) => item.picklist_type === "breed")
+    console.log("[v0] Filtered breedOptions:", filtered)
+    console.log("[v0] breedOptions length:", filtered.length)
+    return filtered
+  }, [picklistData])
+
+  useEffect(() => {
+    const newAvailableBreeds: { [petIndex: number]: PicklistItem[] } = {}
+
+    formData.pets.forEach((pet, index) => {
+      if (pet.type) {
+        // Find the selected pet type to get its label for matching with breed categories
+        const selectedPetType = petTypes.find((type) => type.value === pet.type)
+        if (selectedPetType) {
+          newAvailableBreeds[index] = breedOptions.filter((breed) => breed.category === selectedPetType.label)
+        }
+      } else {
+        newAvailableBreeds[index] = []
+      }
+    })
+
+    setAvailableBreeds(newAvailableBreeds)
+  }, [formData.pets.map((pet) => pet.type).join(","), petTypes, breedOptions])
 
   const updateFormData = (field: keyof Omit<OnboardingFormData, "pets">, value: string) => {
     setFormData((prev) => ({
@@ -85,6 +152,11 @@ export default function OnboardingForm({
         ...updatedPets[index],
         [field]: value,
       }
+
+      if (field === "type") {
+        updatedPets[index].breed = ""
+      }
+
       return {
         ...prev,
         pets: updatedPets,
@@ -120,8 +192,13 @@ export default function OnboardingForm({
           type: "",
           breed: "",
           age: "",
-          isSpayedOrNeutered: false,
+          spayedNeutered: "",
           notes: "",
+          sex: "",
+          birthMonth: "",
+          birthDay: "",
+          birthYear: "",
+          weight: "",
         },
       ],
     }))
@@ -155,12 +232,32 @@ export default function OnboardingForm({
   const handleSubmit = async () => {
     setIsSubmitting(true)
     try {
-      await onSubmit(formData)
+      const processedFormData = convertEmptyStringsToNull(formData)
+      await onSubmit(processedFormData)
     } catch (error) {
       console.error("Error submitting form:", error)
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const convertEmptyStringsToNull = (data: OnboardingFormData): OnboardingFormData => {
+    const processedData = { ...data }
+
+    // Process pets array
+    processedData.pets = data.pets.map((pet) => ({
+      ...pet,
+      sex: pet.sex?.trim() === "" ? null : pet.sex,
+      birthDate:
+        pet.birthMonth && pet.birthDay && pet.birthYear
+          ? `${pet.birthYear}-${pet.birthMonth.padStart(2, "0")}-${pet.birthDay.padStart(2, "0")}`
+          : null,
+      weight: pet.weight?.trim() === "" ? null : pet.weight,
+      notes: pet.notes?.trim() === "" ? null : pet.notes,
+      spayedNeutered: pet.spayedNeutered?.trim() === "" ? null : pet.spayedNeutered,
+    }))
+
+    return processedData
   }
 
   const validateStep = () => {
@@ -189,11 +286,29 @@ export default function OnboardingForm({
       if (!formData.state.trim()) errors.state = "State is required"
       if (!formData.zipCode.trim()) errors.zipCode = "ZIP code is required"
     } else if (currentStep === 3) {
-      const petErrors: { [key: number]: { name?: string; type?: string; breed?: string; age?: string } } = {}
+      const petErrors: {
+        [key: number]: {
+          name?: string
+          type?: string
+          breed?: string
+          age?: string
+          sex?: string
+          weight?: string
+          spayedNeutered?: string
+        }
+      } = {}
       let hasPetErrors = false
 
       formData.pets.forEach((pet, index) => {
-        const petError: { name?: string; type?: string; breed?: string; age?: string } = {}
+        const petError: {
+          name?: string
+          type?: string
+          breed?: string
+          age?: string
+          sex?: string
+          weight?: string
+          spayedNeutered?: string
+        } = {}
 
         if (!pet.name.trim()) {
           petError.name = "Pet name is required"
@@ -210,8 +325,18 @@ export default function OnboardingForm({
           hasPetErrors = true
         }
 
-        if (!pet.age.trim()) {
-          petError.age = "Age is required"
+        if (!pet.sex?.trim()) {
+          petError.sex = "Sex is required"
+          hasPetErrors = true
+        }
+
+        if (!pet.weight?.trim()) {
+          petError.weight = "Weight is required"
+          hasPetErrors = true
+        }
+
+        if (!pet.spayedNeutered?.trim()) {
+          petError.spayedNeutered = "Spayed/Neutered status is required"
           hasPetErrors = true
         }
 
@@ -537,13 +662,11 @@ export default function OnboardingForm({
                     required
                   >
                     <option value="">Select type</option>
-                    <option value="Dog">Dog</option>
-                    <option value="Cat">Cat</option>
-                    <option value="Bird">Bird</option>
-                    <option value="Fish">Fish</option>
-                    <option value="Reptile">Reptile</option>
-                    <option value="Small Animal">Small Animal</option>
-                    <option value="Other">Other</option>
+                    {petTypes.map((type) => (
+                      <option key={type.value} value={type.value}>
+                        {type.label}
+                      </option>
+                    ))}
                   </select>
                   {formErrors.pets?.[index]?.type && (
                     <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].type}</p>
@@ -551,61 +674,144 @@ export default function OnboardingForm({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div className="mb-4">
+                <label
+                  htmlFor={`petBreed-${index}`}
+                  className="block text-sm font-medium text-gray-700 mb-1 header-font"
+                >
+                  Breed/Variety*
+                </label>
+                <select
+                  id={`petBreed-${index}`}
+                  value={pet.breed}
+                  onChange={(e) => updatePetData(index, "breed", e.target.value)}
+                  className={`w-full p-3 border ${formErrors.pets?.[index]?.breed ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
+                  disabled={!pet.type}
+                  required
+                >
+                  <option value="">{pet.type ? "Select breed" : "Select pet type first"}</option>
+                  {availableBreeds[index]?.map((breed) => (
+                    <option key={breed.value} value={breed.value}>
+                      {breed.label}
+                    </option>
+                  ))}
+                </select>
+                {formErrors.pets?.[index]?.breed && (
+                  <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].breed}</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div>
                   <label
-                    htmlFor={`petBreed-${index}`}
+                    htmlFor={`petSex-${index}`}
                     className="block text-sm font-medium text-gray-700 mb-1 header-font"
                   >
-                    Breed/Variety*
+                    Sex*
                   </label>
-                  <input
-                    type="text"
-                    id={`petBreed-${index}`}
-                    value={pet.breed}
-                    onChange={(e) => updatePetData(index, "breed", e.target.value)}
-                    className={`w-full p-3 border ${formErrors.pets?.[index]?.breed ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
-                    placeholder="e.g., Labrador, Siamese"
+                  <select
+                    id={`petSex-${index}`}
+                    value={pet.sex || ""}
+                    onChange={(e) => updatePetData(index, "sex", e.target.value)}
+                    className={`w-full p-3 border ${formErrors.pets?.[index]?.sex ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
                     required
-                  />
-                  {formErrors.pets?.[index]?.breed && (
-                    <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].breed}</p>
+                  >
+                    <option value="">Select sex</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
+                  {formErrors.pets?.[index]?.sex && (
+                    <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].sex}</p>
                   )}
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 header-font">Birth Date</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <select
+                      value={pet.birthMonth || ""}
+                      onChange={(e) => updatePetData(index, "birthMonth", e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font text-sm"
+                    >
+                      <option value="">Month</option>
+                      {Array.from({ length: 12 }, (_, i) => (
+                        <option key={i + 1} value={i + 1}>
+                          {new Date(0, i).toLocaleString("default", { month: "short" })}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={pet.birthDay || ""}
+                      onChange={(e) => updatePetData(index, "birthDay", e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font text-sm"
+                    >
+                      <option value="">Day</option>
+                      {Array.from({ length: 31 }, (_, i) => (
+                        <option key={i + 1} value={i + 1}>
+                          {i + 1}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={pet.birthYear || ""}
+                      onChange={(e) => updatePetData(index, "birthYear", e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font text-sm"
+                    >
+                      <option value="">Year</option>
+                      {Array.from({ length: 30 }, (_, i) => {
+                        const year = new Date().getFullYear() - i
+                        return (
+                          <option key={year} value={year}>
+                            {year}
+                          </option>
+                        )
+                      })}
+                    </select>
+                  </div>
+                </div>
+                <div>
                   <label
-                    htmlFor={`petAge-${index}`}
+                    htmlFor={`petWeight-${index}`}
                     className="block text-sm font-medium text-gray-700 mb-1 header-font"
                   >
-                    Age*
+                    Weight*
                   </label>
                   <input
                     type="text"
-                    id={`petAge-${index}`}
-                    value={pet.age}
-                    onChange={(e) => updatePetData(index, "age", e.target.value)}
-                    className={`w-full p-3 border ${formErrors.pets?.[index]?.age ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
-                    placeholder="e.g., 3 years"
+                    id={`petWeight-${index}`}
+                    value={pet.weight || ""}
+                    onChange={(e) => updatePetData(index, "weight", e.target.value)}
+                    className={`w-full p-3 border ${formErrors.pets?.[index]?.weight ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
+                    placeholder="e.g., 25 lbs"
                     required
                   />
-                  {formErrors.pets?.[index]?.age && (
-                    <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].age}</p>
+                  {formErrors.pets?.[index]?.weight && (
+                    <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].weight}</p>
                   )}
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div className="flex items-center">
-                  <label className="flex items-center body-font">
-                    <input
-                      type="checkbox"
-                      checked={pet.isSpayedOrNeutered}
-                      onChange={(e) => updatePetData(index, "isSpayedOrNeutered", e.target.checked)}
-                      className="mr-2 h-4 w-4 text-[#E75837] focus:ring-2 focus:ring-[#E75837] border-gray-300 rounded"
-                    />
-                    Spayed/Neutered
-                  </label>
-                </div>
+              <div className="mb-4">
+                <label
+                  htmlFor={`petSpayedNeutered-${index}`}
+                  className="block text-sm font-medium text-gray-700 mb-1 header-font"
+                >
+                  Spayed/Neutered*
+                </label>
+                <select
+                  id={`petSpayedNeutered-${index}`}
+                  value={pet.spayedNeutered || ""}
+                  onChange={(e) => updatePetData(index, "spayedNeutered", e.target.value)}
+                  className={`w-full p-3 border ${formErrors.pets?.[index]?.spayedNeutered ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font`}
+                  required
+                >
+                  <option value="">Select status</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                  <option value="N/A">N/A</option>
+                </select>
+                {formErrors.pets?.[index]?.spayedNeutered && (
+                  <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].spayedNeutered}</p>
+                )}
               </div>
 
               <div>

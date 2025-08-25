@@ -4,10 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { getWebhookEndpoint, logWebhookUsage } from "../types/webhook-endpoints"
 import OnboardingForm from "./onboarding-form"
-import ServiceSelection from "./service-selection"
-import RequestScheduling from "./request-scheduling"
 import Confirmation from "./confirmation"
-import type { OnboardingFormData } from "../types/booking"
 
 type UserInfo = {
   email: string
@@ -24,6 +21,7 @@ type NewCustomerIntakeProps = {
   initialProfessionalId?: string
   initialProfessionalName?: string
   skipProfessionalStep?: boolean
+  picklistData?: any[]
 }
 
 // More conservative function to determine if a service is an add-on
@@ -91,10 +89,13 @@ export default function NewCustomerIntake({
   initialProfessionalId,
   initialProfessionalName,
   skipProfessionalStep,
+  picklistData = [],
 }: NewCustomerIntakeProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [currentStep, setCurrentStep] = useState<"form" | "services" | "scheduling" | "confirmation" | "submitting" | "success">("form")
+  const [currentStep, setCurrentStep] = useState<
+    "form" | "services" | "scheduling" | "confirmation" | "submitting" | "success"
+  >("form")
   const [formData, setFormData] = useState<any>(null)
   const [servicesData, setServicesData] = useState<any>(null)
   const [serviceSelectionData, setServiceSelectionData] = useState<any>(null)
@@ -172,21 +173,17 @@ export default function NewCustomerIntake({
     logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "retrieve_services")
 
     const payload = {
-      message: {
-        text: "New customer intake - retrieve services",
-        userId: USER_ID.current,
-        timestamp: new Date().toISOString(),
-        userInfo: {
-          firstName: combinedData.firstName,
-          lastName: combinedData.lastName,
-          email: combinedData.email,
-          selectedAction: "new_customer_intake",
-        },
-        formData: combinedData,
-        professionalID: initialProfessionalId, // Use the actual professional_id from the lookup
-        type: "new_customer_get_services",
-        source: "critter_booking_site",
+      action: "new_customer_intake_services",
+      userId: USER_ID.current,
+      timestamp: new Date().toISOString(),
+      userInfo: {
+        firstName: combinedData.firstName,
+        lastName: combinedData.lastName,
+        email: combinedData.email,
       },
+      formData: combinedData,
+      professionalID: initialProfessionalId,
+      source: "critter_booking_site",
     }
 
     try {
@@ -202,232 +199,76 @@ export default function NewCustomerIntake({
         const responseData = await response.json()
         console.log("Webhook response:", responseData)
 
-        // Parse services from the response message
-        if (responseData.message) {
-          try {
-            const parsedMessage = JSON.parse(responseData.message)
-
-            if (parsedMessage.type === "service_list" && parsedMessage.items) {
-              // Convert the webhook format to our component format
-              const services = parsedMessage.items.map((item: any, index: number) => {
-                // Extract duration and price from details array
-                let duration = "Not specified"
-                let price = "Contact for pricing"
-                let description = "No description provided"
-
-                if (item.details && Array.isArray(item.details)) {
-                  item.details.forEach((detail: string) => {
-                    if (detail.startsWith("Duration:")) {
-                      duration = detail.replace("Duration:", "").trim()
-                    } else if (detail.startsWith("Price:")) {
-                      price = detail.replace("Price:", "").trim()
-                    } else if (
-                      !detail.includes("No description provided") &&
-                      !detail.includes("No additional description")
-                    ) {
-                      description = detail
-                    }
-                  })
-                }
-
-                // Use conservative category detection
-                const originalCategory = item.category || "Other Services"
-                const detectedCategory = isAddOnService(originalCategory, item.name) ? "Add-On" : originalCategory
-
-                console.log(
-                  `Service: "${item.name}" | Original Category: "${originalCategory}" | Detected: "${detectedCategory}"`,
-                )
-
-                return {
-                  id: (index + 1).toString(),
-                  name: item.name,
-                  description: description === "No description provided" ? "No additional description" : description,
-                  duration: duration,
-                  price: price,
-                  category: detectedCategory,
-                  selected: false,
-                }
-              })
-
-              setServicesData(services)
-              console.log("Parsed services:", services)
-            } else {
-              console.log("No service_list found in response, using mock data")
-              // Fallback to mock data
-              setServicesData([
-                {
-                  id: "1",
-                  name: "Dog Walking",
-                  description: "30-minute neighborhood walk",
-                  duration: "30 minutes",
-                  price: "$25",
-                  category: "Main Service",
-                  selected: false,
-                },
-                {
-                  id: "2",
-                  name: "Pet Sitting",
-                  description: "In-home pet care while you're away",
-                  duration: "Per day",
-                  price: "$50",
-                  category: "Main Service",
-                  selected: false,
-                },
-                {
-                  id: "3",
-                  name: "Additional Feeding",
-                  description: "Extra feeding service",
-                  duration: "15 minutes",
-                  price: "$10",
-                  category: "Add-On",
-                  selected: false,
-                },
-              ])
-            }
-          } catch (parseError) {
-            console.error("Error parsing webhook message:", parseError)
-            console.log("Raw message:", responseData.message)
-            // Use mock data as fallback
-            setServicesData([
-              {
-                id: "1",
-                name: "Service information unavailable",
-                description: "Please contact your professional directly",
-                duration: "Varies",
-                price: "Contact for pricing",
-                category: "Main Service",
-                selected: false,
-              },
-            ])
+        if (Array.isArray(responseData) && responseData.length > 0) {
+          const firstItem = responseData[0]
+          if (firstItem.output === "success" || firstItem.Output === "success") {
+            console.log("Pet submission successful, moving to success screen")
+            await handleSuccessfulSubmission(combinedData)
+            return
           }
-        } else {
-          console.log("No message in response, using mock data")
-          // Fallback to mock data if no message
-          setServicesData([
-            {
-              id: "1",
-              name: "Dog Walking",
-              description: "30-minute neighborhood walk",
-              duration: "30 minutes",
-              price: "$25",
-              category: "Main Service",
-              selected: false,
-            },
-          ])
+        } else if (responseData.output === "success" || responseData.Output === "success") {
+          console.log("Pet submission successful, moving to success screen")
+          await handleSuccessfulSubmission(combinedData)
+          return
         }
 
-        setCurrentStep("services")
+        // If no success response, fall back to old behavior (though this shouldn't happen)
+        console.log("No success response found, using fallback")
+        setCurrentStep("success")
       } else {
         console.error("Webhook request failed:", response.status)
+        setError("Failed to submit pet information. Please try again.")
       }
     } catch (error) {
       console.error("Error sending webhook request:", error)
+      setError("There was an error submitting your information. Please try again.")
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleServiceSelection = (data: any) => {
-    setServiceSelectionData(data)
-    setCurrentStep("scheduling")
-  }
+  const handleSuccessfulSubmission = async (formData: any) => {
+    try {
+      setCurrentStep("submitting")
+      setError(null)
 
-  const handleSchedulingSubmit = (data: any) => {
-    setSchedulingData(data)
-    setCurrentStep("confirmation")
-  }
+      // Send email webhook
+      logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "send_confirmation_email")
 
-  const handleConfirmationSubmit = async (data: any) => {
-    setCurrentStep("submitting") // Show submitting screen
-    logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "final_intake_submission")
-
-    const payload = {
-      message: {
-        text: "New customer final intake submission",
+      const emailPayload = {
+        action: "new_customer_intake_completion",
         userId: USER_ID.current,
         timestamp: new Date().toISOString(),
-        userInfo: formData
-          ? {
-              firstName: formData.firstName,
-              lastName: formData.lastName,
-              email: formData.email,
-              selectedAction: "new_customer_intake",
-            }
-          : {
-              selectedAction: "new_customer_intake",
-            },
+        userInfo: {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+        },
         formData: formData,
-        petData: formData?.pets || [], // Include pet information in webhook
-        serviceData: serviceSelectionData,
-        schedulingData: schedulingData,
-        professionalID: initialProfessionalId, // Use the actual professional_id from the lookup
-        type: "new_customer_final_intake_submission",
+        petData: formData?.pets || [],
+        professionalID: initialProfessionalId,
         source: "critter_booking_site",
-      },
-    }
+      }
 
-    try {
-      const response = await fetch(getWebhookEndpoint("NEW_CUSTOMER_ONBOARDING"), {
+      const emailResponse = await fetch(getWebhookEndpoint("NEW_CUSTOMER_ONBOARDING"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(emailPayload),
       })
 
-      if (response.ok) {
-        setCurrentStep("success")
+      if (emailResponse.ok) {
+        console.log("Email webhook sent successfully")
       } else {
-        console.error("Webhook request failed:", response.status)
-        setCurrentStep("confirmation") // Go back to confirmation on error
+        console.error("Email webhook failed:", emailResponse.status)
+        console.log("Email failed but proceeding to success screen since pet submission succeeded")
       }
     } catch (error) {
-      console.error("Error sending webhook request:", error)
-      setCurrentStep("confirmation") // Go back to confirmation on error
-    }
-  }
-
-  const handleBackToServices = () => {
-    setCurrentStep("services")
-  }
-
-  const handleBackToScheduling = () => {
-    setCurrentStep("scheduling")
-  }
-
-  const handleSubmit = async (data: OnboardingFormData) => {
-    setIsSubmitting(true)
-    setError(null)
-
-    try {
-      // If we have an initialProfessionalName, use it
-      const dataToSubmit = initialProfessionalName ? { ...data, professionalName: initialProfessionalName } : data
-
-      logWebhookUsage("NEW_CUSTOMER_ONBOARDING", "onboarding_submission")
-
-      const response = await fetch(getWebhookEndpoint("NEW_CUSTOMER_ONBOARDING"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          action: "new_customer_onboarding",
-          professionalId: initialProfessionalId, // Use the actual professional_id from the lookup
-          formData: dataToSubmit,
-          petData: dataToSubmit.pets || [], // Include pet information
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status}`)
-      }
-
-      setIsComplete(true)
-    } catch (err) {
-      console.error("Error submitting form:", err)
-      setError("There was an error submitting your information. Please try again.")
+      console.error("Error sending email webhook:", error)
+      console.log("Email webhook error but proceeding to success screen since pet submission succeeded")
     } finally {
-      setIsSubmitting(false)
+      setCurrentStep("success")
     }
   }
 
@@ -489,37 +330,17 @@ export default function NewCustomerIntake({
           professionalId={initialProfessionalId}
           professionalName={resolvedProfessionalName || initialProfessionalName}
           userInfo={initialUserInfo && initialUserInfo.firstName ? initialUserInfo : null}
-        />
-      )}
-      {currentStep === "services" && servicesData && (
-        <ServiceSelection
-          services={servicesData}
-          onSubmit={handleServiceSelection}
-          onBack={() => setCurrentStep("form")}
-        />
-      )}
-      {currentStep === "scheduling" && (
-        <RequestScheduling
-          onSubmit={handleSchedulingSubmit}
-          onBack={handleBackToServices}
-        />
-      )}
-      {currentStep === "confirmation" && (
-        <Confirmation
-          onSubmit={handleConfirmationSubmit}
-          onCancel={onCancel}
-          onBack={handleBackToScheduling}
-          formData={formData}
-          serviceData={serviceSelectionData}
-          schedulingData={schedulingData}
+          picklistData={picklistData}
         />
       )}
       {currentStep === "submitting" && (
         <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#E75837] mx-auto mb-4"></div>
-            <h3 className="text-lg font-medium header-font">Submitting Your Request...</h3>
-            <p className="text-gray-600 body-font">Please wait while we process your intake and booking request.</p>
+            <h3 className="text-lg font-medium header-font">Submitting Your Information...</h3>
+            <p className="text-gray-600 body-font">
+              Please wait while we process your pet information and send confirmation.
+            </p>
           </div>
         </div>
       )}
@@ -531,39 +352,35 @@ export default function NewCustomerIntake({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-3xl font-bold text-[#E75837] mb-4 header-font">Request Submitted Successfully!</h2>
+            <h2 className="text-3xl font-bold text-[#E75837] mb-4 header-font">Information Submitted Successfully!</h2>
             <p className="text-lg text-gray-700 mb-6 body-font">
-              Your intake and booking request has been sent to your Critter professional.
+              Your pet information has been sent to your Critter professional.
             </p>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <p className="text-blue-800 body-font">
-                📧 <strong className="header-font">Check your email!</strong> You should receive a confirmation email
-                shortly with next steps and your professional's contact information.
-              </p>
-            </div>
             <div className="space-y-3 text-gray-600 body-font mb-8">
-              <p>What happens next:</p>
-              <ul className="text-left max-w-md mx-auto space-y-2">
+              <p className="text-lg font-medium text-gray-800">What happens next:</p>
+              <ul className="text-left max-w-lg mx-auto space-y-3">
                 <li className="flex items-start">
-                  <span className="text-[#E75837] mr-2">1.</span>
-                  Your professional will review your request
+                  <span className="text-[#E75837] mr-3 font-bold">1.</span>
+                  Your professional will review your submission
                 </li>
                 <li className="flex items-start">
-                  <span className="text-[#E75837] mr-2">2.</span>
-                  They'll contact you to confirm details and schedule
+                  <span className="text-[#E75837] mr-3 font-bold">2.</span>
+                  They'll contact you to discuss the fit, scheduling, and onboarding
                 </li>
                 <li className="flex items-start">
-                  <span className="text-[#E75837] mr-2">3.</span>
-                  You'll receive booking confirmation once approved
+                  <span className="text-[#E75837] mr-3 font-bold">3.</span>
+                  You will complete your onboarding and schedule your first appointment
                 </li>
               </ul>
             </div>
-            <button
-              onClick={handleCancel}
-              className="bg-[#E75837] text-white px-8 py-3 rounded-lg hover:bg-[#d04e30] transition-colors body-font font-medium"
-            >
-              Return to Home
-            </button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={handleCancel}
+                className="bg-gray-100 text-gray-700 px-8 py-3 rounded-lg hover:bg-gray-200 transition-colors body-font font-medium border border-gray-300"
+              >
+                Return to Home
+              </button>
+            </div>
           </div>
         </div>
       )}

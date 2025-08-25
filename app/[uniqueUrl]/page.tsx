@@ -170,9 +170,6 @@ export default function ProfessionalLandingPage() {
 
                 <p className="text-gray-700 leading-relaxed mb-6 body-font">{professionalData.description}</p>
 
-                {/* Quick Info */}
-                {/* Remove Quick Info Grid */}
-
                 {/* Contact Info */}
                 <div className="flex flex-wrap gap-4 mb-6">
                   <a

@@ -62,8 +62,13 @@ export type PetFormData = {
   type: string
   breed: string
   age: string
-  isSpayedOrNeutered: boolean
+  spayedNeutered: string
   notes: string
+  sex?: string | null
+  birthMonth?: string | null
+  birthDay?: string | null
+  birthYear?: string | null
+  weight?: string | null
 }
 
 export type ServiceSelectionData = {
