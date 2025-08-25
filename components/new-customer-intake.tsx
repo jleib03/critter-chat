@@ -129,19 +129,36 @@ export default function NewCustomerIntake({
           let name = null
           const picklists: PetPicklists = { types: [], breeds: {} }
 
-          if (Array.isArray(data) && data.length > 0) {
-            console.log("Data is an array, checking first element:", data[0])
-            if (data[0].name) {
-              name = data[0].name
-              console.log("Found name in data[0].name:", name)
+          let dataArray: any[] = []
+          if (Array.isArray(data)) {
+            dataArray = data
+          } else if (typeof data === "object" && data !== null) {
+            // Check if it's an object with numeric keys (like {0: {...}, 1: {...}, etc.})
+            const keys = Object.keys(data)
+            const isNumericKeys = keys.every((key) => !isNaN(Number(key)))
+            if (isNumericKeys && keys.length > 0) {
+              dataArray = Object.values(data)
+              console.log("Converted object with numeric keys to array, length:", dataArray.length)
+            } else if (data.name) {
+              // Single object with name property
+              name = data.name
+              console.log("Found name in object format:", name)
             }
-            if (data[0].id) {
-              console.log("Found ID in data[0].id:", data[0].id)
+          }
+
+          if (dataArray.length > 0) {
+            console.log("Data is an array, checking first element:", dataArray[0])
+            if (dataArray[0].name) {
+              name = dataArray[0].name
+              console.log("Found name in dataArray[0].name:", name)
+            }
+            if (dataArray[0].id) {
+              console.log("Found ID in dataArray[0].id:", dataArray[0].id)
             }
 
             console.log("[v0] Starting to parse picklist data from array...")
-            for (let i = 1; i < data.length; i++) {
-              const item = data[i]
+            for (let i = 1; i < dataArray.length; i++) {
+              const item = dataArray[i]
               console.log(`[v0] Processing item ${i}:`, item)
 
               if (item.picklist_type === "type" && item.category === "Pet Type") {
@@ -163,9 +180,6 @@ export default function NewCustomerIntake({
               picklists.types.map((t) => t.label),
             )
             console.log("[v0] Final breeds categories:", Object.keys(picklists.breeds))
-          } else if (data.name) {
-            name = data.name
-            console.log("Found name in object format:", name)
           } else if (typeof data === "string") {
             name = data
             console.log("Found name as string:", name)
