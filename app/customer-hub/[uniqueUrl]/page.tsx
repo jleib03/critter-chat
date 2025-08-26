@@ -3044,11 +3044,9 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                               onClick={() => {
                                 const newContact = {
                                   contactName: "",
-                                  businessName: "",
                                   address: "",
                                   phoneNumber: "",
                                   email: "",
-                                  notes: "",
                                 }
                                 setOnboardingData({
                                   ...onboardingData,
@@ -3087,12 +3085,6 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                             <p className="text-gray-600">{contact.contactName}</p>
                                           </div>
                                         )}
-                                        {contact.businessName && (
-                                          <div>
-                                            <span className="font-medium text-gray-700">Business:</span>
-                                            <p className="text-gray-600">{contact.businessName}</p>
-                                          </div>
-                                        )}
                                         {contact.phoneNumber && (
                                           <div>
                                             <span className="font-medium text-gray-700">Phone:</span>
@@ -3109,12 +3101,6 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                           <div className="md:col-span-2">
                                             <span className="font-medium text-gray-700">Address:</span>
                                             <p className="text-gray-600">{contact.address}</p>
-                                          </div>
-                                        )}
-                                        {contact.notes && (
-                                          <div className="md:col-span-2">
-                                            <span className="font-medium text-gray-700">Notes:</span>
-                                            <p className="text-gray-600">{contact.notes}</p>
                                           </div>
                                         )}
                                       </div>
@@ -3147,10 +3133,11 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Contact Name
+                                            Contact Name*
                                           </label>
                                           <input
                                             type="text"
+                                            required
                                             value={contact.contactName || ""}
                                             onChange={(e) => {
                                               const updatedContacts = [...onboardingData.emergencyContacts]
@@ -3168,52 +3155,11 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                         </div>
                                         <div>
                                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Business Name
-                                          </label>
-                                          <input
-                                            type="text"
-                                            value={contact.businessName || ""}
-                                            onChange={(e) => {
-                                              const updatedContacts = [...onboardingData.emergencyContacts]
-                                              updatedContacts[index] = {
-                                                ...updatedContacts[index],
-                                                businessName: e.target.value,
-                                              }
-                                              setOnboardingData({
-                                                ...onboardingData,
-                                                emergencyContacts: updatedContacts,
-                                              })
-                                            }}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                                          />
-                                        </div>
-                                        <div className="md:col-span-2">
-                                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Address
-                                          </label>
-                                          <input
-                                            type="text"
-                                            value={contact.address || ""}
-                                            onChange={(e) => {
-                                              const updatedContacts = [...onboardingData.emergencyContacts]
-                                              updatedContacts[index] = {
-                                                ...updatedContacts[index],
-                                                address: e.target.value,
-                                              }
-                                              setOnboardingData({
-                                                ...onboardingData,
-                                                emergencyContacts: updatedContacts,
-                                              })
-                                            }}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                                          />
-                                        </div>
-                                        <div>
-                                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Phone Number
+                                            Phone Number*
                                           </label>
                                           <input
                                             type="tel"
+                                            required
                                             value={contact.phoneNumber || ""}
                                             onChange={(e) => {
                                               const updatedContacts = [...onboardingData.emergencyContacts]
@@ -3230,9 +3176,10 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                           />
                                         </div>
                                         <div>
-                                          <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                          <label className="block text-sm font-medium text-gray-700 mb-2">Email*</label>
                                           <input
                                             type="email"
+                                            required
                                             value={contact.email || ""}
                                             onChange={(e) => {
                                               const updatedContacts = [...onboardingData.emergencyContacts]
@@ -3248,22 +3195,25 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
                                           />
                                         </div>
-                                        <div className="md:col-span-2">
-                                          <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
-                                          <textarea
-                                            value={contact.notes || ""}
+                                        <div>
+                                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Address*
+                                          </label>
+                                          <input
+                                            type="text"
+                                            required
+                                            value={contact.address || ""}
                                             onChange={(e) => {
                                               const updatedContacts = [...onboardingData.emergencyContacts]
                                               updatedContacts[index] = {
                                                 ...updatedContacts[index],
-                                                notes: e.target.value,
+                                                address: e.target.value,
                                               }
                                               setOnboardingData({
                                                 ...onboardingData,
                                                 emergencyContacts: updatedContacts,
                                               })
                                             }}
-                                            rows={3}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
                                           />
                                         </div>
@@ -3278,9 +3228,10 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                             <div className="p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-2">Contact Name</label>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Contact Name*</label>
                                   <input
                                     type="text"
+                                    required
                                     value={onboardingData.emergencyContact.contactName}
                                     onChange={(e) =>
                                       setOnboardingData({
@@ -3295,43 +3246,10 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                   />
                                 </div>
                                 <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-2">Business Name</label>
-                                  <input
-                                    type="text"
-                                    value={onboardingData.emergencyContact.businessName}
-                                    onChange={(e) =>
-                                      setOnboardingData({
-                                        ...onboardingData,
-                                        emergencyContact: {
-                                          ...onboardingData.emergencyContact,
-                                          businessName: e.target.value,
-                                        },
-                                      })
-                                    }
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                                  />
-                                </div>
-                                <div className="md:col-span-2">
-                                  <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                                  <input
-                                    type="text"
-                                    value={onboardingData.emergencyContact.address}
-                                    onChange={(e) =>
-                                      setOnboardingData({
-                                        ...onboardingData,
-                                        emergencyContact: {
-                                          ...onboardingData.emergencyContact,
-                                          address: e.target.value,
-                                        },
-                                      })
-                                    }
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number*</label>
                                   <input
                                     type="tel"
+                                    required
                                     value={onboardingData.emergencyContact.phoneNumber}
                                     onChange={(e) =>
                                       setOnboardingData({
@@ -3346,9 +3264,10 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                   />
                                 </div>
                                 <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Email*</label>
                                   <input
                                     type="email"
+                                    required
                                     value={onboardingData.emergencyContact.email}
                                     onChange={(e) =>
                                       setOnboardingData({
@@ -3359,17 +3278,21 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
                                   />
                                 </div>
-                                <div className="md:col-span-2">
-                                  <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
-                                  <textarea
-                                    value={onboardingData.emergencyContact.notes}
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Address*</label>
+                                  <input
+                                    type="text"
+                                    required
+                                    value={onboardingData.emergencyContact.address}
                                     onChange={(e) =>
                                       setOnboardingData({
                                         ...onboardingData,
-                                        emergencyContact: { ...onboardingData.emergencyContact, notes: e.target.value },
+                                        emergencyContact: {
+                                          ...onboardingData.emergencyContact,
+                                          address: e.target.value,
+                                        },
                                       })
                                     }
-                                    rows={3}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
                                   />
                                 </div>
