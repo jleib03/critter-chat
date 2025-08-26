@@ -2942,6 +2942,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                               setOnboardingData({ ...onboardingData, pets: updatedPets })
                                             }}
                                             className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                            required
                                           >
                                             <option value="">Select sex</option>
                                             <option value="Male">Male</option>
@@ -2962,6 +2963,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                             }}
                                             className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
                                             placeholder="e.g., 25 lbs"
+                                            required
                                           />
                                         </div>
                                         <div>
@@ -2979,6 +2981,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                               setOnboardingData({ ...onboardingData, pets: updatedPets })
                                             }}
                                             className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
+                                            required
                                           >
                                             <option value="">Select status</option>
                                             <option value="Yes">Yes</option>
@@ -2988,36 +2991,85 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                         </div>
                                       </div>
 
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                         <div>
                                           <label className="block text-sm font-medium text-gray-700 mb-1">
                                             Birth Date
                                           </label>
-                                          <input
-                                            type="date"
-                                            value={pet.birthdate || ""}
-                                            onChange={(e) => {
-                                              const updatedPets = [...onboardingData.pets]
-                                              updatedPets[index] = { ...updatedPets[index], birthdate: e.target.value }
-                                              setOnboardingData({ ...onboardingData, pets: updatedPets })
-                                            }}
-                                            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                                          />
+                                          <div className="grid grid-cols-3 gap-2">
+                                            <select
+                                              value={pet.birthMonth || ""}
+                                              onChange={(e) => {
+                                                const updatedPets = [...onboardingData.pets]
+                                                updatedPets[index] = {
+                                                  ...updatedPets[index],
+                                                  birthMonth: e.target.value,
+                                                }
+                                                setOnboardingData({ ...onboardingData, pets: updatedPets })
+                                              }}
+                                              className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent text-sm"
+                                            >
+                                              <option value="">Month</option>
+                                              {Array.from({ length: 12 }, (_, i) => (
+                                                <option key={i + 1} value={i + 1}>
+                                                  {new Date(0, i).toLocaleString("default", { month: "short" })}
+                                                </option>
+                                              ))}
+                                            </select>
+                                            <select
+                                              value={pet.birthDay || ""}
+                                              onChange={(e) => {
+                                                const updatedPets = [...onboardingData.pets]
+                                                updatedPets[index] = { ...updatedPets[index], birthDay: e.target.value }
+                                                setOnboardingData({ ...onboardingData, pets: updatedPets })
+                                              }}
+                                              className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent text-sm"
+                                            >
+                                              <option value="">Day</option>
+                                              {Array.from({ length: 31 }, (_, i) => (
+                                                <option key={i + 1} value={i + 1}>
+                                                  {i + 1}
+                                                </option>
+                                              ))}
+                                            </select>
+                                            <select
+                                              value={pet.birthYear || ""}
+                                              onChange={(e) => {
+                                                const updatedPets = [...onboardingData.pets]
+                                                updatedPets[index] = {
+                                                  ...updatedPets[index],
+                                                  birthYear: e.target.value,
+                                                }
+                                                setOnboardingData({ ...onboardingData, pets: updatedPets })
+                                              }}
+                                              className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent text-sm"
+                                            >
+                                              <option value="">Year</option>
+                                              {Array.from({ length: 30 }, (_, i) => {
+                                                const year = new Date().getFullYear() - i
+                                                return (
+                                                  <option key={year} value={year}>
+                                                    {year}
+                                                  </option>
+                                                )
+                                              })}
+                                            </select>
+                                          </div>
                                         </div>
                                         <div>
                                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Chip ID
+                                            Important Notes
                                           </label>
-                                          <input
-                                            type="text"
-                                            value={pet.chip_id || ""}
+                                          <textarea
+                                            value={pet.notes || ""}
                                             onChange={(e) => {
                                               const updatedPets = [...onboardingData.pets]
-                                              updatedPets[index] = { ...updatedPets[index], chip_id: e.target.value }
+                                              updatedPets[index] = { ...updatedPets[index], notes: e.target.value }
                                               setOnboardingData({ ...onboardingData, pets: updatedPets })
                                             }}
                                             className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                                            placeholder="Microchip ID"
+                                            placeholder="Any important information your pet professional should know"
+                                            rows={3}
                                           />
                                         </div>
                                       </div>
