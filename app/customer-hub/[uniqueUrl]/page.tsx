@@ -1895,6 +1895,9 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                     criteria_status: onboardingData.criteria_status,
                     supporting_details: onboardingData.supporting_details,
                   }))
+
+                  // Update onboarding status to reflect changes immediately
+                  setOnboardingStatus(onboardingData.criteria_status)
                 }
               }
             } else {
