@@ -2703,6 +2703,72 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
               </div>
             </div>
 
+            <div className="bg-gradient-to-r from-[#E75837] to-[#d04e30] rounded-2xl shadow-lg p-8 text-white">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Heart className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold mb-3 font-header">Get More with the Critter App</h3>
+                <p className="text-white/90 mb-6 font-body text-lg max-w-2xl mx-auto">
+                  If you'd like to build out your care plan, pay invoices, or get timeline updates, download the Critter
+                  App.
+                </p>
+                <div className="flex justify-center space-x-4 flex-wrap gap-4">
+                  <a
+                    href="https://apps.apple.com/us/app/critter-pet-owners-pros/id1630023733"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-black text-white px-6 py-3 rounded-lg flex items-center hover:bg-gray-800 transition-colors"
+                  >
+                    <div className="mr-3">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                          d="M17.0754 12.3674C17.0654 10.4494 18.0434 9.0384 19.9794 8.0774C18.9154 6.5514 17.2734 5.7254 15.1904 5.6294C13.2274 5.5354 11.1044 6.8354 10.3174 6.8354C9.5004 6.8354 7.6364 5.6854 6.1454 5.6854C3.4024 5.7354 0.599365 7.7834 0.599365 11.9574C0.599365 13.3154 0.860365 14.7154 1.3824 16.1574C2.0824 18.0894 4.3584 22.2074 6.7364 22.1334C8.0514 22.1034 8.9784 21.1914 10.6604 21.1914C12.2974 21.1914 13.1544 22.1334 14.6094 22.1334C16.9994 22.0934 19.0384 18.3594 19.6984 16.4214C16.4334 14.8814 17.0754 12.4414 17.0754 12.3674ZM14.0884 3.7974C15.6854 1.9254 15.5174 0.2374 15.4734 0.0374C14.1044 0.1054 12.5074 1.0174 11.6504 2.0374C10.7034 3.1374 10.1834 4.4374 10.3174 5.6054C11.8084 5.7054 13.1784 4.8374 14.0884 3.7974Z"
+                          fill="white"
+                        />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <div className="text-xs">Download on the</div>
+                      <div className="text-xl font-semibold">App Store</div>
+                    </div>
+                  </a>
+
+                  <a
+                    href="https://play.google.com/store/apps/details?id=com.critterclient&pli=1"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-black text-white px-6 py-3 rounded-lg flex items-center hover:bg-gray-800 transition-colors"
+                  >
+                    <div className="mr-3">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                          d="M3.60938 2.60156C3.22656 3.01562 3 3.64844 3 4.46875V19.5312C3 20.3516 3.22656 20.9844 3.60938 21.3984L3.72656 21.5156L13.3594 11.8828V11.5L3.72656 1.48438L3.60938 2.60156Z"
+                          fill="#00F076"
+                        />
+                        <path
+                          d="M17.0625 15.5859L13.3594 11.8828V11.5L17.0625 7.79688L17.2031 7.88281L21.6094 10.4062C22.7969 11.0625 22.7969 12.0234 21.6094 12.6797L17.2031 15.5L17.0625 15.5859Z"
+                          fill="#FFCF47"
+                        />
+                        <path
+                          d="M17.2031 15.5L13.3594 11.6562L3.60938 21.3984C4.03125 21.8438 4.73438 21.8906 5.53125 21.4453L17.2031 15.5Z"
+                          fill="#FF554A"
+                        />
+                        <path
+                          d="M17.2031 7.88281L5.53125 1.9375C4.73438 1.49219 4.03125 1.53906 3.60938 1.98438L13.3594 11.6562L17.2031 7.88281Z"
+                          fill="#00AAF0"
+                        />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <div className="text-xs">GET IT ON</div>
+                      <div className="text-xl font-semibold">Google Play</div>
+                    </div>
+                  </a>
+                </div>
+              </div>
+            </div>
+
             {/* Back button */}
             <div className="text-center">
               <button
