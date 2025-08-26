@@ -1836,6 +1836,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
               unique_url: uniqueUrl,
               customer_email: email,
               timestamp: new Date().toISOString(),
+              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             }
 
             const reinitializeResponse = await fetch(webhookUrl, {
