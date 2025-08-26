@@ -366,10 +366,20 @@ export default function SchedulePage() {
 
       const result = await response.json()
 
-      // Check for invalid_email response
-      if (Array.isArray(result) && result.some((item) => item.invalid_email)) {
+      if (Array.isArray(result)) {
+        // Check for invalid_email response
         const invalidEmailItem = result.find((item) => item.invalid_email)
-        throw new Error(invalidEmailItem.invalid_email)
+        if (invalidEmailItem) {
+          throw new Error(invalidEmailItem.invalid_email)
+        }
+
+        // Check for invalid_customer response
+        const invalidCustomerItem = result.find((item) => item.output === "invalid_customer")
+        if (invalidCustomerItem) {
+          throw new Error(
+            "Only active customers can schedule bookings - please complete the new customer intake process prior to creating a new booking.",
+          )
+        }
       }
 
       // If we get here, email is valid - proceed with initialization
