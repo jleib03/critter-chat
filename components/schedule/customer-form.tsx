@@ -311,6 +311,8 @@ export function CustomerForm({
                     className="pl-10 rounded-lg border-gray-300 focus:border-[#E75837] focus:ring-[#E75837]"
                     placeholder="Enter your first name"
                     required
+                    readOnly={!!verifiedCustomerInfo}
+                    disabled={!!verifiedCustomerInfo}
                   />
                 </div>
               </div>
@@ -329,6 +331,8 @@ export function CustomerForm({
                     className="pl-10 rounded-lg border-gray-300 focus:border-[#E75837] focus:ring-[#E75837]"
                     placeholder="Enter your last name"
                     required
+                    readOnly={!!verifiedCustomerInfo}
+                    disabled={!!verifiedCustomerInfo}
                   />
                 </div>
               </div>
@@ -348,6 +352,8 @@ export function CustomerForm({
                   className="pl-10 rounded-lg border-gray-300 focus:border-[#E75837] focus:ring-[#E75837]"
                   placeholder="Enter your email address"
                   required
+                  readOnly={!!verifiedCustomerInfo}
+                  disabled={!!verifiedCustomerInfo}
                 />
               </div>
             </div>
@@ -365,6 +371,8 @@ export function CustomerForm({
                   onChange={(e) => handleInputChange("phone", e.target.value)}
                   className="pl-10 rounded-lg border-gray-300 focus:border-[#E75837] focus:ring-[#E75837]"
                   placeholder="Enter your phone number"
+                  readOnly={!!verifiedCustomerInfo}
+                  disabled={!!verifiedCustomerInfo}
                 />
               </div>
             </div>
