@@ -1501,6 +1501,14 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
     }
   }
 
+  const sanitizeAddressForSQL = (address: string) => {
+    if (!address) return address
+    return address
+      .replace(/[,;'"]/g, "") // Remove commas, semicolons, and quotes
+      .replace(/[^\w\s\-.#]/g, "") // Keep only alphanumeric, spaces, hyphens, periods, and hash symbols
+      .trim()
+  }
+
   const handleOnboardingSubmit = async () => {
     setOnboardingLoading(true)
 
@@ -1702,7 +1710,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                 contact_data: {
                   contact_name: currentContact.contactName,
                   business_name: currentContact.businessName,
-                  address: currentContact.address,
+                  address: sanitizeAddressForSQL(currentContact.address), // Sanitize address for SQL
                   phone_number: currentContact.phoneNumber,
                   email: currentContact.email,
                   notes: currentContact.notes,
@@ -1749,7 +1757,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
               contact_data: {
                 contact_name: currentContact.contactName,
                 business_name: currentContact.businessName,
-                address: currentContact.address,
+                address: sanitizeAddressForSQL(currentContact.address), // Sanitize address for SQL
                 phone_number: currentContact.phoneNumber,
                 email: currentContact.email,
                 notes: currentContact.notes,
