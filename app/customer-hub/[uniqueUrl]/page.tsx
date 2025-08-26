@@ -228,6 +228,9 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
     setProfessionalName("Professional") // Placeholder
   }, [uniqueUrl])
 
+  const [pets, setPets] = useState<any[]>([])
+  const [onboardingStatus, setOnboardingStatus] = useState<any>(null)
+
   const getPetIcon = (petType: string) => {
     const type = petType.toLowerCase()
     if (type.includes("dog")) return <Dog className="w-5 h-5" />
@@ -1870,6 +1873,20 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
             if (reinitializeResponse.ok) {
               const reinitializedData = await reinitializeResponse.json()
               console.log("[v0] Customer hub reinitialized successfully:", reinitializedData)
+
+              if (Array.isArray(reinitializedData) && reinitializedData.length > 0) {
+                // Extract pets data from the response
+                const petsData = reinitializedData.filter((item: any) => item.id && item.name)
+                if (petsData.length > 0) {
+                  setPets(petsData)
+                }
+
+                // Extract onboarding status from the response
+                const onboardingData = reinitializedData.find((item: any) => item.onboarding_complete !== undefined)
+                if (onboardingData) {
+                  setOnboardingStatus(onboardingData)
+                }
+              }
             } else {
               console.error("Failed to reinitialize customer hub:", reinitializeResponse.statusText)
             }
@@ -1881,8 +1898,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
         setShowOnboardingModal(false)
         setOnboardingStep(1)
 
-        // Refresh the customer data to reflect updates
-        window.location.reload()
+        // window.location.reload()
       } else {
         console.error("Failed to submit onboarding:", response.statusText)
         alert("Failed to submit onboarding. Please try again.")
