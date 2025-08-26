@@ -1133,7 +1133,7 @@ export default function SchedulePage() {
     setShowCustomerForm(true)
   }
 
-  const handleBackToSchedule = () => {
+  const handleBackToScheduleInner = () => {
     setShowCustomerForm(false)
     setSelectedTimeSlot(null)
     setSelectedTimeSlots([])
@@ -1142,7 +1142,7 @@ export default function SchedulePage() {
     }
   }
 
-  const handleNewBooking = async () => {
+  const handleNewBookingInner = async () => {
     setSelectedServices([])
     setSelectedTimeSlot(null)
     setSelectedTimeSlots([])
@@ -1150,7 +1150,7 @@ export default function SchedulePage() {
     setShowPetSelection(false)
     setShowConfirmation(false)
     setCreatingBooking(false)
-    setCustomerInfo({ firstName: "", lastName: "", email: "" })
+    // setCustomerInfo({ firstName: "", lastName: "", email: "" })
     setPets([])
     setSelectedPets([])
     setSelectedNotifications([])
@@ -1497,7 +1497,7 @@ export default function SchedulePage() {
             customerInfo={customerInfo}
             selectedPets={selectedPets}
             professionalName={webhookData.professional_info.professional_name}
-            onNewBooking={handleNewBooking}
+            onNewBooking={handleNewBookingInner}
             bookingType={bookingType}
             recurringConfig={recurringConfig}
             selectedServices={selectedServices}
@@ -1531,7 +1531,7 @@ export default function SchedulePage() {
             professionalName={webhookData.professional_info.professional_name}
             sessionId={sessionIdRef.current!}
             onPetsReceived={handlePetsReceived}
-            onBack={handleBackToSchedule}
+            onBack={handleBackToScheduleInner}
             bookingType={bookingType}
             recurringConfig={recurringConfig}
             showPrices={showPrices}
