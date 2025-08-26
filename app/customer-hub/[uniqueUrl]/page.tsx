@@ -376,6 +376,12 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
       }
 
       const data = await response.json()
+
+      if (Array.isArray(data) && data.length > 0 && data[0].invalid_email) {
+        setError(data[0].invalid_email)
+        return
+      }
+
       if (Array.isArray(data) && data.length > 0 && data[0].random_code) {
         setGeneratedCode(data[0].random_code)
         setStep("code")
