@@ -1922,7 +1922,10 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
         <div className="max-w-6xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <button onClick={() => router.back()} className="p-2 hover:bg-white/20 rounded-lg transition-colors">
+              <button
+                onClick={() => router.push(`/${uniqueUrl}`)}
+                className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              >
                 <ArrowLeft className="w-6 h-6" />
               </button>
               <div>
