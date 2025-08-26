@@ -2,11 +2,10 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { ArrowLeft, User, Mail, Phone, MessageSquare } from "lucide-react"
+import { ArrowLeft, User, Mail, Phone } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { Service, SelectedTimeSlot, CustomerInfo, PetResponse } from "@/types/schedule"
 import type { BookingType, RecurringConfig } from "./booking-type-selection"
@@ -29,6 +28,7 @@ interface CustomerFormProps {
     first_name: string
     last_name: string
     email: string
+    phone_number?: string
     user_id?: string
     customer_id?: string | null
   }
@@ -66,6 +66,7 @@ export function CustomerForm({
         firstName: verifiedCustomerInfo.first_name || "",
         lastName: verifiedCustomerInfo.last_name || "",
         email: verifiedCustomerInfo.email || "",
+        phone: verifiedCustomerInfo.phone_number || "",
       }))
     }
   }, [verifiedCustomerInfo])
@@ -364,22 +365,6 @@ export function CustomerForm({
                   onChange={(e) => handleInputChange("phone", e.target.value)}
                   className="pl-10 rounded-lg border-gray-300 focus:border-[#E75837] focus:ring-[#E75837]"
                   placeholder="Enter your phone number"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="notes" className="text-sm font-medium text-gray-700 body-font">
-                Additional Notes
-              </Label>
-              <div className="relative">
-                <MessageSquare className="absolute left-3 top-3 text-gray-400 w-4 h-4" />
-                <Textarea
-                  id="notes"
-                  value={customerInfo.notes || ""}
-                  onChange={(e) => handleInputChange("notes", e.target.value)}
-                  className="pl-10 pt-3 rounded-lg border-gray-300 focus:border-[#E75837] focus:ring-[#E75837] min-h-[100px]"
-                  placeholder="Any special requests or information for the professional..."
                 />
               </div>
             </div>

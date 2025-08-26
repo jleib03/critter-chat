@@ -364,7 +364,17 @@ export default function SchedulePage() {
 
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
 
-      const result = await response.json()
+      let result
+      try {
+        const responseText = await response.text()
+        if (!responseText.trim()) {
+          throw new Error("Empty response from server")
+        }
+        result = JSON.parse(responseText)
+      } catch (parseError) {
+        console.error("JSON parsing error:", parseError)
+        throw new Error("Invalid response format from server")
+      }
 
       if (Array.isArray(result)) {
         // Check for invalid_email response
@@ -388,7 +398,8 @@ export default function SchedulePage() {
             email: email.trim().toLowerCase(),
             firstName: validCustomerItem.first_name || "",
             lastName: validCustomerItem.last_name || "",
-            userId: validCustomerItem.user_id || "",
+            phone: validCustomerItem.phone_number || "",
+            userId: validCustomerItem.critter_user_id || validCustomerItem.user_id || "",
             customerId: validCustomerItem.customer_id || "",
           }))
         }
@@ -408,7 +419,7 @@ export default function SchedulePage() {
           "Only active customers can schedule bookings - please complete the new customer intake process prior to creating a new booking.",
         )
       } else {
-        setEmailError(err instanceof Error ? err.message : "Email verification failed. Please try again.")
+        setEmailError(err instanceof Error ? err.message : "Unable to verify email. Please try again.")
       }
     } finally {
       setVerifyingEmail(false)
