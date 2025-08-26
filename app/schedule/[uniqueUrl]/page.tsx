@@ -1536,6 +1536,18 @@ export default function SchedulePage() {
             recurringConfig={recurringConfig}
             showPrices={showPrices}
             multiDayTimeSlot={multiDayTimeSlot}
+            verifiedCustomerInfo={
+              customerInfo.firstName
+                ? {
+                    first_name: customerInfo.firstName,
+                    last_name: customerInfo.lastName,
+                    email: customerInfo.email,
+                    phone_number: customerInfo.phone,
+                    user_id: customerInfo.userId,
+                    customer_id: customerInfo.customerId,
+                  }
+                : undefined
+            }
           />
         ) : showMultiDayForm && selectedServices.length > 0 ? (
           <MultiDayBookingForm
