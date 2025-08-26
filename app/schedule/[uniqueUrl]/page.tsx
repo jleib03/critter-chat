@@ -380,11 +380,25 @@ export default function SchedulePage() {
             "Only active customers can schedule bookings - please complete the new customer intake process prior to creating a new booking.",
           )
         }
+
+        const validCustomerItem = result.find((item) => item.output === "valid_customer")
+        if (validCustomerItem) {
+          setCustomerInfo((prev) => ({
+            ...prev,
+            email: email.trim().toLowerCase(),
+            firstName: validCustomerItem.first_name || "",
+            lastName: validCustomerItem.last_name || "",
+            userId: validCustomerItem.user_id || "",
+            customerId: validCustomerItem.customer_id || "",
+          }))
+        }
       }
 
       // If we get here, email is valid - proceed with initialization
       setIsEmailVerified(true)
-      setCustomerInfo((prev) => ({ ...prev, email: email.trim().toLowerCase() }))
+      if (!customerInfo.firstName) {
+        setCustomerInfo((prev) => ({ ...prev, email: email.trim().toLowerCase() }))
+      }
       await initializeSchedule()
       setShowEmailVerification(false)
     } catch (err) {
@@ -1195,6 +1209,12 @@ export default function SchedulePage() {
       </div>
     )
   }
+  isEmailVerified && customerInfo.firstName && (
+    <div className="mb-6 text-center">
+      <h2 className="text-2xl font-semibold text-gray-800">Welcome {customerInfo.firstName}!</h2>
+      <p className="text-gray-600 mt-1">Let's get your appointment scheduled.</p>
+    </div>
+  )
 
   if (loading) {
     return (
