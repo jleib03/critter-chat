@@ -8,7 +8,6 @@ import Link from "next/link"
 import {
   ArrowLeft,
   Mail,
-  User,
   Calendar,
   Heart,
   Loader2,
@@ -18,8 +17,6 @@ import {
   Bird,
   ChevronLeft,
   ChevronRight,
-  Plus,
-  Shield,
   FileText,
   ChevronDown,
   ChevronUp,
@@ -28,11 +25,6 @@ import {
   AlertTriangle,
   Scale,
   Cookie,
-  CheckCircle,
-  X,
-  PlusCircle,
-  MinusCircle,
-  AlertCircle,
 } from "lucide-react"
 import { getWebhookEndpoint, logWebhookUsage } from "../../../types/webhook-endpoints"
 
@@ -378,7 +370,9 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
       const data = await response.json()
 
       if (Array.isArray(data) && data.length > 0 && data[0].invalid_email) {
-        setError(data[0].invalid_email)
+        setError(
+          "No matching email on file - please make sure you have completed customer intake or directly reach out to your Critter Professional",
+        )
         return
       }
 
@@ -1922,1648 +1916,993 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-[#E75837] to-[#d04e30] text-white">
-        <div className="max-w-6xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push(`/${uniqueUrl}`)}
-                className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-6 h-6" />
-              </button>
-              <div>
-                <h1 className="text-3xl font-bold font-title">Customer Portal</h1>
-                <p className="text-white/90 font-body">Access your booking information and pet details</p>
-              </div>
+    <>
+      {step === "email" && (
+        <div className="flex flex-col items-center justify-center h-screen">
+          <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 w-full max-w-md">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Welcome, Critter Customer!</h2>
+              <p className="text-gray-600 mt-2">Please enter your email to access your Customer Hub.</p>
             </div>
-            {step === "data" && customerData && (
-              <Link
-                href={`/schedule/${uniqueUrl}`}
-                className="bg-white text-[#E75837] py-2 px-6 rounded-lg font-medium hover:bg-gray-100 transition-colors font-body flex items-center gap-2"
-              >
-                <Plus className="w-5 h-5" />
-                New Appointment
-              </Link>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        {step === "email" && (
-          /* Email Input Form */
-          <div className="max-w-md mx-auto">
-            <div className="bg-white rounded-2xl shadow-lg p-8">
-              <form onSubmit={handleEmailSubmit} className="space-y-6">
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2 font-body">
-                    Enter your email address
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input
-                      type="email"
-                      id="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="your.email@example.com"
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent font-body"
-                      required
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <p className="text-sm text-gray-500 mt-2 font-body">
-                    We'll send you a verification code to access your information
-                  </p>
-                </div>
-
-                {error && (
-                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-600 font-body">{error}</p>
-                  </div>
-                )}
-
+            <form onSubmit={handleEmailSubmit}>
+              <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
+                  Email Address
+                </label>
+                <input
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  id="email"
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              {error && <p className="text-red-500 text-xs italic mb-4">{error}</p>}
+              <div className="flex items-center justify-between">
                 <button
+                  className="bg-[#E75837] hover:bg-[#333333] text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
                   type="submit"
-                  disabled={isLoading || !email.trim()}
-                  className="w-full bg-[#E75837] text-white py-3 px-6 rounded-lg font-medium hover:bg-[#d04e30] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-body flex items-center justify-center gap-2"
+                  disabled={isLoading}
                 >
                   {isLoading ? (
                     <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Sending verification code...
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Please wait...
                     </>
                   ) : (
-                    <>
-                      <Mail className="w-5 h-5" />
-                      Send Verification Code
-                    </>
+                    "Continue"
                   )}
                 </button>
-              </form>
-            </div>
+              </div>
+            </form>
           </div>
-        )}
+        </div>
+      )}
 
-        {step === "code" && (
-          /* Validation Code Input Form */
-          <div className="max-w-md mx-auto">
-            <div className="bg-white rounded-2xl shadow-lg p-8">
-              <div className="text-center mb-6">
-                <Shield className="w-12 h-12 text-[#E75837] mx-auto mb-4" />
-                <h2 className="text-xl font-bold text-gray-900 font-header">Check Your Email</h2>
-                <p className="text-gray-600 font-body mt-2">
-                  We've sent a verification code to <span className="font-medium">{email}</span>
-                </p>
-              </div>
-
-              <form onSubmit={handleCodeSubmit} className="space-y-6">
-                <div>
-                  <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2 font-body">
-                    Enter verification code
-                  </label>
-                  <input
-                    type="text"
-                    id="code"
-                    value={validationCode}
-                    onChange={(e) => setValidationCode(e.target.value)}
-                    placeholder="Enter 6-digit code"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent font-body text-center text-lg tracking-widest"
-                    required
-                    disabled={isLoading}
-                    maxLength={6}
-                  />
-                </div>
-
-                {error && (
-                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-600 font-body">{error}</p>
-                  </div>
-                )}
-
-                <div className="space-y-3">
-                  <button
-                    type="submit"
-                    disabled={isLoading || !validationCode.trim()}
-                    className="w-full bg-[#E75837] text-white py-3 px-6 rounded-lg font-medium hover:bg-[#d04e30] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-body flex items-center justify-center gap-2"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        Verifying code...
-                      </>
-                    ) : (
-                      <>
-                        <User className="w-5 h-5" />
-                        Access My Portal
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setStep("email")}
-                    className="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-200 transition-colors font-body"
-                  >
-                    Use Different Email
-                  </button>
-                </div>
-              </form>
+      {step === "code" && (
+        <div className="flex flex-col items-center justify-center h-screen">
+          <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 w-full max-w-md">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Verification Code</h2>
+              <p className="text-gray-600 mt-2">
+                A verification code has been sent to your email address. Please enter it below.
+              </p>
             </div>
+            <form onSubmit={handleCodeSubmit}>
+              <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="code">
+                  Verification Code
+                </label>
+                <input
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  id="code"
+                  type="text"
+                  placeholder="Enter code"
+                  value={validationCode}
+                  onChange={(e) => setValidationCode(e.target.value)}
+                />
+              </div>
+              {error && <p className="text-red-500 text-xs italic mb-4">{error}</p>}
+              <div className="flex items-center justify-between">
+                <button
+                  className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                  type="button"
+                  onClick={resetForm}
+                >
+                  Back
+                </button>
+                <button
+                  className="bg-[#E75837] hover:bg-[#333333] text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                  type="submit"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Please wait...
+                    </>
+                  ) : (
+                    "Verify"
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
-        )}
+        </div>
+      )}
 
-        {step === "data" && customerData && (
-          /* Customer Information Display */
-          <div className="space-y-8">
-            {/* Tabbed Navigation */}
-            <div className="bg-white rounded-2xl shadow-lg">
-              <div className="border-b border-gray-200">
-                <nav className="flex space-x-8 px-8 pt-6">
-                  <button
-                    onClick={() => setActiveTab("pets")}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                      activeTab === "pets"
-                        ? "border-[#E75837] text-[#E75837]"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Heart className="w-4 h-4" />
-                      Pets
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("appointments")}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                      activeTab === "appointments"
-                        ? "border-[#E75837] text-[#E75837]"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      Appointments
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("invoices")}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                      activeTab === "invoices"
-                        ? "border-[#E75837] text-[#E75837]"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4" />
-                      Invoices
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("onboarding")}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                      activeTab === "onboarding"
-                        ? "border-[#E75837] text-[#E75837]"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4" />
-                      Onboarding
-                    </div>
-                  </button>
-                </nav>
-              </div>
-
-              <div className="p-8">
-                {activeTab === "pets" && (
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6 font-header flex items-center gap-3">
-                      <Heart className="w-8 h-8 text-[#E75837]" />
-                      Your Pets
-                    </h2>
-                    {customerData.pets && customerData.pets.length > 0 ? (
-                      <div className="space-y-6">
-                        {customerData.pets.map((pet) => (
-                          <div
-                            key={pet.pet_id}
-                            className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-                          >
-                            <button
-                              onClick={() => togglePetExpansion(pet.pet_id)}
-                              className="w-full p-6 bg-gradient-to-br from-orange-50 to-pink-50 border-b border-orange-200 hover:from-orange-100 hover:to-pink-100 transition-colors"
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-4">
-                                  <div className="w-12 h-12 bg-gradient-to-br from-[#E75837] to-[#D14420] rounded-full flex items-center justify-center shadow-md border-2 border-white">
-                                    <div className="text-white">{getPetIcon(pet.pet_type)}</div>
-                                  </div>
-                                  <div className="text-left">
-                                    <h3 className="font-semibold text-gray-900 text-lg header-font">{pet.pet_name}</h3>
-                                    <p className="text-gray-600 body-font text-sm">{pet.pet_type}</p>
-                                  </div>
-                                </div>
-                                <button
-                                  onClick={() => togglePetExpansion(pet.pet_id)}
-                                  className="text-[#E75837] hover:text-[#E75837]/80 transition-colors"
-                                >
-                                  {expandedPet === pet.pet_id ? (
-                                    <ChevronUp className="h-5 w-5" />
-                                  ) : (
-                                    <ChevronDown className="h-5 w-5" />
-                                  )}
-                                </button>
-                              </div>
-                            </button>
-
-                            {expandedPet === pet.pet_id && (
-                              <div className="bg-gray-50">
-                                <div className="flex">
-                                  {/* Sidebar Navigation */}
-                                  <div className="w-48 bg-white border-r border-gray-200 p-4">
-                                    <nav className="space-y-2">
-                                      <button
-                                        onClick={() => setSelectedSection("general")}
-                                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
-                                          selectedSection === "general"
-                                            ? "bg-[#E75837] text-white"
-                                            : "text-gray-700 hover:bg-gray-100"
-                                        }`}
-                                      >
-                                        General
-                                      </button>
-                                      <button
-                                        onClick={() => setSelectedSection("health")}
-                                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
-                                          selectedSection === "health"
-                                            ? "bg-[#E75837] text-white"
-                                            : "text-gray-700 hover:bg-gray-100"
-                                        }`}
-                                      >
-                                        Health
-                                      </button>
-                                      <button
-                                        onClick={() => setSelectedSection("food")}
-                                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
-                                          selectedSection === "food"
-                                            ? "bg-[#E75837] text-white"
-                                            : "text-gray-700 hover:bg-gray-100"
-                                        }`}
-                                      >
-                                        Food
-                                      </button>
-                                      <button
-                                        onClick={() => setSelectedSection("vaccine-overview")}
-                                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
-                                          selectedSection === "vaccine-overview"
-                                            ? "bg-[#E75837] text-white"
-                                            : "text-gray-700 hover:bg-gray-100"
-                                        }`}
-                                      >
-                                        Vaccine Overview
-                                      </button>
-                                      <button
-                                        onClick={() => setSelectedSection("care-plan-report")}
-                                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
-                                          selectedSection === "care-plan-report"
-                                            ? "bg-[#E75837] text-white"
-                                            : "text-gray-700 hover:bg-gray-100"
-                                        }`}
-                                      >
-                                        Care Plan Report
-                                      </button>
-                                    </nav>
-                                  </div>
-
-                                  {/* Main Content */}
-                                  <div className="flex-1 p-6">
-                                    <div className="flex items-center justify-between mb-6">
-                                      <h3 className="text-xl font-bold text-gray-900 font-header capitalize">
-                                        {selectedSection === "care-plan-report"
-                                          ? "Care Plan Report"
-                                          : selectedSection === "vaccine-overview"
-                                            ? "Vaccine Overview"
-                                            : `${selectedSection} Information`}
-                                      </h3>
-                                    </div>
-
-                                    {renderPetProfileSection(pet, selectedSection)}
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12">
-                        <Heart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-600 font-body text-xl">No pets registered</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {activeTab === "appointments" && (
-                  <div>
-                    <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-2xl font-bold text-gray-900 font-header flex items-center gap-3">
-                        <Calendar className="w-8 h-8 text-[#E75837]" />
-                        Your Appointments
-                      </h2>
-                      <div className="flex items-center gap-4">
-                        <div className="flex bg-gray-100 rounded-lg p-1">
-                          <button
-                            onClick={() => setAppointmentView("calendar")}
-                            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                              appointmentView === "calendar"
-                                ? "bg-white text-[#E75837] shadow-sm"
-                                : "text-gray-600 hover:text-gray-900"
-                            }`}
-                          >
-                            Calendar
-                          </button>
-                          <button
-                            onClick={() => setAppointmentView("list")}
-                            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                              appointmentView === "list"
-                                ? "bg-white text-[#E75837] shadow-sm"
-                                : "text-gray-600 hover:text-gray-900"
-                            }`}
-                          >
-                            List
-                          </button>
-                        </div>
-                        {appointmentView === "calendar" && (
-                          <>
-                            <button
-                              onClick={() =>
-                                setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))
-                              }
-                              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                              <ChevronLeft className="w-5 h-5" />
-                            </button>
-                            <h3 className="text-lg font-semibold font-body min-w-[200px] text-center">
-                              {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-                            </h3>
-                            <button
-                              onClick={() =>
-                                setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))
-                              }
-                              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                              <ChevronRight className="w-5 h-5" />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {customerData.bookings && customerData.bookings.length > 0 ? (
-                      <>
-                        {appointmentView === "calendar" ? (
-                          <>
-                            {/* Calendar Grid */}
-                            <div className="grid grid-cols-7 gap-1 mb-4">
-                              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                                <div key={day} className="p-3 text-center font-semibold text-gray-600 font-body">
-                                  {day}
-                                </div>
-                              ))}
-                            </div>
-
-                            <div className="grid grid-cols-7 gap-1">
-                              {calendarDays.map((day, index) => {
-                                const bookings = getBookingsForDate(day)
-                                const isCurrentMonth = day.getMonth() === currentDate.getMonth()
-                                const isToday = day.toDateString() === new Date().toDateString()
-
-                                return (
-                                  <div
-                                    key={index}
-                                    className={`min-h-[100px] p-2 border border-gray-200 ${
-                                      isCurrentMonth ? "bg-white" : "bg-gray-50"
-                                    } ${isToday ? "ring-2 ring-[#E75837]" : ""}`}
-                                  >
-                                    <div
-                                      className={`text-sm font-medium mb-1 ${isCurrentMonth ? "text-gray-900" : "text-gray-400"}`}
-                                    >
-                                      {day.getDate()}
-                                    </div>
-                                    <div className="space-y-1">
-                                      {bookings.map((booking) => (
-                                        <div
-                                          key={booking.booking_id}
-                                          className={`text-xs p-1 rounded border ${getServiceTypeColor(booking.service_types || "")}`}
-                                        >
-                                          <div className="font-medium truncate">
-                                            {convertToUserTimezone(booking.start)}
-                                          </div>
-                                          <div className="truncate">{booking.service_names || "Appointment"}</div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )
-                              })}
-                            </div>
-
-                            {/* Legend */}
-                            <div className="mt-6 flex flex-wrap gap-4">
-                              <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
-                                <span className="text-sm font-body">Walking</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 bg-purple-100 border border-purple-300 rounded"></div>
-                                <span className="text-sm font-body">Grooming</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 bg-blue-100 border border-blue-300 rounded"></div>
-                                <span className="text-sm font-body">Drop-in</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 bg-orange-100 border border-orange-300 rounded"></div>
-                                <span className="text-sm font-body">Other</span>
-                              </div>
-                            </div>
-                          </>
-                        ) : (
-                          /* Added list view for appointments */
-                          <div className="space-y-4 max-h-[600px] overflow-y-auto">
-                            {customerData.bookings
-                              .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
-                              .map((booking) => (
-                                <div
-                                  key={booking.booking_id}
-                                  className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                                >
-                                  <div className="flex items-start justify-between">
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-3 mb-2">
-                                        <div
-                                          className={`w-3 h-3 rounded-full ${
-                                            booking.service_types?.toLowerCase().includes("walking")
-                                              ? "bg-green-400"
-                                              : booking.service_types?.toLowerCase().includes("grooming")
-                                                ? "bg-purple-400"
-                                                : booking.service_types?.toLowerCase().includes("drop")
-                                                  ? "bg-blue-400"
-                                                  : "bg-orange-400"
-                                          }`}
-                                        ></div>
-                                        <h3 className="text-lg font-semibold text-gray-900 font-header">
-                                          {booking.service_names || "Appointment"}
-                                        </h3>
-                                      </div>
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 font-body">
-                                        <div>
-                                          <span className="font-medium">Date:</span>{" "}
-                                          {booking.booking_date_formatted ||
-                                            new Date(booking.start).toLocaleDateString()}
-                                        </div>
-                                        <div>
-                                          <span className="font-medium">Day:</span> {booking.day_of_week}
-                                        </div>
-                                        <div>
-                                          <span className="font-medium">Time:</span>{" "}
-                                          {convertToUserTimezone(booking.start)} - {convertToUserTimezone(booking.end)}
-                                        </div>
-                                        <div>
-                                          <span className="font-medium">Professional:</span> {booking.professional_name}
-                                        </div>
-                                        {booking.service_types && (
-                                          <div className="md:col-span-2">
-                                            <span className="font-medium">Service Type:</span> {booking.service_types}
-                                          </div>
-                                        )}
-                                        {booking.is_recurring && (
-                                          <div className="md:col-span-2">
-                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                              Recurring Appointment
-                                            </span>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <div className="text-center py-12">
-                        <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-600 font-body text-xl mb-2">No upcoming appointments scheduled</p>
-                        <p className="text-gray-500 font-body">Contact us to book your next appointment!</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {activeTab === "invoices" && (
-                  <div>
-                    <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-2xl font-bold text-gray-900 font-header flex items-center gap-3">
-                        <FileText className="w-8 h-8 text-[#E75837]" />
-                        Invoices
-                      </h2>
-                    </div>
-
-                    {customerData.invoices && customerData.invoices.length > 0 ? (
-                      <div className="space-y-4">
-                        {customerData.invoices.map((invoice) => (
-                          <div
-                            key={invoice.invoice_number}
-                            className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow"
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-4 mb-2">
-                                  <h3 className="text-lg font-bold text-gray-900 font-body">{invoice.amount}</h3>
-                                  <span className="text-gray-600 font-body">Due {invoice.due_date}</span>
-                                </div>
-                                <p className="text-gray-600 font-body">Invoice #{invoice.invoice_number}</p>
-                              </div>
-                              <div className="flex-shrink-0">
-                                <span
-                                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getStatusBadgeStyle(
-                                    invoice.status,
-                                  )}`}
-                                >
-                                  {invoice.status}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-
-                        {customerData.payment_instructions && (
-                          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                            <p className="text-blue-800 font-body text-sm">
-                              <strong>Payment Instructions:</strong> {customerData.payment_instructions}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12">
-                        <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-600 font-body text-xl">No invoices found</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {activeTab === "onboarding" && (
-                  <div>
-                    <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-2xl font-bold text-gray-900 font-header flex items-center gap-3">
-                        <CheckCircle className="w-8 h-8 text-[#E75837]" />
-                        Onboarding Status
-                      </h2>
-                      {isOnboardingIncomplete() && (
-                        <button
-                          onClick={handleCompleteOnboarding}
-                          className="bg-[#E75837] text-white px-6 py-2 rounded-lg font-medium hover:bg-[#E75837]/90 transition-colors"
-                        >
-                          Complete Onboarding
-                        </button>
-                      )}
-                    </div>
-
-                    {customerData.onboarding_complete !== undefined ? (
-                      <div className="space-y-4">
-                        <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h3 className="text-lg font-bold text-gray-900 font-body">Onboarding Progress</h3>
-                              <p className="text-gray-600 font-body">
-                                {customerData.onboarding_complete
-                                  ? "You've completed the onboarding process!"
-                                  : "Complete the steps below to finish onboarding."}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              {customerData.onboarding_complete ? (
-                                <>
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                                    Complete
-                                  </span>
-                                  <button
-                                    onClick={handleCompleteOnboarding}
-                                    className="bg-[#E75837] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#E75837]/90 transition-colors"
-                                  >
-                                    Open Onboarding Flow
-                                  </button>
-                                </>
-                              ) : (
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-                                  In Progress
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* ... existing Required Steps section ... */}
-                        <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-                          <h3 className="text-lg font-bold text-gray-900 font-body mb-4">Required Steps</h3>
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                              <div className="flex-1">
-                                <h4 className="text-md font-semibold text-gray-900 font-body mb-1">
-                                  Complete Personal Information
-                                </h4>
-                                <p className="text-gray-600 font-body text-sm mb-2">
-                                  Provide your basic contact details.
-                                </p>
-                                {customerData.criteria_status?.personal_info_complete &&
-                                  customerData.supporting_details && (
-                                    <div className="text-xs text-gray-500">
-                                      <p>Email: {customerData.supporting_details.email}</p>
-                                      <p>User Type: {customerData.supporting_details.user_type}</p>
-                                    </div>
-                                  )}
-                              </div>
-                              <div>
-                                {customerData.criteria_status?.personal_info_complete ? (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                                    Complete
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                                    Incomplete
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                              <div className="flex-1">
-                                <h4 className="text-md font-semibold text-gray-900 font-body mb-1">Add Your Pets</h4>
-                                <p className="text-gray-600 font-body text-sm mb-2">
-                                  Tell us about your furry friends.
-                                </p>
-                                {customerData.criteria_status?.pets_created &&
-                                  customerData.supporting_details?.pets && (
-                                    <div className="text-xs text-gray-500">
-                                      <p>
-                                        Pets added:{" "}
-                                        {customerData.supporting_details.pets.details
-                                          ?.map((pet: any) => pet.pet_name)
-                                          .join(", ")}
-                                      </p>
-                                    </div>
-                                  )}
-                              </div>
-                              <div>
-                                {customerData.criteria_status?.pets_created ? (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                                    Complete
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                                    Incomplete
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                              <div className="flex-1">
-                                <h4 className="text-md font-semibold text-gray-900 font-body mb-1">
-                                  Add Emergency Contact
-                                </h4>
-                                <p className="text-gray-600 font-body text-sm mb-2">Provide an emergency contact.</p>
-                                {customerData.criteria_status?.emergency_contacts_added &&
-                                  customerData.supporting_details?.emergency_contacts && (
-                                    <div className="text-xs text-gray-500">
-                                      <p>
-                                        Emergency contacts: {customerData.supporting_details.emergency_contacts.length}{" "}
-                                        added
-                                      </p>
-                                    </div>
-                                  )}
-                              </div>
-                              <div>
-                                {customerData.criteria_status?.emergency_contacts_added ? (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                                    Complete
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                                    Incomplete
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                              <div className="flex-1">
-                                <h4 className="text-md font-semibold text-gray-900 font-body mb-1">Sign Policies</h4>
-                                <p className="text-gray-600 font-body text-sm mb-2">Review and sign our policies.</p>
-                                {customerData.criteria_status?.policies_signed && (
-                                  <div className="text-xs text-gray-500">
-                                    <p>All required policies signed</p>
-                                  </div>
-                                )}
-                              </div>
-                              <div>
-                                {customerData.criteria_status?.policies_signed ? (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                                    Complete
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                                    Incomplete
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-12">
-                        <CheckCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-600 font-body text-xl">No onboarding information found</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+      {step === "data" && customerData && (
+        <div className="container mx-auto py-10">
+          {/* Header Section */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-3xl font-semibold text-gray-900 font-body">
+                Welcome to Your Customer Hub, {professionalName}!
+              </h1>
+              <p className="text-gray-600 font-body">Here you can manage your pets, appointments, and invoices.</p>
             </div>
-
-            {/* Back button */}
-            <div className="text-center">
+            <div className="space-x-3">
+              <Link href="/" className="text-[#E75837] hover:underline font-body">
+                <ArrowLeft className="inline-block w-4 h-4 mr-1" />
+                Back to Home
+              </Link>
               <button
                 onClick={resetForm}
-                className="bg-gray-100 text-gray-700 py-3 px-8 rounded-lg font-medium hover:bg-gray-200 transition-colors font-body"
+                className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded font-body"
               >
-                Look up different email
+                Logout
               </button>
             </div>
           </div>
-        )}
 
-        {showOnboardingModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900">Complete Onboarding</h2>
-                  <button onClick={() => setShowOnboardingModal(false)} className="text-gray-400 hover:text-gray-600">
-                    <X className="w-6 h-6" />
-                  </button>
+          {/* Onboarding Banner */}
+          {customerData.onboarding_complete === false && (
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-8">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path
+                      fillRule="evenodd"
+                      d="M8.257 3.099c.765-1.36 2.824-1.36 3.589 0l8 14.035a1.5 1.5 0 01-1.743 2.307H3.905a1.5 1.5 0 01-1.743-2.307l8-14.035zM11 5a1 1 0 11-2 0 1 1 0 012 0zm-1 6a1 1 0 100-2 1 1 0 000 2z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
                 </div>
-
-                {onboardingLoading && (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E75837]"></div>
-                    <span className="ml-3 text-gray-600">Loading your information...</span>
-                  </div>
-                )}
-
-                {!onboardingLoading && (
-                  <>
-                    {/* Progress indicator */}
-                    <div className="mb-8">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-600">Step {onboardingStep} of 4</span>
-                        <span className="text-sm font-medium text-gray-600">
-                          {Math.round((onboardingStep / 4) * 100)}%
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-[#E75837] h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${(onboardingStep / 4) * 100}%` }}
-                        ></div>
-                      </div>
-                    </div>
-
-                    {/* Step 1: Personal Information */}
-                    {onboardingStep === 1 && (
-                      <div className="space-y-6">
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
-                              <input
-                                type="text"
-                                value={onboardingData.personalInfo.firstName}
-                                onChange={(e) =>
-                                  setOnboardingData({
-                                    ...onboardingData,
-                                    personalInfo: { ...onboardingData.personalInfo, firstName: e.target.value },
-                                  })
-                                }
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
-                              <input
-                                type="text"
-                                value={onboardingData.personalInfo.lastName}
-                                onChange={(e) =>
-                                  setOnboardingData({
-                                    ...onboardingData,
-                                    personalInfo: { ...onboardingData.personalInfo, lastName: e.target.value },
-                                  })
-                                }
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                              <input
-                                type="email"
-                                value={onboardingData.personalInfo.email}
-                                onChange={(e) =>
-                                  setOnboardingData({
-                                    ...onboardingData,
-                                    personalInfo: { ...onboardingData.personalInfo, email: e.target.value },
-                                  })
-                                }
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                              <input
-                                type="tel"
-                                value={onboardingData.personalInfo.phone}
-                                onChange={(e) =>
-                                  setOnboardingData({
-                                    ...onboardingData,
-                                    personalInfo: { ...onboardingData.personalInfo, phone: e.target.value },
-                                  })
-                                }
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Step 2: Pet Management */}
-                    {onboardingStep === 2 && (
-                      <div className="space-y-6">
-                        <div>
-                          <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-semibold text-gray-900">Pet Information</h3>
-                            <button
-                              onClick={() => {
-                                const newPet = {
-                                  name: "",
-                                  pet_type: "",
-                                  breed_name: "",
-                                  birthdate: "",
-                                  sex: "",
-                                  spayed_neutered: "",
-                                  weight: "",
-                                  chip_id: "",
-                                  gotcha_date: "",
-                                }
-                                setOnboardingData({
-                                  ...onboardingData,
-                                  pets: [newPet, ...onboardingData.pets],
-                                })
-                              }}
-                              className="flex items-center px-4 py-2 bg-[#E75837] text-white text-sm rounded-lg hover:bg-[#E75837]/90 transition-colors"
-                            >
-                              <PlusCircle className="w-4 h-4 mr-1" />
-                              Add New Pet
-                            </button>
-                          </div>
-                          <p className="text-gray-600 mb-6">
-                            Review and manage your pets. This information helps us provide better care.
-                          </p>
-                          {onboardingData.pets.length > 0 ? (
-                            <div className="space-y-6">
-                              {onboardingData.pets.map((pet: any, index: number) => (
-                                <div key={index} className="p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
-                                  {pet.isExisting ? (
-                                    // Read-only display for existing pets
-                                    <div>
-                                      <div className="flex items-center justify-between mb-4">
-                                        <h4 className="text-lg font-medium text-gray-900">{pet.name}</h4>
-                                        <span className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">
-                                          Existing Pet
-                                        </span>
-                                      </div>
-                                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                                        <div>
-                                          <span className="font-medium text-gray-700">Type:</span>
-                                          <p className="text-gray-600">{pet.pet_type || "Not specified"}</p>
-                                        </div>
-                                        <div>
-                                          <span className="font-medium text-gray-700">Breed:</span>
-                                          <p className="text-gray-600">{pet.breed_name || "Not specified"}</p>
-                                        </div>
-                                        <div>
-                                          <span className="font-medium text-gray-700">Sex:</span>
-                                          <p className="text-gray-600">{pet.sex || "Not specified"}</p>
-                                        </div>
-                                        {pet.weight && (
-                                          <div>
-                                            <span className="font-medium text-gray-700">Weight:</span>
-                                            <p className="text-gray-600">{pet.weight}</p>
-                                          </div>
-                                        )}
-                                        {pet.birthdate && (
-                                          <div>
-                                            <span className="font-medium text-gray-700">Birth Date:</span>
-                                            <p className="text-gray-600">
-                                              {new Date(pet.birthdate).toLocaleDateString()}
-                                            </p>
-                                          </div>
-                                        )}
-                                        {pet.chip_id && (
-                                          <div>
-                                            <span className="font-medium text-gray-700">Chip ID:</span>
-                                            <p className="text-gray-600">{pet.chip_id}</p>
-                                          </div>
-                                        )}
-                                      </div>
-                                      <p className="text-xs text-gray-500 mt-3 italic">
-                                        This pet already exists in your account. You can edit pet details in the main
-                                        Pets section.
-                                      </p>
-                                    </div>
-                                  ) : (
-                                    // Editable form for new pets
-                                    <div>
-                                      <div className="flex justify-between items-center mb-4">
-                                        <h4 className="text-lg font-medium text-gray-900">New Pet #{index + 1}</h4>
-                                        <button
-                                          onClick={() => {
-                                            const updatedPets = onboardingData.pets.filter(
-                                              (_: any, i: number) => i !== index,
-                                            )
-                                            setOnboardingData({ ...onboardingData, pets: updatedPets })
-                                          }}
-                                          className="text-red-500 hover:text-red-700 flex items-center text-sm"
-                                        >
-                                          <MinusCircle className="w-4 h-4 mr-1" />
-                                          Remove
-                                        </button>
-                                      </div>
-
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                        <div>
-                                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Pet Name*
-                                          </label>
-                                          <input
-                                            type="text"
-                                            value={pet.name || ""}
-                                            onChange={(e) => {
-                                              const updatedPets = [...onboardingData.pets]
-                                              updatedPets[index] = { ...updatedPets[index], name: e.target.value }
-                                              setOnboardingData({ ...onboardingData, pets: updatedPets })
-                                            }}
-                                            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                                            placeholder="Pet's name"
-                                          />
-                                        </div>
-                                        <div>
-                                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Pet Type*
-                                          </label>
-                                          <select
-                                            value={pet.pet_type || ""}
-                                            onChange={(e) => {
-                                              const updatedPets = [...onboardingData.pets]
-                                              updatedPets[index] = {
-                                                ...updatedPets[index],
-                                                pet_type: e.target.value,
-                                                breed_name: "", // Reset breed when type changes
-                                              }
-                                              setOnboardingData({ ...onboardingData, pets: updatedPets })
-                                            }}
-                                            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                                          >
-                                            <option value="">Select type</option>
-                                            {getPetTypes().map((type: any) => (
-                                              <option key={type.value} value={type.label}>
-                                                {type.label}
-                                              </option>
-                                            ))}
-                                          </select>
-                                        </div>
-                                      </div>
-
-                                      <div className="mb-4">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                          Breed/Variety*
-                                        </label>
-                                        <select
-                                          value={pet.breed_name || ""}
-                                          onChange={(e) => {
-                                            const updatedPets = [...onboardingData.pets]
-                                            updatedPets[index] = { ...updatedPets[index], breed_name: e.target.value }
-                                            setOnboardingData({ ...onboardingData, pets: updatedPets })
-                                          }}
-                                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                                          disabled={!pet.pet_type}
-                                        >
-                                          <option value="">Select breed</option>
-                                          {pet.pet_type &&
-                                            getBreedsByType(pet.pet_type).map((breed: any) => (
-                                              <option key={breed.value} value={breed.label}>
-                                                {breed.label}
-                                              </option>
-                                            ))}
-                                        </select>
-                                        {!pet.pet_type && (
-                                          <p className="text-sm text-gray-500 mt-1">Please select a pet type first</p>
-                                        )}
-                                      </div>
-
-                                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                                        <div>
-                                          <label className="block text-sm font-medium text-gray-700 mb-1">Sex*</label>
-                                          <select
-                                            value={pet.sex || ""}
-                                            onChange={(e) => {
-                                              const updatedPets = [...onboardingData.pets]
-                                              updatedPets[index] = { ...updatedPets[index], sex: e.target.value }
-                                              setOnboardingData({ ...onboardingData, pets: updatedPets })
-                                            }}
-                                            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                                            required
-                                          >
-                                            <option value="">Select sex</option>
-                                            <option value="Male">Male</option>
-                                            <option value="Female">Female</option>
-                                          </select>
-                                        </div>
-                                        <div>
-                                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Weight*
-                                          </label>
-                                          <input
-                                            type="text"
-                                            value={pet.weight || ""}
-                                            onChange={(e) => {
-                                              const updatedPets = [...onboardingData.pets]
-                                              updatedPets[index] = { ...updatedPets[index], weight: e.target.value }
-                                              setOnboardingData({ ...onboardingData, pets: updatedPets })
-                                            }}
-                                            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                                            placeholder="e.g., 25 lbs"
-                                            required
-                                          />
-                                        </div>
-                                        <div>
-                                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Spayed/Neutered*
-                                          </label>
-                                          <select
-                                            value={pet.spayed_neutered || ""}
-                                            onChange={(e) => {
-                                              const updatedPets = [...onboardingData.pets]
-                                              updatedPets[index] = {
-                                                ...updatedPets[index],
-                                                spayed_neutered: e.target.value,
-                                              }
-                                              setOnboardingData({ ...onboardingData, pets: updatedPets })
-                                            }}
-                                            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                                            required
-                                          >
-                                            <option value="">Select status</option>
-                                            <option value="Yes">Yes</option>
-                                            <option value="No">No</option>
-                                            <option value="N/A">N/A</option>
-                                          </select>
-                                        </div>
-                                      </div>
-
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                        <div>
-                                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Birth Date
-                                          </label>
-                                          <div className="grid grid-cols-3 gap-2">
-                                            <select
-                                              value={pet.birthMonth || ""}
-                                              onChange={(e) => {
-                                                const updatedPets = [...onboardingData.pets]
-                                                updatedPets[index] = {
-                                                  ...updatedPets[index],
-                                                  birthMonth: e.target.value,
-                                                }
-                                                setOnboardingData({ ...onboardingData, pets: updatedPets })
-                                              }}
-                                              className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent text-sm"
-                                            >
-                                              <option value="">Month</option>
-                                              {Array.from({ length: 12 }, (_, i) => (
-                                                <option key={i + 1} value={i + 1}>
-                                                  {new Date(0, i).toLocaleString("default", { month: "short" })}
-                                                </option>
-                                              ))}
-                                            </select>
-                                            <select
-                                              value={pet.birthDay || ""}
-                                              onChange={(e) => {
-                                                const updatedPets = [...onboardingData.pets]
-                                                updatedPets[index] = { ...updatedPets[index], birthDay: e.target.value }
-                                                setOnboardingData({ ...onboardingData, pets: updatedPets })
-                                              }}
-                                              className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent text-sm"
-                                            >
-                                              <option value="">Day</option>
-                                              {Array.from({ length: 31 }, (_, i) => (
-                                                <option key={i + 1} value={i + 1}>
-                                                  {i + 1}
-                                                </option>
-                                              ))}
-                                            </select>
-                                            <select
-                                              value={pet.birthYear || ""}
-                                              onChange={(e) => {
-                                                const updatedPets = [...onboardingData.pets]
-                                                updatedPets[index] = {
-                                                  ...updatedPets[index],
-                                                  birthYear: e.target.value,
-                                                }
-                                                setOnboardingData({ ...onboardingData, pets: updatedPets })
-                                              }}
-                                              className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent text-sm"
-                                            >
-                                              <option value="">Year</option>
-                                              {Array.from({ length: 30 }, (_, i) => {
-                                                const year = new Date().getFullYear() - i
-                                                return (
-                                                  <option key={year} value={year}>
-                                                    {year}
-                                                  </option>
-                                                )
-                                              })}
-                                            </select>
-                                          </div>
-                                        </div>
-                                        <div>
-                                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Important Notes
-                                          </label>
-                                          <textarea
-                                            value={pet.notes || ""}
-                                            onChange={(e) => {
-                                              const updatedPets = [...onboardingData.pets]
-                                              updatedPets[index] = { ...updatedPets[index], notes: e.target.value }
-                                              setOnboardingData({ ...onboardingData, pets: updatedPets })
-                                            }}
-                                            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                                            placeholder="Any important information your pet professional should know"
-                                            rows={3}
-                                          />
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="text-center py-8 text-gray-500">
-                              <p>No pets added yet. Click "Add New Pet" to get started.</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Step 3: Emergency Contact */}
-                    {onboardingStep === 3 && (
-                      <div className="space-y-6">
-                        <div>
-                          <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-semibold text-gray-900">Emergency Contact</h3>
-                            <button
-                              onClick={() => {
-                                const newContact = {
-                                  contactName: "",
-                                  address: "",
-                                  phoneNumber: "",
-                                  email: "",
-                                }
-                                setOnboardingData({
-                                  ...onboardingData,
-                                  emergencyContacts: [
-                                    ...(onboardingData.emergencyContacts || [onboardingData.emergencyContact]),
-                                    newContact,
-                                  ],
-                                })
-                              }}
-                              className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors"
-                            >
-                              <PlusCircle className="w-4 h-4 mr-1" />
-                              Add Another Contact
-                            </button>
-                          </div>
-
-                          {onboardingData.emergencyContacts ? (
-                            <div className="space-y-6">
-                              {onboardingData.emergencyContacts.map((contact: any, index: number) => (
-                                <div key={index} className="p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
-                                  {contact.isExisting ? (
-                                    // Read-only display for existing emergency contacts
-                                    <div>
-                                      <div className="flex items-center justify-between mb-4">
-                                        <h4 className="text-lg font-medium text-gray-900">
-                                          {contact.contactName || "Emergency Contact"}
-                                        </h4>
-                                        <span className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">
-                                          Existing Contact
-                                        </span>
-                                      </div>
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                                        {contact.contactName && (
-                                          <div>
-                                            <span className="font-medium text-gray-700">Name:</span>
-                                            <p className="text-gray-600">{contact.contactName}</p>
-                                          </div>
-                                        )}
-                                        {contact.phoneNumber && (
-                                          <div>
-                                            <span className="font-medium text-gray-700">Phone:</span>
-                                            <p className="text-gray-600">{contact.phoneNumber}</p>
-                                          </div>
-                                        )}
-                                        {contact.email && (
-                                          <div>
-                                            <span className="font-medium text-gray-700">Email:</span>
-                                            <p className="text-gray-600">{contact.email}</p>
-                                          </div>
-                                        )}
-                                        {contact.address && (
-                                          <div className="md:col-span-2">
-                                            <span className="font-medium text-gray-700">Address:</span>
-                                            <p className="text-gray-600">{contact.address}</p>
-                                          </div>
-                                        )}
-                                      </div>
-                                      <p className="text-xs text-gray-500 mt-3 italic">
-                                        This contact already exists in your account. You can edit contact details
-                                        elsewhere in the application.
-                                      </p>
-                                    </div>
-                                  ) : (
-                                    // Editable form for new emergency contacts
-                                    <div>
-                                      <div className="flex justify-between items-center mb-4">
-                                        <h4 className="text-lg font-medium text-gray-900">
-                                          New Emergency Contact {index + 1}
-                                        </h4>
-                                        <button
-                                          onClick={() => {
-                                            const updatedContacts = onboardingData.emergencyContacts.filter(
-                                              (_: any, i: number) => i !== index,
-                                            )
-                                            setOnboardingData({ ...onboardingData, emergencyContacts: updatedContacts })
-                                          }}
-                                          className="text-red-500 hover:text-red-700 flex items-center text-sm"
-                                        >
-                                          <MinusCircle className="w-4 h-4 mr-1" />
-                                          Remove
-                                        </button>
-                                      </div>
-
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Contact Name*
-                                          </label>
-                                          <input
-                                            type="text"
-                                            required
-                                            value={contact.contactName || ""}
-                                            onChange={(e) => {
-                                              const updatedContacts = [...onboardingData.emergencyContacts]
-                                              updatedContacts[index] = {
-                                                ...updatedContacts[index],
-                                                contactName: e.target.value,
-                                              }
-                                              setOnboardingData({
-                                                ...onboardingData,
-                                                emergencyContacts: updatedContacts,
-                                              })
-                                            }}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                                          />
-                                        </div>
-                                        <div>
-                                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Phone Number*
-                                          </label>
-                                          <input
-                                            type="tel"
-                                            required
-                                            value={contact.phoneNumber || ""}
-                                            onChange={(e) => {
-                                              const updatedContacts = [...onboardingData.emergencyContacts]
-                                              updatedContacts[index] = {
-                                                ...updatedContacts[index],
-                                                phoneNumber: e.target.value,
-                                              }
-                                              setOnboardingData({
-                                                ...onboardingData,
-                                                emergencyContacts: updatedContacts,
-                                              })
-                                            }}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                                          />
-                                        </div>
-                                        <div>
-                                          <label className="block text-sm font-medium text-gray-700 mb-2">Email*</label>
-                                          <input
-                                            type="email"
-                                            required
-                                            value={contact.email || ""}
-                                            onChange={(e) => {
-                                              const updatedContacts = [...onboardingData.emergencyContacts]
-                                              updatedContacts[index] = {
-                                                ...updatedContacts[index],
-                                                email: e.target.value,
-                                              }
-                                              setOnboardingData({
-                                                ...onboardingData,
-                                                emergencyContacts: updatedContacts,
-                                              })
-                                            }}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                                          />
-                                        </div>
-                                        <div>
-                                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Address*
-                                          </label>
-                                          <input
-                                            type="text"
-                                            required
-                                            value={contact.address || ""}
-                                            onChange={(e) => {
-                                              const updatedContacts = [...onboardingData.emergencyContacts]
-                                              updatedContacts[index] = {
-                                                ...updatedContacts[index],
-                                                address: e.target.value,
-                                              }
-                                              setOnboardingData({
-                                                ...onboardingData,
-                                                emergencyContacts: updatedContacts,
-                                              })
-                                            }}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                                          />
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            // Fallback to single contact if emergencyContacts array doesn't exist
-                            <div className="p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-2">Contact Name*</label>
-                                  <input
-                                    type="text"
-                                    required
-                                    value={onboardingData.emergencyContact.contactName}
-                                    onChange={(e) =>
-                                      setOnboardingData({
-                                        ...onboardingData,
-                                        emergencyContact: {
-                                          ...onboardingData.emergencyContact,
-                                          contactName: e.target.value,
-                                        },
-                                      })
-                                    }
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number*</label>
-                                  <input
-                                    type="tel"
-                                    required
-                                    value={onboardingData.emergencyContact.phoneNumber}
-                                    onChange={(e) =>
-                                      setOnboardingData({
-                                        ...onboardingData,
-                                        emergencyContact: {
-                                          ...onboardingData.emergencyContact,
-                                          phoneNumber: e.target.value,
-                                        },
-                                      })
-                                    }
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-2">Email*</label>
-                                  <input
-                                    type="email"
-                                    required
-                                    value={onboardingData.emergencyContact.email}
-                                    onChange={(e) =>
-                                      setOnboardingData({
-                                        ...onboardingData,
-                                        emergencyContact: { ...onboardingData.emergencyContact, email: e.target.value },
-                                      })
-                                    }
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-2">Address*</label>
-                                  <input
-                                    type="text"
-                                    required
-                                    value={onboardingData.emergencyContact.address}
-                                    onChange={(e) =>
-                                      setOnboardingData({
-                                        ...onboardingData,
-                                        emergencyContact: {
-                                          ...onboardingData.emergencyContact,
-                                          address: e.target.value,
-                                        },
-                                      })
-                                    }
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {onboardingStep === 4 && (
-                      <div className="space-y-6">
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Review and Sign Policies</h3>
-                          <p className="text-gray-600 mb-6">
-                            Please review each policy document and acknowledge your agreement to complete onboarding.
-                          </p>
-                          {policyDocuments.length > 0 ? (
-                            <div className="space-y-4">
-                              {policyDocuments.map((doc: any, index: number) => (
-                                <div key={index} className="p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
-                                  <div className="flex items-start justify-between mb-4">
-                                    <div className="flex-1">
-                                      <h4 className="text-lg font-medium text-gray-900 mb-2">{doc.name}</h4>
-                                      {doc.description && (
-                                        <p className="text-sm text-gray-600 mt-1">{doc.description}</p>
-                                      )}
-                                    </div>
-                                    <button
-                                      onClick={() => {
-                                        if (doc.signed_url) {
-                                          window.open(doc.signed_url, "_blank")
-                                        }
-                                      }}
-                                      className="flex items-center px-4 py-2 text-[#E75837] border border-[#E75837] rounded-lg hover:bg-[#E75837] hover:text-white transition-colors text-sm font-medium"
-                                    >
-                                      <FileText className="w-4 h-4 mr-2" />
-                                      View Document
-                                    </button>
-                                  </div>
-
-                                  <div className="border-t pt-4">
-                                    <label className="flex items-start space-x-3">
-                                      <input
-                                        type="checkbox"
-                                        className="mt-1 h-4 w-4 text-[#E75837] focus:ring-[#E75837] border-gray-300 rounded"
-                                        checked={onboardingData.policyAcknowledgments[doc.policy_id] || false}
-                                        onChange={(e) => {
-                                          const updatedAcknowledgments = { ...onboardingData.policyAcknowledgments }
-                                          updatedAcknowledgments[doc.policy_id] = e.target.checked
-                                          setOnboardingData({
-                                            ...onboardingData,
-                                            policyAcknowledgments: updatedAcknowledgments,
-                                          })
-                                        }}
-                                      />
-                                      <span className="text-sm text-gray-700 leading-5">
-                                        I acknowledge that I have read, understood, and agree to the terms and
-                                        conditions outlined in the <strong>{doc.name}</strong>.
-                                      </span>
-                                    </label>
-                                  </div>
-                                </div>
-                              ))}
-
-                              <div className="mt-6 p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
-                                <h4 className="text-lg font-medium text-gray-900 mb-4">Digital Signature</h4>
-                                <div className="space-y-4">
-                                  <div>
-                                    <label htmlFor="signature" className="block text-sm font-medium text-gray-700 mb-2">
-                                      Type your full name to serve as your digital signature *
-                                    </label>
-                                    <input
-                                      type="text"
-                                      id="signature"
-                                      value={onboardingData.signature || ""}
-                                      onChange={(e) => {
-                                        setOnboardingData({
-                                          ...onboardingData,
-                                          signature: e.target.value,
-                                        })
-                                      }}
-                                      placeholder="Enter your full name"
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-[#E75837]"
-                                      required
-                                    />
-                                  </div>
-                                  <p className="text-xs text-gray-500">
-                                    By typing your name above, you are providing your digital signature and confirming
-                                    that you have read and agree to all policy documents listed above.
-                                  </p>
-                                </div>
-                              </div>
-
-                              <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                                <div className="flex items-start">
-                                  <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 mr-3 flex-shrink-0" />
-                                  <div>
-                                    <h4 className="text-sm font-medium text-amber-800">Important Notice</h4>
-                                    <p className="text-sm text-amber-700 mt-1">
-                                      You must review and acknowledge all policy documents above and provide your
-                                      digital signature to complete your onboarding process.
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="text-center py-8 bg-gray-50 rounded-lg">
-                              <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                              <p className="text-gray-600">Loading policy documents...</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Navigation buttons */}
-                    <div className="flex justify-between mt-8">
-                      <button
-                        onClick={handleOnboardingPrev}
-                        disabled={onboardingStep === 1}
-                        className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <ChevronLeft className="w-4 h-4 inline mr-1" />
-                        Previous
-                      </button>
-
-                      {onboardingStep < 4 ? (
-                        <button
-                          onClick={handleOnboardingNext}
-                          className="px-4 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#E75837]/90"
-                        >
-                          Next
-                          <ChevronRight className="w-4 h-4 inline ml-1" />
-                        </button>
-                      ) : (
-                        <button
-                          onClick={handleOnboardingSubmit}
-                          disabled={
-                            policyDocuments.length > 0 &&
-                            (!policyDocuments.every(
-                              (doc: any) => onboardingData.policyAcknowledgments[doc.policy_id],
-                            ) ||
-                              !onboardingData.signature?.trim())
-                          }
-                          className="px-6 py-2 bg-[#E75837] text-white rounded-lg hover:bg-[#E75837]/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Complete Onboarding
-                        </button>
-                      )}
-                    </div>
-                  </>
-                )}
+                <div className="ml-3">
+                  <p className="text-sm text-yellow-700">
+                    <strong className="font-bold">Onboarding Incomplete:</strong> Please complete your onboarding
+                    process to ensure we have all the necessary information.
+                  </p>
+                </div>
               </div>
             </div>
+          )}
+
+          {/* Tabs Navigation */}
+          <div className="border-b border-gray-200 mb-6">
+            <nav className="flex space-x-4">
+              <button
+                onClick={() => setActiveTab("pets")}
+                className={`py-2 px-4 font-medium text-sm ${
+                  activeTab === "pets"
+                    ? "border-b-2 border-[#E75837] text-[#E75837]"
+                    : "border-b-2 border-transparent text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Pets
+              </button>
+              <button
+                onClick={() => setActiveTab("appointments")}
+                className={`py-2 px-4 font-medium text-sm ${
+                  activeTab === "appointments"
+                    ? "border-b-2 border-[#E75837] text-[#E75837]"
+                    : "border-b-2 border-transparent text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Appointments
+              </button>
+              <button
+                onClick={() => setActiveTab("invoices")}
+                className={`py-2 px-4 font-medium text-sm ${
+                  activeTab === "invoices"
+                    ? "border-b-2 border-[#E75837] text-[#E75837]"
+                    : "border-b-2 border-transparent text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Invoices
+              </button>
+              <button
+                onClick={() => setActiveTab("onboarding")}
+                className={`py-2 px-4 font-medium text-sm ${
+                  activeTab === "onboarding"
+                    ? "border-b-2 border-[#E75837] text-[#E75837]"
+                    : "border-b-2 border-transparent text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Onboarding
+              </button>
+            </nav>
           </div>
-        )}
-      </div>
-    </div>
+
+          {/* Pets Tab Content */}
+          {activeTab === "pets" && (
+            <div className="space-y-6">
+              {customerData.pets.length > 0 ? (
+                customerData.pets.map((pet: any) => (
+                  <div key={pet.pet_id} className="bg-white rounded-lg shadow-md overflow-hidden">
+                    <div className="px-6 py-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <span className="mr-2">{getPetIcon(pet.pet_type)}</span>
+                          <h2 className="text-xl font-semibold text-gray-800 font-body">{pet.pet_name}</h2>
+                        </div>
+                        <button
+                          onClick={() => togglePetExpansion(pet.pet_id)}
+                          className="text-gray-600 hover:text-gray-800 focus:outline-none"
+                        >
+                          {expandedPet === pet.pet_id ? (
+                            <ChevronUp className="w-6 h-6" />
+                          ) : (
+                            <ChevronDown className="w-6 h-6" />
+                          )}
+                        </button>
+                      </div>
+                      <p className="text-gray-600 font-body">
+                        {pet.pet_type} • {pet.breed_name}
+                      </p>
+                    </div>
+
+                    {expandedPet === pet.pet_id && (
+                      <div className="border-t border-gray-200">
+                        <nav className="flex space-x-4 bg-gray-50 px-6 py-3">
+                          <button
+                            onClick={() => setSelectedPetSection("general")}
+                            className={`px-3 py-2 rounded-md text-sm font-medium ${
+                              selectedPetSection === "general"
+                                ? "bg-[#E75837] text-white"
+                                : "text-gray-700 hover:bg-gray-200"
+                            }`}
+                          >
+                            General
+                          </button>
+                          <button
+                            onClick={() => setSelectedPetSection("health")}
+                            className={`px-3 py-2 rounded-md text-sm font-medium ${
+                              selectedPetSection === "health"
+                                ? "bg-[#E75837] text-white"
+                                : "text-gray-700 hover:bg-gray-200"
+                            }`}
+                          >
+                            Health
+                          </button>
+                          <button
+                            onClick={() => setSelectedPetSection("food")}
+                            className={`px-3 py-2 rounded-md text-sm font-medium ${
+                              selectedPetSection === "food"
+                                ? "bg-[#E75837] text-white"
+                                : "text-gray-700 hover:bg-gray-200"
+                            }`}
+                          >
+                            Food
+                          </button>
+                          <button
+                            onClick={() => setSelectedPetSection("vaccine-overview")}
+                            className={`px-3 py-2 rounded-md text-sm font-medium ${
+                              selectedPetSection === "vaccine-overview"
+                                ? "bg-[#E75837] text-white"
+                                : "text-gray-700 hover:bg-gray-200"
+                            }`}
+                          >
+                            Vaccine Overview
+                          </button>
+                          <button
+                            onClick={() => setSelectedPetSection("care-plan-report")}
+                            className={`px-3 py-2 rounded-md text-sm font-medium ${
+                              selectedPetSection === "care-plan-report"
+                                ? "bg-[#E75837] text-white"
+                                : "text-gray-700 hover:bg-gray-200"
+                            }`}
+                          >
+                            Care Plan Report
+                          </button>
+                        </nav>
+                        <div className="p-6">{renderPetProfileSection(pet, selectedPetSection)}</div>
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <Dog className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600 font-body">No pets recorded</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Appointments Tab Content */}
+          {activeTab === "appointments" && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex space-x-4">
+                  <button
+                    onClick={() => setAppointmentView("calendar")}
+                    className={`px-3 py-2 rounded-md text-sm font-medium ${
+                      appointmentView === "calendar" ? "bg-[#E75837] text-white" : "text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    Calendar View
+                  </button>
+                  <button
+                    onClick={() => setAppointmentView("list")}
+                    className={`px-3 py-2 rounded-md text-sm font-medium ${
+                      appointmentView === "list" ? "bg-[#E75837] text-white" : "text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    List View
+                  </button>
+                </div>
+                {appointmentView === "calendar" && (
+                  <div className="flex items-center space-x-4">
+                    <button
+                      onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}
+                      className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <h2 className="text-lg font-semibold text-gray-800 font-body">
+                      {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                    </h2>
+                    <button
+                      onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}
+                      className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {appointmentView === "calendar" && (
+                <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                  <div className="grid grid-cols-7 bg-gray-100">
+                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                      <div key={day} className="py-2 text-center text-gray-700 font-semibold font-body">
+                        {day}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-7">
+                    {calendarDays.map((day) => {
+                      const bookingsForDay = getBookingsForDate(day)
+                      const isCurrentMonth = day.getMonth() === currentDate.getMonth()
+                      return (
+                        <div
+                          key={day.toISOString()}
+                          className={`p-2 border-r border-b border-gray-200 ${isCurrentMonth ? "" : "text-gray-400"}`}
+                        >
+                          <div className="text-sm text-gray-700 font-body">{day.getDate()}</div>
+                          {bookingsForDay.map((booking) => (
+                            <div
+                              key={booking.booking_id}
+                              className={`mt-1 px-2 py-1 rounded-full text-xs font-medium ${getServiceTypeColor(
+                                booking.service_types,
+                              )}`}
+                            >
+                              {booking.start_formatted} - {booking.service_names}
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {appointmentView === "list" && customerData.bookings.length > 0 ? (
+                <div className="space-y-4">
+                  {customerData.bookings.map((booking: any) => (
+                    <div key={booking.booking_id} className="bg-white rounded-lg shadow-md p-6">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-lg font-semibold text-gray-800 font-body">
+                          {booking.booking_date_formatted} - {booking.day_of_week}
+                        </h3>
+                        <span className="text-gray-600 font-body">
+                          {booking.start_formatted} - {booking.end_formatted}
+                        </span>
+                      </div>
+                      <p className="text-gray-600 font-body">
+                        <span className="font-medium">Professional:</span> {booking.professional_name}
+                      </p>
+                      <p className="text-gray-600 font-body">
+                        <span className="font-medium">Customer:</span> {booking.customer_first_name}{" "}
+                        {booking.customer_last_name}
+                      </p>
+                      <p className="text-gray-600 font-body">
+                        <span className="font-medium">Services:</span> {booking.service_names}
+                      </p>
+                      <div className="flex items-center mt-4">
+                        <Mail className="w-4 h-4 text-gray-500 mr-2" />
+                        <a
+                          href={`mailto:${customerData.email}`}
+                          className="text-sm text-[#E75837] hover:underline font-body"
+                        >
+                          Contact Customer
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600 font-body">No appointments scheduled</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Invoices Tab Content */}
+          {activeTab === "invoices" && (
+            <div className="space-y-6">
+              {customerData.invoices && customerData.invoices.length > 0 ? (
+                customerData.invoices.map((invoice: any) => (
+                  <div key={invoice.invoice_number} className="bg-white rounded-lg shadow-md p-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-lg font-semibold text-gray-800 font-body">
+                        Invoice #{invoice.invoice_number}
+                      </h3>
+                      <span
+                        className={`text-xs font-medium px-2.5 py-0.5 rounded ${getStatusBadgeStyle(invoice.status)}`}
+                      >
+                        {invoice.status}
+                      </span>
+                    </div>
+                    <p className="text-gray-600 font-body">
+                      <span className="font-medium">Due Date:</span> {new Date(invoice.due_date).toLocaleDateString()}
+                    </p>
+                    <p className="text-gray-600 font-body">
+                      <span className="font-medium">Amount:</span> ${invoice.amount}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600 font-body">No invoices found</p>
+                </div>
+              )}
+
+              {customerData.payment_instructions && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                  <h4 className="font-semibold text-gray-900 font-body mb-4">Payment Instructions</h4>
+                  <p className="text-gray-700 font-body">{customerData.payment_instructions}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Onboarding Tab Content */}
+          {activeTab === "onboarding" && (
+            <div>
+              {renderPetProfileSection(customerData, "onboarding")}
+
+              {/* Complete Onboarding Button */}
+              {isOnboardingIncomplete() && (
+                <div className="mt-8">
+                  <button
+                    onClick={handleCompleteOnboarding}
+                    className="bg-[#E75837] hover:bg-[#333333] text-white font-bold py-3 px-6 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E75837]"
+                    disabled={onboardingLoading}
+                  >
+                    {onboardingLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      "Complete Onboarding"
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Onboarding Modal */}
+          {showOnboardingModal && (
+            <div className="fixed z-10 inset-0 overflow-y-auto">
+              <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+                  <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+                </div>
+
+                <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">
+                  &#8203;
+                </span>
+
+                <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
+                  <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div className="sm:flex sm:items-start">
+                      <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                        <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                          Complete Your Onboarding
+                        </h3>
+                        <div className="mt-2">
+                          {onboardingStep === 1 && (
+                            <div>
+                              <h4 className="text-md font-semibold text-gray-900 font-body mb-4">
+                                Personal Information
+                              </h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                  <label htmlFor="firstName" className="block text-gray-700 text-sm font-bold mb-2">
+                                    First Name
+                                  </label>
+                                  <input
+                                    type="text"
+                                    id="firstName"
+                                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                    value={onboardingData.personalInfo.firstName}
+                                    onChange={(e) =>
+                                      setOnboardingData((prev) => ({
+                                        ...prev,
+                                        personalInfo: { ...prev.personalInfo, firstName: e.target.value },
+                                      }))
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <label htmlFor="lastName" className="block text-gray-700 text-sm font-bold mb-2">
+                                    Last Name
+                                  </label>
+                                  <input
+                                    type="text"
+                                    id="lastName"
+                                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                    value={onboardingData.personalInfo.lastName}
+                                    onChange={(e) =>
+                                      setOnboardingData((prev) => ({
+                                        ...prev,
+                                        personalInfo: { ...prev.personalInfo, lastName: e.target.value },
+                                      }))
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <label htmlFor="email" className="block text-gray-700 text-sm font-bold mb-2">
+                                    Email
+                                  </label>
+                                  <input
+                                    type="email"
+                                    id="email"
+                                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                    value={onboardingData.personalInfo.email}
+                                    onChange={(e) =>
+                                      setOnboardingData((prev) => ({
+                                        ...prev,
+                                        personalInfo: { ...prev.personalInfo, email: e.target.value },
+                                      }))
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <label htmlFor="phone" className="block text-gray-700 text-sm font-bold mb-2">
+                                    Phone Number
+                                  </label>
+                                  <input
+                                    type="tel"
+                                    id="phone"
+                                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                    value={onboardingData.personalInfo.phone}
+                                    onChange={(e) =>
+                                      setOnboardingData((prev) => ({
+                                        ...prev,
+                                        personalInfo: { ...prev.personalInfo, phone: e.target.value },
+                                      }))
+                                    }
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {onboardingStep === 2 && (
+                            <div>
+                              <h4 className="text-md font-semibold text-gray-900 font-body mb-4">Pet Information</h4>
+                              <div className="space-y-4">
+                                {onboardingData.pets.map((pet: any, index: number) => (
+                                  <div key={index} className="bg-gray-50 p-4 rounded-lg">
+                                    <h5 className="font-semibold text-gray-900 font-body mb-2">Pet #{index + 1}</h5>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <div>
+                                        <label
+                                          htmlFor={`petName-${index}`}
+                                          className="block text-gray-700 text-sm font-bold mb-2"
+                                        >
+                                          Pet Name
+                                        </label>
+                                        <input
+                                          type="text"
+                                          id={`petName-${index}`}
+                                          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                          value={pet.name}
+                                          onChange={(e) => {
+                                            const newPets = [...onboardingData.pets]
+                                            newPets[index] = { ...pet, name: e.target.value }
+                                            setOnboardingData((prev) => ({ ...prev, pets: newPets }))
+                                          }}
+                                        />
+                                      </div>
+                                      <div>
+                                        <label
+                                          htmlFor={`petType-${index}`}
+                                          className="block text-gray-700 text-sm font-bold mb-2"
+                                        >
+                                          Pet Type
+                                        </label>
+                                        <select
+                                          id={`petType-${index}`}
+                                          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                          value={pet.pet_type}
+                                          onChange={(e) => {
+                                            const newPets = [...onboardingData.pets]
+                                            newPets[index] = { ...pet, pet_type: e.target.value }
+                                            setOnboardingData((prev) => ({ ...prev, pets: newPets }))
+                                          }}
+                                        >
+                                          <option value="">Select Type</option>
+                                          {getPetTypes().map((type: any) => (
+                                            <option key={type.value} value={type.label}>
+                                              {type.label}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                      <div>
+                                        <label
+                                          htmlFor={`breedName-${index}`}
+                                          className="block text-gray-700 text-sm font-bold mb-2"
+                                        >
+                                          Breed
+                                        </label>
+                                        <select
+                                          id={`breedName-${index}`}
+                                          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                          value={pet.breed_name}
+                                          onChange={(e) => {
+                                            const newPets = [...onboardingData.pets]
+                                            newPets[index] = { ...pet, breed_name: e.target.value }
+                                            setOnboardingData((prev) => ({ ...prev, pets: newPets }))
+                                          }}
+                                          disabled={!pet.pet_type}
+                                        >
+                                          <option value="">Select Breed</option>
+                                          {getBreedsByType(pet.pet_type).map((breed: any) => (
+                                            <option key={breed.value} value={breed.label}>
+                                              {breed.label}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                      <div>
+                                        <label
+                                          htmlFor={`petSex-${index}`}
+                                          className="block text-gray-700 text-sm font-bold mb-2"
+                                        >
+                                          Sex
+                                        </label>
+                                        <select
+                                          id={`petSex-${index}`}
+                                          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                          value={pet.sex}
+                                          onChange={(e) => {
+                                            const newPets = [...onboardingData.pets]
+                                            newPets[index] = { ...pet, sex: e.target.value }
+                                            setOnboardingData((prev) => ({ ...prev, pets: newPets }))
+                                          }}
+                                        >
+                                          <option value="">Select Sex</option>
+                                          <option value="Male">Male</option>
+                                          <option value="Female">Female</option>
+                                        </select>
+                                      </div>
+                                      <div>
+                                        <label
+                                          htmlFor={`petWeight-${index}`}
+                                          className="block text-gray-700 text-sm font-bold mb-2"
+                                        >
+                                          Weight
+                                        </label>
+                                        <input
+                                          type="number"
+                                          id={`petWeight-${index}`}
+                                          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                          value={pet.weight}
+                                          onChange={(e) => {
+                                            const newPets = [...onboardingData.pets]
+                                            newPets[index] = { ...pet, weight: e.target.value }
+                                            setOnboardingData((prev) => ({ ...prev, pets: newPets }))
+                                          }}
+                                        />
+                                      </div>
+                                      <div>
+                                        <label
+                                          htmlFor={`petSpayedNeutered-${index}`}
+                                          className="block text-gray-700 text-sm font-bold mb-2"
+                                        >
+                                          Spayed/Neutered
+                                        </label>
+                                        <select
+                                          id={`petSpayedNeutered-${index}`}
+                                          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                          value={pet.spayed_neutered}
+                                          onChange={(e) => {
+                                            const newPets = [...onboardingData.pets]
+                                            newPets[index] = { ...pet, spayed_neutered: e.target.value }
+                                            setOnboardingData((prev) => ({ ...prev, pets: newPets }))
+                                          }}
+                                        >
+                                          <option value="">Select Option</option>
+                                          <option value="Yes">Yes</option>
+                                          <option value="No">No</option>
+                                        </select>
+                                      </div>
+                                      <div>
+                                        <label
+                                          htmlFor={`petBirthDate-${index}`}
+                                          className="block text-gray-700 text-sm font-bold mb-2"
+                                        >
+                                          Birth Date
+                                        </label>
+                                        <input
+                                          type="date"
+                                          id={`petBirthDate-${index}`}
+                                          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                          value={pet.birth_date}
+                                          onChange={(e) => {
+                                            const newPets = [...onboardingData.pets]
+                                            newPets[index] = { ...pet, birth_date: e.target.value }
+                                            setOnboardingData((prev) => ({ ...prev, pets: newPets }))
+                                          }}
+                                        />
+                                      </div>
+                                      <div>
+                                        <label
+                                          htmlFor={`petChipId-${index}`}
+                                          className="block text-gray-700 text-sm font-bold mb-2"
+                                        >
+                                          Chip ID
+                                        </label>
+                                        <input
+                                          type="text"
+                                          id={`petChipId-${index}`}
+                                          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                          value={pet.chip_id}
+                                          onChange={(e) => {
+                                            const newPets = [...onboardingData.pets]
+                                            newPets[index] = { ...pet, chip_id: e.target.value }
+                                            setOnboardingData((prev) => ({ ...prev, pets: newPets }))
+                                          }}
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {onboardingStep === 3 && (
+                            <div>
+                              <h4 className="text-md font-semibold text-gray-900 font-body mb-4">
+                                Emergency Contact Information
+                              </h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                  <label htmlFor="contactName" className="block text-gray-700 text-sm font-bold mb-2">
+                                    Contact Name
+                                  </label>
+                                  <input
+                                    type="text"
+                                    id="contactName"
+                                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                    value={onboardingData.emergencyContact.contactName}
+                                    onChange={(e) =>
+                                      setOnboardingData((prev) => ({
+                                        ...prev,
+                                        emergencyContact: { ...prev.emergencyContact, contactName: e.target.value },
+                                      }))
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <label htmlFor="businessName" className="block text-gray-700 text-sm font-bold mb-2">
+                                    Business Name
+                                  </label>
+                                  <input
+                                    type="text"
+                                    id="businessName"
+                                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                    value={onboardingData.emergencyContact.businessName}
+                                    onChange={(e) =>
+                                      setOnboardingData((prev) => ({
+                                        ...prev,
+                                        emergencyContact: { ...prev.emergencyContact, businessName: e.target.value },
+                                      }))
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <label htmlFor="address" className="block text-gray-700 text-sm font-bold mb-2">
+                                    Address
+                                  </label>
+                                  <input
+                                    type="text"
+                                    id="address"
+                                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                    value={onboardingData.emergencyContact.address}
+                                    onChange={(e) =>
+                                      setOnboardingData((prev) => ({
+                                        ...prev,
+                                        emergencyContact: { ...prev.emergencyContact, address: e.target.value },
+                                      }))
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <label htmlFor="phoneNumber" className="block text-gray-700 text-sm font-bold mb-2">
+                                    Phone Number
+                                  </label>
+                                  <input
+                                    type="tel"
+                                    id="phoneNumber"
+                                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                    value={onboardingData.emergencyContact.phoneNumber}
+                                    onChange={(e) =>
+                                      setOnboardingData((prev) => ({
+                                        ...prev,
+                                        emergencyContact: { ...prev.emergencyContact, phoneNumber: e.target.value },
+                                      }))
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <label htmlFor="emailContact" className="block text-gray-700 text-sm font-bold mb-2">
+                                    Email
+                                  </label>
+                                  <input
+                                    type="email"
+                                    id="emailContact"
+                                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                    value={onboardingData.emergencyContact.email}
+                                    onChange={(e) =>
+                                      setOnboardingData((prev) => ({
+                                        ...prev,
+                                        emergencyContact: { ...prev.emergencyContact, email: e.target.value },
+                                      }))
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <label htmlFor="notes" className="block text-gray-700 text-sm font-bold mb-2">
+                                    Notes
+                                  </label>
+                                  <textarea
+                                    id="notes"
+                                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                    value={onboardingData.emergencyContact.notes}
+                                    onChange={(e) =>
+                                      setOnboardingData((prev) => ({
+                                        ...prev,
+                                        emergencyContact: { ...prev.emergencyContact, notes: e.target.value },
+                                      }))
+                                    }
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {onboardingStep === 4 && (
+                            <div>
+                              <h4 className="text-md font-semibold text-gray-900 font-body mb-4">
+                                Policy Documentation
+                              </h4>
+                              <div className="space-y-4">
+                                {policyDocuments.map((policy: any, index: number) => (
+                                  <div key={index} className="bg-gray-50 p-4 rounded-lg">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <h5 className="font-semibold text-gray-900 font-body">{policy.policy_name}</h5>
+                                        <a
+                                          href={policy.signed_url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-sm text-[#E75837] hover:underline font-body"
+                                        >
+                                          View Document
+                                        </a>
+                                      </div>
+                                      <label className="inline-flex items-center mt-3">
+                                        <input
+                                          type="checkbox"
+                                          className="form-checkbox h-5 w-5 text-[#E75837]"
+                                          checked={onboardingData.policyAcknowledgments[policy.policy_id] || false}
+                                          onChange={(e) => {
+                                            setOnboardingData((prev) => ({
+                                              ...prev,
+                                              policyAcknowledgments: {
+                                                ...prev.policyAcknowledgments,
+                                                [policy.policy_id]: e.target.checked,
+                                              },
+                                            }))
+                                          }}
+                                        />
+                                        <span className="ml-2 text-gray-700 font-body">
+                                          I acknowledge that I have read and agree to the terms.
+                                        </span>
+                                      </label>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="mt-4">
+                                <label htmlFor="signature" className="block text-gray-700 text-sm font-bold mb-2">
+                                  Signature
+                                </label>
+                                <input
+                                  type="text"
+                                  id="signature"
+                                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                  value={onboardingData.signature}
+                                  onChange={(e) =>
+                                    setOnboardingData((prev) => ({
+                                      ...prev,
+                                      signature: e.target.value,
+                                    }))
+                                  }
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    {onboardingStep === 1 && (
+                      <button
+                        type="button"
+                        className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gray-500 text-base font-medium text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:ml-3 sm:w-auto sm:text-sm"
+                        onClick={() => setShowOnboardingModal(false)}
+                      >
+                        Cancel
+                      </button>
+                    )}
+                    {onboardingStep > 1 && (
+                      <button
+                        type="button"
+                        className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gray-500 text-base font-medium text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:ml-3 sm:w-auto sm:text-sm"
+                        onClick={handleOnboardingPrev}
+                      >
+                        Previous
+                      </button>
+                    )}
+                    {onboardingStep < 4 && (
+                      <button
+                        type="button"
+                        className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-[#E75837] text-base font-medium text-white hover:bg-[#333333] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E75837] sm:ml-3 sm:w-auto sm:text-sm"
+                        onClick={handleOnboardingNext}
+                      >
+                        Next
+                      </button>
+                    )}
+                    {onboardingStep === 4 && (
+                      <button
+                        type="button"
+                        className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-[#E75837] text-base font-medium text-white hover:bg-[#333333] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E75837] sm:ml-3 sm:w-auto sm:text-sm"
+                        onClick={handleOnboardingSubmit}
+                        disabled={onboardingLoading}
+                      >
+                        {onboardingLoading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Submitting...
+                          </>
+                        ) : (
+                          "Submit"
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </>
   )
 }
