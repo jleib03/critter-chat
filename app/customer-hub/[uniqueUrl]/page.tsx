@@ -1573,12 +1573,19 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
           // Check if this pet has an existing ID (was loaded from database)
           if (!currentPet.id || !currentPet.isExisting) {
             // This is a new pet created during onboarding (no existing ID)
+            const petTypeItem = getPetTypes().find((item: any) => item.label === currentPet.pet_type)
+            const breedItem = getBreedsByType(currentPet.pet_type).find(
+              (item: any) => item.label === currentPet.breed_name,
+            )
+
             changedPets.push({
               action: "create",
               pet_data: {
                 name: currentPet.name,
                 pet_type: currentPet.pet_type,
+                pet_type_id: petTypeItem?.value || null,
                 breed_name: currentPet.breed_name,
+                breed_id: breedItem?.value || null,
                 sex: currentPet.sex,
                 weight: currentPet.weight,
                 spayed_neutered: currentPet.spayed_neutered,
@@ -1633,13 +1640,20 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
 
               // Only include in submission if there are actual changes
               if (petHasChanges) {
+                const petTypeItem = getPetTypes().find((item: any) => item.label === currentPet.pet_type)
+                const breedItem = getBreedsByType(currentPet.pet_type).find(
+                  (item: any) => item.label === currentPet.breed_name,
+                )
+
                 changedPets.push({
                   action: "update",
                   pet_data: {
                     id: currentPet.id,
                     name: currentPet.name,
                     pet_type: currentPet.pet_type,
+                    pet_type_id: petTypeItem?.value || null,
                     breed_name: currentPet.breed_name,
+                    breed_id: breedItem?.value || null,
                     sex: currentPet.sex,
                     weight: currentPet.weight,
                     spayed_neutered: currentPet.spayed_neutered,
