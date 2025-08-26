@@ -2540,11 +2540,19 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                   : "Complete the steps below to finish onboarding."}
                               </p>
                             </div>
-                            <div>
+                            <div className="flex items-center gap-3">
                               {customerData.onboarding_complete ? (
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                                  Complete
-                                </span>
+                                <>
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                    Complete
+                                  </span>
+                                  <button
+                                    onClick={handleCompleteOnboarding}
+                                    className="bg-[#E75837] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#E75837]/90 transition-colors"
+                                  >
+                                    Open Onboarding Flow
+                                  </button>
+                                </>
                               ) : (
                                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
                                   In Progress
