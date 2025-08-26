@@ -1524,6 +1524,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
         })
       }
 
+      // Analyze personal information changes
       const personalInfoAnalysis = () => {
         const originalPersonal = originalData.personalInfo
         const currentPersonal = onboardingData.personalInfo
@@ -1551,7 +1552,6 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
 
         return {
           action: originalPersonal.first_name || originalPersonal.last_name ? "update" : "create",
-          record_id: originalPersonal.id || null,
           changes: {
             first_name: currentPersonal.firstName,
             last_name: currentPersonal.lastName,
@@ -1567,16 +1567,14 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
       }
 
       const petAnalysis = () => {
-        const newPets = []
-        const updatedPets = []
+        const changedPets = []
 
         for (const currentPet of onboardingData.pets) {
           // Check if this pet has an existing ID (was loaded from database)
           if (!currentPet.id || !currentPet.isExisting) {
             // This is a new pet created during onboarding (no existing ID)
-            newPets.push({
+            changedPets.push({
               action: "create",
-              record_id: null,
               pet_data: {
                 name: currentPet.name,
                 pet_type: currentPet.pet_type,
@@ -1635,9 +1633,8 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
 
               // Only include in submission if there are actual changes
               if (petHasChanges) {
-                updatedPets.push({
+                changedPets.push({
                   action: "update",
-                  record_id: currentPet.id,
                   pet_data: {
                     id: currentPet.id,
                     name: currentPet.name,
@@ -1665,18 +1662,18 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                   },
                 })
               }
+              // If no changes detected, pet is excluded from submission
             }
           }
         }
 
-        return { new_pets: newPets, updated_pets: updatedPets }
+        return changedPets
       }
 
       const emergencyContactAnalysis = () => {
-        const newContacts = []
-        const updatedContacts = []
+        const changedContacts = []
 
-        // Process multiple emergency contacts from the emergencyContacts array
+        // Check for new emergency contacts in the emergencyContacts array
         if (onboardingData.emergencyContacts && onboardingData.emergencyContacts.length > 0) {
           for (const currentContact of onboardingData.emergencyContacts) {
             // Skip existing contacts (those with isExisting flag)
@@ -1686,9 +1683,8 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
 
             // This is a new contact if it has data and no isExisting flag
             if (currentContact.contactName) {
-              newContacts.push({
+              changedContacts.push({
                 action: "create",
-                record_id: null,
                 contact_data: {
                   contact_name: currentContact.contactName,
                   business_name: currentContact.businessName,
@@ -1734,9 +1730,8 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
           )
 
           if (contactHasChanges || !originalContact.contact_name) {
-            const contactRecord = {
+            changedContacts.push({
               action: originalContact.contact_name ? "update" : "create",
-              record_id: originalContact.id || null,
               contact_data: {
                 contact_name: currentContact.contactName,
                 business_name: currentContact.businessName,
@@ -1750,48 +1745,14 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                 primary_key: "id",
                 fields_to_update: ["contact_name", "business_name", "address", "phone_number", "email", "notes"],
               },
-            }
-
-            if (originalContact.contact_name) {
-              updatedContacts.push(contactRecord)
-            } else {
-              newContacts.push(contactRecord)
-            }
+            })
           }
         }
 
-        return { new_contacts: newContacts, updated_contacts: updatedContacts }
+        return changedContacts
       }
 
-      const policyAnalysis = () => {
-        if (Object.keys(onboardingData.policyAcknowledgments).length === 0) {
-          return null
-        }
-
-        const acknowledgedPolicies = Object.keys(onboardingData.policyAcknowledgments).map((policyId) => ({
-          policy_id: Number.parseInt(policyId),
-          acknowledged: onboardingData.policyAcknowledgments[policyId],
-          signature: onboardingData.signature,
-          acknowledged_at: new Date().toISOString(),
-        }))
-
-        return {
-          action: "create",
-          record_id: null,
-          policies: acknowledgedPolicies,
-          signature_data: {
-            signature: onboardingData.signature,
-            signed_at: new Date().toISOString(),
-            total_policies: acknowledgedPolicies.length,
-          },
-          database_fields: {
-            table: "business_policy_acknowledgments",
-            primary_key: "id",
-            fields_to_update: ["policy_id", "user_id", "signed", "signed_at", "signature"],
-          },
-        }
-      }
-
+      // Build submission analysis with only changed data
       const submissionAnalysis: any = {}
 
       const personalInfo = personalInfoAnalysis()
@@ -1799,33 +1760,32 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
         submissionAnalysis.personal_information = personalInfo
       }
 
-      const petResults = petAnalysis()
-      if (petResults.new_pets.length > 0 || petResults.updated_pets.length > 0) {
-        submissionAnalysis.pets = {
-          new_pets: petResults.new_pets,
-          updated_pets: petResults.updated_pets,
-          summary: {
-            total_new: petResults.new_pets.length,
-            total_updated: petResults.updated_pets.length,
-          },
-        }
+      const pets = petAnalysis()
+      if (pets.length > 0) {
+        submissionAnalysis.pets = pets
       }
 
-      const contactResults = emergencyContactAnalysis()
-      if (contactResults.new_contacts.length > 0 || contactResults.updated_contacts.length > 0) {
-        submissionAnalysis.emergency_contacts = {
-          new_contacts: contactResults.new_contacts,
-          updated_contacts: contactResults.updated_contacts,
-          summary: {
-            total_new: contactResults.new_contacts.length,
-            total_updated: contactResults.updated_contacts.length,
-          },
-        }
+      const emergencyContact = emergencyContactAnalysis()
+      if (emergencyContact.length > 0) {
+        submissionAnalysis.emergency_contacts = emergencyContact
       }
 
-      const policyResults = policyAnalysis()
-      if (policyResults) {
-        submissionAnalysis.policy_acknowledgments = policyResults
+      // Policy acknowledgments are always new
+      if (Object.keys(onboardingData.policyAcknowledgments).length > 0) {
+        submissionAnalysis.policy_acknowledgments = {
+          action: "create",
+          policies: Object.keys(onboardingData.policyAcknowledgments).map((policyId) => ({
+            policy_id: Number.parseInt(policyId),
+            acknowledged: onboardingData.policyAcknowledgments[policyId],
+            signature: onboardingData.signature,
+            acknowledged_at: new Date().toISOString(),
+          })),
+          database_fields: {
+            table: "business_policy_acknowledgments",
+            primary_key: "id",
+            fields_to_update: ["policy_id", "user_id", "signed", "signed_at", "signature"],
+          },
+        }
       }
 
       const payload = {
@@ -1836,30 +1796,21 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
         raw_onboarding_data: onboardingData, // Keep original data for reference
         timestamp: new Date().toISOString(),
         metadata: {
-          submission_summary: {
-            personal_info_changed: !!personalInfo,
-            new_pets_count: petResults.new_pets.length,
-            updated_pets_count: petResults.updated_pets.length,
-            new_contacts_count: contactResults.new_contacts.length,
-            updated_contacts_count: contactResults.updated_contacts.length,
-            policies_acknowledged_count: policyResults ? policyResults.policies.length : 0,
-            signature_provided: !!onboardingData.signature,
-          },
-          totals: {
-            total_pets: onboardingData.pets.length,
-            unchanged_pets: onboardingData.pets.length - (petResults.new_pets.length + petResults.updated_pets.length),
-            total_emergency_contacts:
-              (onboardingData.emergencyContacts?.length || 0) + (onboardingData.emergencyContact.contactName ? 1 : 0),
-            has_emergency_contact: !!(
-              onboardingData.emergencyContact.contactName ||
-              (onboardingData.emergencyContacts &&
-                onboardingData.emergencyContacts.some((c) => c.contactName && !c.isExisting))
-            ),
-          },
+          total_pets: onboardingData.pets.length,
+          new_pets: pets.filter((p) => p.action === "create").length,
+          updated_pets: pets.filter((p) => p.action === "update").length,
+          unchanged_pets: onboardingData.pets.length - pets.length,
+          has_emergency_contact: !!(
+            onboardingData.emergencyContact.contactName ||
+            (onboardingData.emergencyContacts &&
+              onboardingData.emergencyContacts.some((c) => c.contactName && !c.isExisting))
+          ),
+          policies_acknowledged: Object.keys(onboardingData.policyAcknowledgments).length,
+          signature_provided: !!onboardingData.signature,
         },
       }
 
-      console.log("[v0] Submitting onboarding with enhanced analysis:", payload)
+      console.log("[v0] Submitting onboarding with analysis:", payload)
 
       const response = await fetch(webhookUrl, {
         method: "POST",
