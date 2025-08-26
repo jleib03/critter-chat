@@ -349,30 +349,41 @@ export default function SchedulePage() {
       const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG")
       logWebhookUsage("PROFESSIONAL_CONFIG", "validate_email")
 
+      const requestPayload = {
+        action: "validate_email",
+        uniqueUrl: uniqueUrl,
+        email: email.trim().toLowerCase(),
+        session_id: sessionIdRef.current,
+        timestamp: new Date().toISOString(),
+        user_timezone: JSON.parse(userTimezoneRef.current!),
+      }
+
+      console.log("[v0] Email verification request payload:", requestPayload)
+      console.log("[v0] Webhook URL:", webhookUrl)
+
       const response = await fetch(webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "validate_email",
-          uniqueUrl: uniqueUrl,
-          email: email.trim().toLowerCase(),
-          session_id: sessionIdRef.current,
-          timestamp: new Date().toISOString(),
-          user_timezone: JSON.parse(userTimezoneRef.current!),
-        }),
+        body: JSON.stringify(requestPayload),
       })
+
+      console.log("[v0] Response status:", response.status)
+      console.log("[v0] Response headers:", Object.fromEntries(response.headers.entries()))
 
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
 
       let result
       try {
         const responseText = await response.text()
+        console.log("[v0] Raw response text:", responseText)
+
         if (!responseText.trim()) {
           throw new Error("Empty response from server")
         }
         result = JSON.parse(responseText)
+        console.log("[v0] Parsed response:", result)
       } catch (parseError) {
-        console.error("JSON parsing error:", parseError)
+        console.error("[v0] JSON parsing error:", parseError)
         throw new Error("Invalid response format from server")
       }
 
@@ -393,6 +404,7 @@ export default function SchedulePage() {
 
         const validCustomerItem = result.find((item) => item.output === "valid_customer")
         if (validCustomerItem) {
+          console.log("[v0] Valid customer found:", validCustomerItem)
           setCustomerInfo((prev) => ({
             ...prev,
             email: email.trim().toLowerCase(),
@@ -402,6 +414,12 @@ export default function SchedulePage() {
             userId: validCustomerItem.critter_user_id || validCustomerItem.user_id || "",
             customerId: validCustomerItem.customer_id || "",
           }))
+          console.log("[v0] Customer info updated:", {
+            firstName: validCustomerItem.first_name,
+            lastName: validCustomerItem.last_name,
+            email: email.trim().toLowerCase(),
+            phone: validCustomerItem.phone_number,
+          })
         }
       }
 
@@ -413,7 +431,7 @@ export default function SchedulePage() {
       await initializeSchedule()
       setShowEmailVerification(false)
     } catch (err) {
-      console.error("Email verification error:", err)
+      console.error("[v0] Email verification error:", err)
       if (err instanceof Error && err.message.includes("no matching email on file")) {
         setEmailError(
           "Only active customers can schedule bookings - please complete the new customer intake process prior to creating a new booking.",
