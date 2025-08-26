@@ -1,8 +1,10 @@
 "use client"
 
+import type React from "react"
+
 import { useEffect, useState, useRef, useMemo } from "react"
 import { useParams } from "next/navigation"
-import { Loader2, Clock, Calendar } from "lucide-react"
+import { Loader2, Clock, Calendar, ArrowLeft, Mail } from "lucide-react"
 import type { Service, SelectedTimeSlot, CustomerInfo, Pet, PetResponse, ParsedWebhookData } from "@/types/schedule"
 import { ServiceSelectorBar } from "@/components/schedule/service-selector-bar"
 import { WeeklyCalendar } from "@/components/schedule/weekly-calendar"
@@ -18,6 +20,7 @@ import {
 } from "@/components/schedule/booking-type-selection"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { MultiDayBookingForm } from "@/components/schedule/multi-day-booking-form"
 import { calculateMultiDayAvailability } from "@/utils/professional-config"
 import { getWebhookEndpoint, logWebhookUsage } from "@/types/webhook-endpoints"
@@ -42,6 +45,12 @@ export default function SchedulePage() {
   const sessionIdRef = useRef<string | null>(null)
   const userTimezoneRef = useRef<string | null>(null)
   const dropInGroupIdRef = useRef<string | null>(null)
+
+  const [showEmailVerification, setShowEmailVerification] = useState(true)
+  const [email, setEmail] = useState("")
+  const [emailError, setEmailError] = useState<string | null>(null)
+  const [verifyingEmail, setVerifyingEmail] = useState(false)
+  const [isEmailVerified, setIsEmailVerified] = useState(false)
 
   const [showCustomerForm, setShowCustomerForm] = useState(false)
   const [showPetSelection, setShowPetSelection] = useState(false)
@@ -315,19 +324,77 @@ export default function SchedulePage() {
 
   useEffect(() => {
     if (uniqueUrl) {
-      initializeSchedule()
+      sessionIdRef.current = generateSessionId()
+      userTimezoneRef.current = JSON.stringify(detectUserTimezone())
+      loadProfessionalConfiguration()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uniqueUrl])
+
+  const handleEmailVerification = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setVerifyingEmail(true)
+    setEmailError(null)
+
+    try {
+      if (!email.trim()) {
+        throw new Error("Please enter your email address")
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(email.trim())) {
+        throw new Error("Please enter a valid email address")
+      }
+
+      const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG")
+      logWebhookUsage("PROFESSIONAL_CONFIG", "validate_email")
+
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "validate_email",
+          uniqueUrl: uniqueUrl,
+          email: email.trim().toLowerCase(),
+          session_id: sessionIdRef.current,
+          timestamp: new Date().toISOString(),
+          user_timezone: JSON.parse(userTimezoneRef.current!),
+        }),
+      })
+
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+
+      const result = await response.json()
+
+      // Check for invalid_email response
+      if (Array.isArray(result) && result.some((item) => item.invalid_email)) {
+        const invalidEmailItem = result.find((item) => item.invalid_email)
+        throw new Error(invalidEmailItem.invalid_email)
+      }
+
+      // If we get here, email is valid - proceed with initialization
+      setIsEmailVerified(true)
+      setCustomerInfo((prev) => ({ ...prev, email: email.trim().toLowerCase() }))
+      await initializeSchedule()
+      setShowEmailVerification(false)
+    } catch (err) {
+      console.error("Email verification error:", err)
+      if (err instanceof Error && err.message.includes("no matching email on file")) {
+        setEmailError(
+          "Only active customers can schedule bookings - please complete the new customer intake process prior to creating a new booking.",
+        )
+      } else {
+        setEmailError(err instanceof Error ? err.message : "Email verification failed. Please try again.")
+      }
+    } finally {
+      setVerifyingEmail(false)
+    }
+  }
 
   const initializeSchedule = async () => {
     try {
       setLoading(true)
       setError(null)
-
-      sessionIdRef.current = generateSessionId()
-      userTimezoneRef.current = JSON.stringify(detectUserTimezone())
-      loadProfessionalConfiguration()
 
       const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG")
       logWebhookUsage("PROFESSIONAL_CONFIG", "initialize_schedule")
@@ -340,7 +407,7 @@ export default function SchedulePage() {
           uniqueUrl: uniqueUrl,
           session_id: sessionIdRef.current,
           timestamp: new Date().toISOString(),
-          user_timezone: JSON.parse(userTimezoneRef.current),
+          user_timezone: JSON.parse(userTimezoneRef.current!),
         }),
       })
 
@@ -1040,19 +1107,91 @@ export default function SchedulePage() {
     await initializeSchedule()
   }
 
+  if (showEmailVerification) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-[#E75837] text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between py-6">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => window.history.back()}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <div>
+                  <h1 className="text-2xl font-bold">Scheduling Portal</h1>
+                  <p className="text-white/90 text-sm">Book your appointment with ease</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Email Verification Form */}
+        <div className="max-w-md mx-auto pt-20">
+          <Card className="shadow-lg border-0 rounded-2xl">
+            <CardContent className="p-8">
+              <div className="text-center mb-8">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">Enter your email address</h2>
+                <p className="text-gray-600 text-sm">
+                  We'll verify you're an active customer prior to proceeding with the scheduling process
+                </p>
+              </div>
+
+              <form onSubmit={handleEmailVerification} className="space-y-6">
+                {emailError && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <p className="text-red-600 text-sm">{emailError}</p>
+                  </div>
+                )}
+
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="your.email@example.com"
+                    className="pl-12 py-3 text-base rounded-lg border-gray-300 focus:border-[#E75837] focus:ring-[#E75837]"
+                    required
+                    disabled={verifyingEmail}
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={verifyingEmail}
+                  className="w-full py-3 bg-[#E75837] hover:bg-[#d14a2a] text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  {verifyingEmail ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="w-4 h-4" />
+                      Verify Email
+                    </>
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-12 h-12 bg-[#E75837] rounded-xl flex items-center justify-center mx-auto">
-            <Loader2 className="w-6 h-6 animate-spin text-white" />
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 header-font">
-              {showConfirmation ? "Refreshing schedule..." : "Loading booking system..."}
-            </h2>
-            <p className="text-gray-600 body-font mt-1">Please wait a moment</p>
-          </div>
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-[#E75837] mx-auto mb-4" />
+          <p className="text-gray-600">Loading scheduling system...</p>
         </div>
       </div>
     )
