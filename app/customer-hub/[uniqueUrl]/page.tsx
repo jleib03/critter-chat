@@ -1881,10 +1881,14 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                   setPets(petsData)
                 }
 
-                // Extract onboarding status from the response
                 const onboardingData = reinitializedData.find((item: any) => item.onboarding_complete !== undefined)
                 if (onboardingData) {
-                  setOnboardingStatus(onboardingData)
+                  setCustomerData((prevData: any) => ({
+                    ...prevData,
+                    onboarding_complete: onboardingData.onboarding_complete,
+                    criteria_status: onboardingData.criteria_status,
+                    supporting_details: onboardingData.supporting_details,
+                  }))
                 }
               }
             } else {

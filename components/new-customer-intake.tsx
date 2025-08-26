@@ -286,8 +286,8 @@ export default function NewCustomerIntake({
       <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#E75837] mx-auto mb-4"></div>
-          <h3 className="text-lg font-medium header-font">Loading Services...</h3>
-          <p className="text-gray-600 body-font">We're retrieving available services from your professional.</p>
+          <h3 className="text-lg font-medium header-font">Submitting Your Request...</h3>
+          <p className="text-gray-600 body-font">We're submitting your intake request.</p>
         </div>
       </div>
     )
