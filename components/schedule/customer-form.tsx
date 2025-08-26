@@ -1,8 +1,8 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
-import { ArrowLeft, User, Mail, Phone, MessageSquare } from 'lucide-react'
+import { useState, useEffect } from "react"
+import { ArrowLeft, User, Mail, Phone, MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -25,6 +25,13 @@ interface CustomerFormProps {
   recurringConfig: RecurringConfig | null
   multiDayTimeSlot?: { start: Date; end: Date } | null
   showPrices: boolean
+  verifiedCustomerInfo?: {
+    first_name: string
+    last_name: string
+    email: string
+    user_id?: string
+    customer_id?: string | null
+  }
 }
 
 export function CustomerForm({
@@ -40,6 +47,7 @@ export function CustomerForm({
   recurringConfig,
   multiDayTimeSlot,
   showPrices,
+  verifiedCustomerInfo,
 }: CustomerFormProps) {
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     firstName: "",
@@ -50,6 +58,17 @@ export function CustomerForm({
   })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (verifiedCustomerInfo) {
+      setCustomerInfo((prev) => ({
+        ...prev,
+        firstName: verifiedCustomerInfo.first_name || "",
+        lastName: verifiedCustomerInfo.last_name || "",
+        email: verifiedCustomerInfo.email || "",
+      }))
+    }
+  }, [verifiedCustomerInfo])
 
   const handleInputChange = (field: keyof CustomerInfo, value: string) => {
     setCustomerInfo((prev) => ({
@@ -73,8 +92,8 @@ export function CustomerForm({
         throw new Error("Please enter a valid email address")
       }
 
-      const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG");
-      logWebhookUsage("PROFESSIONAL_CONFIG", "get_customer_pets");
+      const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG")
+      logWebhookUsage("PROFESSIONAL_CONFIG", "get_customer_pets")
 
       const payload = {
         professional_id: professionalId,
@@ -173,8 +192,8 @@ export function CustomerForm({
     })
   }
 
-  const isDropIn = selectedServices.some((s) =>
-    (s.service_type_name || "").toLowerCase().replace("-", " ") === "drop in"
+  const isDropIn = selectedServices.some(
+    (s) => (s.service_type_name || "").toLowerCase().replace("-", " ") === "drop in",
   )
   const multipleWindows = isDropIn && selectedTimeSlots.length > 0
 
@@ -252,7 +271,9 @@ export function CustomerForm({
               {showPrices && (
                 <div>
                   <span className="text-gray-500 body-font">Total Cost:</span>
-                  <p className="font-medium header-font">${selectedServices.reduce((t, s) => t + Number(s.customer_cost), 0)}</p>
+                  <p className="font-medium header-font">
+                    ${selectedServices.reduce((t, s) => t + Number(s.customer_cost), 0)}
+                  </p>
                 </div>
               )}
             </div>
