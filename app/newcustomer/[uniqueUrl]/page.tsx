@@ -3,7 +3,7 @@ import { useParams, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import NewCustomerIntake from "../../../components/new-customer-intake"
 import Header from "../../../components/header"
-import { Loader2 } from "lucide-react"
+import { Loader2, ArrowLeft } from "lucide-react"
 import { getWebhookEndpoint, logWebhookUsage } from "../../../types/webhook-endpoints"
 
 interface PicklistItem {
@@ -27,6 +27,10 @@ export default function ProfessionalSpecificPage() {
   // Handler to go back to landing page
   const handleBackToLanding = () => {
     router.push("/")
+  }
+
+  const handleBackToProfessional = () => {
+    router.push(`/${uniqueUrl}`)
   }
 
   // Fetch professional name when component mounts
@@ -208,6 +212,21 @@ export default function ProfessionalSpecificPage() {
 
   return (
     <div className="min-h-screen bg-[#FBF8F3] flex flex-col">
+      <div className="bg-[#E75837] text-white px-4 py-6">
+        <div className="max-w-6xl mx-auto flex items-center">
+          <button
+            onClick={handleBackToProfessional}
+            className="flex items-center text-white hover:text-gray-200 transition-colors mr-4"
+          >
+            <ArrowLeft className="h-6 w-6" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold">New Customer Intake</h1>
+            <p className="text-white/90 mt-1">Complete your information to get started</p>
+          </div>
+        </div>
+      </div>
+
       <Header />
 
       <main className="pt-8 flex-1 flex flex-col">
