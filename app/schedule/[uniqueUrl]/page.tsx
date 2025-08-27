@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useEffect, useState, useRef, useMemo } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { Loader2, Clock, Calendar, ArrowLeft, Mail } from "lucide-react"
 import type { Service, SelectedTimeSlot, CustomerInfo, Pet, PetResponse, ParsedWebhookData } from "@/types/schedule"
 import { ServiceSelectorBar } from "@/components/schedule/service-selector-bar"
@@ -34,6 +34,7 @@ type NotificationPreference = "1_hour" | "1_day" | "1_week"
 export default function SchedulePage() {
   const params = useParams()
   const uniqueUrl = params.uniqueUrl as string
+  const router = useRouter()
 
   const [webhookData, setWebhookData] = useState<ParsedWebhookData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -1169,14 +1170,14 @@ export default function SchedulePage() {
             <div className="flex items-center justify-between py-6">
               <div className="flex items-center space-x-4">
                 <button
-                  onClick={() => window.history.back()}
+                  onClick={() => router.push(`/${uniqueUrl}`)}
                   className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </button>
                 <div>
                   <h1 className="text-2xl font-bold">Scheduling Portal</h1>
-                  <p className="text-white/90 text-sm">Book your appointment with ease</p>
+                  <p className="text-white/90 text-sm">Schedule your appointment and manage bookings</p>
                 </div>
               </div>
             </div>
