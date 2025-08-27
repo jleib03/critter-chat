@@ -1249,29 +1249,26 @@ export default function SchedulePage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="bg-[#E75837] text-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between py-6">
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => router.push(`/${uniqueUrl}`)}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                </button>
-                <div>
-                  <h1 className="text-2xl font-bold">Scheduling Portal</h1>
-                  <p className="text-white/90 text-sm">Schedule your appointment and manage bookings</p>
-                </div>
-              </div>
+        {/* Header Banner */}
+        <div className="bg-[#E75837] text-white px-6 py-4">
+          <div className="max-w-4xl mx-auto flex items-center">
+            <button
+              onClick={() => router.push(`/${uniqueUrl}`)}
+              className="mr-4 p-2 hover:bg-white/10 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-6 h-6" />
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold">Scheduling Portal</h1>
+              <p className="text-white/90">Book your appointment with ease</p>
             </div>
           </div>
         </div>
-        
-        <div className="flex items-center justify-center pt-20">
+
+        <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <Loader2 className="w-8 h-8 animate-spin text-[#E75837] mx-auto mb-4" />
-            <p className="text-gray-600">Loading scheduling system...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#E75837] mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading scheduling information...</p>
           </div>
         </div>
       </div>
