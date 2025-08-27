@@ -1248,10 +1248,31 @@ export default function SchedulePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-[#E75837] mx-auto mb-4" />
-          <p className="text-gray-600">Loading scheduling system...</p>
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-[#E75837] text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between py-6">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => router.push(`/${uniqueUrl}`)}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <div>
+                  <h1 className="text-2xl font-bold">Scheduling Portal</h1>
+                  <p className="text-white/90 text-sm">Book your appointment with ease</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-center pt-20">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin text-[#E75837] mx-auto mb-4" />
+            <p className="text-gray-600">Loading scheduling system...</p>
+          </div>
         </div>
       </div>
     )
@@ -1259,29 +1280,50 @@ export default function SchedulePage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-        <div className="text-center max-w-md mx-auto">
-          <div className="bg-white rounded-2xl shadow-lg border p-8 space-y-4">
-            <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mx-auto">
-              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                />
-              </svg>
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-[#E75837] text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between py-6">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => router.push(`/${uniqueUrl}`)}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <div>
+                  <h1 className="text-2xl font-bold">Scheduling Portal</h1>
+                  <p className="text-white/90 text-sm">Book your appointment with ease</p>
+                </div>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 header-font">Unable to Load Schedule</h2>
-              <p className="text-gray-600 body-font mt-2">{error}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-center p-6 pt-20">
+          <div className="text-center max-w-md mx-auto">
+            <div className="bg-white rounded-2xl shadow-lg border p-8 space-y-4">
+              <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mx-auto">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 header-font">Unable to Load Schedule</h2>
+                <p className="text-gray-600 body-font mt-2">{error}</p>
+              </div>
+              <Button
+                onClick={() => initializeSchedule()}
+                className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-6 py-2 rounded-lg font-medium transition-colors"
+              >
+                Try Again
+              </Button>
             </div>
-            <Button
-              onClick={() => initializeSchedule()}
-              className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-6 py-2 rounded-lg font-medium transition-colors"
-            >
-              Try Again
-            </Button>
           </div>
         </div>
       </div>
@@ -1290,14 +1332,35 @@ export default function SchedulePage() {
 
   if (!webhookData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center mx-auto">
-            <Calendar className="w-6 h-6 text-gray-500" />
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-[#E75837] text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between py-6">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => router.push(`/${uniqueUrl}`)}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <div>
+                  <h1 className="text-2xl font-bold">Scheduling Portal</h1>
+                  <p className="text-white/90 text-sm">Book your appointment with ease</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl font-semibold text-gray-700 header-font">No Schedule Available</h2>
-            <p className="text-gray-500 body-font">Unable to find scheduling data</p>
+        </div>
+
+        <div className="flex items-center justify-center pt-20">
+          <div className="text-center space-y-4">
+            <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center mx-auto">
+              <Calendar className="w-6 h-6 text-gray-500" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-700 header-font">No Schedule Available</h2>
+              <p className="text-gray-500 body-font">Unable to find scheduling data</p>
+            </div>
           </div>
         </div>
       </div>
@@ -1310,7 +1373,26 @@ export default function SchedulePage() {
 
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-2xl mx-auto p-6 pt-16">
+        <div className="bg-[#E75837] text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between py-6">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => router.push(`/${uniqueUrl}`)}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <div>
+                  <h1 className="text-2xl font-bold">Scheduling Portal</h1>
+                  <p className="text-white/90 text-sm">Book your appointment with ease</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-2xl mx-auto p-6 pt-8">
           <div className="bg-white rounded-2xl shadow-lg border p-8 text-center space-y-6">
             <div className="w-16 h-16 bg-[#E75837] rounded-2xl flex items-center justify-center mx-auto">
               <Loader2 className="w-8 h-8 animate-spin text-white" />
@@ -1451,7 +1533,26 @@ export default function SchedulePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto p-6 space-y-6">
+      <div className="bg-[#E75837] text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between py-6">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => router.push(`/${uniqueUrl}`)}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div>
+                <h1 className="text-2xl font-bold">Scheduling Portal</h1>
+                <p className="text-white/90 text-sm">Book your appointment with ease</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto p-6 space-y-6 pt-8">
         {/* Clean Header */}
         <div className="bg-white rounded-2xl shadow-lg border p-8">
           <div className="max-w-4xl">
