@@ -1,11 +1,11 @@
 // Centralized webhook endpoint configuration
 
 // Using variables to make future updates easier
-const SCHEDULE_SETUP_URL = "https://jleib03.app.n8n.cloud/webhook/6ac562d1-a0b6-4558-8a78-6e179be01aae"
+const SCHEDULE_SETUP_URL = "https://jleib03.app.n8n.cloud/webhook/0bed0042-ae72-4e94-a924-ff026b804f23"
 const CHAT_LANDING_AND_ONBOARDING_URL = "https://jleib03.app.n8n.cloud/webhook/803d260b-1b17-4abf-8079-2d40225c29b0"
 const EXISTING_NEW_CUSTOMER_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
-const NEW_CUSTOMER_ONBOARDING_URL = "https://jleib03.app.n8n.cloud/webhook/99e77433-581a-4aee-8aff-524b3d9e4e1e"
-const CUSTOMER_HUB_URL = "https://jleib03.app.n8n.cloud/webhook/ee43e487-f10b-43f9-9967-17028b3976b8"
+const NEW_CUSTOMER_ONBOARDING_URL = "https://jleib03.app.n8n.cloud/webhook/551dbfd7-5d7f-4f66-9940-aac9c072ba98"
+const CUSTOMER_HUB_URL = "https://jleib03.app.n8n.cloud/webhook/8d5c231d-305c-4cff-aa25-1e12ca5d55c3"
 
 export const WEBHOOK_ENDPOINTS = {
   // For schedule, booking, and professional config setup
