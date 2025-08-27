@@ -18,7 +18,7 @@ import {
   type BookingType,
   type RecurringConfig,
 } from "@/components/schedule/booking-type-selection"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { MultiDayBookingForm } from "@/components/schedule/multi-day-booking-form"
@@ -1248,10 +1248,31 @@ export default function SchedulePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-[#E75837] mx-auto mb-4" />
-          <p className="text-gray-600">Loading scheduling system...</p>
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-[#E75837] text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between py-6">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => router.push(`/${uniqueUrl}`)}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <div>
+                  <h1 className="text-2xl font-bold">Scheduling Portal</h1>
+                  <p className="text-white/90 text-sm">Schedule your appointment and manage bookings</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex items-center justify-center pt-20">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin text-[#E75837] mx-auto mb-4" />
+            <p className="text-gray-600">Loading scheduling system...</p>
+          </div>
         </div>
       </div>
     )
@@ -1259,29 +1280,50 @@ export default function SchedulePage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-        <div className="text-center max-w-md mx-auto">
-          <div className="bg-white rounded-2xl shadow-lg border p-8 space-y-4">
-            <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mx-auto">
-              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                />
-              </svg>
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-[#E75837] text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between py-6">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => router.push(`/${uniqueUrl}`)}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <div>
+                  <h1 className="text-2xl font-bold">Scheduling Portal</h1>
+                  <p className="text-white/90 text-sm">Schedule your appointment and manage bookings</p>
+                </div>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 header-font">Unable to Load Schedule</h2>
-              <p className="text-gray-600 body-font mt-2">{error}</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center justify-center p-6 pt-20">
+          <div className="text-center max-w-md mx-auto">
+            <div className="bg-white rounded-2xl shadow-lg border p-8 space-y-4">
+              <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mx-auto">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 header-font">Unable to Load Schedule</h2>
+                <p className="text-gray-600 body-font mt-2">{error}</p>
+              </div>
+              <Button
+                onClick={() => initializeSchedule()}
+                className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-6 py-2 rounded-lg font-medium transition-colors"
+              >
+                Try Again
+              </Button>
             </div>
-            <Button
-              onClick={() => initializeSchedule()}
-              className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-6 py-2 rounded-lg font-medium transition-colors"
-            >
-              Try Again
-            </Button>
           </div>
         </div>
       </div>
@@ -1290,14 +1332,35 @@ export default function SchedulePage() {
 
   if (!webhookData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center mx-auto">
-            <Calendar className="w-6 h-6 text-gray-500" />
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-[#E75837] text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between py-6">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => router.push(`/${uniqueUrl}`)}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <div>
+                  <h1 className="text-2xl font-bold">Scheduling Portal</h1>
+                  <p className="text-white/90 text-sm">Schedule your appointment and manage bookings</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl font-semibold text-gray-700 header-font">No Schedule Available</h2>
-            <p className="text-gray-500 body-font">Unable to find scheduling data</p>
+        </div>
+        
+        <div className="flex items-center justify-center pt-20">
+          <div className="text-center space-y-4">
+            <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center mx-auto">
+              <Calendar className="w-6 h-6 text-gray-500" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-700 header-font">No Schedule Available</h2>
+              <p className="text-gray-500 body-font">Unable to find scheduling data</p>
+            </div>
           </div>
         </div>
       </div>
@@ -1310,7 +1373,26 @@ export default function SchedulePage() {
 
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-2xl mx-auto p-6 pt-16">
+        <div className="bg-[#E75837] text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between py-6">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => router.push(`/${uniqueUrl}`)}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <div>
+                  <h1 className="text-2xl font-bold">Scheduling Portal</h1>
+                  <p className="text-white/90 text-sm">Schedule your appointment and manage bookings</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="max-w-2xl mx-auto p-6 pt-8">
           <div className="bg-white rounded-2xl shadow-lg border p-8 text-center space-y-6">
             <div className="w-16 h-16 bg-[#E75837] rounded-2xl flex items-center justify-center mx-auto">
               <Loader2 className="w-8 h-8 animate-spin text-white" />
@@ -1451,6 +1533,25 @@ export default function SchedulePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <div className="bg-[#E75837] text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between py-6">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => router.push(`/${uniqueUrl}`)}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              
+              </button>
+              <div>
+                <h1 className="text-2xl font-bold">Scheduling Portal</h1>
+                <p className="text-white/90 text-sm">Schedule your appointment and manage bookings</p>
+              </div>
+            </div>
+          </div>
+        
+      
       <div className="max-w-6xl mx-auto p-6 space-y-6">
         {/* Clean Header */}
         <div className="bg-white rounded-2xl shadow-lg border p-8">
@@ -1471,205 +1572,114 @@ export default function SchedulePage() {
           </div>
         </div>
 
-        {showBookingDisabled ? (
-          <div className="max-w-md mx-auto">
-            <Card className="shadow-lg border-0 rounded-2xl">
-              <CardHeader className="text-center pb-4">
-                <CardTitle className="text-xl header-font">Online Booking Unavailable</CardTitle>
-              </CardHeader>
-              <CardContent className="text-center space-y-4">
-                <p className="text-gray-600 body-font">
-                  {webhookData?.professional_info.professional_name} hasn't enabled online booking. Please contact them
-                  directly through the Critter app.
-                </p>
-                <Button
-                  onClick={() => window.open("https://critter.app", "_blank")}
-                  className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-6 py-2 rounded-lg font-medium transition-colors"
-                >
-                  Open Critter App
-                </Button>
-              </CardContent>
-            </Card>
+        {/* Service Selection Bar */}
+        <ServiceSelectorBar
+          servicesByCategory={webhookData.services.services_by_category}
+          selectedServices={selectedServices}
+          onServiceSelect={handleServiceSelect}
+        />
+
+        {/* Continue Button */}
+        {selectedServices.length > 0 && (
+          <div className="flex justify-end">
+            <Button onClick={handleContinueFromServices} className="bg-[#E75837] hover:bg-[#d14a2a] text-white">
+              Continue
+            </Button>
           </div>
-        ) : showConfirmation ? (
-          <BookingConfirmation
-            selectedTimeSlot={selectedTimeSlot!}
-            selectedTimeSlots={selectedTimeSlots}
-            customerInfo={customerInfo}
-            selectedPets={selectedPets}
-            professionalName={webhookData.professional_info.professional_name}
-            onNewBooking={handleNewBookingInner}
-            bookingType={bookingType}
-            recurringConfig={recurringConfig}
-            selectedServices={selectedServices}
-            isDirectBooking={isDirectBooking}
-            multiDayTimeSlot={multiDayTimeSlot}
-            showPrices={showPrices}
+        )}
+
+        {/* Booking Type Selection */}
+        {showBookingTypeSelection && (
+          <BookingTypeSelection
+            onBookingTypeSelect={handleBookingTypeSelect}
+            onBackToServices={handleBackToServices}
           />
-        ) : showPetSelection ? (
-          <PetSelection
-            pets={pets}
-            customerInfo={customerInfo}
-            selectedServices={selectedServices}
-            selectedTimeSlot={selectedTimeSlot || selectedTimeSlots[0]}
-            professionalName={webhookData.professional_info.professional_name}
-            isDirectBooking={isDirectBooking}
-            onPetSelect={handlePetSelect}
-            onBack={handleBackToCustomerForm}
-            bookingType={bookingType}
-            recurringConfig={recurringConfig}
-            showPrices={showPrices}
-            multiDayTimeSlot={multiDayTimeSlot}
-            // harmless extra prop if component ignores it
-            selectedTimeSlots={selectedTimeSlots}
-          />
-        ) : showCustomerForm && selectedServices.length > 0 && (selectedTimeSlot || selectedTimeSlots.length > 0) ? (
-          <CustomerForm
-            selectedServices={selectedServices}
-            selectedTimeSlot={selectedTimeSlot || selectedTimeSlots[0]}
-            selectedTimeSlots={selectedTimeSlots}
-            professionalId={professionalId || uniqueUrl}
-            professionalName={webhookData.professional_info.professional_name}
-            sessionId={sessionIdRef.current!}
-            onPetsReceived={handlePetsReceived}
-            onBack={handleBackToScheduleInner}
-            bookingType={bookingType}
-            recurringConfig={recurringConfig}
-            showPrices={showPrices}
-            multiDayTimeSlot={multiDayTimeSlot}
-            verifiedCustomerInfo={
-              customerInfo.firstName
-                ? {
-                    first_name: customerInfo.firstName,
-                    last_name: customerInfo.lastName,
-                    email: customerInfo.email,
-                    phone_number: customerInfo.phone,
-                    user_id: customerInfo.userId,
-                    customer_id: customerInfo.customerId,
-                  }
-                : undefined
-            }
-          />
-        ) : showMultiDayForm && selectedServices.length > 0 ? (
+        )}
+
+        {/* Multi-Day Booking Form */}
+        {showMultiDayForm && (
           <MultiDayBookingForm
-            selectedService={selectedServices[0]}
             onAvailabilityCheck={handleMultiDayAvailabilityCheck}
-            onBookingConfirm={handleMultiDayBookingConfirm}
+            onConfirm={handleMultiDayBookingConfirm}
             onBack={handleBackFromMultiDay}
           />
-        ) : showBookingTypeSelection && selectedServices.length > 0 ? (
-          <BookingTypeSelection
+        )}
+
+        {/* Weekly Calendar */}
+        {!showBookingTypeSelection && !showMultiDayForm && (
+          <WeeklyCalendar
+            workingDays={webhookData.schedule.working_days}
             selectedServices={selectedServices}
-            onBookingTypeSelect={handleBookingTypeSelect}
-            onBack={handleBackToServices}
+            onTimeSlotSelect={handleTimeSlotSelect}
+            selectedTimeSlot={selectedTimeSlot}
+            selectedTimeSlots={selectedTimeSlots}
+            allowMultiSelect={allowMultiSelect}
+            showPrices={showPrices}
+            currencyInfo={webhookData.currency_info}
           />
-        ) : (
-          <div className="space-y-6">
-            {/* Service Selection */}
-            {!bookingType && (
-              <div className="bg-white rounded-2xl shadow-lg border p-6">
-                <ServiceSelectorBar
-                  servicesByCategory={webhookData.services.services_by_category}
-                  selectedServices={selectedServices}
-                  onServiceSelect={handleServiceSelect}
-                  onContinue={selectedServices.length > 0 ? handleContinueFromServices : undefined}
-                  summaryOnly={false}
-                  showPrices={showPrices}
-                  currencySymbol={webhookData.currency_info?.currency_symbol}
-                />
-              </div>
-            )}
+        )}
 
-            {/* Calendar & multi-select proceed */}
-            {selectedServices.length > 0 && bookingType && !showMultiDayForm && (
-              <div className="space-y-6">
-                <div className="bg-white rounded-2xl shadow-lg border p-6">
-                  <ServiceSelectorBar
-                    servicesByCategory={webhookData.services.services_by_category}
-                    selectedServices={selectedServices}
-                    onServiceSelect={handleServiceSelect}
-                    summaryOnly={true}
-                    showPrices={showPrices}
-                    currencySymbol={webhookData.currency_info?.currency_symbol}
-                  />
-                </div>
+        {/* Customer Form */}
+        {showCustomerForm && (
+          <CustomerForm onPetsReceived={handlePetsReceived} onBackToSchedule={handleBackToScheduleInner} />
+        )}
 
-                <div className="bg-white rounded-2xl shadow-lg border p-6">
-                  <WeeklyCalendar
-                    workingDays={webhookData.schedule.working_days}
-                    bookingData={webhookData.bookings.all_booking_data}
-                    selectedServices={selectedServices}
-                    onTimeSlotSelect={handleTimeSlotSelect}
-                    selectedTimeSlot={selectedTimeSlot}
-                    professionalId={professionalId || uniqueUrl}
-                    professionalConfig={memoizedProfessionalConfig}
-                    bookingType={bookingType}
-                    recurringConfig={recurringConfig}
-                    allowMultiSelect={allowMultiSelect}
-                    selectedTimeSlotsMulti={selectedTimeSlots}
-                    onMultiSelect={setSelectedTimeSlots}
-                  />
-                  {allowMultiSelect && selectedTimeSlots.length > 0 && (
-                    <div className="mt-4 flex justify-end">
-                      <Button
-                        onClick={() => setShowCustomerForm(true)}
-                        className="bg-[#E75837] hover:bg-[#d14a2a] text-white rounded-lg font-medium transition-colors"
-                      >
-                        Continue with {selectedTimeSlots.length} time{selectedTimeSlots.length > 1 ? "s" : ""}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
+        {/* Pet Selection */}
+        {showPetSelection && (
+          <PetSelection
+            customerInfo={customerInfo}
+            pets={pets}
+            onPetSelect={handlePetSelect}
+            onBackToCustomerForm={handleBackToCustomerForm}
+          />
+        )}
+
+        {/* Booking Confirmation */}
+        {showConfirmation && selectedTimeSlot && (
+          <BookingConfirmation
+            customerInfo={customerInfo}
+            selectedPets={selectedPets}
+            selectedServices={selectedServices}
+            selectedTimeSlot={selectedTimeSlot}
+            onNewBooking={handleNewBookingInner}
+            isDirectBooking={isDirectBooking}
+            bookingPreferences={bookingPreferences}
+            currencyInfo={webhookData.currency_info}
+          />
         )}
 
         {/* Booking Disabled Modal */}
         {showBookingDisabledModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-              <div className="text-center space-y-4">
-                <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mx-auto">
-                  <svg className="w-6 h-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 header-font">Online Booking Unavailable</h3>
-                  <p className="text-gray-600 body-font mt-2">
-                    {webhookData?.professional_info.professional_name} hasn't enabled online booking. Please contact
-                    them directly through the Critter app.
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+              <div className="mt-3 text-center">
+                <h3 className="text-lg leading-6 font-medium text-gray-900">Booking Temporarily Disabled</h3>
+                <div className="mt-2 px-7 py-3">
+                  <p className="text-sm text-gray-500">
+                    Online booking is currently disabled. Please contact us directly to schedule an appointment.
                   </p>
                 </div>
-                <div className="flex gap-3">
+                <div className="items-center px-4 py-3">
                   <Button
                     onClick={() => setShowBookingDisabledModal(false)}
-                    variant="outline"
-                    className="flex-1 rounded-lg"
+                    className="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300"
                   >
-                    Close
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      window.open("https://critter.app", "_blank")
-                      setShowBookingDisabledModal(false)
-                    }}
-                    className="flex-1 bg-[#E75837] hover:bg-[#d14a2a] text-white rounded-lg font-medium transition-colors"
-                  >
-                    Open Critter App
+                    Okay
                   </Button>
                 </div>
               </div>
             </div>
           </div>
         )}
+
+        {/* Booking Disabled Message */}
+        {showBookingDisabled && (
+          <div className="bg-orange-100 border-l-4 border-orange-500 text-orange-700 p-4" role="alert">
+            <p className="font-bold">Booking Temporarily Disabled</p>
+            <p>Online booking is currently disabled. Please contact us directly to schedule an appointment.</p>
+          </div>
+        )}
       </div>
     </div>
-  )
+  )\
 }
