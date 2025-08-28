@@ -47,16 +47,11 @@ export default function Header() {
                 Professional Help Hub
               </Link>
             )}
+            <Link href="/customer-help" className="text-[#333] hover:text-[#E75837] transition-colors body-font">
+              Customer Help & FAQs
+            </Link>
             <Link href="/pro/set-up" className="text-[#333] hover:text-[#E75837] transition-colors body-font">
               Critter Pro Home
-            </Link>
-            <Link
-              href="https://critter.pet"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[#333] hover:text-[#E75837] transition-colors body-font"
-            >
-              Learn more
             </Link>
           </div>
         </div>
@@ -97,16 +92,11 @@ export default function Header() {
               Professional Help Hub
             </Link>
           )}
+          <Link href="/customer-help" className="text-[#333] hover:text-[#E75837] transition-colors text-sm body-font">
+            Customer Help & FAQs
+          </Link>
           <Link href="/pro/set-up" className="text-[#333] hover:text-[#E75837] transition-colors text-sm body-font">
             Critter Pro Home
-          </Link>
-          <Link
-            href="https://critter.pet"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[#333] hover:text-[#E75837] transition-colors text-sm body-font"
-          >
-            Learn more
           </Link>
         </div>
       </div>
