@@ -3,17 +3,20 @@
 // Using variables to make future updates easier
 const SCHEDULE_SETUP_URL = "https://jleib03.app.n8n.cloud/webhook/0bed0042-ae72-4e94-a924-ff026b804f23"
 const CHAT_LANDING_AND_ONBOARDING_URL = "https://jleib03.app.n8n.cloud/webhook/803d260b-1b17-4abf-8079-2d40225c29b0"
-const NEW_CUSTOMER_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
+const EXISTING_NEW_CUSTOMER_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
+const NEW_CUSTOMER_ONBOARDING_URL = "https://jleib03.app.n8n.cloud/webhook/551dbfd7-5d7f-4f66-9940-aac9c072ba98"
+const CUSTOMER_HUB_URL = "https://jleib03.app.n8n.cloud/webhook/8d5c231d-305c-4cff-aa25-1e12ca5d55c3"
 
 export const WEBHOOK_ENDPOINTS = {
   // For schedule, booking, and professional config setup
   PROFESSIONAL_CONFIG: SCHEDULE_SETUP_URL,
   // For professional landing page and chat config
   CHAT_CONFIG: CHAT_LANDING_AND_ONBOARDING_URL,
-  // For new customer intake and existing customer widget
-  NEW_CUSTOMER_ONBOARDING: NEW_CUSTOMER_URL,
+  NEW_CUSTOMER_EXISTING: EXISTING_NEW_CUSTOMER_URL,
+  NEW_CUSTOMER_ONBOARDING: NEW_CUSTOMER_ONBOARDING_URL,
   // For custom agent setup (uses the same as chat/landing)
   CUSTOM_AGENT: CHAT_LANDING_AND_ONBOARDING_URL,
+  CUSTOMER_HUB: CUSTOMER_HUB_URL,
 } as const
 
 // Type for webhook endpoint keys

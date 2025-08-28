@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Phone, Mail, UserPlus, MessageCircle, ArrowRight, Loader2 } from "lucide-react"
+import { Calendar, Clock, MapPin, Phone, Mail, UserPlus, MessageCircle, ArrowRight, Loader2, User } from "lucide-react"
 import Header from "../../components/header"
 import LiveChatWidget from "../../components/live-chat-widget"
 import { loadChatConfig } from "../../utils/chat-config"
@@ -170,9 +170,6 @@ export default function ProfessionalLandingPage() {
 
                 <p className="text-gray-700 leading-relaxed mb-6 body-font">{professionalData.description}</p>
 
-                {/* Quick Info */}
-                {/* Remove Quick Info Grid */}
-
                 {/* Contact Info */}
                 <div className="flex flex-wrap gap-4 mb-6">
                   <a
@@ -270,6 +267,19 @@ export default function ProfessionalLandingPage() {
                   >
                     <UserPlus className="w-4 h-4" />
                     Get Started
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
+
+                <div className="bg-gradient-to-br from-[#6B46C1] to-[#553C9A] rounded-xl p-6 text-white">
+                  <h3 className="text-xl font-bold mb-2 header-font">Customer Portal</h3>
+                  <p className="text-white/90 mb-4 body-font">View your bookings and pet information</p>
+                  <Link
+                    href={`/customer-hub/${uniqueUrl}`}
+                    className="inline-flex items-center gap-2 bg-white text-[#6B46C1] px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors body-font"
+                  >
+                    <User className="w-4 h-4" />
+                    Access Portal
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>

@@ -1,8 +1,10 @@
 "use client"
 
+import type React from "react"
+
 import { useEffect, useState, useRef, useMemo } from "react"
-import { useParams } from "next/navigation"
-import { Loader2, Clock, Calendar } from "lucide-react"
+import { useParams, useRouter } from "next/navigation"
+import { Loader2, Clock, Calendar, ArrowLeft, Mail } from "lucide-react"
 import type { Service, SelectedTimeSlot, CustomerInfo, Pet, PetResponse, ParsedWebhookData } from "@/types/schedule"
 import { ServiceSelectorBar } from "@/components/schedule/service-selector-bar"
 import { WeeklyCalendar } from "@/components/schedule/weekly-calendar"
@@ -18,6 +20,7 @@ import {
 } from "@/components/schedule/booking-type-selection"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { MultiDayBookingForm } from "@/components/schedule/multi-day-booking-form"
 import { calculateMultiDayAvailability } from "@/utils/professional-config"
 import { getWebhookEndpoint, logWebhookUsage } from "@/types/webhook-endpoints"
@@ -31,6 +34,7 @@ type NotificationPreference = "1_hour" | "1_day" | "1_week"
 export default function SchedulePage() {
   const params = useParams()
   const uniqueUrl = params.uniqueUrl as string
+  const router = useRouter()
 
   const [webhookData, setWebhookData] = useState<ParsedWebhookData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -42,6 +46,12 @@ export default function SchedulePage() {
   const sessionIdRef = useRef<string | null>(null)
   const userTimezoneRef = useRef<string | null>(null)
   const dropInGroupIdRef = useRef<string | null>(null)
+
+  const [showEmailVerification, setShowEmailVerification] = useState(true)
+  const [email, setEmail] = useState("")
+  const [emailError, setEmailError] = useState<string | null>(null)
+  const [verifyingEmail, setVerifyingEmail] = useState(false)
+  const [isEmailVerified, setIsEmailVerified] = useState(false)
 
   const [showCustomerForm, setShowCustomerForm] = useState(false)
   const [showPetSelection, setShowPetSelection] = useState(false)
@@ -315,19 +325,130 @@ export default function SchedulePage() {
 
   useEffect(() => {
     if (uniqueUrl) {
-      initializeSchedule()
+      sessionIdRef.current = generateSessionId()
+      userTimezoneRef.current = JSON.stringify(detectUserTimezone())
+      loadProfessionalConfiguration()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uniqueUrl])
+
+  const handleEmailVerification = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setVerifyingEmail(true)
+    setEmailError(null)
+
+    try {
+      if (!email.trim()) {
+        throw new Error("Please enter your email address")
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(email.trim())) {
+        throw new Error("Please enter a valid email address")
+      }
+
+      const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG")
+      logWebhookUsage("PROFESSIONAL_CONFIG", "validate_email")
+
+      const requestPayload = {
+        action: "validate_email",
+        uniqueUrl: uniqueUrl,
+        email: email.trim().toLowerCase(),
+        session_id: sessionIdRef.current,
+        timestamp: new Date().toISOString(),
+        user_timezone: JSON.parse(userTimezoneRef.current!),
+      }
+
+      console.log("[v0] Email verification request payload:", requestPayload)
+      console.log("[v0] Webhook URL:", webhookUrl)
+
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestPayload),
+      })
+
+      console.log("[v0] Response status:", response.status)
+      console.log("[v0] Response headers:", Object.fromEntries(response.headers.entries()))
+
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+
+      let result
+      try {
+        const responseText = await response.text()
+        console.log("[v0] Raw response text:", responseText)
+
+        if (!responseText.trim()) {
+          throw new Error("Empty response from server")
+        }
+        result = JSON.parse(responseText)
+        console.log("[v0] Parsed response:", result)
+      } catch (parseError) {
+        console.error("[v0] JSON parsing error:", parseError)
+        throw new Error("Invalid response format from server")
+      }
+
+      if (Array.isArray(result)) {
+        // Check for invalid_email response
+        const invalidEmailItem = result.find((item) => item.invalid_email)
+        if (invalidEmailItem) {
+          throw new Error(invalidEmailItem.invalid_email)
+        }
+
+        // Check for invalid_customer response
+        const invalidCustomerItem = result.find((item) => item.output === "invalid_customer")
+        if (invalidCustomerItem) {
+          throw new Error(
+            "Only active customers can schedule bookings - please complete the new customer intake process prior to creating a new booking.",
+          )
+        }
+
+        const validCustomerItem = result.find((item) => item.output === "valid_customer")
+        if (validCustomerItem) {
+          console.log("[v0] Valid customer found:", validCustomerItem)
+          setCustomerInfo((prev) => ({
+            ...prev,
+            email: email.trim().toLowerCase(),
+            firstName: validCustomerItem.first_name || "",
+            lastName: validCustomerItem.last_name || "",
+            phone: validCustomerItem.phone_number || "",
+            userId: validCustomerItem.critter_user_id || validCustomerItem.user_id || "",
+            customerId: validCustomerItem.customer_id || "",
+          }))
+          console.log("[v0] Customer info updated:", {
+            firstName: validCustomerItem.first_name,
+            lastName: validCustomerItem.last_name,
+            email: email.trim().toLowerCase(),
+            phone: validCustomerItem.phone_number,
+          })
+        }
+      }
+
+      // If we get here, email is valid - proceed with initialization
+      setIsEmailVerified(true)
+      if (!customerInfo.firstName) {
+        setCustomerInfo((prev) => ({ ...prev, email: email.trim().toLowerCase() }))
+      }
+      await initializeSchedule()
+      setShowEmailVerification(false)
+    } catch (err) {
+      console.error("[v0] Email verification error:", err)
+      if (err instanceof Error && err.message.includes("no matching email on file")) {
+        setEmailError(
+          "Only active customers can schedule bookings - please complete the new customer intake process prior to creating a new booking.",
+        )
+      } else {
+        setEmailError(err instanceof Error ? err.message : "Unable to verify email. Please try again.")
+      }
+    } finally {
+      setVerifyingEmail(false)
+    }
+  }
 
   const initializeSchedule = async () => {
     try {
       setLoading(true)
       setError(null)
-
-      sessionIdRef.current = generateSessionId()
-      userTimezoneRef.current = JSON.stringify(detectUserTimezone())
-      loadProfessionalConfiguration()
 
       const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG")
       logWebhookUsage("PROFESSIONAL_CONFIG", "initialize_schedule")
@@ -340,7 +461,7 @@ export default function SchedulePage() {
           uniqueUrl: uniqueUrl,
           session_id: sessionIdRef.current,
           timestamp: new Date().toISOString(),
-          user_timezone: JSON.parse(userTimezoneRef.current),
+          user_timezone: JSON.parse(userTimezoneRef.current!),
         }),
       })
 
@@ -1013,7 +1134,7 @@ export default function SchedulePage() {
     setShowCustomerForm(true)
   }
 
-  const handleBackToSchedule = () => {
+  const handleBackToScheduleInner = () => {
     setShowCustomerForm(false)
     setSelectedTimeSlot(null)
     setSelectedTimeSlots([])
@@ -1022,7 +1143,7 @@ export default function SchedulePage() {
     }
   }
 
-  const handleNewBooking = async () => {
+  const handleNewBookingInner = async () => {
     setSelectedServices([])
     setSelectedTimeSlot(null)
     setSelectedTimeSlots([])
@@ -1030,7 +1151,7 @@ export default function SchedulePage() {
     setShowPetSelection(false)
     setShowConfirmation(false)
     setCreatingBooking(false)
-    setCustomerInfo({ firstName: "", lastName: "", email: "" })
+    // setCustomerInfo({ firstName: "", lastName: "", email: "" })
     setPets([])
     setSelectedPets([])
     setSelectedNotifications([])
@@ -1040,18 +1161,117 @@ export default function SchedulePage() {
     await initializeSchedule()
   }
 
+  if (showEmailVerification) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-[#E75837] text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between py-6">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => router.push(`/${uniqueUrl}`)}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <div>
+                  <h1 className="text-2xl font-bold">Scheduling Portal</h1>
+                  <p className="text-white/90 text-sm">Book your appointment with ease</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Email Verification Form */}
+        <div className="max-w-md mx-auto pt-20">
+          <Card className="shadow-lg border-0 rounded-2xl">
+            <CardContent className="p-8">
+              <div className="text-center mb-8">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">Enter your email address</h2>
+                <p className="text-gray-600 text-sm">
+                  We'll verify you're an active customer prior to proceeding with the scheduling process
+                </p>
+              </div>
+
+              <form onSubmit={handleEmailVerification} className="space-y-6">
+                {emailError && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <p className="text-red-600 text-sm">{emailError}</p>
+                  </div>
+                )}
+
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="your.email@example.com"
+                    className="pl-12 py-3 text-base rounded-lg border-gray-300 focus:border-[#E75837] focus:ring-[#E75837]"
+                    required
+                    disabled={verifyingEmail}
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={verifyingEmail}
+                  className="w-full py-3 bg-[#E75837] hover:bg-[#d14a2a] text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  {verifyingEmail ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="w-4 h-4" />
+                      Verify Email
+                    </>
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+  isEmailVerified && customerInfo.firstName && (
+    <div className="mb-6 text-center">
+      <h2 className="text-2xl font-semibold text-gray-800">Welcome {customerInfo.firstName}!</h2>
+      <p className="text-gray-600 mt-1">Let's get your appointment scheduled.</p>
+    </div>
+  )
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-12 h-12 bg-[#E75837] rounded-xl flex items-center justify-center mx-auto">
-            <Loader2 className="w-6 h-6 animate-spin text-white" />
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-[#E75837] text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between py-6">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => router.push(`/${uniqueUrl}`)}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <div>
+                  <h1 className="text-2xl font-bold">Scheduling Portal</h1>
+                  <p className="text-white/90 text-sm">Book your appointment with ease</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 header-font">
-              {showConfirmation ? "Refreshing schedule..." : "Loading booking system..."}
-            </h2>
-            <p className="text-gray-600 body-font mt-1">Please wait a moment</p>
+        </div>
+
+        <div className="flex items-center justify-center pt-20">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin text-[#E75837] mx-auto mb-4" />
+            <p className="text-gray-600">Loading scheduling system...</p>
           </div>
         </div>
       </div>
@@ -1060,29 +1280,50 @@ export default function SchedulePage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-        <div className="text-center max-w-md mx-auto">
-          <div className="bg-white rounded-2xl shadow-lg border p-8 space-y-4">
-            <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mx-auto">
-              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                />
-              </svg>
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-[#E75837] text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between py-6">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => router.push(`/${uniqueUrl}`)}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <div>
+                  <h1 className="text-2xl font-bold">Scheduling Portal</h1>
+                  <p className="text-white/90 text-sm">Book your appointment with ease</p>
+                </div>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 header-font">Unable to Load Schedule</h2>
-              <p className="text-gray-600 body-font mt-2">{error}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-center p-6 pt-20">
+          <div className="text-center max-w-md mx-auto">
+            <div className="bg-white rounded-2xl shadow-lg border p-8 space-y-4">
+              <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mx-auto">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 header-font">Unable to Load Schedule</h2>
+                <p className="text-gray-600 body-font mt-2">{error}</p>
+              </div>
+              <Button
+                onClick={() => initializeSchedule()}
+                className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-6 py-2 rounded-lg font-medium transition-colors"
+              >
+                Try Again
+              </Button>
             </div>
-            <Button
-              onClick={() => initializeSchedule()}
-              className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-6 py-2 rounded-lg font-medium transition-colors"
-            >
-              Try Again
-            </Button>
           </div>
         </div>
       </div>
@@ -1091,14 +1332,35 @@ export default function SchedulePage() {
 
   if (!webhookData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center mx-auto">
-            <Calendar className="w-6 h-6 text-gray-500" />
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-[#E75837] text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between py-6">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => router.push(`/${uniqueUrl}`)}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <div>
+                  <h1 className="text-2xl font-bold">Scheduling Portal</h1>
+                  <p className="text-white/90 text-sm">Book your appointment with ease</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl font-semibold text-gray-700 header-font">No Schedule Available</h2>
-            <p className="text-gray-500 body-font">Unable to find scheduling data</p>
+        </div>
+
+        <div className="flex items-center justify-center pt-20">
+          <div className="text-center space-y-4">
+            <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center mx-auto">
+              <Calendar className="w-6 h-6 text-gray-500" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-700 header-font">No Schedule Available</h2>
+              <p className="text-gray-500 body-font">Unable to find scheduling data</p>
+            </div>
           </div>
         </div>
       </div>
@@ -1111,7 +1373,26 @@ export default function SchedulePage() {
 
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-2xl mx-auto p-6 pt-16">
+        <div className="bg-[#E75837] text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between py-6">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => router.push(`/${uniqueUrl}`)}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <div>
+                  <h1 className="text-2xl font-bold">Scheduling Portal</h1>
+                  <p className="text-white/90 text-sm">Book your appointment with ease</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-2xl mx-auto p-6 pt-8">
           <div className="bg-white rounded-2xl shadow-lg border p-8 text-center space-y-6">
             <div className="w-16 h-16 bg-[#E75837] rounded-2xl flex items-center justify-center mx-auto">
               <Loader2 className="w-8 h-8 animate-spin text-white" />
@@ -1252,7 +1533,26 @@ export default function SchedulePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto p-6 space-y-6">
+      <div className="bg-[#E75837] text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between py-6">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => router.push(`/${uniqueUrl}`)}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div>
+                <h1 className="text-2xl font-bold">Scheduling Portal</h1>
+                <p className="text-white/90 text-sm">Book your appointment with ease</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto p-6 space-y-6 pt-8">
         {/* Clean Header */}
         <div className="bg-white rounded-2xl shadow-lg border p-8">
           <div className="max-w-4xl">
@@ -1299,7 +1599,7 @@ export default function SchedulePage() {
             customerInfo={customerInfo}
             selectedPets={selectedPets}
             professionalName={webhookData.professional_info.professional_name}
-            onNewBooking={handleNewBooking}
+            onNewBooking={handleNewBookingInner}
             bookingType={bookingType}
             recurringConfig={recurringConfig}
             selectedServices={selectedServices}
@@ -1333,11 +1633,23 @@ export default function SchedulePage() {
             professionalName={webhookData.professional_info.professional_name}
             sessionId={sessionIdRef.current!}
             onPetsReceived={handlePetsReceived}
-            onBack={handleBackToSchedule}
+            onBack={handleBackToScheduleInner}
             bookingType={bookingType}
             recurringConfig={recurringConfig}
             showPrices={showPrices}
             multiDayTimeSlot={multiDayTimeSlot}
+            verifiedCustomerInfo={
+              customerInfo.firstName
+                ? {
+                    first_name: customerInfo.firstName,
+                    last_name: customerInfo.lastName,
+                    email: customerInfo.email,
+                    phone_number: customerInfo.phone,
+                    user_id: customerInfo.userId,
+                    customer_id: customerInfo.customerId,
+                  }
+                : undefined
+            }
           />
         ) : showMultiDayForm && selectedServices.length > 0 ? (
           <MultiDayBookingForm

@@ -1,12 +1,11 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
-import { ArrowLeft, User, Mail, Phone, MessageSquare } from 'lucide-react'
+import { useState, useEffect } from "react"
+import { ArrowLeft, User, Mail, Phone } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { Service, SelectedTimeSlot, CustomerInfo, PetResponse } from "@/types/schedule"
 import type { BookingType, RecurringConfig } from "./booking-type-selection"
@@ -25,6 +24,14 @@ interface CustomerFormProps {
   recurringConfig: RecurringConfig | null
   multiDayTimeSlot?: { start: Date; end: Date } | null
   showPrices: boolean
+  verifiedCustomerInfo?: {
+    first_name: string
+    last_name: string
+    email: string
+    phone_number?: string
+    user_id?: string
+    customer_id?: string | null
+  }
 }
 
 export function CustomerForm({
@@ -40,6 +47,7 @@ export function CustomerForm({
   recurringConfig,
   multiDayTimeSlot,
   showPrices,
+  verifiedCustomerInfo,
 }: CustomerFormProps) {
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     firstName: "",
@@ -50,6 +58,18 @@ export function CustomerForm({
   })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (verifiedCustomerInfo) {
+      setCustomerInfo((prev) => ({
+        ...prev,
+        firstName: verifiedCustomerInfo.first_name || "",
+        lastName: verifiedCustomerInfo.last_name || "",
+        email: verifiedCustomerInfo.email || "",
+        phone: verifiedCustomerInfo.phone_number || "",
+      }))
+    }
+  }, [verifiedCustomerInfo])
 
   const handleInputChange = (field: keyof CustomerInfo, value: string) => {
     setCustomerInfo((prev) => ({
@@ -73,8 +93,8 @@ export function CustomerForm({
         throw new Error("Please enter a valid email address")
       }
 
-      const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG");
-      logWebhookUsage("PROFESSIONAL_CONFIG", "get_customer_pets");
+      const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG")
+      logWebhookUsage("PROFESSIONAL_CONFIG", "get_customer_pets")
 
       const payload = {
         professional_id: professionalId,
@@ -173,8 +193,8 @@ export function CustomerForm({
     })
   }
 
-  const isDropIn = selectedServices.some((s) =>
-    (s.service_type_name || "").toLowerCase().replace("-", " ") === "drop in"
+  const isDropIn = selectedServices.some(
+    (s) => (s.service_type_name || "").toLowerCase().replace("-", " ") === "drop in",
   )
   const multipleWindows = isDropIn && selectedTimeSlots.length > 0
 
@@ -252,7 +272,9 @@ export function CustomerForm({
               {showPrices && (
                 <div>
                   <span className="text-gray-500 body-font">Total Cost:</span>
-                  <p className="font-medium header-font">${selectedServices.reduce((t, s) => t + Number(s.customer_cost), 0)}</p>
+                  <p className="font-medium header-font">
+                    ${selectedServices.reduce((t, s) => t + Number(s.customer_cost), 0)}
+                  </p>
                 </div>
               )}
             </div>
@@ -289,6 +311,8 @@ export function CustomerForm({
                     className="pl-10 rounded-lg border-gray-300 focus:border-[#E75837] focus:ring-[#E75837]"
                     placeholder="Enter your first name"
                     required
+                    readOnly={!!verifiedCustomerInfo}
+                    disabled={!!verifiedCustomerInfo}
                   />
                 </div>
               </div>
@@ -307,6 +331,8 @@ export function CustomerForm({
                     className="pl-10 rounded-lg border-gray-300 focus:border-[#E75837] focus:ring-[#E75837]"
                     placeholder="Enter your last name"
                     required
+                    readOnly={!!verifiedCustomerInfo}
+                    disabled={!!verifiedCustomerInfo}
                   />
                 </div>
               </div>
@@ -326,6 +352,8 @@ export function CustomerForm({
                   className="pl-10 rounded-lg border-gray-300 focus:border-[#E75837] focus:ring-[#E75837]"
                   placeholder="Enter your email address"
                   required
+                  readOnly={!!verifiedCustomerInfo}
+                  disabled={!!verifiedCustomerInfo}
                 />
               </div>
             </div>
@@ -343,22 +371,8 @@ export function CustomerForm({
                   onChange={(e) => handleInputChange("phone", e.target.value)}
                   className="pl-10 rounded-lg border-gray-300 focus:border-[#E75837] focus:ring-[#E75837]"
                   placeholder="Enter your phone number"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="notes" className="text-sm font-medium text-gray-700 body-font">
-                Additional Notes
-              </Label>
-              <div className="relative">
-                <MessageSquare className="absolute left-3 top-3 text-gray-400 w-4 h-4" />
-                <Textarea
-                  id="notes"
-                  value={customerInfo.notes || ""}
-                  onChange={(e) => handleInputChange("notes", e.target.value)}
-                  className="pl-10 pt-3 rounded-lg border-gray-300 focus:border-[#E75837] focus:ring-[#E75837] min-h-[100px]"
-                  placeholder="Any special requests or information for the professional..."
+                  readOnly={!!verifiedCustomerInfo}
+                  disabled={!!verifiedCustomerInfo}
                 />
               </div>
             </div>
