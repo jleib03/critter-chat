@@ -11,7 +11,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, Trash2, Plus, Users, Clock, Shield, Calendar, AlertCircle, Smartphone, CheckCircle } from 'lucide-react'
+import {
+  Loader2,
+  Trash2,
+  Plus,
+  Users,
+  Clock,
+  Shield,
+  Calendar,
+  AlertCircle,
+  Smartphone,
+  CheckCircle,
+} from "lucide-react"
 import type {
   GetConfigWebhookPayload,
   SaveConfigWebhookPayload,
@@ -68,6 +79,7 @@ export default function ProfessionalSetupPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("booking")
+  const [blockedTimeSubTab, setBlockedTimeSubTab] = useState("current")
 
   // Configuration state
   const [bookingPreferences, setBookingPreferences] = useState(DEFAULT_BOOKING_PREFERENCES)
@@ -309,6 +321,22 @@ export default function ProfessionalSetupPage() {
   const formatReason = (reason: string | null | undefined) => {
     return reason && reason !== "null" ? reason : ""
   }
+
+  const getTodayDateString = () => {
+    const today = new Date()
+    return today.toISOString().split("T")[0] // YYYY-MM-DD format
+  }
+
+  const filterBlockedTimesByDate = () => {
+    const today = getTodayDateString()
+
+    const currentAndFuture = blockedTimes.filter((bt) => bt.date >= today)
+    const past = blockedTimes.filter((bt) => bt.date < today)
+
+    return { currentAndFuture, past }
+  }
+
+  const { currentAndFuture, past } = filterBlockedTimesByDate()
 
   // Load configuration
   const loadConfiguration = async () => {
@@ -668,8 +696,8 @@ export default function ProfessionalSetupPage() {
       const start = createLocalDate(startDate)
       const recurrenceEnd = createLocalDate(newBlockedTime.recurrence_end_date!)
       const pattern = newBlockedTime.recurrence_pattern || "weekly"
-      
-      let currentDate = new Date(start)
+
+      const currentDate = new Date(start)
       const increment = pattern === "weekly" ? 7 : pattern === "monthly" ? 30 : 7
 
       while (currentDate <= recurrenceEnd) {
@@ -687,7 +715,7 @@ export default function ProfessionalSetupPage() {
           }
           allNewEntries.push(blockedTime)
         }
-        
+
         // Move to next occurrence
         currentDate.setDate(currentDate.getDate() + increment)
       }
@@ -841,7 +869,7 @@ export default function ProfessionalSetupPage() {
                   className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md py-2 px-3 font-medium transition-all duration-200"
                 >
                   <Shield className="w-4 h-4" />
-                  Blocked Time ({blockedTimes.length})
+                  Blocked Time ({currentAndFuture.length})
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -1196,234 +1224,369 @@ export default function ProfessionalSetupPage() {
                 <h2 className="text-xl font-semibold text-gray-900 header-font mb-2">Blocked Time</h2>
                 <p className="text-gray-600 body-font mb-6">Block specific dates and times when you're not available</p>
 
-                {/* Add New Blocked Time */}
-                <Card className="shadow-sm border rounded-xl">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg header-font">
-                      <Plus className="w-5 h-5 text-[#E75837]" />
-                      Add Blocked Time
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                      <div>
-                        <Label className="body-font font-medium">Date</Label>
-                        <Input
-                          type="date"
-                          value={newBlockedTime.start_date}
-                          onChange={(e) => setNewBlockedTime({ ...newBlockedTime, start_date: e.target.value })}
-                          className="mt-1 rounded-lg"
-                        />
-                      </div>
-                      <div>
-                        <Label className="body-font font-medium">Start Time</Label>
-                        <Input
-                          type="time"
-                          value={newBlockedTime.start_time}
-                          onChange={(e) => setNewBlockedTime({ ...newBlockedTime, start_time: e.target.value })}
-                          className="mt-1 rounded-lg"
-                        />
-                      </div>
-                      <div>
-                        <Label className="body-font font-medium">End Time</Label>
-                        <Input
-                          type="time"
-                          value={newBlockedTime.end_time}
-                          onChange={(e) => setNewBlockedTime({ ...newBlockedTime, end_time: e.target.value })}
-                          className="mt-1 rounded-lg"
-                        />
-                      </div>
-                      <div>
-                        <Label className="body-font font-medium">Team Member</Label>
-                        <Select
-                          value={newBlockedTime.employee_id || "all"}
-                          onValueChange={(value) =>
-                            setNewBlockedTime({ ...newBlockedTime, employee_id: value === "all" ? null : value })
-                          }
-                        >
-                          <SelectTrigger className="mt-1 rounded-lg">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Team Members</SelectItem>
-                            {employees.map((emp) => (
-                              <SelectItem key={emp.employee_id} value={emp.employee_id}>
-                                {emp.name || "Unnamed Employee"}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
+                <Tabs value={blockedTimeSubTab} onValueChange={setBlockedTimeSubTab} className="w-full">
+                  <div className="mb-6">
+                    <TabsList className="grid w-full grid-cols-2 bg-gray-50 p-1 rounded-lg max-w-md">
+                      <TabsTrigger
+                        value="current"
+                        className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md py-2 px-3 font-medium transition-all duration-200"
+                      >
+                        Current & Future ({currentAndFuture.length})
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="past"
+                        className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md py-2 px-3 font-medium transition-all duration-200"
+                      >
+                        Past Blocks ({past.length})
+                      </TabsTrigger>
+                    </TabsList>
+                  </div>
 
-                    <div className="space-y-4">
-                      <div>
-                        <Label className="body-font font-medium">Reason</Label>
-                        <Input
-                          value={newBlockedTime.reason}
-                          onChange={(e) => setNewBlockedTime({ ...newBlockedTime, reason: e.target.value })}
-                          placeholder="Vacation, meeting, personal time, etc."
-                          className="mt-1 rounded-lg"
-                        />
-                      </div>
-
-                      <div className="flex items-center gap-6">
-                        <div className="flex items-center space-x-2">
-                          <Switch
-                            checked={newBlockedTime.is_all_day}
-                            onCheckedChange={(checked) => setNewBlockedTime({ ...newBlockedTime, is_all_day: checked })}
-                          />
-                          <Label className="body-font">All Day</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Switch
-                            checked={newBlockedTime.is_recurring}
-                            onCheckedChange={(checked) =>
-                              setNewBlockedTime({ ...newBlockedTime, is_recurring: checked })
-                            }
-                          />
-                          <Label className="body-font">Recurring</Label>
-                        </div>
-                      </div>
-
-                      {newBlockedTime.is_recurring && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                  {/* Current & Future Blocked Times Tab */}
+                  <TabsContent value="current" className="space-y-6">
+                    {/* Add New Blocked Time - only show in current tab */}
+                    <Card className="shadow-sm border rounded-xl">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-lg header-font">
+                          <Plus className="w-5 h-5 text-[#E75837]" />
+                          Add Blocked Time
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                           <div>
-                            <Label className="body-font font-medium">Repeat Every</Label>
+                            <Label className="body-font font-medium">Date</Label>
+                            <Input
+                              type="date"
+                              value={newBlockedTime.start_date}
+                              onChange={(e) => setNewBlockedTime({ ...newBlockedTime, start_date: e.target.value })}
+                              className="mt-1 rounded-lg"
+                            />
+                          </div>
+                          <div>
+                            <Label className="body-font font-medium">Start Time</Label>
+                            <Input
+                              type="time"
+                              value={newBlockedTime.start_time}
+                              onChange={(e) => setNewBlockedTime({ ...newBlockedTime, start_time: e.target.value })}
+                              className="mt-1 rounded-lg"
+                            />
+                          </div>
+                          <div>
+                            <Label className="body-font font-medium">End Time</Label>
+                            <Input
+                              type="time"
+                              value={newBlockedTime.end_time}
+                              onChange={(e) => setNewBlockedTime({ ...newBlockedTime, end_time: e.target.value })}
+                              className="mt-1 rounded-lg"
+                            />
+                          </div>
+                          <div>
+                            <Label className="body-font font-medium">Team Member</Label>
                             <Select
-                              value={newBlockedTime.recurrence_pattern || "weekly"}
+                              value={newBlockedTime.employee_id || "all"}
                               onValueChange={(value) =>
-                                setNewBlockedTime({ ...newBlockedTime, recurrence_pattern: value as "weekly" | "monthly" })
+                                setNewBlockedTime({ ...newBlockedTime, employee_id: value === "all" ? null : value })
                               }
                             >
                               <SelectTrigger className="mt-1 rounded-lg">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="weekly">Week</SelectItem>
-                                <SelectItem value="monthly">Month</SelectItem>
+                                <SelectItem value="all">All Team Members</SelectItem>
+                                {employees.map((emp) => (
+                                  <SelectItem key={emp.employee_id} value={emp.employee_id}>
+                                    {emp.name || "Unnamed Employee"}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </div>
+                        </div>
+
+                        <div className="space-y-4">
                           <div>
-                            <Label className="body-font font-medium">End Recurring On</Label>
+                            <Label className="body-font font-medium">Reason</Label>
                             <Input
-                              type="date"
-                              value={newBlockedTime.recurrence_end_date}
-                              onChange={(e) => setNewBlockedTime({ ...newBlockedTime, recurrence_end_date: e.target.value })}
+                              value={newBlockedTime.reason}
+                              onChange={(e) => setNewBlockedTime({ ...newBlockedTime, reason: e.target.value })}
+                              placeholder="Vacation, meeting, personal time, etc."
                               className="mt-1 rounded-lg"
-                              min={newBlockedTime.start_date}
                             />
                           </div>
+
+                          <div className="flex items-center gap-6">
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                checked={newBlockedTime.is_all_day}
+                                onCheckedChange={(checked) =>
+                                  setNewBlockedTime({ ...newBlockedTime, is_all_day: checked })
+                                }
+                              />
+                              <Label className="body-font">All Day</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                checked={newBlockedTime.is_recurring}
+                                onCheckedChange={(checked) =>
+                                  setNewBlockedTime({ ...newBlockedTime, is_recurring: checked })
+                                }
+                              />
+                              <Label className="body-font">Recurring</Label>
+                            </div>
+                          </div>
+
+                          {newBlockedTime.is_recurring && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                              <div>
+                                <Label className="body-font font-medium">Repeat Every</Label>
+                                <Select
+                                  value={newBlockedTime.recurrence_pattern || "weekly"}
+                                  onValueChange={(value) =>
+                                    setNewBlockedTime({
+                                      ...newBlockedTime,
+                                      recurrence_pattern: value as "weekly" | "monthly",
+                                    })
+                                  }
+                                >
+                                  <SelectTrigger className="mt-1 rounded-lg">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="weekly">Week</SelectItem>
+                                    <SelectItem value="monthly">Month</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <Label className="body-font font-medium">End Recurring On</Label>
+                                <Input
+                                  type="date"
+                                  value={newBlockedTime.recurrence_end_date}
+                                  onChange={(e) =>
+                                    setNewBlockedTime({ ...newBlockedTime, recurrence_end_date: e.target.value })
+                                  }
+                                  className="mt-1 rounded-lg"
+                                  min={newBlockedTime.start_date}
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          <Button
+                            onClick={addBlockedTime}
+                            disabled={
+                              !newBlockedTime.start_date ||
+                              (newBlockedTime.is_recurring && !newBlockedTime.recurrence_end_date)
+                            }
+                            className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Blocked Time
+                          </Button>
                         </div>
-                      )}
-
-                      <Button
-                        onClick={addBlockedTime}
-                        disabled={!newBlockedTime.start_date || (newBlockedTime.is_recurring && !newBlockedTime.recurrence_end_date)}
-                        className="bg-[#E75837] hover:bg-[#d14a2a] text-white px-6 py-2 rounded-lg font-medium transition-colors"
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Blocked Time
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Existing Blocked Times */}
-                <div className="space-y-4">
-                  {blockedTimes.length === 0 ? (
-                    <Card className="shadow-sm border rounded-xl">
-                      <CardContent className="text-center py-12">
-                        <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                        <h3 className="text-lg font-semibold text-gray-500 mb-2 header-font">No Blocked Times</h3>
-                        <p className="text-gray-400 body-font">
-                          Add blocked times to prevent bookings during specific periods
-                        </p>
                       </CardContent>
                     </Card>
-                  ) : (
-                    blockedTimes.map((blockedTime) => {
-                      const employee = employees.find((emp) => emp.employee_id === blockedTime.employee_id)
-                      const color = employee ? employeeColorMap.get(employee.employee_id) : "#64748b" // default slate-500
 
-                      return (
-                        <Card
-                          key={blockedTime.blocked_time_id}
-                          className="shadow-sm border rounded-xl overflow-hidden"
-                          style={{ borderLeft: `5px solid ${color}` }}
-                        >
-                          <CardContent className="pt-6">
-                            <div className="flex items-center justify-between">
-                              <div className="space-y-2">
-                                <div className="flex items-center gap-4 flex-wrap">
-                                  <div className="flex items-center gap-2">
-                                    <Calendar className="w-4 h-4 text-gray-500" />
-                                    <span className="font-medium body-font">
-                                      {(() => {
-                                        const [year, month, day] = blockedTime.date.split("-").map(Number)
-                                        const localDate = new Date(year, month - 1, day)
-                                        return localDate.toLocaleDateString("en-US", {
-                                          weekday: "long",
-                                          year: "numeric",
-                                          month: "long",
-                                          day: "numeric",
-                                        })
-                                      })()}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <Clock className="w-4 h-4 text-gray-500" />
-                                    <span className="body-font">
-                                      {blockedTime.is_all_day
-                                        ? "All Day"
-                                        : `${formatTimeToAMPM(blockedTime.start_time)} - ${formatTimeToAMPM(
-                                            blockedTime.end_time,
-                                          )}`}
-                                    </span>
-                                  </div>
-                                </div>
-                                <p className="text-gray-600 body-font">{formatReason(blockedTime.reason)}</p>
-                                <div className="flex items-center gap-2">
-                                  {blockedTime.is_recurring && (
-                                    <Badge variant="secondary" className="text-xs bg-[#E75837] text-white border-[#E75837]">
-                                      Recurring
-                                    </Badge>
-                                  )}
-                                  {employee ? (
-                                    <Badge
-                                      variant="outline"
-                                      className="text-xs"
-                                      style={{
-                                        borderColor: color,
-                                        color: color,
-                                        backgroundColor: `${color}1A`,
-                                      }}
-                                    >
-                                      {employee.name || "Specific Team Member"}
-                                    </Badge>
-                                  ) : (
-                                    <Badge variant="outline" className="text-xs">
-                                      All Team Members
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-                              <Button
-                                onClick={() => removeBlockedTime(blockedTime.blocked_time_id)}
-                                variant="outline"
-                                size="sm"
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
+                    {/* Current & Future Blocked Times List */}
+                    <div className="space-y-4">
+                      {currentAndFuture.length === 0 ? (
+                        <Card className="shadow-sm border rounded-xl">
+                          <CardContent className="text-center py-12">
+                            <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                            <h3 className="text-lg font-semibold text-gray-500 mb-2 header-font">
+                              No Current Blocked Times
+                            </h3>
+                            <p className="text-gray-400 body-font">
+                              Add blocked times to prevent bookings during specific periods
+                            </p>
                           </CardContent>
                         </Card>
-                      )
-                    })
-                  )}
-                </div>
+                      ) : (
+                        currentAndFuture.map((blockedTime) => {
+                          const employee = employees.find((emp) => emp.employee_id === blockedTime.employee_id)
+                          const color = employee ? employeeColorMap.get(employee.employee_id) : "#64748b" // default slate-500
+
+                          return (
+                            <Card
+                              key={blockedTime.blocked_time_id}
+                              className="shadow-sm border rounded-xl overflow-hidden"
+                              style={{ borderLeft: `5px solid ${color}` }}
+                            >
+                              <CardContent className="pt-6">
+                                <div className="flex items-center justify-between">
+                                  <div className="space-y-2">
+                                    <div className="flex items-center gap-4 flex-wrap">
+                                      <div className="flex items-center gap-2">
+                                        <Calendar className="w-4 h-4 text-gray-500" />
+                                        <span className="font-medium body-font">
+                                          {(() => {
+                                            const [year, month, day] = blockedTime.date.split("-").map(Number)
+                                            const localDate = new Date(year, month - 1, day)
+                                            return localDate.toLocaleDateString("en-US", {
+                                              weekday: "long",
+                                              year: "numeric",
+                                              month: "long",
+                                              day: "numeric",
+                                            })
+                                          })()}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <Clock className="w-4 h-4 text-gray-500" />
+                                        <span className="body-font">
+                                          {blockedTime.is_all_day
+                                            ? "All Day"
+                                            : `${formatTimeToAMPM(blockedTime.start_time)} - ${formatTimeToAMPM(
+                                                blockedTime.end_time,
+                                              )}`}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <p className="text-gray-600 body-font">{formatReason(blockedTime.reason)}</p>
+                                    <div className="flex items-center gap-2">
+                                      {blockedTime.is_recurring && (
+                                        <Badge
+                                          variant="secondary"
+                                          className="text-xs bg-[#E75837] text-white border-[#E75837]"
+                                        >
+                                          Recurring
+                                        </Badge>
+                                      )}
+                                      {employee ? (
+                                        <Badge
+                                          variant="outline"
+                                          className="text-xs"
+                                          style={{
+                                            borderColor: color,
+                                            color: color,
+                                            backgroundColor: `${color}1A`,
+                                          }}
+                                        >
+                                          {employee.name || "Specific Team Member"}
+                                        </Badge>
+                                      ) : (
+                                        <Badge variant="outline" className="text-xs">
+                                          All Team Members
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <Button
+                                    onClick={() => removeBlockedTime(blockedTime.blocked_time_id)}
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          )
+                        })
+                      )}
+                    </div>
+                  </TabsContent>
+
+                  {/* Past Blocked Times Tab */}
+                  <TabsContent value="past" className="space-y-6">
+                    <div className="space-y-4">
+                      {past.length === 0 ? (
+                        <Card className="shadow-sm border rounded-xl">
+                          <CardContent className="text-center py-12">
+                            <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                            <h3 className="text-lg font-semibold text-gray-500 mb-2 header-font">
+                              No Past Blocked Times
+                            </h3>
+                            <p className="text-gray-400 body-font">Past blocked times will appear here for reference</p>
+                          </CardContent>
+                        </Card>
+                      ) : (
+                        past.map((blockedTime) => {
+                          const employee = employees.find((emp) => emp.employee_id === blockedTime.employee_id)
+                          const color = employee ? employeeColorMap.get(employee.employee_id) : "#64748b" // default slate-500
+
+                          return (
+                            <Card
+                              key={blockedTime.blocked_time_id}
+                              className="shadow-sm border rounded-xl overflow-hidden opacity-75"
+                              style={{ borderLeft: `5px solid ${color}` }}
+                            >
+                              <CardContent className="pt-6">
+                                <div className="flex items-center justify-between">
+                                  <div className="space-y-2">
+                                    <div className="flex items-center gap-4 flex-wrap">
+                                      <div className="flex items-center gap-2">
+                                        <Calendar className="w-4 h-4 text-gray-500" />
+                                        <span className="font-medium body-font">
+                                          {(() => {
+                                            const [year, month, day] = blockedTime.date.split("-").map(Number)
+                                            const localDate = new Date(year, month - 1, day)
+                                            return localDate.toLocaleDateString("en-US", {
+                                              weekday: "long",
+                                              year: "numeric",
+                                              month: "long",
+                                              day: "numeric",
+                                            })
+                                          })()}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <Clock className="w-4 h-4 text-gray-500" />
+                                        <span className="body-font">
+                                          {blockedTime.is_all_day
+                                            ? "All Day"
+                                            : `${formatTimeToAMPM(blockedTime.start_time)} - ${formatTimeToAMPM(
+                                                blockedTime.end_time,
+                                              )}`}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <p className="text-gray-600 body-font">{formatReason(blockedTime.reason)}</p>
+                                    <div className="flex items-center gap-2">
+                                      {blockedTime.is_recurring && (
+                                        <Badge
+                                          variant="secondary"
+                                          className="text-xs bg-gray-400 text-white border-gray-400"
+                                        >
+                                          Recurring
+                                        </Badge>
+                                      )}
+                                      {employee ? (
+                                        <Badge
+                                          variant="outline"
+                                          className="text-xs"
+                                          style={{
+                                            borderColor: color,
+                                            color: color,
+                                            backgroundColor: `${color}1A`,
+                                          }}
+                                        >
+                                          {employee.name || "Specific Team Member"}
+                                        </Badge>
+                                      ) : (
+                                        <Badge variant="outline" className="text-xs">
+                                          All Team Members
+                                        </Badge>
+                                      )}
+                                      <Badge variant="outline" className="text-xs text-gray-500 border-gray-300">
+                                        Past
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                  <div className="text-gray-400">
+                                    <Calendar className="w-4 h-4" />
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          )
+                        })
+                      )}
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </div>
             </TabsContent>
           </Tabs>
