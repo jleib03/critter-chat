@@ -19,8 +19,8 @@ export interface WebhookCapacityRules {
   max_bookings_per_day: number
   allow_overlapping: boolean
   require_all_employees_for_service: boolean
-  concurrent_overnight_capacity: boolean | null
-  overnight_capacity: number | false
+  overnight_capacity: boolean | null
+  concurrent_overnight_capacity: number | false
 }
 
 export interface WebhookBlockedTime {

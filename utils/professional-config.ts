@@ -318,9 +318,9 @@ export const calculateMultiDayAvailability = (
 
     // 4. Determine capacity based on overnight capacity settings or regular capacity
     let dayCapacity: number
-    if (capacityRules.concurrent_overnight_capacity === true && typeof capacityRules.overnight_capacity === "number") {
+    if (capacityRules.overnight_capacity === true && typeof capacityRules.concurrent_overnight_capacity === "number") {
       // Use overnight capacity for multi-day bookings when enabled
-      dayCapacity = Math.min(employeesAvailableAfterBlocks.length, capacityRules.overnight_capacity)
+      dayCapacity = Math.min(employeesAvailableAfterBlocks.length, capacityRules.concurrent_overnight_capacity)
     } else {
       // Fall back to regular capacity rules
       dayCapacity = Math.min(employeesAvailableAfterBlocks.length, capacityRules.maxConcurrentBookings)
@@ -348,7 +348,7 @@ export const calculateMultiDayAvailability = (
   }
 
   const shouldShowSlotCount =
-    capacityRules.concurrent_overnight_capacity === true && typeof capacityRules.overnight_capacity === "number"
+    capacityRules.overnight_capacity === true && typeof capacityRules.concurrent_overnight_capacity === "number"
 
   return {
     available: true,
