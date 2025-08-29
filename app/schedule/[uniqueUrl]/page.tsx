@@ -508,6 +508,8 @@ export default function SchedulePage() {
             maxBookingsPerDay: parsedData.config.capacity_rules?.max_bookings_per_day || 10,
             allowOverlapping: parsedData.config.capacity_rules?.allow_overlapping || false,
             requireAllEmployeesForService: parsedData.config.capacity_rules?.require_all_employees_for_service || false,
+            overnight_capacity: parsedData.config.capacity_rules?.overnight_capacity || false,
+            concurrent_overnight_capacity: parsedData.config.capacity_rules?.concurrent_overnight_capacity || 0,
           },
           blockedTimes: parsedData.config.blocked_times
             ? parsedData.config.blocked_times.map((bt: any) => ({
