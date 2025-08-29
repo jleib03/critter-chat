@@ -295,6 +295,65 @@ export const calculateMultiDayAvailability = (
     return { available: false, reason: "No active employees available for this period." }
   }
 
+  const isOvernightCapacityEnabled =
+    capacityRules.overnight_capacity === true && typeof capacityRules.concurrent_overnight_capacity === "number"
+
+  if (isOvernightCapacityEnabled) {
+    // For overnight bookings, only check global blocks and overnight capacity
+    for (let d = new Date(startDate); d < endDate; d.setDate(d.getDate() + 1)) {
+      const currentDateStr = d.toISOString().split("T")[0]
+
+      // Check for global all-day blocks only
+      const isDayBlockedGlobally = blockedTimes.some((block) => {
+        const isAllDayBlock = block.isAllDay || (block.startTime === "00:00:00" && block.endTime === "23:59:00")
+        return !block.employeeId && block.date === currentDateStr && isAllDayBlock
+      })
+
+      if (isDayBlockedGlobally) {
+        return { available: false, reason: `The date ${currentDateStr} is blocked for all staff.` }
+      }
+    }
+
+    // Count existing overnight/multi-day bookings that overlap with any day in the requested range
+    let maxConcurrentBookings = 0
+    for (let d = new Date(startDate); d < endDate; d.setDate(d.getDate() + 1)) {
+      const concurrentBookingsOnDay = existingBookings.filter((booking) => {
+        if (!booking.all_day || !booking.start || !booking.end) return false
+        const bookingStart = new Date(booking.start)
+        const bookingEnd = new Date(booking.end)
+        return bookingStart.getTime() <= d.getTime() && bookingEnd.getTime() > d.getTime()
+      })
+      maxConcurrentBookings = Math.max(maxConcurrentBookings, concurrentBookingsOnDay.length)
+    }
+
+    const overnightCapacity = capacityRules.concurrent_overnight_capacity
+    const availableOvernightSlots = overnightCapacity - maxConcurrentBookings
+
+    console.log("[v0] Overnight capacity calculation:", {
+      overnightCapacity,
+      maxConcurrentBookings,
+      availableOvernightSlots,
+    })
+
+    if (availableOvernightSlots <= 0) {
+      return {
+        available: false,
+        reason: `Not enough overnight capacity. All ${overnightCapacity} overnight slots are booked.`,
+      }
+    }
+
+    console.log("[v0] Final overnight availability result:", {
+      available: true,
+      availableSlots: availableOvernightSlots,
+    })
+
+    return {
+      available: true,
+      reason: "The selected dates are available for booking.",
+      availableSlots: availableOvernightSlots,
+    }
+  }
+
   let minAvailableSlots = Number.POSITIVE_INFINITY
 
   for (let d = new Date(startDate); d < endDate; d.setDate(d.getDate() + 1)) {
@@ -334,27 +393,15 @@ export const calculateMultiDayAvailability = (
       return { available: false, reason: `The date ${currentDateStr} is blocked for all staff.` }
     }
 
-    // 4. Determine capacity based on overnight capacity settings or regular capacity
-    let dayCapacity: number
-    if (capacityRules.overnight_capacity === true && typeof capacityRules.concurrent_overnight_capacity === "number") {
-      // Use overnight capacity for multi-day bookings when enabled
-      dayCapacity = Math.min(employeesAvailableAfterBlocks.length, capacityRules.concurrent_overnight_capacity)
-      console.log("[v0] Using overnight capacity:", {
-        date: currentDateStr,
-        employeesAvailable: employeesAvailableAfterBlocks.length,
-        overnightCapacity: capacityRules.concurrent_overnight_capacity,
-        dayCapacity,
-      })
-    } else {
-      // Fall back to regular capacity rules
-      dayCapacity = Math.min(employeesAvailableAfterBlocks.length, capacityRules.maxConcurrentBookings)
-      console.log("[v0] Using regular capacity:", {
-        date: currentDateStr,
-        employeesAvailable: employeesAvailableAfterBlocks.length,
-        maxConcurrentBookings: capacityRules.maxConcurrentBookings,
-        dayCapacity,
-      })
-    }
+    // 4. Use regular capacity rules for non-overnight bookings
+    const dayCapacity = Math.min(employeesAvailableAfterBlocks.length, capacityRules.maxConcurrentBookings)
+
+    console.log("[v0] Using regular capacity:", {
+      date: currentDateStr,
+      employeesAvailable: employeesAvailableAfterBlocks.length,
+      maxConcurrentBookings: capacityRules.maxConcurrentBookings,
+      dayCapacity,
+    })
 
     // 5. Count concurrent multi-day bookings that overlap with the current day.
     const concurrentBookingsOnDay = existingBookings.filter((booking) => {
@@ -383,14 +430,10 @@ export const calculateMultiDayAvailability = (
     minAvailableSlots = Math.min(minAvailableSlots, availableCapacity)
   }
 
-  const shouldShowSlotCount =
-    capacityRules.overnight_capacity === true && typeof capacityRules.concurrent_overnight_capacity === "number"
-
   const finalAvailableSlots = minAvailableSlots === Number.POSITIVE_INFINITY ? 0 : minAvailableSlots
 
   console.log("[v0] Final availability result:", {
     available: true,
-    shouldShowSlotCount,
     finalAvailableSlots,
     minAvailableSlots,
   })
@@ -398,8 +441,5 @@ export const calculateMultiDayAvailability = (
   return {
     available: true,
     reason: "The selected dates are available for booking.",
-    ...(shouldShowSlotCount && {
-      availableSlots: finalAvailableSlots,
-    }),
   }
 }
