@@ -248,10 +248,20 @@ export default function OnboardingForm({
     processedData.pets = data.pets.map((pet) => ({
       ...pet,
       sex: pet.sex?.trim() === "" ? null : pet.sex,
-      birthDate:
-        pet.birthMonth && pet.birthDay && pet.birthYear
-          ? `${pet.birthYear}-${pet.birthMonth.padStart(2, "0")}-${pet.birthDay.padStart(2, "0")}`
-          : null,
+      birthDate: (() => {
+        const month = pet.birthMonth?.trim()
+        const day = pet.birthDay?.trim()
+        const year = pet.birthYear?.trim()
+
+        // If we have at least month and year, create a birthDate
+        if (month && year) {
+          // Use provided day or default to "01" if day is missing/empty
+          const finalDay = day || "01"
+          return `${year}-${month.padStart(2, "0")}-${finalDay.padStart(2, "0")}`
+        }
+
+        return null
+      })(),
       weight: pet.weight?.trim() === "" ? null : pet.weight,
       notes: pet.notes?.trim() === "" ? null : pet.notes,
       spayedNeutered: pet.spayedNeutered?.trim() === "" ? null : pet.spayedNeutered,
@@ -293,6 +303,9 @@ export default function OnboardingForm({
           breed?: string
           age?: string
           sex?: string
+          birthMonth?: string
+          birthDay?: string
+          birthYear?: string
           weight?: string
           spayedNeutered?: string
         }
@@ -306,6 +319,9 @@ export default function OnboardingForm({
           breed?: string
           age?: string
           sex?: string
+          birthMonth?: string
+          birthDay?: string
+          birthYear?: string
           weight?: string
           spayedNeutered?: string
         } = {}
@@ -327,6 +343,21 @@ export default function OnboardingForm({
 
         if (!pet.sex?.trim()) {
           petError.sex = "Sex is required"
+          hasPetErrors = true
+        }
+
+        if (!pet.birthMonth?.trim()) {
+          petError.birthMonth = "Birth month is required"
+          hasPetErrors = true
+        }
+
+        if (!pet.birthDay?.trim()) {
+          petError.birthDay = "Birth day is required"
+          hasPetErrors = true
+        }
+
+        if (!pet.birthYear?.trim()) {
+          petError.birthYear = "Birth year is required"
           hasPetErrors = true
         }
 
@@ -725,12 +756,13 @@ export default function OnboardingForm({
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 header-font">Birth Date</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 header-font">Birth Date*</label>
                   <div className="grid grid-cols-3 gap-2">
                     <select
                       value={pet.birthMonth || ""}
                       onChange={(e) => updatePetData(index, "birthMonth", e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font text-sm"
+                      className={`w-full p-2 border ${formErrors.pets?.[index]?.birthMonth ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font text-sm`}
+                      required
                     >
                       <option value="">Month</option>
                       {Array.from({ length: 12 }, (_, i) => (
@@ -742,7 +774,8 @@ export default function OnboardingForm({
                     <select
                       value={pet.birthDay || ""}
                       onChange={(e) => updatePetData(index, "birthDay", e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font text-sm"
+                      className={`w-full p-2 border ${formErrors.pets?.[index]?.birthDay ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font text-sm`}
+                      required
                     >
                       <option value="">Day</option>
                       {Array.from({ length: 31 }, (_, i) => (
@@ -754,7 +787,8 @@ export default function OnboardingForm({
                     <select
                       value={pet.birthYear || ""}
                       onChange={(e) => updatePetData(index, "birthYear", e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font text-sm"
+                      className={`w-full p-2 border ${formErrors.pets?.[index]?.birthYear ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font text-sm`}
+                      required
                     >
                       <option value="">Year</option>
                       {Array.from({ length: 30 }, (_, i) => {
@@ -767,6 +801,15 @@ export default function OnboardingForm({
                       })}
                     </select>
                   </div>
+                  {formErrors.pets?.[index]?.birthMonth && (
+                    <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].birthMonth}</p>
+                  )}
+                  {formErrors.pets?.[index]?.birthDay && (
+                    <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].birthDay}</p>
+                  )}
+                  {formErrors.pets?.[index]?.birthYear && (
+                    <p className="mt-1 text-xs text-red-500 body-font">{formErrors.pets[index].birthYear}</p>
+                  )}
                 </div>
                 <div>
                   <label
