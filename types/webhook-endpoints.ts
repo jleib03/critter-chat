@@ -5,7 +5,7 @@ const SCHEDULE_SETUP_URL = "https://jleib03.app.n8n.cloud/webhook-test/6ac562d1-
 const CHAT_LANDING_AND_ONBOARDING_URL = "https://jleib03.app.n8n.cloud/webhook/803d260b-1b17-4abf-8079-2d40225c29b0"
 const EXISTING_NEW_CUSTOMER_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
 const NEW_CUSTOMER_ONBOARDING_URL = "https://jleib03.app.n8n.cloud/webhook/551dbfd7-5d7f-4f66-9940-aac9c072ba98"
-const CUSTOMER_HUB_URL = "https://jleib03.app.n8n.cloud/webhook/8d5c231d-305c-4cff-aa25-1e12ca5d55c3"
+const CUSTOMER_HUB_URL = "https://jleib03.app.n8n.cloud/webhook-test/6ac562d1-a0b6-4558-8a78-6e179be01aae"
 
 export const WEBHOOK_ENDPOINTS = {
   // For schedule, booking, and professional config setup
