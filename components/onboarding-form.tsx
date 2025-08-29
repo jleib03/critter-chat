@@ -248,10 +248,20 @@ export default function OnboardingForm({
     processedData.pets = data.pets.map((pet) => ({
       ...pet,
       sex: pet.sex?.trim() === "" ? null : pet.sex,
-      birthDate:
-        pet.birthMonth && pet.birthDay && pet.birthYear
-          ? `${pet.birthYear}-${pet.birthMonth.padStart(2, "0")}-${pet.birthDay.padStart(2, "0")}`
-          : null,
+      birthDate: (() => {
+        const month = pet.birthMonth?.trim()
+        const day = pet.birthDay?.trim()
+        const year = pet.birthYear?.trim()
+
+        // If we have at least month and year, create a birthDate
+        if (month && year) {
+          // Use provided day or default to "01" if day is missing/empty
+          const finalDay = day || "01"
+          return `${year}-${month.padStart(2, "0")}-${finalDay.padStart(2, "0")}`
+        }
+
+        return null
+      })(),
       weight: pet.weight?.trim() === "" ? null : pet.weight,
       notes: pet.notes?.trim() === "" ? null : pet.notes,
       spayedNeutered: pet.spayedNeutered?.trim() === "" ? null : pet.spayedNeutered,
