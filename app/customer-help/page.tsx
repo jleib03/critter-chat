@@ -157,7 +157,7 @@ export default function CustomerHelpPage() {
               Can't find what you're looking for? Our support team is here to help you get the most out of Critter.
             </p>
             <a
-              href="mailto:support@critter.pet"
+              href="https://critter.pet/contact-us/"
               className="inline-block bg-[#E75837] text-white px-8 py-3 rounded-lg font-medium hover:bg-[#d64a2f] transition-colors"
             >
               Contact Support
