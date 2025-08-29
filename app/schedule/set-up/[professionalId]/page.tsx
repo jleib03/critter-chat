@@ -84,7 +84,15 @@ export default function ProfessionalSetupPage() {
   // Configuration state
   const [bookingPreferences, setBookingPreferences] = useState(DEFAULT_BOOKING_PREFERENCES)
   const [employees, setEmployees] = useState<WebhookEmployee[]>([])
-  const [capacityRules, setCapacityRules] = useState<WebhookCapacityRules>(DEFAULT_CAPACITY_RULES)
+  const [capacityRules, setCapacityRules] = useState({
+    max_concurrent_bookings: 1,
+    buffer_time_between_bookings: 15,
+    max_bookings_per_day: 10,
+    allow_overlapping: false,
+    require_all_employees_for_service: false,
+    concurrent_overnight_capacity: null as boolean | null,
+    overnight_capacity: false as number | false,
+  })
   const [blockedTimes, setBlockedTimes] = useState<WebhookBlockedTime[]>([])
   const [lastUpdated, setLastUpdated] = useState<string>("")
 
@@ -1213,6 +1221,54 @@ export default function ProfessionalSetupPage() {
                         }
                       />
                     </div>
+
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div>
+                        <Label htmlFor="concurrentOvernightCapacity" className="body-font font-medium">
+                          Enable Overnight/Multi-day Capacity
+                        </Label>
+                        <p className="text-sm text-gray-500 body-font">
+                          Allow separate capacity limits for overnight services
+                        </p>
+                      </div>
+                      <Switch
+                        id="concurrentOvernightCapacity"
+                        checked={capacityRules.concurrent_overnight_capacity === true}
+                        onCheckedChange={(checked) =>
+                          setCapacityRules((prev) => ({
+                            ...prev,
+                            concurrent_overnight_capacity: checked,
+                            overnight_capacity: checked ? 1 : false,
+                          }))
+                        }
+                      />
+                    </div>
+
+                    {capacityRules.concurrent_overnight_capacity && (
+                      <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <Label htmlFor="overnightCapacity" className="body-font font-medium">
+                          Overnight/Multi-day Capacity Limit
+                        </Label>
+                        <Input
+                          id="overnightCapacity"
+                          type="number"
+                          min="1"
+                          value={
+                            typeof capacityRules.overnight_capacity === "number" ? capacityRules.overnight_capacity : 1
+                          }
+                          onChange={(e) =>
+                            setCapacityRules((prev) => ({
+                              ...prev,
+                              overnight_capacity: Number.parseInt(e.target.value) || 1,
+                            }))
+                          }
+                          className="body-font mt-2 rounded-lg"
+                        />
+                        <p className="text-sm text-gray-600 mt-1 body-font">
+                          Maximum number of overnight/multi-day bookings allowed concurrently
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
