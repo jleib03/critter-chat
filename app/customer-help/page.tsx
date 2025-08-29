@@ -13,34 +13,28 @@ export default function CustomerHelpPage() {
 
   const onboardingSteps = [
     {
-      title: "Step 1: Download the Critter App",
+      title: "Setting Up Your Account",
       description:
-        "Get started by downloading the Critter app from the App Store or Google Play Store. Make sure to use the same email address you used during your initial onboarding process.",
-      videoUrl: "https://www.youtube.com/embed/placeholder1", // Replace with actual video URL
+        "Learn how to get started with Critter by completing the new customer intake process and creating your account. This video covers the difference between the web-based customer hub and the mobile app, and how to properly link them using the same email address.",
+      videoEmbed: `<div style="position: relative; padding-bottom: 64.86486486486486%; height: 0;"><iframe src="https://www.loom.com/embed/f484131c75df496ab126134fd04ee837?sid=679e6a69-7e56-44b6-9422-ba9a5282ac94" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>`,
     },
     {
-      title: "Step 2: Create Your Account",
+      title: "Creating New Bookings and Booking Requests",
       description:
-        "Sign up for your Critter account using the same email address from your onboarding. This will automatically link your account with your customer hub information.",
-      videoUrl: "https://www.youtube.com/embed/placeholder2", // Replace with actual video URL
+        "Discover the two ways to create bookings with your pet professionals: through the online booking experience and directly through the Critter app. Learn about the difference between direct bookings and booking requests, and how to manage your appointments.",
+      videoEmbed: `<div style="position: relative; padding-bottom: 64.86486486486486%; height: 0;"><iframe src="https://www.loom.com/embed/c4b2536f682c42cf97feb0883e58cab4?sid=3d2cc996-8833-4681-9541-87be05276909" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>`,
     },
     {
-      title: "Step 3: Complete Your Profile",
+      title: "Updating Pet Information and Care Plan",
       description:
-        "Add your pet information, preferences, and any special instructions to help your pet care professionals provide the best service.",
-      videoUrl: "https://www.youtube.com/embed/placeholder3", // Replace with actual video URL
+        "Deep dive into managing your pet's profile including general details, health information, medications, and food preferences. Learn how to create comprehensive care plans with feeding schedules, medication instructions, and special care requirements for your pet professionals.",
+      videoEmbed: `<div style="position: relative; padding-bottom: 64.86486486486486%; height: 0;"><iframe src="https://www.loom.com/embed/5a6c9112fd6c4bf9af4fdb867ca177b5?sid=d10a37b9-ad9a-411d-8710-474a1bd3744d" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>`,
     },
     {
-      title: "Step 4: Book Your First Service",
+      title: "Pet Timeline and Paying Invoices",
       description:
-        "Learn how to browse available services, select your preferred professional, and book your first appointment through the app.",
-      videoUrl: "https://www.youtube.com/embed/placeholder4", // Replace with actual video URL
-    },
-    {
-      title: "Step 5: Manage Your Bookings",
-      description:
-        "Discover how to view upcoming appointments, reschedule services, communicate with your pet care professional, and track your service history.",
-      videoUrl: "https://www.youtube.com/embed/placeholder5", // Replace with actual video URL
+        "Explore the timeline feature to see real-time updates and photos from your pet's activities. Learn how to view and pay invoices through the app, manage payment methods, and understand the different invoice statuses and payment options available.",
+      videoEmbed: `<div style="position: relative; padding-bottom: 64.86486486486486%; height: 0;"><iframe src="https://www.loom.com/embed/28b6edd7c39a4816a52eab3b7bdaa2fe?sid=92f3a750-ebba-475e-99c5-76e2d8bff04e" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>`,
     },
   ]
 
@@ -48,42 +42,42 @@ export default function CustomerHelpPage() {
     {
       question: "How do I link my app account with my customer hub?",
       answer:
-        "Simply use the same email address when creating your app account that you used during your initial onboarding process. The system will automatically link your accounts and sync your information.",
+        "Use the same email address when creating your app account that you used during your initial onboarding process. The system will automatically link your accounts and sync your information. It's crucial to use the exact same email for both the web-based customer hub and the mobile app.",
     },
     {
-      question: "What if I can't remember the email I used for onboarding?",
+      question: "What's the difference between the customer hub and the Critter app?",
       answer:
-        "Contact our support team and we'll help you identify the correct email address associated with your customer hub account.",
+        "The customer hub is a web-based portal where you can view appointments, invoices, and basic pet information. The Critter app provides full functionality including detailed pet care plans, real-time timeline updates, in-app payments, and booking requests. Both require the same email address to stay linked.",
     },
     {
-      question: "Can I change my email address after linking accounts?",
+      question: "Why do I need to download the app if I have the customer hub?",
       answer:
-        "Yes, you can update your email address in the app settings. However, please contact support to ensure your customer hub remains properly linked.",
+        "While the customer hub provides basic information viewing, the app is required for updating detailed pet care information, creating comprehensive care plans, viewing real-time timeline updates with photos, and paying invoices. Many features are app-only.",
     },
     {
-      question: "Why isn't my customer hub information showing in the app?",
+      question: "Can I book appointments through both the web and the app?",
       answer:
-        "Make sure you're using the exact same email address for both accounts. If the issue persists, try logging out and back in, or contact our support team.",
+        "Yes, but the methods differ. The web booking allows for direct bookings (if your professional enables it), while the app only allows booking requests that require professional confirmation. Your professional will specify which method they prefer.",
     },
     {
-      question: "How do I book my first service?",
+      question: "What if I can't see my pet information after creating an account?",
       answer:
-        "After setting up your account and profile, navigate to the 'Book Service' section, select your desired service type, choose a professional, and pick an available time slot.",
+        "Make sure you're using the exact same email address for both your customer hub and app account. If you completed intake online first, that information should appear in the app once you sign up with the same email. Contact support if the linking doesn't work automatically.",
     },
     {
-      question: "Can I reschedule or cancel appointments through the app?",
+      question: "How do I update my pet's care plan and detailed information?",
       answer:
-        "Yes, you can reschedule or cancel appointments directly through the app up to 24 hours before your scheduled service time.",
+        "Detailed pet information including care plans, medication schedules, feeding instructions, and health records can only be updated through the Critter mobile app. Navigate to your pet's profile in the app to access all these features.",
     },
     {
-      question: "How do I communicate with my pet care professional?",
+      question: "Where can I see real-time updates during my pet's service?",
       answer:
-        "The app includes a built-in messaging feature that allows you to communicate directly with your assigned professional before, during, and after services.",
+        "The timeline feature in the Critter app provides real-time updates, photos, and after-action reports from your pet professionals. You can filter by specific pets and view both past activities and upcoming scheduled services.",
     },
     {
-      question: "What payment methods are accepted?",
+      question: "How do I pay invoices and what payment methods are accepted?",
       answer:
-        "We accept all major credit cards, debit cards, and digital payment methods like Apple Pay and Google Pay through the app.",
+        "Invoice payment is handled through the Critter app only. Navigate to the menu tab and select invoices to view and pay outstanding bills. We accept major credit cards and the payment is processed securely within the app.",
     },
   ]
 
@@ -116,16 +110,8 @@ export default function CustomerHelpPage() {
                     <h3 className="text-xl font-semibold text-[#333] mb-3">{step.title}</h3>
                     <p className="text-gray-600 leading-relaxed">{step.description}</p>
                   </div>
-                  <div className="aspect-video bg-gray-200 rounded-lg flex items-center justify-center">
-                    {/* Replace with actual embedded video */}
-                    <iframe
-                      src={step.videoUrl}
-                      title={step.title}
-                      className="w-full h-full rounded-lg"
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
+                  <div className="aspect-video bg-gray-200 rounded-lg overflow-hidden">
+                    <div dangerouslySetInnerHTML={{ __html: step.videoEmbed }} />
                   </div>
                 </div>
               </div>
