@@ -258,6 +258,47 @@ export const saveProfessionalConfig = (config: ProfessionalConfig): boolean => {
   }
 }
 
+const isOvernightBooking = (booking: BookingData): boolean => {
+  // Method 1: Check duration unit and number
+  if (booking.duration_unit && booking.duration_number) {
+    const unit = booking.duration_unit.toLowerCase()
+    const number = booking.duration_number
+
+    // Days: 1+ days is overnight
+    if (unit.includes("day") && number >= 1) {
+      return true
+    }
+
+    // Hours: 24+ hours is overnight
+    if (unit.includes("hour") && number >= 24) {
+      return true
+    }
+
+    // Minutes: 1440+ minutes (24 hours) is overnight
+    if (unit.includes("minute") && number >= 1440) {
+      return true
+    }
+  }
+
+  // Method 2: Check if booking spans more than 24 hours by comparing start/end times
+  if (booking.start && booking.end) {
+    const startTime = new Date(booking.start).getTime()
+    const endTime = new Date(booking.end).getTime()
+    const durationMs = endTime - startTime
+    const twentyFourHoursMs = 24 * 60 * 60 * 1000
+
+    if (durationMs >= twentyFourHoursMs) {
+      return true
+    }
+  }
+
+  return false
+}
+
+const dateRangesOverlap = (start1: Date, end1: Date, start2: Date, end2: Date): boolean => {
+  return start1.getTime() < end2.getTime() && end1.getTime() > start2.getTime()
+}
+
 // Corrected function for multi-day availability
 export const calculateMultiDayAvailability = (
   config: ProfessionalConfig | null,
@@ -314,24 +355,36 @@ export const calculateMultiDayAvailability = (
       }
     }
 
-    // Count existing overnight/multi-day bookings that overlap with any day in the requested range
-    let maxConcurrentBookings = 0
-    for (let d = new Date(startDate); d < endDate; d.setDate(d.getDate() + 1)) {
-      const concurrentBookingsOnDay = existingBookings.filter((booking) => {
-        if (!booking.all_day || !booking.start || !booking.end) return false
-        const bookingStart = new Date(booking.start)
-        const bookingEnd = new Date(booking.end)
-        return bookingStart.getTime() <= d.getTime() && bookingEnd.getTime() > d.getTime()
-      })
-      maxConcurrentBookings = Math.max(maxConcurrentBookings, concurrentBookingsOnDay.length)
-    }
+    const overlappingOvernightBookings = existingBookings.filter((booking) => {
+      // First check if this is an overnight booking
+      if (!isOvernightBooking(booking)) {
+        return false
+      }
+
+      // Then check if it overlaps with our requested date range
+      if (!booking.start || !booking.end) {
+        return false
+      }
+
+      const bookingStart = new Date(booking.start)
+      const bookingEnd = new Date(booking.end)
+
+      return dateRangesOverlap(startDate, endDate, bookingStart, bookingEnd)
+    })
+
+    console.log("[v0] Found overlapping overnight bookings:", {
+      totalExistingBookings: existingBookings.length,
+      overnightBookings: existingBookings.filter(isOvernightBooking).length,
+      overlappingOvernightBookings: overlappingOvernightBookings.length,
+      overlappingBookingIds: overlappingOvernightBookings.map((b) => b.booking_id),
+    })
 
     const overnightCapacity = capacityRules.concurrent_overnight_capacity
-    const availableOvernightSlots = overnightCapacity - maxConcurrentBookings
+    const availableOvernightSlots = overnightCapacity - overlappingOvernightBookings.length
 
     console.log("[v0] Overnight capacity calculation:", {
       overnightCapacity,
-      maxConcurrentBookings,
+      overlappingOvernightBookings: overlappingOvernightBookings.length,
       availableOvernightSlots,
     })
 
