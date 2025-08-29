@@ -280,9 +280,13 @@ export const calculateMultiDayAvailability = (
   const { employees, capacityRules, blockedTimes } = config
   const activeEmployees = employees.filter((emp) => emp.isActive)
 
-  console.log("[v0] Overnight capacity settings:", {
-    overnight_capacity: capacityRules.overnight_capacity,
-    concurrent_overnight_capacity: capacityRules.concurrent_overnight_capacity,
+  console.log("[v0] Detailed overnight capacity analysis:", {
+    overnight_capacity_value: capacityRules.overnight_capacity,
+    overnight_capacity_type: typeof capacityRules.overnight_capacity,
+    overnight_capacity_strict_true: capacityRules.overnight_capacity === true,
+    concurrent_overnight_capacity_value: capacityRules.concurrent_overnight_capacity,
+    concurrent_overnight_capacity_type: typeof capacityRules.concurrent_overnight_capacity,
+    concurrent_overnight_capacity_is_number: typeof capacityRules.concurrent_overnight_capacity === "number",
     shouldShowSlotCount:
       capacityRules.overnight_capacity === true && typeof capacityRules.concurrent_overnight_capacity === "number",
   })
