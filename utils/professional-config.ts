@@ -265,7 +265,7 @@ export const calculateMultiDayAvailability = (
   startDate: Date,
   endDate: Date,
   service: Service,
-): { available: boolean; reason: string } => {
+): { available: boolean; reason: string; availableSlots?: number } => {
   if (!config) {
     return { available: false, reason: "Professional configuration not available." }
   }
@@ -276,6 +276,8 @@ export const calculateMultiDayAvailability = (
   if (activeEmployees.length === 0) {
     return { available: false, reason: "No active employees available for this period." }
   }
+
+  let minAvailableSlots = Number.POSITIVE_INFINITY
 
   for (let d = new Date(startDate); d < endDate; d.setDate(d.getDate() + 1)) {
     const currentDateStr = d.toISOString().split("T")[0]
@@ -341,7 +343,18 @@ export const calculateMultiDayAvailability = (
         reason: `Not enough capacity on ${currentDateStr}. All ${dayCapacity} spaces are booked.`,
       }
     }
+
+    minAvailableSlots = Math.min(minAvailableSlots, availableCapacity)
   }
 
-  return { available: true, reason: "The selected dates are available for booking." }
+  const shouldShowSlotCount =
+    capacityRules.concurrent_overnight_capacity === true && typeof capacityRules.overnight_capacity === "number"
+
+  return {
+    available: true,
+    reason: "The selected dates are available for booking.",
+    ...(shouldShowSlotCount && {
+      availableSlots: minAvailableSlots === Number.POSITIVE_INFINITY ? 0 : minAvailableSlots,
+    }),
+  }
 }
