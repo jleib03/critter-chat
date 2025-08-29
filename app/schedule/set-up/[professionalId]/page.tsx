@@ -48,6 +48,8 @@ const DEFAULT_CAPACITY_RULES: WebhookCapacityRules = {
   max_bookings_per_day: 8,
   allow_overlapping: false,
   require_all_employees_for_service: false,
+  concurrent_overnight_capacity: null,
+  overnight_capacity: false,
 }
 
 const DEFAULT_BOOKING_PREFERENCES = {
@@ -412,9 +414,20 @@ export default function ProfessionalSetupPage() {
           }
 
           // Capacity Rules
+          const rawCapacityRules = config.capacity_rules ?? {}
           capacityRulesLocal = {
             ...DEFAULT_CAPACITY_RULES,
-            ...(config.capacity_rules ?? {}),
+            ...rawCapacityRules,
+            // Convert concurrent_overnight_capacity from number to boolean
+            concurrent_overnight_capacity: rawCapacityRules.concurrent_overnight_capacity
+              ? Boolean(rawCapacityRules.concurrent_overnight_capacity)
+              : null,
+            // Convert overnight_capacity - use the number value if concurrent_overnight_capacity is a number, otherwise false
+            overnight_capacity:
+              rawCapacityRules.concurrent_overnight_capacity &&
+              typeof rawCapacityRules.concurrent_overnight_capacity === "number"
+                ? rawCapacityRules.concurrent_overnight_capacity
+                : false,
           }
 
           // Blocked Times
@@ -1375,18 +1388,14 @@ export default function ProfessionalSetupPage() {
                             <div className="flex items-center space-x-2">
                               <Switch
                                 checked={newBlockedTime.is_all_day}
-                                onCheckedChange={(checked) =>
-                                  setNewBlockedTime({ ...newBlockedTime, is_all_day: checked })
-                                }
+                                onChange={(checked) => setNewBlockedTime({ ...newBlockedTime, is_all_day: checked })}
                               />
                               <Label className="body-font">All Day</Label>
                             </div>
                             <div className="flex items-center space-x-2">
                               <Switch
                                 checked={newBlockedTime.is_recurring}
-                                onCheckedChange={(checked) =>
-                                  setNewBlockedTime({ ...newBlockedTime, is_recurring: checked })
-                                }
+                                onChange={(checked) => setNewBlockedTime({ ...newBlockedTime, is_recurring: checked })}
                               />
                               <Label className="body-font">Recurring</Label>
                             </div>
