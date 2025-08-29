@@ -57,7 +57,7 @@ export default function CustomerHelpPage() {
     {
       question: "Can I book appointments through both the web and the app?",
       answer:
-        "Yes, but the methods differ. The web booking allows for direct bookings (if your professional enables it), while the app only allows booking requests that require professional confirmation. Your professional will specify which method they prefer.",
+        "Yes, but the methods might differ based on your professional. The web booking allows for direct bookings (if your professional enables it), while the app will support booking requests that require professional confirmation. Your professional will specify which method they prefer.",
     },
     {
       question: "What if I can't see my pet information after creating an account?",
@@ -91,6 +91,7 @@ export default function CustomerHelpPage() {
           <h1 className="text-4xl font-bold text-[#333] mb-4">Customer Help & FAQs</h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Get started with your Critter account and find answers to common questions about using our platform.
+            Remember to use the same email address you used during your initial onboarding process.
           </p>
         </div>
 
