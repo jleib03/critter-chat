@@ -1,4 +1,5 @@
 // Centralized webhook endpoint configuration
+// Cache buster: v2.0.1 - Updated to production webhook URLs
 
 // Using variables to make future updates easier
 const SCHEDULE_SETUP_URL = "https://jleib03.app.n8n.cloud/webhook/6ac562d1-a0b6-4558-8a78-6e179be01aae"
@@ -25,6 +26,11 @@ export type WebhookEndpointKey = keyof typeof WEBHOOK_ENDPOINTS
 // Webhook endpoint getter with validation
 export function getWebhookEndpoint(endpoint: WebhookEndpointKey): string {
   const url = WEBHOOK_ENDPOINTS[endpoint]
+
+  console.log(`[v0] Cache Debug - Loading webhook config v2.0.1`)
+  console.log(`[v0] Requested endpoint: ${endpoint}`)
+  console.log(`[v0] Raw URL from config: ${url}`)
+  console.log(`[v0] Contains test path: ${url?.includes("/webhook-test/")}`)
 
   if (!url) {
     throw new Error(`Webhook endpoint ${endpoint} is not configured`)
