@@ -122,7 +122,8 @@ export function BookingConfirmation({
               <div className="flex justify-between text-sm mt-4">
                 <span className="text-gray-600">Recurring:</span>
                 <span className="font-medium text-blue-600">
-                  Every {recurringConfig.daysOfWeek?.join(", ")} until{" "}
+                  Every {recurringConfig.frequency} {recurringConfig.unit}
+                  {recurringConfig.frequency > 1 ? "s" : ""} on {recurringConfig.daysOfWeek?.join(", ")} until{" "}
                   {new Date(recurringConfig.endDate).toLocaleDateString("en-US", {
                     month: "long",
                     day: "numeric",
