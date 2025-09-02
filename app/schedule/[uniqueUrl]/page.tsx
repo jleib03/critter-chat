@@ -350,6 +350,12 @@ export default function SchedulePage() {
       const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG")
       logWebhookUsage("PROFESSIONAL_CONFIG", "validate_email")
 
+      console.log(
+        "[v0] Email verification debug - Expected production URL should contain '/webhook/' not '/webhook-test/'",
+      )
+      console.log("[v0] Current webhook URL:", webhookUrl)
+      console.log("[v0] URL contains test path:", webhookUrl.includes("/webhook-test/"))
+
       const requestPayload = {
         action: "validate_email",
         uniqueUrl: uniqueUrl,

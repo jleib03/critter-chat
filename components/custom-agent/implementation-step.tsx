@@ -1,6 +1,7 @@
 "use client"
 import { useState } from "react"
 import { ArrowRight, ArrowLeft, Copy, Check, Code, Palette, MessageSquare, Settings } from "lucide-react"
+import { getWebhookEndpoint } from "@/types/webhook-endpoints"
 
 type ImplementationStepProps = {
   professionalId: string
@@ -69,7 +70,7 @@ export default function ImplementationStep({
   const generateEmbedCode = (platform: string) => {
     const config = {
       professionalId: professionalId,
-      webhookUrl: "https://jleib03.app.n8n.cloud/webhook-test/803d260b-1b17-4abf-8079-2d40225c29b0",
+      webhookUrl: getWebhookEndpoint("CHAT_CONFIG"),
       chatName: widgetConfig.chatName,
       welcomeMessage: widgetConfig.chatWelcomeMessage,
       primaryColor: widgetConfig.primaryColor,
