@@ -35,6 +35,9 @@ const FREQUENCY_OPTIONS = [
 
 export function BookingTypeSelection({ selectedServices, onBookingTypeSelect, onBack }: BookingTypeSelectionProps) {
   const [selectedType, setSelectedType] = useState<BookingType | null>(null)
+  const [isCustomFrequency, setIsCustomFrequency] = useState(false)
+  const [customFrequencyValue, setCustomFrequencyValue] = useState("")
+
   const [recurringConfig, setRecurringConfig] = useState<RecurringConfig>({
     frequency: 1,
     unit: "week",
@@ -105,10 +108,32 @@ export function BookingTypeSelection({ selectedServices, onBookingTypeSelect, on
   }
 
   const handleFrequencyChange = (frequency: number) => {
+    setIsCustomFrequency(false)
+    setCustomFrequencyValue("")
     setRecurringConfig((prev) => ({
       ...prev,
       frequency,
     }))
+  }
+
+  const handleCustomFrequencySelect = () => {
+    setIsCustomFrequency(true)
+    const customValue = customFrequencyValue ? Number.parseInt(customFrequencyValue) : 5
+    setRecurringConfig((prev) => ({
+      ...prev,
+      frequency: customValue,
+    }))
+  }
+
+  const handleCustomFrequencyChange = (value: string) => {
+    setCustomFrequencyValue(value)
+    const numValue = Number.parseInt(value)
+    if (!isNaN(numValue) && numValue > 0) {
+      setRecurringConfig((prev) => ({
+        ...prev,
+        frequency: numValue,
+      }))
+    }
   }
 
   const getMinEndDate = () => {
@@ -119,6 +144,9 @@ export function BookingTypeSelection({ selectedServices, onBookingTypeSelect, on
   }
 
   const getFrequencyLabel = () => {
+    if (isCustomFrequency) {
+      return `every ${recurringConfig.frequency} weeks`
+    }
     const option = FREQUENCY_OPTIONS.find((opt) => opt.value === recurringConfig.frequency)
     return option ? option.label.toLowerCase() : `every ${recurringConfig.frequency} weeks`
   }
@@ -218,7 +246,7 @@ export function BookingTypeSelection({ selectedServices, onBookingTypeSelect, on
                       type="button"
                       onClick={() => handleFrequencyChange(option.value)}
                       className={`p-3 text-sm rounded-lg border transition-all body-font text-left ${
-                        recurringConfig.frequency === option.value
+                        !isCustomFrequency && recurringConfig.frequency === option.value
                           ? "bg-[#E75837] text-white border-[#E75837]"
                           : "bg-white text-gray-700 border-gray-300 hover:border-[#E75837] hover:bg-[#fff8f6]"
                       }`}
@@ -226,7 +254,33 @@ export function BookingTypeSelection({ selectedServices, onBookingTypeSelect, on
                       {option.label}
                     </button>
                   ))}
+                  <button
+                    type="button"
+                    onClick={handleCustomFrequencySelect}
+                    className={`p-3 text-sm rounded-lg border transition-all body-font text-left ${
+                      isCustomFrequency
+                        ? "bg-[#E75837] text-white border-[#E75837]"
+                        : "bg-white text-gray-700 border-gray-300 hover:border-[#E75837] hover:bg-[#fff8f6]"
+                    }`}
+                  >
+                    Custom
+                  </button>
                 </div>
+                {isCustomFrequency && (
+                  <div className="mt-3 flex items-center space-x-2">
+                    <span className="text-sm text-gray-700 body-font">Every</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="52"
+                      value={customFrequencyValue}
+                      onChange={(e) => handleCustomFrequencyChange(e.target.value)}
+                      placeholder="5"
+                      className="w-20 p-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font text-center"
+                    />
+                    <span className="text-sm text-gray-700 body-font">weeks</span>
+                  </div>
+                )}
                 <p className="text-xs text-gray-500 mt-2 body-font">
                   Choose how frequently your appointments should repeat
                 </p>
