@@ -9,8 +9,11 @@ import type { Service } from "@/types/schedule"
 export type BookingType = "one-time" | "recurring" | "multi-day"
 
 export type RecurringConfig = {
-  daysOfWeek: string[]
+  frequency: number
+  unit: "day" | "week" | "month"
   endDate: string
+  totalAppointments: number
+  daysOfWeek: string[]
   selectedDays: string[]
   originalEndDate: string
 }
@@ -23,11 +26,21 @@ type BookingTypeSelectionProps = {
 
 const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
+const FREQUENCY_OPTIONS = [
+  { value: 1, label: "Every week" },
+  { value: 2, label: "Every 2 weeks" },
+  { value: 3, label: "Every 3 weeks" },
+  { value: 4, label: "Every 4 weeks" },
+]
+
 export function BookingTypeSelection({ selectedServices, onBookingTypeSelect, onBack }: BookingTypeSelectionProps) {
   const [selectedType, setSelectedType] = useState<BookingType | null>(null)
   const [recurringConfig, setRecurringConfig] = useState<RecurringConfig>({
-    daysOfWeek: [],
+    frequency: 1,
+    unit: "week",
     endDate: "",
+    totalAppointments: 0,
+    daysOfWeek: [],
     selectedDays: [],
     originalEndDate: "",
   })
@@ -91,11 +104,23 @@ export function BookingTypeSelection({ selectedServices, onBookingTypeSelect, on
     }))
   }
 
+  const handleFrequencyChange = (frequency: number) => {
+    setRecurringConfig((prev) => ({
+      ...prev,
+      frequency,
+    }))
+  }
+
   const getMinEndDate = () => {
     const today = new Date()
     const minDate = new Date(today)
     minDate.setDate(today.getDate() + 7)
     return minDate.toISOString().split("T")[0]
+  }
+
+  const getFrequencyLabel = () => {
+    const option = FREQUENCY_OPTIONS.find((opt) => opt.value === recurringConfig.frequency)
+    return option ? option.label.toLowerCase() : `every ${recurringConfig.frequency} weeks`
   }
 
   return (
@@ -157,7 +182,9 @@ export function BookingTypeSelection({ selectedServices, onBookingTypeSelect, on
               </div>
               <div className="flex-1">
                 <h3 className="text-lg font-semibold mb-2 header-font">Recurring Service</h3>
-                <p className="text-gray-600 body-font">Schedule regular weekly appointments for {serviceNames}.</p>
+                <p className="text-gray-600 body-font">
+                  Schedule regular appointments for {serviceNames} with custom frequency options.
+                </p>
                 <div className="mt-3 flex items-center text-sm text-gray-500">
                   <CalendarDays className="w-4 h-4 mr-1" />
                   Perfect for ongoing pet care needs
@@ -182,6 +209,31 @@ export function BookingTypeSelection({ selectedServices, onBookingTypeSelect, on
             <div className="grid grid-cols-1 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3 header-font">
+                  How often should appointments repeat?*
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {FREQUENCY_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => handleFrequencyChange(option.value)}
+                      className={`p-3 text-sm rounded-lg border transition-all body-font text-left ${
+                        recurringConfig.frequency === option.value
+                          ? "bg-[#E75837] text-white border-[#E75837]"
+                          : "bg-white text-gray-700 border-gray-300 hover:border-[#E75837] hover:bg-[#fff8f6]"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-2 body-font">
+                  Choose how frequently your appointments should repeat
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3 header-font">
                   Select days of the week*
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -201,7 +253,7 @@ export function BookingTypeSelection({ selectedServices, onBookingTypeSelect, on
                   ))}
                 </div>
                 <p className="text-xs text-gray-500 mt-2 body-font">
-                  Select one or more days for your weekly recurring appointments
+                  Select one or more days for your recurring appointments
                 </p>
               </div>
 
@@ -230,7 +282,7 @@ export function BookingTypeSelection({ selectedServices, onBookingTypeSelect, on
               <div className="bg-gray-50 rounded-lg p-4">
                 <h4 className="text-sm font-medium text-gray-700 mb-2 header-font">Schedule Preview</h4>
                 <p className="text-sm text-gray-600 body-font">
-                  Appointments will repeat every{" "}
+                  Appointments will repeat <span className="font-medium">{getFrequencyLabel()}</span> on{" "}
                   <span className="font-medium">
                     {recurringConfig.daysOfWeek.length === 1
                       ? recurringConfig.daysOfWeek[0]
