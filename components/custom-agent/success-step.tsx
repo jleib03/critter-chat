@@ -2,6 +2,7 @@
 import { useState } from "react"
 import { Home, CheckCircle, Copy, Check, Code } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { getWebhookEndpoint } from "@/types/webhook-endpoints"
 
 type SuccessStepProps = {
   professionalName: string
@@ -31,7 +32,7 @@ export default function SuccessStep({ professionalName, professionalId, agentCon
   const generateEmbedCode = (platform: string) => {
     const config = {
       professionalId: professionalId,
-      webhookUrl: "https://jleib03.app.n8n.cloud/webhook-test/803d260b-1b17-4abf-8079-2d40225c29b0",
+      webhookUrl: getWebhookEndpoint("CHAT_CONFIG"),
       chatName: agentConfig.chatName,
       welcomeMessage: agentConfig.chatWelcomeMessage,
       primaryColor: agentConfig.widgetConfig?.primaryColor || "#94ABD6",
@@ -39,7 +40,7 @@ export default function SuccessStep({ professionalName, professionalId, agentCon
       size: agentConfig.widgetConfig?.size || "medium",
     }
 
-    const embedCode = `<!-- Critter Support Widget -->
+    const embedCode = ` Critter Support Widget 
 <div id="critter-support-widget"></div>
 <script>
 (function() {
@@ -257,16 +258,16 @@ export default function SuccessStep({ professionalName, professionalId, agentCon
 
     switch (platform) {
       case "squarespace":
-        return `<!-- Add this code to your Squarespace site in Code Injection or Custom HTML Block -->
+        return ` Add this code to your Squarespace site in Code Injection or Custom HTML Block 
 ${embedCode}`
       case "wordpress":
-        return `<!-- Add this code to your WordPress site using a Custom HTML block or in your theme's footer.php -->
+        return ` Add this code to your WordPress site using a Custom HTML block or in your theme's footer.php 
 ${embedCode}`
       case "wix":
-        return `<!-- Add this code to your Wix site using the Custom Code (HTML iframe) element -->
+        return ` Add this code to your Wix site using the Custom Code (HTML iframe) element 
 ${embedCode}`
       case "custom":
-        return `<!-- Add this code to your website's HTML, ideally just before the closing </body> tag -->
+        return ` Add this code to your website's HTML, ideally just before the closing </body> tag 
 ${embedCode}`
       default:
         return embedCode

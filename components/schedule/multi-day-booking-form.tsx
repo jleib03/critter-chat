@@ -8,7 +8,10 @@ import type { Service } from "@/types/schedule"
 
 interface MultiDayBookingFormProps {
   selectedService: Service
-  onAvailabilityCheck: (start: Date, end: Date) => Promise<{ available: boolean; reason: string }>
+  onAvailabilityCheck: (
+    start: Date,
+    end: Date,
+  ) => Promise<{ available: boolean; reason: string; availableSlots?: number }>
   onBookingConfirm: (start: Date, end: Date) => void
   onBack: () => void
 }
@@ -27,6 +30,7 @@ export function MultiDayBookingForm({
     checked: boolean
     available: boolean
     reason: string
+    availableSlots?: number
   } | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -178,6 +182,12 @@ export function MultiDayBookingForm({
             <div>
               <p className={`font-semibold ${availability.available ? "text-green-800" : "text-red-800"}`}>
                 {availability.available ? "Dates are available!" : "Dates are not available"}
+                {availability.available && availability.availableSlots !== undefined && (
+                  <span className="ml-2 text-sm font-normal">
+                    ({availability.availableSlots} overnight {availability.availableSlots === 1 ? "slot" : "slots"}{" "}
+                    available)
+                  </span>
+                )}
               </p>
               <p className={`text-sm ${availability.available ? "text-green-700" : "text-red-700"}`}>
                 {availability.reason}

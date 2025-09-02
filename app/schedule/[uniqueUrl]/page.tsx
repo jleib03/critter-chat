@@ -350,6 +350,12 @@ export default function SchedulePage() {
       const webhookUrl = getWebhookEndpoint("PROFESSIONAL_CONFIG")
       logWebhookUsage("PROFESSIONAL_CONFIG", "validate_email")
 
+      console.log(
+        "[v0] Email verification debug - Expected production URL should contain '/webhook/' not '/webhook-test/'",
+      )
+      console.log("[v0] Current webhook URL:", webhookUrl)
+      console.log("[v0] URL contains test path:", webhookUrl.includes("/webhook-test/"))
+
       const requestPayload = {
         action: "validate_email",
         uniqueUrl: uniqueUrl,
@@ -508,6 +514,8 @@ export default function SchedulePage() {
             maxBookingsPerDay: parsedData.config.capacity_rules?.max_bookings_per_day || 10,
             allowOverlapping: parsedData.config.capacity_rules?.allow_overlapping || false,
             requireAllEmployeesForService: parsedData.config.capacity_rules?.require_all_employees_for_service || false,
+            overnight_capacity: parsedData.config.capacity_rules?.overnight_capacity || false,
+            concurrent_overnight_capacity: parsedData.config.capacity_rules?.concurrent_overnight_capacity || 0,
           },
           blockedTimes: parsedData.config.blocked_times
             ? parsedData.config.blocked_times.map((bt: any) => ({
