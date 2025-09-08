@@ -48,6 +48,12 @@ export function WeeklyCalendar({
     return monday
   })
 
+  const [currentMobileDayIndex, setCurrentMobileDayIndex] = useState(() => {
+    const today = new Date()
+    const dayOfWeek = today.getDay()
+    return dayOfWeek === 0 ? 6 : dayOfWeek - 1 // Convert to Monday=0 index
+  })
+
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set())
 
   const getWeekDates = (startDate: Date) => {
@@ -69,20 +75,24 @@ export function WeeklyCalendar({
     setExpandedDays(new Set())
   }
 
-  const toggleDayExpansion = (dateStr: string) => {
-    setExpandedDays((prev) => {
-      const newSet = new Set(prev)
-      if (newSet.has(dateStr)) {
-        newSet.delete(dateStr)
+  const navigateMobileDay = (direction: "prev" | "next") => {
+    if (direction === "next") {
+      if (currentMobileDayIndex < 6) {
+        setCurrentMobileDayIndex((prev) => prev + 1)
       } else {
-        newSet.add(dateStr)
+        // Move to next week, first day
+        navigateWeek("next")
+        setCurrentMobileDayIndex(0)
       }
-      return newSet
-    })
-  }
-
-  const formatDate = (date: Date) => {
-    return date.toISOString().split("T")[0]
+    } else {
+      if (currentMobileDayIndex > 0) {
+        setCurrentMobileDayIndex((prev) => prev - 1)
+      } else {
+        // Move to previous week, last day
+        navigateWeek("prev")
+        setCurrentMobileDayIndex(6)
+      }
+    }
   }
 
   const getDayName = (date: Date) => {
@@ -218,6 +228,22 @@ export function WeeklyCalendar({
   const isMultiSelected = (slot: SelectedTimeSlot) =>
     selectedTimeSlotsMulti?.some((s) => s.date === slot.date && s.startTime === slot.startTime)
 
+  const formatDate = (date: Date) => {
+    return date.toISOString().split("T")[0]
+  }
+
+  const toggleDayExpansion = (dateStr: string) => {
+    setExpandedDays((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(dateStr)) {
+        newSet.delete(dateStr)
+      } else {
+        newSet.add(dateStr)
+      }
+      return newSet
+    })
+  }
+
   if (!selectedServices || selectedServices.length === 0) {
     return (
       <div className="text-center py-16">
@@ -243,7 +269,7 @@ export function WeeklyCalendar({
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="hidden md:flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => navigateWeek("prev")}>
             <ChevronLeft className="w-4 h-4" />
           </Button>
@@ -256,8 +282,31 @@ export function WeeklyCalendar({
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-4">
-        {weekDates.map((date) => {
+      <div className="md:hidden flex items-center justify-between bg-gray-50 rounded-lg p-3">
+        <Button variant="outline" size="sm" onClick={() => navigateMobileDay("prev")}>
+          <ChevronLeft className="w-4 h-4" />
+        </Button>
+        <div className="text-center">
+          <div className="text-lg font-bold text-gray-900 header-font">
+            {weekDates[currentMobileDayIndex]?.toLocaleDateString("en-US", {
+              weekday: "long",
+              month: "short",
+              day: "numeric",
+            })}
+          </div>
+          <div className="text-xs text-gray-500 body-font">Swipe or use arrows to navigate days</div>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => navigateMobileDay("next")}>
+          <ChevronRight className="w-4 h-4" />
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+        {weekDates.map((date, index) => {
+          if (window.innerWidth < 768 && index !== currentMobileDayIndex) {
+            return null
+          }
+
           const dayName = getDayName(date)
           const isToday = formatDate(date) === formatDate(new Date())
           const isPast = date < new Date(new Date().setHours(0, 0, 0, 0))
@@ -272,11 +321,14 @@ export function WeeklyCalendar({
             <Card key={dateStr} className={`${isToday ? "ring-2 ring-[#E75837]" : ""} h-fit`}>
               <CardHeader className="pb-3 text-center">
                 <CardTitle className="space-y-1">
-                  <div className={`text-sm font-semibold header-font ${isToday ? "text-[#E75837]" : "text-gray-900"}`}>
-                    {dayName}
+                  <div
+                    className={`text-sm md:text-sm font-semibold header-font ${isToday ? "text-[#E75837]" : "text-gray-900"}`}
+                  >
+                    <span className="md:hidden">{dayName}</span>
+                    <span className="hidden md:inline">{dayName}</span>
                   </div>
-                  <div className="text-2xl font-bold text-gray-900">{date.getDate()}</div>
-                  <div className="text-xs text-gray-500 font-normal">
+                  <div className="text-3xl md:text-2xl font-bold text-gray-900">{date.getDate()}</div>
+                  <div className="text-sm md:text-xs text-gray-500 font-normal">
                     {date.toLocaleDateString("en-US", { month: "short" })}
                   </div>
                 </CardTitle>
@@ -307,7 +359,7 @@ export function WeeklyCalendar({
                           key={`${slot.date}-${slot.startTime}-${slotIndex}`}
                           variant="outline"
                           size="sm"
-                          className={`w-full text-xs py-3 h-auto min-h-[3.5rem] body-font transition-all ${
+                          className={`w-full text-sm md:text-xs py-4 md:py-3 h-auto min-h-[4rem] md:min-h-[3.5rem] body-font transition-all ${
                             isSelected
                               ? "bg-[#E75837] text-white border-[#E75837] hover:bg-[#d14a2a] shadow-md"
                               : isSlotDisabled
@@ -332,12 +384,12 @@ export function WeeklyCalendar({
                           disabled={isSlotDisabled}
                         >
                           <div className="flex flex-col items-center w-full">
-                            <span className="font-medium">{slot.startTime}</span>
+                            <span className="font-medium text-base md:text-sm">{slot.startTime}</span>
                             <div className="flex items-center justify-center mt-1">
                               <div className="flex items-center gap-1">
-                                <Users className="w-2.5 h-2.5" />
+                                <Users className="w-3 h-3 md:w-2.5 md:h-2.5" />
                                 <span
-                                  className={`text-[10px] font-medium ${isSelected ? "text-white" : availabilityColor}`}
+                                  className={`text-xs md:text-[10px] font-medium ${isSelected ? "text-white" : availabilityColor}`}
                                 >
                                   {slot.availableSlots ?? ""}
                                 </span>
@@ -351,16 +403,17 @@ export function WeeklyCalendar({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="w-full text-xs py-2 h-8 text-gray-500 hover:text-gray-700 hover:bg-gray-50 body-font"
+                        className="w-full text-sm md:text-xs py-3 md:py-2 h-auto md:h-8 text-gray-500 hover:text-gray-700 hover:bg-gray-50 body-font"
                         onClick={() => toggleDayExpansion(dateStr)}
                       >
                         {isExpanded ? (
                           <>
-                            <ChevronUp className="w-3 h-3 mr-1" /> Show less
+                            <ChevronUp className="w-4 h-4 md:w-3 md:h-3 mr-1" /> Show less
                           </>
                         ) : (
                           <>
-                            <ChevronDown className="w-3 h-3 mr-1" /> +{timeSlots.length - initialSlotCount} more
+                            <ChevronDown className="w-4 h-4 md:w-3 md:h-3 mr-1" /> +
+                            {timeSlots.length - initialSlotCount} more
                           </>
                         )}
                       </Button>
