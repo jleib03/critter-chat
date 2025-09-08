@@ -1802,19 +1802,25 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
 
       // Policy acknowledgments are always new
       if (Object.keys(onboardingData.policyAcknowledgments).length > 0) {
-        submissionAnalysis.policy_acknowledgments = {
-          action: "create",
-          policies: Object.keys(onboardingData.policyAcknowledgments).map((policyId) => ({
+        const validPolicies = Object.keys(onboardingData.policyAcknowledgments)
+          .filter((policyId) => policyId !== "undefined" && !isNaN(Number(policyId)))
+          .map((policyId) => ({
             policy_id: Number.parseInt(policyId),
             acknowledged: onboardingData.policyAcknowledgments[policyId],
             signature: onboardingData.signature,
             acknowledged_at: new Date().toISOString(),
-          })),
-          database_fields: {
-            table: "business_policy_acknowledgments",
-            primary_key: "id",
-            fields_to_update: ["policy_id", "user_id", "signed", "signed_at", "signature"],
-          },
+          }))
+
+        if (validPolicies.length > 0) {
+          submissionAnalysis.policy_acknowledgments = {
+            action: "create",
+            policies: validPolicies,
+            database_fields: {
+              table: "business_policy_acknowledgments",
+              primary_key: "id",
+              fields_to_update: ["policy_id", "user_id", "signed", "signed_at", "signature"],
+            },
+          }
         }
       }
 
