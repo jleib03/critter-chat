@@ -78,6 +78,8 @@ export function BookingTypeSelection({ selectedServices, onBookingTypeSelect, on
   }, [selectedServices])
 
   const handleContinue = () => {
+    window.scrollTo(0, 0)
+
     if (selectedType === "one-time") {
       onBookingTypeSelect("one-time")
     } else if (selectedType === "recurring") {

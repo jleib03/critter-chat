@@ -56,6 +56,7 @@ export function MultiDayBookingForm({
   }
 
   const handleConfirm = () => {
+    window.scrollTo(0, 0)
     const startDateTime = new Date(`${startDate}T${startTime}`)
     const endDateTime = new Date(`${endDate}T${endTime}`)
     onBookingConfirm(startDateTime, endDateTime)
@@ -197,7 +198,13 @@ export function MultiDayBookingForm({
         )}
 
         <div className="flex justify-between items-center pt-4 border-t">
-          <Button variant="outline" onClick={onBack}>
+          <Button
+            variant="outline"
+            onClick={() => {
+              window.scrollTo(0, 0)
+              onBack()
+            }}
+          >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>

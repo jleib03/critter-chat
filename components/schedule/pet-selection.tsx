@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ArrowLeft, PawPrint, Bell, Sparkles } from 'lucide-react'
+import { ArrowLeft, PawPrint, Bell, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -65,6 +65,8 @@ export function PetSelection({
   }
 
   const handleSubmit = () => {
+    window.scrollTo(0, 0)
+
     if (selectedPets.length > 0) {
       onPetSelect(selectedPets, selectedNotifications)
     } else if (pets.length === 0) {
@@ -253,7 +255,9 @@ export function PetSelection({
               <div>
                 <span className="text-gray-500 body-font">Date & Time:</span>
                 <p className="font-medium header-font">
-                  {selectedTimeSlot?.date ? `${formatDate(selectedTimeSlot.date)} at ${selectedTimeSlot?.startTime ?? ""}` : ""}
+                  {selectedTimeSlot?.date
+                    ? `${formatDate(selectedTimeSlot.date)} at ${selectedTimeSlot?.startTime ?? ""}`
+                    : ""}
                 </p>
               </div>
               <div>
@@ -367,7 +371,10 @@ export function PetSelection({
           <div className="flex justify-between pt-6">
             <Button
               type="button"
-              onClick={onBack}
+              onClick={() => {
+                window.scrollTo(0, 0)
+                onBack()
+              }}
               variant="outline"
               className="flex items-center gap-2 px-6 py-2 rounded-lg border-gray-300 hover:bg-gray-50 bg-transparent"
             >
