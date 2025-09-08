@@ -560,6 +560,8 @@ export default function SchedulePage() {
   const handleContinueFromServices = () => {
     if (selectedServices.length === 0) return
 
+    window.scrollTo(0, 0)
+
     let totalDurationMinutes = 0
     selectedServices.forEach((service) => {
       let durationInMinutes = service.duration_number
@@ -578,6 +580,8 @@ export default function SchedulePage() {
   }
 
   const handleBookingTypeSelect = (type: BookingType, config?: RecurringConfig) => {
+    window.scrollTo(0, 0)
+
     setBookingType(type)
     setShowBookingTypeSelection(false)
     if (type === "recurring") setRecurringConfig(config || null)
@@ -598,6 +602,8 @@ export default function SchedulePage() {
   }
 
   const handleMultiDayBookingConfirm = (start: Date, end: Date) => {
+    window.scrollTo(0, 0)
+
     const syntheticSlot: SelectedTimeSlot = {
       date: start.toISOString().split("T")[0],
       startTime: start.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true }),
@@ -611,11 +617,15 @@ export default function SchedulePage() {
   }
 
   const handleBackFromMultiDay = () => {
+    window.scrollTo(0, 0)
+
     setShowMultiDayForm(false)
     setShowBookingTypeSelection(true)
   }
 
   const handleBackToServices = () => {
+    window.scrollTo(0, 0)
+
     setSelectedServices([])
     setShowBookingTypeSelection(false)
     setBookingType(null)
@@ -650,11 +660,15 @@ export default function SchedulePage() {
       return
     }
 
+    window.scrollTo(0, 0)
+
     setSelectedTimeSlot(slot)
     setShowCustomerForm(true)
   }
 
   const handlePetsReceived = (customerInfo: CustomerInfo, petResponse: PetResponse) => {
+    window.scrollTo(0, 0)
+
     setCustomerInfo(customerInfo)
     setPets(petResponse.pets || [])
     setShowCustomerForm(false)
@@ -732,8 +746,7 @@ export default function SchedulePage() {
             total_occurrences: recurringDates.length,
             days_of_week_included: [...new Set(recurringDates.map((d: any) => d.day_of_week))],
             date_range: {
-              first_appointment: recurringDates[0]?.date,
-              last_appointment: recurringDates[recurringDates.length - 1]?.date,
+              first_appointment: recurringDates[recurringDates.length - 1]?.date,
             },
             recurring_schedule: {
               same_time_each_occurrence: true,
@@ -1138,11 +1151,15 @@ export default function SchedulePage() {
   }
 
   const handleBackToCustomerForm = () => {
+    window.scrollTo(0, 0)
+
     setShowPetSelection(false)
     setShowCustomerForm(true)
   }
 
   const handleBackToScheduleInner = () => {
+    window.scrollTo(0, 0)
+
     setShowCustomerForm(false)
     setSelectedTimeSlot(null)
     setSelectedTimeSlots([])
@@ -1152,6 +1169,8 @@ export default function SchedulePage() {
   }
 
   const handleNewBookingInner = async () => {
+    window.scrollTo(0, 0)
+
     setSelectedServices([])
     setSelectedTimeSlot(null)
     setSelectedTimeSlots([])

@@ -139,6 +139,9 @@ export function CustomerForm({
       }
 
       const petResponse: PetResponse = { pets, success: true } as any
+
+      window.scrollTo(0, 0)
+
       onPetsReceived(customerInfo, petResponse)
     } catch (err) {
       console.error("Error fetching customer pets:", err)
@@ -380,7 +383,10 @@ export function CustomerForm({
             <div className="flex justify-between pt-4">
               <Button
                 type="button"
-                onClick={onBack}
+                onClick={() => {
+                  window.scrollTo(0, 0)
+                  onBack()
+                }}
                 variant="outline"
                 className="flex items-center gap-2 px-6 py-2 rounded-lg border-gray-300 hover:bg-gray-50 bg-transparent"
               >
