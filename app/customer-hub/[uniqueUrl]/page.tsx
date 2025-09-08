@@ -1802,19 +1802,25 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
 
       // Policy acknowledgments are always new
       if (Object.keys(onboardingData.policyAcknowledgments).length > 0) {
-        submissionAnalysis.policy_acknowledgments = {
-          action: "create",
-          policies: Object.keys(onboardingData.policyAcknowledgments).map((policyId) => ({
+        const validPolicies = Object.keys(onboardingData.policyAcknowledgments)
+          .filter((policyId) => policyId !== "undefined" && !isNaN(Number(policyId)))
+          .map((policyId) => ({
             policy_id: Number.parseInt(policyId),
             acknowledged: onboardingData.policyAcknowledgments[policyId],
             signature: onboardingData.signature,
             acknowledged_at: new Date().toISOString(),
-          })),
-          database_fields: {
-            table: "business_policy_acknowledgments",
-            primary_key: "id",
-            fields_to_update: ["policy_id", "user_id", "signed", "signed_at", "signature"],
-          },
+          }))
+
+        if (validPolicies.length > 0) {
+          submissionAnalysis.policy_acknowledgments = {
+            action: "create",
+            policies: validPolicies,
+            database_fields: {
+              table: "business_policy_acknowledgments",
+              primary_key: "id",
+              fields_to_update: ["policy_id", "user_id", "signed", "signed_at", "signature"],
+            },
+          }
         }
       }
 
@@ -3383,7 +3389,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                           {policyDocuments.length > 0 ? (
                             <div className="space-y-4">
                               {policyDocuments.map((policy: any) => (
-                                <div key={policy.id} className="bg-white border border-gray-200 rounded-lg p-4">
+                                <div key={policy.policy_id} className="bg-white border border-gray-200 rounded-lg p-4">
                                   <div className="flex items-center justify-between">
                                     <div className="flex-1">
                                       <h4 className="text-md font-medium text-gray-900">{policy.name}</h4>
@@ -3402,13 +3408,13 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                     <input
                                       type="checkbox"
                                       className="form-checkbox h-5 w-5 text-[#E75837] rounded border-gray-300 focus:ring-2 focus:ring-[#E75837]"
-                                      checked={onboardingData.policyAcknowledgments[policy.id] || false}
+                                      checked={onboardingData.policyAcknowledgments[policy.policy_id] || false}
                                       onChange={(e) => {
                                         setOnboardingData({
                                           ...onboardingData,
                                           policyAcknowledgments: {
                                             ...onboardingData.policyAcknowledgments,
-                                            [policy.id]: e.target.checked,
+                                            [policy.policy_id]: e.target.checked,
                                           },
                                         })
                                       }}
