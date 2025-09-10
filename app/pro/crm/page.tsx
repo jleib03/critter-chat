@@ -1,16 +1,44 @@
 "use client"
-import { useState } from "react"
-import { Mail, Users, Upload, Target, BarChart3, Plus, Database, Zap, TrendingUp, FileText } from "lucide-react"
+import { useState, useEffect } from "react"
+import {
+  Mail,
+  Users,
+  Upload,
+  Target,
+  BarChart3,
+  Plus,
+  Database,
+  Zap,
+  TrendingUp,
+  FileText,
+  AlertCircle,
+} from "lucide-react"
 import Header from "../../../components/header"
 import PasswordProtection from "../../../components/password-protection"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { getCRMData, getCRMProfessionalId, type CRMRawData } from "@/utils/crm-data"
 
 export default function CRMDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [crmData, setCrmData] = useState<CRMRawData | null>(null)
+  const [isDataLoaded, setIsDataLoaded] = useState(false)
   const router = useRouter()
+
+  useEffect(() => {
+    const data = getCRMData()
+    const professionalId = getCRMProfessionalId()
+
+    console.log("[v0] Checking CRM data:", { data: !!data, professionalId })
+
+    if (data && professionalId) {
+      setCrmData(data)
+      setIsDataLoaded(true)
+    }
+  }, [])
 
   // If not authenticated, show password protection
   if (!isAuthenticated) {
@@ -22,6 +50,73 @@ export default function CRMDashboard() {
       />
     )
   }
+
+  if (!isDataLoaded) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <Header />
+        <main className="pt-8 flex-1 flex flex-col">
+          <div className="max-w-4xl mx-auto px-4 flex flex-col page-content">
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-6">
+                <Database className="h-8 w-8 text-primary-foreground" />
+              </div>
+              <h1 className="text-4xl md:text-5xl title-font mb-4 text-foreground">Initialize Your CRM</h1>
+              <p className="text-xl text-muted-foreground max-w-3xl mx-auto body-font">
+                Before you can use the CRM and email marketing tools, you need to load your customer data.
+              </p>
+            </div>
+
+            <Alert className="mb-8">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>No CRM data found.</strong> Please initialize your CRM data to access customer management and
+                email marketing features.
+              </AlertDescription>
+            </Alert>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Get Started</CardTitle>
+                <CardDescription>
+                  Load your customer and booking data to unlock powerful CRM and email marketing capabilities.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button onClick={() => router.push("/pro/crm/initialize")} className="w-full" size="lg">
+                  <Database className="h-5 w-5 mr-2" />
+                  Initialize CRM Data
+                </Button>
+
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">
+                    This will fetch your customer data and enable all CRM features.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  const stats = crmData
+    ? {
+        totalCustomers: crmData.customers.length,
+        totalBookings: crmData.bookings.length,
+        totalPets: crmData.pets.length,
+        // Calculate average based on actual data or use placeholder
+        avgOpenRate: "68%", // This would come from email campaign data later
+        revenue: "$12,450", // This would be calculated from booking amounts
+      }
+    : {
+        totalCustomers: 0,
+        totalBookings: 0,
+        totalPets: 0,
+        avgOpenRate: "0%",
+        revenue: "$0",
+      }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -41,10 +136,14 @@ export default function CRMDashboard() {
             </p>
 
             {/* Status Badge */}
-            <div className="mt-6 flex justify-center">
+            <div className="mt-6 flex justify-center gap-4">
               <Badge variant="secondary" className="px-4 py-2 text-sm">
                 <Zap className="h-4 w-4 mr-2" />
                 Professional CRM Tools
+              </Badge>
+              <Badge variant="outline" className="px-4 py-2 text-sm">
+                <Database className="h-4 w-4 mr-2" />
+                Data Loaded: {getCRMProfessionalId()}
               </Badge>
             </div>
           </div>
@@ -56,7 +155,9 @@ export default function CRMDashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground body-font">Total Customers</p>
-                    <p className="text-2xl font-bold text-foreground header-font">1,247</p>
+                    <p className="text-2xl font-bold text-foreground header-font">
+                      {stats.totalCustomers.toLocaleString()}
+                    </p>
                   </div>
                   <Users className="h-8 w-8 text-primary" />
                 </div>
@@ -67,8 +168,10 @@ export default function CRMDashboard() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground body-font">Active Campaigns</p>
-                    <p className="text-2xl font-bold text-foreground header-font">8</p>
+                    <p className="text-sm text-muted-foreground body-font">Total Bookings</p>
+                    <p className="text-2xl font-bold text-foreground header-font">
+                      {stats.totalBookings.toLocaleString()}
+                    </p>
                   </div>
                   <Target className="h-8 w-8 text-secondary" />
                 </div>
@@ -79,8 +182,8 @@ export default function CRMDashboard() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground body-font">Email Open Rate</p>
-                    <p className="text-2xl font-bold text-foreground header-font">68%</p>
+                    <p className="text-sm text-muted-foreground body-font">Registered Pets</p>
+                    <p className="text-2xl font-bold text-foreground header-font">{stats.totalPets.toLocaleString()}</p>
                   </div>
                   <TrendingUp className="h-8 w-8 text-accent" />
                 </div>
@@ -92,7 +195,7 @@ export default function CRMDashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground body-font">Revenue This Month</p>
-                    <p className="text-2xl font-bold text-foreground header-font">$12,450</p>
+                    <p className="text-2xl font-bold text-foreground header-font">{stats.revenue}</p>
                   </div>
                   <BarChart3 className="h-8 w-8 text-chart-4" />
                 </div>
@@ -398,6 +501,19 @@ export default function CRMDashboard() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Data Refresh Option */}
+          <div className="mb-6 flex justify-between items-center">
+            <div>
+              <p className="text-sm text-muted-foreground">
+                CRM data loaded for Professional ID: {getCRMProfessionalId()}
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => router.push("/pro/crm/initialize")}>
+              <Database className="h-4 w-4 mr-2" />
+              Refresh Data
+            </Button>
+          </div>
         </div>
       </main>
     </div>
