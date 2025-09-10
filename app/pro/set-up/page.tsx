@@ -1,6 +1,18 @@
 "use client"
 import { useState } from "react"
-import { Loader2, Copy, Check, Settings, MessageSquare, Calendar, ArrowRight, Eye, Globe, LinkIcon } from "lucide-react"
+import {
+  Loader2,
+  Copy,
+  Check,
+  Settings,
+  MessageSquare,
+  Calendar,
+  ArrowRight,
+  Eye,
+  Globe,
+  LinkIcon,
+  Mail,
+} from "lucide-react"
 import Header from "../../../components/header"
 import PasswordProtection from "../../../components/password-protection"
 import { useRouter } from "next/navigation"
@@ -291,7 +303,7 @@ export default function ProfessionalSetupPage() {
               </div>
 
               {/* Feature Tiles Section */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 mb-8">
                 {/* Critter Landing Page Setup Tile - Clickable */}
                 <div
                   onClick={handleSetupClick}
@@ -341,6 +353,24 @@ export default function ProfessionalSetupPage() {
                   </p>
                   <span className="inline-flex items-center text-[#745E25] text-sm font-medium">
                     Set up now <ArrowRight className="ml-1 h-4 w-4" />
+                  </span>
+                </div>
+
+                {/* CRM Hub Tile */}
+                <div
+                  onClick={() => router.push("/pro/crm")}
+                  className="bg-white rounded-xl shadow-md p-6 text-center transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer border border-transparent hover:border-[#F4BAEA]/20"
+                >
+                  <div className="w-12 h-12 bg-[#fdf7fc] rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Mail className="h-6 w-6 text-[#F4BAEA]" />
+                  </div>
+                  <h3 className="text-lg font-bold mb-2 header-font">CRM & Email Marketing</h3>
+                  <p className="text-gray-600 body-font mb-4">
+                    Manage customer relationships with proactive email campaigns, data uploads, and targeted marketing
+                    tools.
+                  </p>
+                  <span className="inline-flex items-center text-[#F4BAEA] text-sm font-medium">
+                    Launch CRM <ArrowRight className="ml-1 h-4 w-4" />
                   </span>
                 </div>
               </div>
