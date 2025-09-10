@@ -12,6 +12,7 @@ import {
   TrendingUp,
   FileText,
   AlertCircle,
+  Loader2,
 } from "lucide-react"
 import Header from "../../../components/header"
 import PasswordProtection from "../../../components/password-protection"
@@ -20,27 +21,60 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { getCRMData, getCRMProfessionalId, type CRMRawData } from "@/utils/crm-data"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { getCRMData, getCRMProfessionalId, initializeCRMData, type CRMRawData } from "@/utils/crm-data"
 
 export default function CRMDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [crmData, setCrmData] = useState<CRMRawData | null>(null)
   const [isDataLoaded, setIsDataLoaded] = useState(false)
+  const [professionalId, setProfessionalId] = useState("")
+  const [isInitializing, setIsInitializing] = useState(false)
+  const [initError, setInitError] = useState("")
   const router = useRouter()
 
   useEffect(() => {
     const data = getCRMData()
-    const professionalId = getCRMProfessionalId()
+    const storedProfessionalId = getCRMProfessionalId()
 
-    console.log("[v0] Checking CRM data:", { data: !!data, professionalId })
+    console.log("[v0] Checking CRM data:", { data: !!data, professionalId: storedProfessionalId })
 
-    if (data && professionalId) {
+    if (data && storedProfessionalId) {
       setCrmData(data)
       setIsDataLoaded(true)
+      setProfessionalId(storedProfessionalId)
     }
   }, [])
 
-  // If not authenticated, show password protection
+  const handleInitialization = async () => {
+    if (!professionalId.trim()) {
+      setInitError("Please enter your Professional ID")
+      return
+    }
+
+    setIsInitializing(true)
+    setInitError("")
+
+    try {
+      console.log("[v0] Initializing CRM for professional:", professionalId)
+      const result = await initializeCRMData(professionalId.trim())
+
+      if (result.success && result.data) {
+        setCrmData(result.data)
+        setIsDataLoaded(true)
+        console.log("[v0] CRM initialization successful")
+      } else {
+        setInitError(result.error || "Failed to initialize CRM data")
+      }
+    } catch (error) {
+      console.error("[v0] CRM initialization error:", error)
+      setInitError("An unexpected error occurred. Please try again.")
+    } finally {
+      setIsInitializing(false)
+    }
+  }
+
   if (!isAuthenticated) {
     return (
       <PasswordProtection
@@ -63,34 +97,60 @@ export default function CRMDashboard() {
               </div>
               <h1 className="text-4xl md:text-5xl title-font mb-4 text-foreground">Initialize Your CRM</h1>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto body-font">
-                Before you can use the CRM and email marketing tools, you need to load your customer data.
+                Enter your Professional ID to load your customer data and access CRM tools.
               </p>
             </div>
 
-            <Alert className="mb-8">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                <strong>No CRM data found.</strong> Please initialize your CRM data to access customer management and
-                email marketing features.
-              </AlertDescription>
-            </Alert>
-
-            <Card>
+            <Card className="max-w-md mx-auto">
               <CardHeader>
-                <CardTitle>Get Started</CardTitle>
-                <CardDescription>
-                  Load your customer and booking data to unlock powerful CRM and email marketing capabilities.
+                <CardTitle className="text-center">CRM Data Initialization</CardTitle>
+                <CardDescription className="text-center">
+                  This will fetch all your customer, booking, and pet data from the database to power your CRM
+                  campaigns.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Button onClick={() => router.push("/pro/crm/initialize")} className="w-full" size="lg">
-                  <Database className="h-5 w-5 mr-2" />
-                  Initialize CRM Data
+                <div className="space-y-2">
+                  <Label htmlFor="professionalId">Professional ID</Label>
+                  <Input
+                    id="professionalId"
+                    type="text"
+                    placeholder="Enter your Professional ID"
+                    value={professionalId}
+                    onChange={(e) => setProfessionalId(e.target.value)}
+                    disabled={isInitializing}
+                  />
+                </div>
+
+                {initError && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{initError}</AlertDescription>
+                  </Alert>
+                )}
+
+                <Button
+                  onClick={handleInitialization}
+                  className="w-full"
+                  size="lg"
+                  disabled={isInitializing || !professionalId.trim()}
+                >
+                  {isInitializing ? (
+                    <>
+                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                      Initializing CRM Data...
+                    </>
+                  ) : (
+                    <>
+                      <Database className="h-5 w-5 mr-2" />
+                      Initialize CRM Data
+                    </>
+                  )}
                 </Button>
 
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">
-                    This will fetch your customer data and enable all CRM features.
+                    This will connect to your database and load all customer information.
                   </p>
                 </div>
               </CardContent>
@@ -106,7 +166,6 @@ export default function CRMDashboard() {
         totalCustomers: crmData.customers?.length || 0,
         totalBookings: crmData.bookings?.length || 0,
         totalPets: crmData.pets?.length || 0,
-        // Calculate average based on actual data or use placeholder
         avgOpenRate: "68%", // This would come from email campaign data later
         revenue: "$12,450", // This would be calculated from booking amounts
       }
@@ -143,7 +202,7 @@ export default function CRMDashboard() {
               </Badge>
               <Badge variant="outline" className="px-4 py-2 text-sm">
                 <Database className="h-4 w-4 mr-2" />
-                Data Loaded: {getCRMProfessionalId()}
+                Data Loaded: {professionalId}
               </Badge>
             </div>
           </div>
@@ -505,9 +564,7 @@ export default function CRMDashboard() {
           {/* Data Refresh Option */}
           <div className="mb-6 flex justify-between items-center">
             <div>
-              <p className="text-sm text-muted-foreground">
-                CRM data loaded for Professional ID: {getCRMProfessionalId()}
-              </p>
+              <p className="text-sm text-muted-foreground">CRM data loaded for Professional ID: {professionalId}</p>
             </div>
             <Button variant="outline" size="sm" onClick={() => router.push("/pro/crm/initialize")}>
               <Database className="h-4 w-4 mr-2" />
