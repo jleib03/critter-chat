@@ -103,9 +103,9 @@ export default function CRMDashboard() {
 
   const stats = crmData
     ? {
-        totalCustomers: crmData.customers.length,
-        totalBookings: crmData.bookings.length,
-        totalPets: crmData.pets.length,
+        totalCustomers: crmData.customers?.length || 0,
+        totalBookings: crmData.bookings?.length || 0,
+        totalPets: crmData.pets?.length || 0,
         // Calculate average based on actual data or use placeholder
         avgOpenRate: "68%", // This would come from email campaign data later
         revenue: "$12,450", // This would be calculated from booking amounts

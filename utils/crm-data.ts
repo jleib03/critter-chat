@@ -46,10 +46,13 @@ export async function initializeCRMData(professionalId: string): Promise<CRMRawD
     console.log("🚀 Initializing CRM data for professional:", professionalId)
     console.log("🔗 Using webhook URL:", webhookUrl)
 
+    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+
     const payload = {
       action: "initialize_crm",
       professionalId: professionalId,
       timestamp: new Date().toISOString(),
+      timezone: userTimezone,
     }
 
     console.log("📤 Sending payload:", JSON.stringify(payload, null, 2))
