@@ -7,12 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label"
 import { Loader2, Database, CheckCircle, RefreshCw, Wifi, WifiOff } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { initializeCRMData, type CRMRawData } from "@/utils/crm-data"
 
 export default function InitializeCRM() {
   const [professionalId, setProfessionalId] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [initializationStatus, setInitializationStatus] = useState<"idle" | "success" | "error">("idle")
-  const [rawData, setRawData] = useState<any>(null)
+  const [rawData, setRawData] = useState<CRMRawData | null>(null)
   const [errorMessage, setErrorMessage] = useState("")
   const [retryCount, setRetryCount] = useState(0)
 
@@ -27,47 +28,32 @@ export default function InitializeCRM() {
     setErrorMessage("")
 
     try {
-      console.log("[v0] Sending initialize_crm webhook for professional:", professionalId)
+      console.log("[v0] Initializing CRM data for professional:", professionalId)
 
-      const response = await fetch("https://jleib03.app.n8n.cloud/webhook-test/fc7f0236-5f3f-4a3c-b9cc-07d172b21956", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          action: "initialize_crm",
-          professional_id: professionalId.trim(),
-        }),
-      })
+      const data = await initializeCRMData(professionalId.trim())
 
-      if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error("CRM service is currently unavailable. The webhook endpoint may not be active yet.")
-        } else if (response.status === 500) {
-          throw new Error("Server error occurred. Please try again in a few moments.")
-        } else if (response.status === 403) {
-          throw new Error("Access denied. Please check your Professional ID.")
-        } else {
-          throw new Error(`Service error (${response.status}). Please try again or contact support.`)
-        }
+      if (data) {
+        setRawData(data)
+        setInitializationStatus("success")
+        setRetryCount(0)
+        console.log("[v0] CRM initialization successful")
+      } else {
+        throw new Error("No data returned from CRM service")
       }
-
-      const data = await response.json()
-      console.log("[v0] Received CRM data:", data)
-
-      setRawData(data)
-      setInitializationStatus("success")
-      setRetryCount(0)
-
-      // Store the data in localStorage for use across CRM components
-      localStorage.setItem("crm_raw_data", JSON.stringify(data))
-      localStorage.setItem("crm_professional_id", professionalId.trim())
     } catch (error) {
       console.error("[v0] CRM initialization error:", error)
       setInitializationStatus("error")
 
       if (error instanceof Error) {
-        setErrorMessage(error.message)
+        if (error.message.includes("404")) {
+          setErrorMessage("CRM service is currently unavailable. The webhook endpoint may not be active yet.")
+        } else if (error.message.includes("500")) {
+          setErrorMessage("Server error occurred. Please try again in a few moments.")
+        } else if (error.message.includes("403")) {
+          setErrorMessage("Access denied. Please check your Professional ID.")
+        } else {
+          setErrorMessage(error.message)
+        }
       } else {
         setErrorMessage("Failed to initialize CRM data. Please check your connection and try again.")
       }

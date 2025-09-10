@@ -1,5 +1,7 @@
 // Utility functions for working with CRM raw data on the frontend
 
+import { getWebhookEndpoint, logWebhookUsage } from "../types/webhook-endpoints"
+
 export interface CRMCustomer {
   customer_id: string
   name: string
@@ -33,6 +35,68 @@ export interface CRMRawData {
   bookings: CRMBooking[]
   pets: CRMPet[]
   professional_id: string
+}
+
+// Initialize CRM data by calling the webhook
+export async function initializeCRMData(professionalId: string): Promise<CRMRawData | null> {
+  try {
+    const webhookUrl = getWebhookEndpoint("CRM_INITIALIZATION")
+    logWebhookUsage("CRM_INITIALIZATION", "initialize_crm")
+
+    console.log("🚀 Initializing CRM data for professional:", professionalId)
+    console.log("🔗 Using webhook URL:", webhookUrl)
+
+    const payload = {
+      action: "initialize_crm",
+      professionalId: professionalId,
+      timestamp: new Date().toISOString(),
+    }
+
+    console.log("📤 Sending payload:", JSON.stringify(payload, null, 2))
+
+    const response = await fetch(webhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+      body: JSON.stringify(payload),
+    })
+
+    console.log("📡 Response status:", response.status, response.statusText)
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error("❌ CRM initialization webhook error:", errorText)
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    console.log("📥 Raw CRM response:", JSON.stringify(data, null, 2))
+
+    // Parse the response - expecting array format like other webhooks
+    if (Array.isArray(data) && data.length > 0) {
+      const crmData = data[0]
+      console.log("🔍 Parsing CRM data from first record:", crmData)
+
+      // Store the data in localStorage
+      if (typeof window !== "undefined") {
+        localStorage.setItem("crm_raw_data", JSON.stringify(crmData))
+        localStorage.setItem("crm_professional_id", professionalId)
+      }
+
+      console.log("✅ CRM data initialized and stored successfully")
+      return crmData as CRMRawData
+    }
+
+    console.log("⚠️ No valid CRM data found in response")
+    return null
+  } catch (error) {
+    console.error("💥 Error initializing CRM data:", error)
+    throw error
+  }
 }
 
 // Get stored CRM data from localStorage
@@ -131,4 +195,12 @@ export function getCampaignAudienceSize(
   }
 
   return customers.length
+}
+
+// Clear CRM data from localStorage
+export function clearCRMData(): void {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("crm_raw_data")
+    localStorage.removeItem("crm_professional_id")
+  }
 }

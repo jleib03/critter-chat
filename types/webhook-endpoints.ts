@@ -7,6 +7,7 @@ const CHAT_LANDING_AND_ONBOARDING_URL = "https://jleib03.app.n8n.cloud/webhook/8
 const EXISTING_NEW_CUSTOMER_URL = "https://jleib03.app.n8n.cloud/webhook/dce0dbdb-2834-4a95-a483-d19042dd49c4"
 const NEW_CUSTOMER_ONBOARDING_URL = "https://jleib03.app.n8n.cloud/webhook/551dbfd7-5d7f-4f66-9940-aac9c072ba98"
 const CUSTOMER_HUB_URL = "https://jleib03.app.n8n.cloud/webhook/8d5c231d-305c-4cff-aa25-1e12ca5d55c3"
+const CRM_INITIALIZATION_URL = "https://jleib03.app.n8n.cloud/webhook-test/fc7f0236-5f3f-4a3c-b9cc-07d172b21956"
 
 export const WEBHOOK_ENDPOINTS = {
   // For schedule, booking, and professional config setup
@@ -18,6 +19,7 @@ export const WEBHOOK_ENDPOINTS = {
   // For custom agent setup (uses the same as chat/landing)
   CUSTOM_AGENT: CHAT_LANDING_AND_ONBOARDING_URL,
   CUSTOMER_HUB: CUSTOMER_HUB_URL,
+  CRM_INITIALIZATION: CRM_INITIALIZATION_URL,
 } as const
 
 // Type for webhook endpoint keys
