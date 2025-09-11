@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Checkbox } from "@/components/ui/checkbox"
-import { getCRMData, getInactiveCustomers, waitForCRMData } from "../utils/crm-data"
+import { getCRMData, getInactiveCustomers, waitForCRMData, isCRMDataAvailable } from "../utils/crm-data"
 
 interface Customer {
   email: string
@@ -48,14 +48,16 @@ export default function CustomerSelectionInterface({
   onTrackClicksChange,
 }: CustomerSelectionProps) {
   const [localCrmData, setLocalCrmData] = useState<any>(null)
+  const [localCrmLoading, setLocalCrmLoading] = useState(false)
   const [customers, setCustomers] = useState<Customer[]>([])
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([])
   const [selectedCustomers, setSelectedCustomers] = useState<Set<string>>(new Set())
   const [searchTerm, setSearchTerm] = useState("")
   const [showCustomerList, setShowCustomerList] = useState(false)
+  const [dataAvailable, setDataAvailable] = useState(false)
 
   const crmData = propCrmData || localCrmData
-  const crmLoading = propCrmLoading
+  const crmLoading = propCrmLoading || localCrmLoading
 
   const getPetTypeFromIds = (pet: any): string => {
     if (pet.type_id === "1" || pet.dog_breed_id) return "Dog"
@@ -74,31 +76,68 @@ export default function CustomerSelectionInterface({
   useEffect(() => {
     if (propCrmData) {
       console.log("[v0] Customer selection: Using prop CRM data")
+      setDataAvailable(true)
       return
     }
 
     console.log("[v0] Customer selection: Loading CRM data locally")
+    setLocalCrmLoading(true)
 
     const loadData = async () => {
+      // First check if data should be available
+      const shouldHaveData = isCRMDataAvailable()
+      console.log("[v0] Customer selection: Data should be available:", shouldHaveData)
+
       // First try immediate access
       let data = getCRMData()
       console.log("[v0] Customer selection: Immediate data check:", !!data)
 
-      if (!data) {
-        console.log("[v0] Customer selection: No immediate data, waiting for availability")
-        data = await waitForCRMData(5, 1000) // Wait up to 5 seconds
+      if (!data && shouldHaveData) {
+        console.log("[v0] Customer selection: Data should exist but not found, waiting...")
+        data = await waitForCRMData(8, 750) // Wait up to 6 seconds with longer delays
+      } else if (!data) {
+        console.log("[v0] Customer selection: No data expected, waiting briefly...")
+        data = await waitForCRMData(3, 1000) // Shorter wait if no data expected
       }
 
       if (data) {
         console.log("[v0] Customer selection: Successfully loaded CRM data")
+        console.log("[v0] Customer selection: Data structure:", {
+          petCare: data.petCare?.length || 0,
+          bookings: data.bookings?.length || 0,
+          professionalId: data.professionalId,
+        })
         setLocalCrmData(data)
+        setDataAvailable(true)
       } else {
         console.log("[v0] Customer selection: Failed to load CRM data after waiting")
+        setDataAvailable(false)
       }
+
+      setLocalCrmLoading(false)
     }
 
     loadData()
   }, [propCrmData])
+
+  useEffect(() => {
+    if (!propCrmData && !localCrmData) {
+      const checkInterval = setInterval(() => {
+        const available = isCRMDataAvailable()
+        if (available && !dataAvailable) {
+          console.log("[v0] Customer selection: Data became available, reloading...")
+          const data = getCRMData()
+          if (data) {
+            setLocalCrmData(data)
+            setDataAvailable(true)
+            clearInterval(checkInterval)
+          }
+        }
+      }, 2000) // Check every 2 seconds
+
+      return () => clearInterval(checkInterval)
+    }
+  }, [propCrmData, localCrmData, dataAvailable])
 
   useEffect(() => {
     if (!crmData || crmLoading) {
@@ -312,6 +351,16 @@ export default function CustomerSelectionInterface({
           {crmLoading ? (
             <div className="text-center py-4">
               <p className="text-muted-foreground body-font">Loading customer data...</p>
+              <p className="text-xs text-muted-foreground body-font mt-2">
+                {dataAvailable ? "Processing customer information..." : "Waiting for CRM data..."}
+              </p>
+            </div>
+          ) : !dataAvailable && !crmData ? (
+            <div className="text-center py-4">
+              <p className="text-muted-foreground body-font">No customer data available</p>
+              <p className="text-xs text-muted-foreground body-font mt-2">
+                Please ensure CRM data is loaded before creating campaigns
+              </p>
             </div>
           ) : (
             <>

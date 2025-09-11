@@ -173,16 +173,25 @@ function createEmptyDataStructure(professionalId: string): CRMData {
   return emptyData
 }
 
-// Get stored CRM data from localStorage
 export function getCRMData(): CRMData | null {
   if (typeof window === "undefined") return null
 
   try {
+    // Check all localStorage keys for debugging
+    const allKeys = Object.keys(localStorage)
+    console.log("[v0] getCRMData: All localStorage keys:", allKeys)
+
     const rawData = localStorage.getItem("crm_data")
     console.log("[v0] getCRMData: Raw localStorage data exists:", !!rawData)
+    console.log("[v0] getCRMData: Raw data length:", rawData?.length || 0)
 
     if (!rawData) {
       console.log("[v0] getCRMData: No data found in localStorage")
+      // Check if there's a professional ID but no data
+      const professionalId = localStorage.getItem("crm_professional_id")
+      if (professionalId) {
+        console.log("[v0] getCRMData: Found professional ID but no data, this indicates a storage issue")
+      }
       return null
     }
 
@@ -192,6 +201,7 @@ export function getCRMData(): CRMData | null {
       petCare: parsedData?.petCare?.length || 0,
       bookings: parsedData?.bookings?.length || 0,
       professionalId: parsedData?.professionalId,
+      lastUpdated: parsedData?.lastUpdated,
     })
 
     return parsedData
@@ -202,6 +212,8 @@ export function getCRMData(): CRMData | null {
 }
 
 export async function waitForCRMData(maxAttempts = 10, delayMs = 500): Promise<CRMData | null> {
+  console.log(`[v0] waitForCRMData: Starting with ${maxAttempts} attempts, ${delayMs}ms delay`)
+
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     console.log(`[v0] waitForCRMData: Attempt ${attempt}/${maxAttempts}`)
 
@@ -209,6 +221,16 @@ export async function waitForCRMData(maxAttempts = 10, delayMs = 500): Promise<C
     if (data) {
       console.log("[v0] waitForCRMData: Data found on attempt", attempt)
       return data
+    }
+
+    // Check if we should try to reinitialize
+    if (attempt === Math.floor(maxAttempts / 2)) {
+      const professionalId = getCRMProfessionalId()
+      if (professionalId) {
+        console.log("[v0] waitForCRMData: Halfway through attempts, checking if we should reinitialize")
+        // Don't reinitialize automatically, just log the situation
+        console.log("[v0] waitForCRMData: Professional ID exists but no data - possible storage issue")
+      }
     }
 
     if (attempt < maxAttempts) {
@@ -220,6 +242,62 @@ export async function waitForCRMData(maxAttempts = 10, delayMs = 500): Promise<C
   console.log("[v0] waitForCRMData: No data found after", maxAttempts, "attempts")
   return null
 }
+
+export function isCRMDataAvailable(): boolean {
+  if (typeof window === "undefined") return false
+
+  const rawData = localStorage.getItem("crm_data")
+  const professionalId = localStorage.getItem("crm_professional_id")
+
+  console.log("[v0] isCRMDataAvailable: Data exists:", !!rawData, "Professional ID exists:", !!professionalId)
+
+  if (!rawData || !professionalId) {
+    return false
+  }
+
+  try {
+    const parsedData = JSON.parse(rawData)
+    const isValid =
+      parsedData &&
+      parsedData.professionalId === professionalId &&
+      Array.isArray(parsedData.petCare) &&
+      Array.isArray(parsedData.bookings)
+
+    console.log("[v0] isCRMDataAvailable: Data is valid:", isValid)
+    return isValid
+  } catch (error) {
+    console.error("[v0] isCRMDataAvailable: Error parsing data:", error)
+    return false
+  }
+}
+
+// Get stored CRM data from localStorage
+// export function getCRMData(): CRMData | null {
+//   if (typeof window === "undefined") return null
+
+//   try {
+//     const rawData = localStorage.getItem("crm_data")
+//     console.log("[v0] getCRMData: Raw localStorage data exists:", !!rawData)
+
+//     if (!rawData) {
+//       console.log("[v0] getCRMData: No data found in localStorage")
+//       return null
+//     }
+
+//     const parsedData = JSON.parse(rawData)
+//     console.log("[v0] getCRMData: Successfully parsed data:", !!parsedData)
+//     console.log("[v0] getCRMData: Data structure:", {
+//       petCare: parsedData?.petCare?.length || 0,
+//       bookings: parsedData?.bookings?.length || 0,
+//       professionalId: parsedData?.professionalId,
+//     })
+
+//     return parsedData
+//   } catch (error) {
+//     console.error("[v0] getCRMData: Error parsing stored data:", error)
+//     return null
+//   }
+// }
 
 export function calculateCRMStats(data: CRMData): CRMStats {
   const uniqueCustomers = new Set()
