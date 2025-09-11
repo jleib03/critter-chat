@@ -200,63 +200,88 @@ export default function TemplateCampaignSetup() {
 
   const [emailSequence, setEmailSequence] = useState<EmailSequenceItem[]>([])
   const [crmData, setCrmData] = useState<any>(null)
+  const [crmLoading, setCrmLoading] = useState(true)
   const [selectedCustomers, setSelectedCustomers] = useState<any[]>([])
   const router = useRouter()
 
   useEffect(() => {
-    const data = getCRMData()
-    setCrmData(data)
+    const loadCRMData = async () => {
+      setCrmLoading(true)
+      console.log("[v0] Template page: Starting CRM data load")
 
-    if (data && template?.audience) {
-      let initialCustomers: any[] = []
+      let data = getCRMData()
+      console.log("[v0] Template page: Initial data check:", !!data)
 
-      switch (template.audience) {
-        case "inactive-60":
-          initialCustomers = getInactiveCustomers(data, 60)
-          break
-        case "new-customers":
-          const customerBookingCounts = new Map()
-          data.bookings.forEach((booking: any) => {
-            const count = customerBookingCounts.get(booking.customer_email) || 0
-            customerBookingCounts.set(booking.customer_email, count + 1)
-          })
-          initialCustomers = Array.from(customerBookingCounts.entries())
-            .filter(([email, count]) => count <= 1)
-            .map(([email]) => data.bookings.find((b: any) => b.customer_email === email))
-            .filter(Boolean)
-          break
-        case "repeat-customers":
-          initialCustomers = getRepeatCustomers(data)
-          break
-        case "exotic-pets":
-          initialCustomers = getCustomersByPetType(data, "exotic")
-          break
-        case "dog-owners":
-          initialCustomers = getCustomersByPetType(data, "dog")
-          break
-        case "cat-owners":
-          initialCustomers = getCustomersByPetType(data, "cat")
-          break
-        default:
-          const uniqueEmails = new Set(data.bookings.map((b: any) => b.customer_email))
-          initialCustomers = Array.from(uniqueEmails)
-            .map((email) => data.bookings.find((b: any) => b.customer_email === email))
-            .filter(Boolean)
+      if (!data) {
+        // Wait for data to be loaded by the main CRM system
+        const maxAttempts = 10
+        let attempts = 0
+
+        while (!data && attempts < maxAttempts) {
+          await new Promise((resolve) => setTimeout(resolve, 500))
+          data = getCRMData()
+          attempts++
+          console.log(`[v0] Template page: Attempt ${attempts}, data available:`, !!data)
+        }
       }
 
-      setSelectedCustomers(initialCustomers)
+      setCrmData(data)
+      setCrmLoading(false)
+      console.log("[v0] Template page: CRM data set, loading complete")
+
+      if (data && template?.audience) {
+        let initialCustomers: any[] = []
+
+        switch (template.audience) {
+          case "inactive-60":
+            initialCustomers = getInactiveCustomers(data, 60)
+            break
+          case "new-customers":
+            const customerBookingCounts = new Map()
+            data.bookings.forEach((booking: any) => {
+              const count = customerBookingCounts.get(booking.customer_email) || 0
+              customerBookingCounts.set(booking.customer_email, count + 1)
+            })
+            initialCustomers = Array.from(customerBookingCounts.entries())
+              .filter(([email, count]) => count <= 1)
+              .map(([email]) => data.bookings.find((b: any) => b.customer_email === email))
+              .filter(Boolean)
+            break
+          case "repeat-customers":
+            initialCustomers = getRepeatCustomers(data)
+            break
+          case "exotic-pets":
+            initialCustomers = getCustomersByPetType(data, "exotic")
+            break
+          case "dog-owners":
+            initialCustomers = getCustomersByPetType(data, "dog")
+            break
+          case "cat-owners":
+            initialCustomers = getCustomersByPetType(data, "cat")
+            break
+          default:
+            const uniqueEmails = new Set(data.bookings.map((b: any) => b.customer_email))
+            initialCustomers = Array.from(uniqueEmails)
+              .map((email) => data.bookings.find((b: any) => b.customer_email === email))
+              .filter(Boolean)
+        }
+
+        setSelectedCustomers(initialCustomers)
+      }
+
+      if (template?.emails) {
+        const templateEmails = template.emails.map((email: any, index: number) => ({
+          id: (index + 1).toString(),
+          subject: email.subject,
+          content: email.content,
+          delayDays: email.delayDays,
+          isActive: true,
+        }))
+        setEmailSequence(templateEmails)
+      }
     }
 
-    if (template?.emails) {
-      const templateEmails = template.emails.map((email: any, index: number) => ({
-        id: (index + 1).toString(),
-        subject: email.subject,
-        content: email.content,
-        delayDays: email.delayDays,
-        isActive: true,
-      }))
-      setEmailSequence(templateEmails)
-    }
+    loadCRMData()
   }, [template])
 
   if (!isAuthenticated) {
@@ -600,6 +625,8 @@ export default function TemplateCampaignSetup() {
       </Alert>
 
       <CustomerSelectionInterface
+        crmData={crmData}
+        crmLoading={crmLoading}
         selectedAudience={campaignData.audience}
         onAudienceChange={(audience) => {
           setCampaignData({ ...campaignData, audience })

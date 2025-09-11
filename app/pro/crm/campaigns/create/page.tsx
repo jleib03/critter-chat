@@ -72,9 +72,16 @@ export default function CreateCampaign() {
       console.log("[v0] Campaign page: Initial data check:", !!data)
 
       if (!data) {
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-        data = getCRMData()
-        console.log("[v0] Campaign page: After wait, data available:", !!data)
+        // Wait for data to be loaded by the main CRM system
+        const maxAttempts = 10
+        let attempts = 0
+
+        while (!data && attempts < maxAttempts) {
+          await new Promise((resolve) => setTimeout(resolve, 500))
+          data = getCRMData()
+          attempts++
+          console.log(`[v0] Campaign page: Attempt ${attempts}, data available:`, !!data)
+        }
       }
 
       setCrmData(data)
