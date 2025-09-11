@@ -403,23 +403,21 @@ export default function CRMDashboard() {
             )}
 
             {/* Main Feature Cards */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
               {/* Campaign Library Section */}
               <Card className="border-border hover:shadow-lg transition-all duration-200">
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-secondary/10 rounded-lg flex items-center justify-center">
-                        <Target className="h-5 w-5 text-secondary" />
-                      </div>
-                      <div>
-                        <CardTitle className="header-font">Campaign Library</CardTitle>
-                        <CardDescription className="body-font">Pre-built and custom email campaigns</CardDescription>
-                      </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-secondary/10 rounded-lg flex items-center justify-center">
+                      <Target className="h-5 w-5 text-secondary" />
+                    </div>
+                    <div>
+                      <CardTitle className="header-font">Campaign Library</CardTitle>
+                      <CardDescription className="body-font">Pre-built and custom email campaigns</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Button
                       variant="outline"
@@ -451,8 +449,8 @@ export default function CRMDashboard() {
                   </div>
 
                   <div className="bg-muted/50 rounded-lg p-4">
-                    <h4 className="font-medium text-sm mb-2 header-font">Campaign Opportunities</h4>
-                    <div className="space-y-2">
+                    <h4 className="font-medium text-sm mb-3 header-font">Campaign Opportunities</h4>
+                    <div className="space-y-3">
                       <div className="flex items-center justify-between text-sm">
                         <span className="body-font">Exotic Pet Owners</span>
                         <Badge variant="outline" className="text-xs">
@@ -491,14 +489,14 @@ export default function CRMDashboard() {
                         <CardDescription className="body-font">Create, send, and track email campaigns</CardDescription>
                       </div>
                     </div>
-                    <Button onClick={() => router.push("/pro/crm/email/compose")}>
+                    <Button onClick={() => router.push("/pro/crm/email/compose")} size="sm">
                       <Plus className="h-4 w-4 mr-2" />
                       New Campaign
                     </Button>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="space-y-4">
                       <h4 className="font-medium header-font">Quick Actions</h4>
                       <div className="space-y-2">
@@ -548,102 +546,102 @@ export default function CRMDashboard() {
                         </div>
                       </div>
                     </div>
+                  </div>
 
-                    <div className="space-y-4">
-                      <h4 className="font-medium header-font">Performance Overview</h4>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm body-font">Total Customers</span>
-                          <span className="font-medium header-font">{stats.totalCustomers}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm body-font">Onboarding Rate</span>
-                          <span className="font-medium header-font">{stats.onboardingRate}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm body-font">Total Revenue</span>
-                          <span className="font-medium header-font">{stats.revenue}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm body-font">Active Pets</span>
-                          <span className="font-medium header-font">{stats.totalPets}</span>
-                        </div>
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <h4 className="font-medium text-sm mb-3 header-font">Performance Overview</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm body-font">Total Customers</span>
+                        <span className="font-medium header-font">{stats.totalCustomers}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm body-font">Onboarding Rate</span>
+                        <span className="font-medium header-font">{stats.onboardingRate}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm body-font">Total Revenue</span>
+                        <span className="font-medium header-font">{stats.revenue}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm body-font">Active Pets</span>
+                        <span className="font-medium header-font">{stats.totalPets}</span>
                       </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
+            </div>
 
-              {/* Getting Started Section */}
-              <Card className="border-border bg-gradient-to-r from-primary/5 to-accent/5 mb-12">
-                <CardHeader>
-                  <CardTitle className="header-font">Getting Started with CRM</CardTitle>
-                  <CardDescription className="body-font">
-                    New to email marketing? Follow these steps to set up your first campaign.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="flex items-start space-x-3">
-                      <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-sm">
-                        1
-                      </div>
-                      <div>
-                        <h4 className="font-medium mb-1 header-font">Upload Your Data</h4>
-                        <p className="text-sm text-muted-foreground body-font">
-                          Import your customer list or connect your Critter booking data to get started.
-                        </p>
-                      </div>
+            {/* Getting Started Section - Full Width */}
+            <Card className="border-border bg-gradient-to-r from-primary/5 to-accent/5 mb-8">
+              <CardHeader>
+                <CardTitle className="header-font">Getting Started with CRM</CardTitle>
+                <CardDescription className="body-font">
+                  New to email marketing? Follow these steps to set up your first campaign.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-sm">
+                      1
                     </div>
-
-                    <div className="flex items-start space-x-3">
-                      <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center text-secondary-foreground font-bold text-sm">
-                        2
-                      </div>
-                      <div>
-                        <h4 className="font-medium mb-1 header-font">Choose a Campaign</h4>
-                        <p className="text-sm text-muted-foreground body-font">
-                          Select from our pre-built templates or create a custom campaign for your audience.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start space-x-3">
-                      <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center text-accent-foreground font-bold text-sm">
-                        3
-                      </div>
-                      <div>
-                        <h4 className="font-medium mb-1 header-font">Send & Track</h4>
-                        <p className="text-sm text-muted-foreground body-font">
-                          Launch your campaign and monitor performance with detailed analytics.
-                        </p>
-                      </div>
+                    <div>
+                      <h4 className="font-medium mb-2 header-font">Upload Your Data</h4>
+                      <p className="text-sm text-muted-foreground body-font">
+                        Import your customer list or connect your Critter booking data to get started.
+                      </p>
                     </div>
                   </div>
 
-                  <div className="mt-6 flex flex-col sm:flex-row gap-4">
-                    <Button onClick={() => router.push("/pro/crm/upload")} className="flex-1">
-                      <Upload className="h-4 w-4 mr-2" />
-                      Start with Data Upload
-                    </Button>
-                    <Button variant="outline" onClick={() => router.push("/pro/crm/campaigns")} className="flex-1">
-                      <Target className="h-4 w-4 mr-2" />
-                      Browse Campaign Templates
-                    </Button>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center text-secondary-foreground font-bold text-sm">
+                      2
+                    </div>
+                    <div>
+                      <h4 className="font-medium mb-2 header-font">Choose a Campaign</h4>
+                      <p className="text-sm text-muted-foreground body-font">
+                        Select from our pre-built templates or create a custom campaign for your audience.
+                      </p>
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
 
-              {/* Data Refresh Option */}
-              <div className="mb-6 flex justify-between items-center">
-                <div>
-                  <p className="text-sm text-muted-foreground">CRM data loaded for Professional ID: {professionalId}</p>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center text-accent-foreground font-bold text-sm">
+                      3
+                    </div>
+                    <div>
+                      <h4 className="font-medium mb-2 header-font">Send & Track</h4>
+                      <p className="text-sm text-muted-foreground body-font">
+                        Launch your campaign and monitor performance with detailed analytics.
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => router.push("/pro/crm/initialize")}>
-                  <Database className="h-4 w-4 mr-2" />
-                  Refresh Data
-                </Button>
+
+                <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+                  <Button onClick={() => router.push("/pro/crm/upload")} size="lg">
+                    <Upload className="h-4 w-4 mr-2" />
+                    Start with Data Upload
+                  </Button>
+                  <Button variant="outline" onClick={() => router.push("/pro/crm/campaigns")} size="lg">
+                    <Target className="h-4 w-4 mr-2" />
+                    Browse Campaign Templates
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Data Refresh Option */}
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm text-muted-foreground">CRM data loaded for Professional ID: {professionalId}</p>
               </div>
+              <Button variant="outline" size="sm" onClick={() => router.push("/pro/crm/initialize")}>
+                <Database className="h-4 w-4 mr-2" />
+                Refresh Data
+              </Button>
             </div>
           </div>
         </div>
