@@ -288,12 +288,11 @@ export default function ProfessionalSetupPage() {
                 <p className="text-xl text-gray-700 max-w-3xl mx-auto body-font">
                   Tools and resources to enhance your Critter professional experience
                 </p>
-                {/* Add this new callout */}
                 <div className="mt-6 max-w-2xl mx-auto">
                   <div className="bg-[#E75837]/10 border border-[#E75837]/30 rounded-lg p-4">
-                    <p className="text-[#E75837] body-font text-center">
+                    <p className="text-gray-800 body-font text-center">
                       <strong>First time here?</strong> Check out our{" "}
-                      <a href="/pro/how-to-use" className="text-[#E75837] hover:text-[#d04e30] underline font-medium">
+                      <a href="/pro/how-to-use" className="text-gray-900 hover:text-black underline font-medium">
                         step-by-step help guide
                       </a>{" "}
                       to walk you through setting up all your professional tools.

@@ -166,19 +166,61 @@ export default function CRMDashboard() {
   }
 
   const stats = crmData
-    ? {
-        totalCustomers: crmData.customers?.length || 0,
-        totalBookings: crmData.bookings?.length || 0,
-        totalPets: crmData.pets?.length || 0,
-        avgOpenRate: "68%", // This would come from email campaign data later
-        revenue: "$12,450", // This would be calculated from booking amounts
-      }
+    ? (() => {
+        const petCarePlans = crmData.petCarePlans || []
+        const bookings = crmData.bookings || []
+        const invoices = crmData.invoiceData || []
+        const onboardingData = crmData.onboardingStatus || []
+
+        // Extract unique customers from bookings
+        const uniqueCustomers = new Set()
+        bookings.forEach((booking) => {
+          if (booking.customer_email) {
+            uniqueCustomers.add(booking.customer_email)
+          }
+        })
+
+        // Calculate total pets from pet care plans
+        const totalPets = petCarePlans.length
+
+        // Calculate revenue from invoices
+        const totalRevenue = invoices.reduce((sum, invoice) => {
+          const amount = Number.parseFloat(invoice.amount || "0")
+          return sum + (isNaN(amount) ? 0 : amount)
+        }, 0)
+
+        // Calculate onboarding completion rate
+        const completedOnboarding = onboardingData.filter(
+          (item) => item.onboarding_completed === true || item.onboarding_completed === "true",
+        ).length
+        const onboardingRate =
+          onboardingData.length > 0 ? Math.round((completedOnboarding / onboardingData.length) * 100) : 0
+
+        return {
+          totalCustomers: uniqueCustomers.size,
+          totalBookings: bookings.length,
+          totalPets: totalPets,
+          revenue: `$${totalRevenue.toLocaleString()}`,
+          onboardingRate: `${onboardingRate}%`,
+          exoticPets: petCarePlans.filter((pet) => pet.pet_type && !["dog", "cat"].includes(pet.pet_type.toLowerCase()))
+            .length,
+          recentBookings: bookings.filter((booking) => {
+            if (!booking.booking_date) return false
+            const bookingDate = new Date(booking.booking_date)
+            const thirtyDaysAgo = new Date()
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+            return bookingDate >= thirtyDaysAgo
+          }).length,
+        }
+      })()
     : {
         totalCustomers: 0,
         totalBookings: 0,
         totalPets: 0,
-        avgOpenRate: "0%",
         revenue: "$0",
+        onboardingRate: "0%",
+        exoticPets: 0,
+        recentBookings: 0,
       }
 
   return (
@@ -257,7 +299,7 @@ export default function CRMDashboard() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground body-font">Revenue This Month</p>
+                    <p className="text-sm text-muted-foreground body-font">Total Revenue</p>
                     <p className="text-2xl font-bold text-foreground header-font">{stats.revenue}</p>
                   </div>
                   <BarChart3 className="h-8 w-8 text-chart-4" />
@@ -265,6 +307,72 @@ export default function CRMDashboard() {
               </CardContent>
             </Card>
           </div>
+
+          {crmData && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+              <Card className="border-border">
+                <CardHeader>
+                  <CardTitle className="text-lg header-font">Customer Insights</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm body-font">Onboarding Complete</span>
+                    <Badge variant="secondary">{stats.onboardingRate}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm body-font">Recent Bookings (30d)</span>
+                    <span className="font-medium header-font">{stats.recentBookings}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm body-font">Exotic Pet Owners</span>
+                    <span className="font-medium header-font">{stats.exoticPets}</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-border">
+                <CardHeader>
+                  <CardTitle className="text-lg header-font">Pet Care Plans</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {crmData.petCarePlans?.slice(0, 3).map((pet, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                      <div>
+                        <p className="text-sm font-medium body-font">{pet.pet_name || "Unnamed Pet"}</p>
+                        <p className="text-xs text-muted-foreground body-font">
+                          {pet.pet_type || "Unknown"} • {pet.customer_email || "No email"}
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        {pet.service_type || "Care"}
+                      </Badge>
+                    </div>
+                  )) || <p className="text-sm text-muted-foreground body-font">No pet care plans found</p>}
+                </CardContent>
+              </Card>
+
+              <Card className="border-border">
+                <CardHeader>
+                  <CardTitle className="text-lg header-font">Recent Activity</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {crmData.bookings?.slice(0, 3).map((booking, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                      <div>
+                        <p className="text-sm font-medium body-font">{booking.service_type || "Service"}</p>
+                        <p className="text-xs text-muted-foreground body-font">
+                          {booking.customer_email || "No email"}
+                        </p>
+                      </div>
+                      <span className="text-xs text-muted-foreground body-font">
+                        {booking.booking_date ? new Date(booking.booking_date).toLocaleDateString() : "No date"}
+                      </span>
+                    </div>
+                  )) || <p className="text-sm text-muted-foreground body-font">No recent bookings found</p>}
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           {/* Main Feature Cards */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
@@ -383,24 +491,26 @@ export default function CRMDashboard() {
                 </div>
 
                 <div className="bg-muted/50 rounded-lg p-4">
-                  <h4 className="font-medium text-sm mb-2 header-font">Popular Campaign Types</h4>
+                  <h4 className="font-medium text-sm mb-2 header-font">Campaign Opportunities</h4>
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="body-font">60-Day Inactive Customers</span>
-                      <Badge variant="outline" className="text-xs">
-                        12 sent
-                      </Badge>
-                    </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="body-font">Exotic Pet Owners</span>
                       <Badge variant="outline" className="text-xs">
-                        8 sent
+                        {stats.exoticPets} customers
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="body-font">Second-Time Clients</span>
+                      <span className="body-font">Incomplete Onboarding</span>
                       <Badge variant="outline" className="text-xs">
-                        15 sent
+                        {stats.totalCustomers -
+                          Math.round((Number.parseInt(stats.onboardingRate) / 100) * stats.totalCustomers)}{" "}
+                        customers
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="body-font">Recent Clients (30d)</span>
+                      <Badge variant="outline" className="text-xs">
+                        {stats.recentBookings} bookings
                       </Badge>
                     </div>
                   </div>
@@ -484,20 +594,20 @@ export default function CRMDashboard() {
                   <h4 className="font-medium header-font">Performance Overview</h4>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm body-font">Total Sent</span>
-                      <span className="font-medium header-font">2,847</span>
+                      <span className="text-sm body-font">Total Customers</span>
+                      <span className="font-medium header-font">{stats.totalCustomers}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm body-font">Avg. Open Rate</span>
-                      <span className="font-medium header-font">68%</span>
+                      <span className="text-sm body-font">Onboarding Rate</span>
+                      <span className="font-medium header-font">{stats.onboardingRate}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm body-font">Click Rate</span>
-                      <span className="font-medium header-font">24%</span>
+                      <span className="text-sm body-font">Total Revenue</span>
+                      <span className="font-medium header-font">{stats.revenue}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm body-font">Conversions</span>
-                      <span className="font-medium header-font">156</span>
+                      <span className="text-sm body-font">Active Pets</span>
+                      <span className="font-medium header-font">{stats.totalPets}</span>
                     </div>
                   </div>
                 </div>
