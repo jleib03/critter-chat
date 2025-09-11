@@ -50,52 +50,113 @@ export default function CustomerSelectionInterface({
   const [searchTerm, setSearchTerm] = useState("")
   const [showCustomerList, setShowCustomerList] = useState(false)
 
+  const getPetTypeFromIds = (pet: any): string => {
+    if (pet.type_id === "1" || pet.dog_breed_id) return "Dog"
+    if (pet.type_id === "2" || pet.cat_breed_id) return "Cat"
+    if (pet.bird_breed_id) return "Bird"
+    if (pet.fish_breed_id) return "Fish"
+    if (pet.rabbit_breed_id) return "Rabbit"
+    if (pet.hamster_breed_id) return "Hamster"
+    if (pet.turtle_breed_id) return "Turtle"
+    if (pet.frog_breed_id) return "Frog"
+    if (pet.lizard_breed_id) return "Lizard"
+    if (pet.snake_breed_id) return "Snake"
+    return pet.pet_type || "Unknown"
+  }
+
   useEffect(() => {
+    console.log("[v0] Checking CRM data:", { data: !!getCRMData(), professionalId: getCRMData()?.professionalId })
     const data = getCRMData()
+    console.log("[v0] Full CRM data structure:", data)
+    console.log("[v0] Data keys:", data ? Object.keys(data) : "No data")
+
     setCrmData(data)
 
     if (data) {
+      console.log("[v0] Calculating stats from crmData:", JSON.stringify(data).substring(0, 200) + "...")
+      console.log("[v0] Data arrays:", {
+        petCarePlans: data.petCare?.length || 0,
+        bookings: data.bookings?.length || 0,
+        invoices: data.invoices?.invoices?.length || 0,
+        onboardingData: data.onboarding ? 1 : 0,
+      })
+
       const customerMap = new Map<string, Customer>()
 
-      // Process bookings to build customer profiles
-      data.bookings.forEach((booking: any) => {
-        const email = booking.customer_email
-        if (!customerMap.has(email)) {
-          customerMap.set(email, {
-            email,
-            name: booking.customer_name || email.split("@")[0],
-            petName: booking.pet_name,
-            petType: booking.pet_type,
-            lastBooking: booking.date,
-            totalBookings: 1,
+      data.petCare?.forEach((pet: any) => {
+        console.log("[v0] Processing pet:", {
+          name: pet.name,
+          type_id: pet.type_id,
+          breed_ids: {
+            dog: pet.dog_breed_id,
+            cat: pet.cat_breed_id,
+            bird: pet.bird_breed_id,
+            fish: pet.fish_breed_id,
+          },
+        })
+
+        const petType = getPetTypeFromIds(pet)
+
+        // Get customer emails from pet contacts
+        if (pet.contacts && Array.isArray(pet.contacts)) {
+          pet.contacts.forEach((contact: any) => {
+            if (contact.email) {
+              const existingCustomer = customerMap.get(contact.email)
+              if (!existingCustomer) {
+                customerMap.set(contact.email, {
+                  email: contact.email,
+                  name: contact.name || contact.email.split("@")[0],
+                  petName: pet.name,
+                  petType: petType,
+                  totalBookings: 0,
+                })
+              } else {
+                // If customer already exists, add additional pet info
+                existingCustomer.petName = existingCustomer.petName
+                  ? `${existingCustomer.petName}, ${pet.name}`
+                  : pet.name
+                existingCustomer.petType = existingCustomer.petType
+                  ? `${existingCustomer.petType}, ${petType}`
+                  : petType
+              }
+            }
           })
-        } else {
-          const customer = customerMap.get(email)!
-          customer.totalBookings = (customer.totalBookings || 0) + 1
-          // Update with most recent booking info
-          if (booking.date > (customer.lastBooking || "")) {
-            customer.lastBooking = booking.date
-            customer.petName = booking.pet_name || customer.petName
-            customer.petType = booking.pet_type || customer.petType
+        }
+      })
+
+      // Process bookings to build customer profiles and add booking history
+      data.bookings?.forEach((booking: any) => {
+        const email = booking.customer_email
+        if (email) {
+          if (!customerMap.has(email)) {
+            customerMap.set(email, {
+              email,
+              name: booking.customer_name || email.split("@")[0],
+              petName: booking.pet_name,
+              petType: booking.pet_type,
+              lastBooking: booking.booking_date,
+              totalBookings: 1,
+            })
+          } else {
+            const customer = customerMap.get(email)!
+            customer.totalBookings = (customer.totalBookings || 0) + 1
+            // Update with most recent booking info
+            if (booking.booking_date > (customer.lastBooking || "")) {
+              customer.lastBooking = booking.booking_date
+              if (booking.pet_name && !customer.petName?.includes(booking.pet_name)) {
+                customer.petName = customer.petName ? `${customer.petName}, ${booking.pet_name}` : booking.pet_name
+              }
+              if (booking.pet_type && !customer.petType?.includes(booking.pet_type)) {
+                customer.petType = customer.petType ? `${customer.petType}, ${booking.pet_type}` : booking.pet_type
+              }
+            }
           }
         }
       })
 
-      // Add pet care data
-      data.petCare.forEach((pet: any) => {
-        const email = pet.owner_email || pet.customer_email
-        if (email && !customerMap.has(email)) {
-          customerMap.set(email, {
-            email,
-            name: pet.owner_name || email.split("@")[0],
-            petName: pet.pet_name,
-            petType: pet.pet_type,
-            totalBookings: 0,
-          })
-        }
-      })
-
       const allCustomers = Array.from(customerMap.values())
+      console.log("[v0] Final customer list:", allCustomers.length, "customers")
+      console.log("[v0] Sample customers:", allCustomers.slice(0, 3))
       setCustomers(allCustomers)
     }
   }, [])
@@ -128,7 +189,32 @@ export default function CustomerSelectionInterface({
       case "exotic-pets":
         filtered = customers.filter((c) => {
           const petType = c.petType?.toLowerCase() || ""
-          return !petType.includes("dog") && !petType.includes("cat") && petType.length > 0
+          const isExotic =
+            petType &&
+            !petType.includes("dog") &&
+            !petType.includes("cat") &&
+            (petType.includes("bird") ||
+              petType.includes("fish") ||
+              petType.includes("rabbit") ||
+              petType.includes("hamster") ||
+              petType.includes("turtle") ||
+              petType.includes("frog") ||
+              petType.includes("lizard") ||
+              petType.includes("snake") ||
+              petType.length > 0)
+          return isExotic
+        })
+        break
+      case "bird-owners":
+        filtered = customers.filter((c) => c.petType?.toLowerCase().includes("bird"))
+        break
+      case "fish-owners":
+        filtered = customers.filter((c) => c.petType?.toLowerCase().includes("fish"))
+        break
+      case "small-pets":
+        filtered = customers.filter((c) => {
+          const petType = c.petType?.toLowerCase() || ""
+          return petType.includes("rabbit") || petType.includes("hamster") || petType.includes("guinea")
         })
         break
       default:
@@ -141,7 +227,8 @@ export default function CustomerSelectionInterface({
         (customer) =>
           customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
           customer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          customer.petName?.toLowerCase().includes(searchTerm.toLowerCase()),
+          customer.petName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          customer.petType?.toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }
 
@@ -191,6 +278,9 @@ export default function CustomerSelectionInterface({
                 <SelectItem value="dog-owners">Dog Owners</SelectItem>
                 <SelectItem value="cat-owners">Cat Owners</SelectItem>
                 <SelectItem value="exotic-pets">Exotic Pet Owners</SelectItem>
+                <SelectItem value="bird-owners">Bird Owners</SelectItem>
+                <SelectItem value="fish-owners">Fish Owners</SelectItem>
+                <SelectItem value="small-pets">Small Pet Owners</SelectItem>
               </SelectContent>
             </Select>
           </div>
