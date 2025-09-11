@@ -246,10 +246,22 @@ export default function CRMDashboard() {
                 <Zap className="h-4 w-4 mr-2" />
                 Professional CRM Tools
               </Badge>
-              <Badge variant="outline" className="px-4 py-2 text-sm">
-                <Database className="h-4 w-4 mr-2" />
-                Data Loaded: {professionalId}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="px-4 py-2 text-sm">
+                  <Database className="h-4 w-4 mr-2" />
+                  Data Loaded: {professionalId}
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleInitialization}
+                  disabled={isInitializing}
+                  className="h-8 w-8 p-0"
+                  title="Refresh CRM Data"
+                >
+                  {isInitializing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
+                </Button>
+              </div>
             </div>
           </div>
 
