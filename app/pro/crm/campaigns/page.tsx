@@ -179,8 +179,8 @@ export default function CampaignLibrary() {
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-3">
-            <div className={`w-10 h-10 bg-muted/80 rounded-lg flex items-center justify-center border`}>
-              <template.icon className={`h-5 w-5 ${template.color}`} />
+            <div className="flex items-center justify-center">
+              <template.icon className={`h-6 w-6 ${template.color}`} />
             </div>
             <div>
               <CardTitle className="text-lg header-font text-foreground">{template.name}</CardTitle>
@@ -240,8 +240,8 @@ export default function CampaignLibrary() {
           <div className="p-6">
             <div className="flex items-start justify-between mb-6">
               <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
-                  <selectedTemplate.icon className={`h-6 w-6 ${selectedTemplate.color}`} />
+                <div className="flex items-center justify-center">
+                  <selectedTemplate.icon className={`h-7 w-7 ${selectedTemplate.color}`} />
                 </div>
                 <div>
                   <h3 className="text-xl font-bold header-font">{selectedTemplate.name}</h3>
@@ -417,7 +417,7 @@ export default function CampaignLibrary() {
             <TabsContent value="custom" className="mt-6">
               <Card className="border-border">
                 <CardContent className="p-8 text-center">
-                  <Plus className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <Plus className="h-12 w-12 text-secondary mx-auto mb-4" />
                   <h3 className="text-lg font-medium mb-2 header-font">No custom campaigns yet</h3>
                   <p className="text-muted-foreground body-font mb-4">
                     Create your first custom campaign to target specific customer segments.
