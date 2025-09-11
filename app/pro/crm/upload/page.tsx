@@ -43,15 +43,28 @@ export default function DataUploadPortal() {
   }
 
   const parseCSV = (csvText: string): any[] => {
+    console.log("[v0] Starting CSV parsing...")
     const lines = csvText.split("\n").filter((line) => line.trim())
-    if (lines.length < 2) return []
+    console.log("[v0] CSV lines found:", lines.length)
 
-    const headers = lines[0].split(",").map((h) => h.trim().replace(/"/g, ""))
+    if (lines.length < 2) {
+      console.log("[v0] Not enough lines in CSV")
+      return []
+    }
+
+    // Handle both comma and semicolon separators
+    const firstLine = lines[0]
+    const separator = firstLine.includes(";") ? ";" : ","
+    console.log("[v0] Using separator:", separator)
+
+    const headers = firstLine.split(separator).map((h) => h.trim().replace(/"/g, ""))
+    console.log("[v0] CSV headers:", headers)
+
     const data = []
 
     for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(",").map((v) => v.trim().replace(/"/g, ""))
-      if (values.length === headers.length) {
+      const values = lines[i].split(separator).map((v) => v.trim().replace(/"/g, ""))
+      if (values.length === headers.length && values.some((v) => v.length > 0)) {
         const row: any = {}
         headers.forEach((header, index) => {
           row[header.toLowerCase().replace(/\s+/g, "_")] = values[index]
@@ -60,16 +73,21 @@ export default function DataUploadPortal() {
       }
     }
 
+    console.log("[v0] Final parsed data:", data)
     return data
   }
 
   const processCSVFile = async (file: File) => {
     try {
+      console.log("[v0] Processing CSV file:", file.name)
       const text = await file.text()
+      console.log("[v0] CSV file content length:", text.length)
+
       setCsvData(text)
       const parsedData = parseCSV(text)
 
       console.log("[v0] Parsed CSV data:", parsedData)
+      console.log("[v0] Number of records parsed:", parsedData.length)
 
       if (parsedData.length === 0) {
         throw new Error("No valid data found in CSV file")
@@ -77,6 +95,11 @@ export default function DataUploadPortal() {
 
       setPreviewData(parsedData)
       setUploadError("")
+
+      // Automatically move to preview step after successful parsing
+      setTimeout(() => {
+        setCurrentStep("preview")
+      }, 500)
     } catch (error) {
       console.error("[v0] CSV parsing error:", error)
       setUploadError(error instanceof Error ? error.message : "Failed to parse CSV file")
@@ -95,22 +118,35 @@ export default function DataUploadPortal() {
       return false
     }
 
+    if (previewData.length === 0) {
+      setUploadError("No valid records to upload")
+      return false
+    }
+
     try {
       console.log("[v0] Sending CSV data to webhook...")
+      console.log("[v0] Professional ID:", professionalId)
+      console.log("[v0] Records to upload:", previewData.length)
 
       const webhookUrl = getWebhookEndpoint("CRM_INITIALIZATION")
+      console.log("[v0] Webhook URL:", webhookUrl)
 
       const payload = {
         action: "customer_upload",
         professionalId: professionalId.trim(),
         csvData: csvData,
+        parsedData: previewData, // Include parsed data for easier processing
         fileName: uploadedFile?.name || "upload.csv",
         recordCount: previewData.length,
         timestamp: new Date().toISOString(),
         source: "crm_upload_portal",
       }
 
-      console.log("[v0] Webhook payload:", { ...payload, csvData: `${csvData.length} characters` })
+      console.log("[v0] Webhook payload:", {
+        ...payload,
+        csvData: `${csvData.length} characters`,
+        parsedData: `${previewData.length} records`,
+      })
 
       const response = await fetch(webhookUrl, {
         method: "POST",
@@ -120,8 +156,12 @@ export default function DataUploadPortal() {
         body: JSON.stringify(payload),
       })
 
+      console.log("[v0] Webhook response status:", response.status)
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        const errorText = await response.text()
+        console.error("[v0] Webhook error response:", errorText)
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`)
       }
 
       const result = await response.json()
@@ -135,72 +175,26 @@ export default function DataUploadPortal() {
     }
   }
 
+  const handleCritterSync = async () => {
+    setUploadMethod("critter")
+    setCurrentStep("upload")
+
+    // Instead of dummy data, we'll simulate the Critter API call
+    // but for now, we'll skip to file upload since that's what the user wants
+    setTimeout(() => {
+      setCurrentStep("upload")
+      // Set upload method to file so user can upload their CSV
+      setUploadMethod("file")
+    }, 1000)
+  }
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
       setUploadedFile(file)
-      setCurrentStep("preview")
-      processRealFile(file)
+      setCurrentStep("upload")
+      processCSVFile(file)
     }
-  }
-
-  const processRealFile = (file: File) => {
-    setIsUploading(true)
-    setUploadProgress(0)
-    setUploadError("")
-
-    const progressInterval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 90) {
-          clearInterval(progressInterval)
-          return 90
-        }
-        return prev + 15
-      })
-    }, 200)
-
-    processCSVFile(file).finally(() => {
-      clearInterval(progressInterval)
-      setUploadProgress(100)
-      setIsUploading(false)
-    })
-  }
-
-  const handleCritterSync = () => {
-    setUploadMethod("critter")
-    setCurrentStep("upload")
-    setTimeout(() => {
-      setPreviewData([
-        {
-          name: "Jessica Wilson",
-          email: "jessica@email.com",
-          phone: "555-1111",
-          pet_name: "Luna",
-          pet_type: "Dog",
-          last_booking: "2024-01-10",
-          service: "Grooming",
-        },
-        {
-          name: "David Brown",
-          email: "david.brown@email.com",
-          phone: "555-2222",
-          pet_name: "Max",
-          pet_type: "Dog",
-          last_booking: "2024-01-12",
-          service: "Boarding",
-        },
-        {
-          name: "Lisa Garcia",
-          email: "lisa.garcia@email.com",
-          phone: "555-3333",
-          pet_name: "Bella",
-          pet_type: "Cat",
-          last_booking: "2024-01-14",
-          service: "Daycare",
-        },
-      ])
-      setCurrentStep("preview")
-    }, 2000)
   }
 
   const renderStepIndicator = () => {
