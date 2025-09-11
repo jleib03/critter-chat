@@ -39,6 +39,8 @@ export default function CRMDashboard() {
     const storedProfessionalId = getCRMProfessionalId()
 
     console.log("[v0] Checking CRM data:", { data: !!data, professionalId: storedProfessionalId })
+    console.log("[v0] Full CRM data structure:", data)
+    console.log("[v0] Data keys:", data ? Object.keys(data) : "No data")
 
     if (data && storedProfessionalId) {
       setCrmData(data)
@@ -167,10 +169,19 @@ export default function CRMDashboard() {
 
   const stats = crmData
     ? (() => {
+        console.log("[v0] Calculating stats from crmData:", crmData)
+
         const petCarePlans = crmData.petCarePlans || []
         const bookings = crmData.bookings || []
         const invoices = crmData.invoiceData || []
         const onboardingData = crmData.onboardingStatus || []
+
+        console.log("[v0] Data arrays:", {
+          petCarePlans: petCarePlans.length,
+          bookings: bookings.length,
+          invoices: invoices.length,
+          onboardingData: onboardingData.length,
+        })
 
         // Extract unique customers from bookings
         const uniqueCustomers = new Set()
