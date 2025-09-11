@@ -83,6 +83,34 @@ export default function CustomerSelectionInterface({
 
       const customerMap = new Map<string, Customer>()
 
+      data.bookings?.forEach((booking: any) => {
+        const email = booking.customer_email
+        if (email) {
+          const customerName =
+            `${booking.customer_first_name || ""} ${booking.customer_last_name || ""}`.trim() ||
+            booking.customer_name ||
+            email.split("@")[0]
+
+          if (!customerMap.has(email)) {
+            customerMap.set(email, {
+              email,
+              name: customerName,
+              petName: "",
+              petType: "",
+              lastBooking: booking.booking_date,
+              totalBookings: 1,
+            })
+          } else {
+            const customer = customerMap.get(email)!
+            customer.totalBookings = (customer.totalBookings || 0) + 1
+            // Update with most recent booking info
+            if (booking.booking_date > (customer.lastBooking || "")) {
+              customer.lastBooking = booking.booking_date
+            }
+          }
+        }
+      })
+
       data.petCare?.forEach((pet: any) => {
         console.log("[v0] Processing pet:", {
           name: pet.name,
@@ -97,62 +125,64 @@ export default function CustomerSelectionInterface({
 
         const petType = getPetTypeFromIds(pet)
 
-        // Get customer emails from pet contacts
+        // Get customer emails from pet contacts and match with existing customers
         if (pet.contacts && Array.isArray(pet.contacts)) {
           pet.contacts.forEach((contact: any) => {
             if (contact.email) {
               const existingCustomer = customerMap.get(contact.email)
-              if (!existingCustomer) {
+              if (existingCustomer) {
+                // Add pet info to existing customer
+                if (pet.name) {
+                  existingCustomer.petName = existingCustomer.petName
+                    ? `${existingCustomer.petName}, ${pet.name}`
+                    : pet.name
+                }
+                if (petType) {
+                  const currentTypes = existingCustomer.petType ? existingCustomer.petType.split(", ") : []
+                  if (!currentTypes.includes(petType)) {
+                    existingCustomer.petType = existingCustomer.petType
+                      ? `${existingCustomer.petType}, ${petType}`
+                      : petType
+                  }
+                }
+              } else {
+                // Create new customer if not found in bookings
                 customerMap.set(contact.email, {
                   email: contact.email,
-                  name: contact.name || contact.email.split("@")[0],
+                  name: contact.contact_name || contact.email.split("@")[0],
                   petName: pet.name,
                   petType: petType,
                   totalBookings: 0,
                 })
-              } else {
-                // If customer already exists, add additional pet info
-                existingCustomer.petName = existingCustomer.petName
-                  ? `${existingCustomer.petName}, ${pet.name}`
-                  : pet.name
-                existingCustomer.petType = existingCustomer.petType
-                  ? `${existingCustomer.petType}, ${petType}`
-                  : petType
               }
             }
           })
         }
       })
 
-      // Process bookings to build customer profiles and add booking history
-      data.bookings?.forEach((booking: any) => {
-        const email = booking.customer_email
-        if (email) {
-          if (!customerMap.has(email)) {
-            customerMap.set(email, {
-              email,
-              name: booking.customer_name || email.split("@")[0],
-              petName: booking.pet_name,
-              petType: booking.pet_type,
-              lastBooking: booking.booking_date,
-              totalBookings: 1,
-            })
-          } else {
-            const customer = customerMap.get(email)!
-            customer.totalBookings = (customer.totalBookings || 0) + 1
-            // Update with most recent booking info
-            if (booking.booking_date > (customer.lastBooking || "")) {
-              customer.lastBooking = booking.booking_date
-              if (booking.pet_name && !customer.petName?.includes(booking.pet_name)) {
-                customer.petName = customer.petName ? `${customer.petName}, ${booking.pet_name}` : booking.pet_name
-              }
-              if (booking.pet_type && !customer.petType?.includes(booking.pet_type)) {
-                customer.petType = customer.petType ? `${customer.petType}, ${booking.pet_type}` : booking.pet_type
-              }
-            }
+      if (data.onboarding && data.onboarding.email) {
+        const onboardingEmail = data.onboarding.email
+        if (!customerMap.has(onboardingEmail)) {
+          const onboardingName = data.onboarding.supporting_details?.personal_info
+            ? `${data.onboarding.supporting_details.personal_info.first_name || ""} ${data.onboarding.supporting_details.personal_info.last_name || ""}`.trim()
+            : onboardingEmail.split("@")[0]
+
+          customerMap.set(onboardingEmail, {
+            email: onboardingEmail,
+            name: onboardingName,
+            petName: "",
+            petType: "",
+            totalBookings: 0,
+          })
+
+          // Add pet info from onboarding data
+          if (data.onboarding.supporting_details?.pets?.details) {
+            const petNames = data.onboarding.supporting_details.pets.details.map((p: any) => p.pet_name).join(", ")
+            const customer = customerMap.get(onboardingEmail)!
+            customer.petName = petNames
           }
         }
-      })
+      }
 
       const allCustomers = Array.from(customerMap.values())
       console.log("[v0] Final customer list:", allCustomers.length, "customers")
