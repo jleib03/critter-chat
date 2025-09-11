@@ -43,30 +43,63 @@ export async function initializeCRMData(professionalId: string): Promise<CRMData
     const rawData = await response.json()
     console.log("📥 Raw CRM response:", JSON.stringify(rawData, null, 2))
 
-    if (Array.isArray(rawData) && rawData.length >= 4) {
-      const [petCareData, bookingsData, invoicesData, onboardingData] = rawData
+    if (Array.isArray(rawData) && rawData.length > 0) {
+      // Separate different data types from the mixed array
+      const petCareData: any[] = []
+      const bookingsData: any[] = []
+      let invoicesData: any = { invoices: [], payment_instructions: "" }
+      let onboardingData: any = {
+        email: "",
+        user_type: "",
+        onboarding_complete: false,
+        criteria_status: {
+          pets_created: false,
+          policies_signed: false,
+          personal_info_complete: false,
+          emergency_contacts_added: false,
+        },
+        supporting_details: {
+          pets: { count: 0, details: [] },
+          policies: { details: [], total_policies: 0, signed_policies: 0 },
+          personal_info: { email: "", last_name: "", first_name: "" },
+          emergency_contacts: { count: 0, details: [] },
+        },
+      }
+
+      // Parse the mixed array
+      rawData.forEach((item: any) => {
+        if (item && typeof item === "object") {
+          // Check if it's a pet care plan (has pet-specific fields)
+          if (item.name && item.pet_type && (item.contacts || item.foods !== undefined)) {
+            petCareData.push(item)
+          }
+          // Check if it's a booking (has booking-specific fields)
+          else if (item.booking_id && item.customer_email && item.booking_date) {
+            bookingsData.push(item)
+          }
+          // Check if it's invoice data (has invoices array)
+          else if (item.invoices !== undefined && item.payment_instructions !== undefined) {
+            invoicesData = item
+          }
+          // Check if it's onboarding data (has onboarding_complete field)
+          else if (item.onboarding_complete !== undefined && item.criteria_status) {
+            onboardingData = item
+          }
+        }
+      })
+
+      console.log("📊 Parsed data counts:", {
+        petCare: petCareData.length,
+        bookings: bookingsData.length,
+        invoices: Array.isArray(invoicesData.invoices) ? invoicesData.invoices.length : 0,
+        onboarding: onboardingData.email ? 1 : 0,
+      })
 
       const crmData: CRMData = {
-        petCare: Array.isArray(petCareData) ? petCareData : [],
-        bookings: Array.isArray(bookingsData) ? bookingsData : [],
-        invoices: invoicesData || { invoices: [], payment_instructions: "" },
-        onboarding: onboardingData || {
-          email: "",
-          user_type: "",
-          onboarding_complete: false,
-          criteria_status: {
-            pets_created: false,
-            policies_signed: false,
-            personal_info_complete: false,
-            emergency_contacts_added: false,
-          },
-          supporting_details: {
-            pets: { count: 0, details: [] },
-            policies: { details: [], total_policies: 0, signed_policies: 0 },
-            personal_info: { email: "", last_name: "", first_name: "" },
-            emergency_contacts: { count: 0, details: [] },
-          },
-        },
+        petCare: petCareData,
+        bookings: bookingsData,
+        invoices: invoicesData,
+        onboarding: onboardingData,
         lastUpdated: new Date().toISOString(),
         professionalId: professionalId,
       }
