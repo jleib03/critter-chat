@@ -177,8 +177,48 @@ function createEmptyDataStructure(professionalId: string): CRMData {
 export function getCRMData(): CRMData | null {
   if (typeof window === "undefined") return null
 
-  const rawData = localStorage.getItem("crm_data")
-  return rawData ? JSON.parse(rawData) : null
+  try {
+    const rawData = localStorage.getItem("crm_data")
+    console.log("[v0] getCRMData: Raw localStorage data exists:", !!rawData)
+
+    if (!rawData) {
+      console.log("[v0] getCRMData: No data found in localStorage")
+      return null
+    }
+
+    const parsedData = JSON.parse(rawData)
+    console.log("[v0] getCRMData: Successfully parsed data:", !!parsedData)
+    console.log("[v0] getCRMData: Data structure:", {
+      petCare: parsedData?.petCare?.length || 0,
+      bookings: parsedData?.bookings?.length || 0,
+      professionalId: parsedData?.professionalId,
+    })
+
+    return parsedData
+  } catch (error) {
+    console.error("[v0] getCRMData: Error parsing stored data:", error)
+    return null
+  }
+}
+
+export async function waitForCRMData(maxAttempts = 10, delayMs = 500): Promise<CRMData | null> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    console.log(`[v0] waitForCRMData: Attempt ${attempt}/${maxAttempts}`)
+
+    const data = getCRMData()
+    if (data) {
+      console.log("[v0] waitForCRMData: Data found on attempt", attempt)
+      return data
+    }
+
+    if (attempt < maxAttempts) {
+      console.log(`[v0] waitForCRMData: Waiting ${delayMs}ms before retry`)
+      await new Promise((resolve) => setTimeout(resolve, delayMs))
+    }
+  }
+
+  console.log("[v0] waitForCRMData: No data found after", maxAttempts, "attempts")
+  return null
 }
 
 export function calculateCRMStats(data: CRMData): CRMStats {

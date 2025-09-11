@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Checkbox } from "@/components/ui/checkbox"
-import { getCRMData, getInactiveCustomers } from "../utils/crm-data"
+import { getCRMData, getInactiveCustomers, waitForCRMData } from "../utils/crm-data"
 
 interface Customer {
   email: string
@@ -78,40 +78,26 @@ export default function CustomerSelectionInterface({
     }
 
     console.log("[v0] Customer selection: Loading CRM data locally")
-    const data = getCRMData()
-    console.log("[v0] Customer selection: Local data check:", !!data)
-    console.log("[v0] Customer selection: Raw data:", data)
 
-    if (!data) {
-      console.log("[v0] Customer selection: No data found, checking localStorage directly")
-      const rawStoredData = typeof window !== "undefined" ? localStorage.getItem("crm_data") : null
-      console.log("[v0] Customer selection: Raw localStorage data exists:", !!rawStoredData)
+    const loadData = async () => {
+      // First try immediate access
+      let data = getCRMData()
+      console.log("[v0] Customer selection: Immediate data check:", !!data)
 
-      if (rawStoredData) {
-        try {
-          const parsedData = JSON.parse(rawStoredData)
-          console.log("[v0] Customer selection: Successfully parsed stored data:", !!parsedData)
-          setLocalCrmData(parsedData)
-          return
-        } catch (error) {
-          console.error("[v0] Customer selection: Error parsing stored data:", error)
-        }
+      if (!data) {
+        console.log("[v0] Customer selection: No immediate data, waiting for availability")
+        data = await waitForCRMData(5, 1000) // Wait up to 5 seconds
       }
 
-      // If still no data, try to wait a bit and retry
-      console.log("[v0] Customer selection: Retrying data load in 1 second")
-      const retryTimeout = setTimeout(() => {
-        const retryData = getCRMData()
-        console.log("[v0] Customer selection: Retry data check:", !!retryData)
-        if (retryData) {
-          setLocalCrmData(retryData)
-        }
-      }, 1000)
-
-      return () => clearTimeout(retryTimeout)
+      if (data) {
+        console.log("[v0] Customer selection: Successfully loaded CRM data")
+        setLocalCrmData(data)
+      } else {
+        console.log("[v0] Customer selection: Failed to load CRM data after waiting")
+      }
     }
 
-    setLocalCrmData(data)
+    loadData()
   }, [propCrmData])
 
   useEffect(() => {

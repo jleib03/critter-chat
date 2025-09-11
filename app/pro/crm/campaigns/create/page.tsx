@@ -15,7 +15,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import CustomerSelectionInterface from "../../../../../components/customer-selection-interface"
 import EmailPreview from "../../../../../components/email-preview"
 import {
-  getCRMData,
+  waitForCRMData,
   getInactiveCustomers,
   getCustomersByPetType,
   getRepeatCustomers,
@@ -68,21 +68,8 @@ export default function CreateCampaign() {
       setCrmLoading(true)
       console.log("[v0] Campaign page: Starting CRM data load")
 
-      let data = getCRMData()
-      console.log("[v0] Campaign page: Initial data check:", !!data)
-
-      if (!data) {
-        // Wait for data to be loaded by the main CRM system
-        const maxAttempts = 10
-        let attempts = 0
-
-        while (!data && attempts < maxAttempts) {
-          await new Promise((resolve) => setTimeout(resolve, 500))
-          data = getCRMData()
-          attempts++
-          console.log(`[v0] Campaign page: Attempt ${attempts}, data available:`, !!data)
-        }
-      }
+      const data = await waitForCRMData(10, 500)
+      console.log("[v0] Campaign page: CRM data loaded:", !!data)
 
       setCrmData(data)
       setCrmLoading(false)
