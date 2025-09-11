@@ -73,8 +73,7 @@ export interface ValidationError {
  * N8N Processing Rules and Expectations
  */
 
-// 1. CSV Column Mapping Examples
-const COMMON_COLUMN_MAPPINGS = {
+export const COMMON_COLUMN_MAPPINGS = {
   // Customer fields
   customer_first_name: ["first_name", "firstName", "first", "customer_first", "fname"],
   customer_last_name: ["last_name", "lastName", "last", "customer_last", "lname"],
@@ -87,13 +86,12 @@ const COMMON_COLUMN_MAPPINGS = {
   pet_breed: ["breed", "pet_breed", "animal_breed"],
   pet_age: ["age", "pet_age", "animal_age"],
   pet_weight: ["weight", "pet_weight", "animal_weight"],
-}
+} as const
 
-// 2. Data Validation Rules
-const VALIDATION_RULES = {
+export const VALIDATION_RULES = {
   required_fields: {
-    customer: ["firstName", "lastName", "email"],
-    pet: ["name", "species", "customerId"],
+    customer: ["firstName", "lastName", "email"] as const,
+    pet: ["name", "species", "customerId"] as const,
   },
 
   data_types: {
@@ -101,13 +99,12 @@ const VALIDATION_RULES = {
     phone: "phone_number_format",
     age: "positive_integer",
     weight: "positive_number",
-  },
+  } as const,
 
-  species_values: ["dog", "cat", "bird", "rabbit", "other"],
-}
+  species_values: ["dog", "cat", "bird", "rabbit", "other"] as const,
+} as const
 
-// 3. Example N8N Output
-const EXAMPLE_OUTPUT: N8NWebhookResponse = {
+export const EXAMPLE_OUTPUT: N8NWebhookResponse = {
   success: true,
   action: "customer_upload_processed",
   professionalId: "prof_123456",
@@ -154,30 +151,18 @@ const EXAMPLE_OUTPUT: N8NWebhookResponse = {
 
 /**
  * N8N Processing Workflow Recommendations
+ *
+ * Step 1: Parse CSV data
+ * Step 2: Normalize column names using COMMON_COLUMN_MAPPINGS
+ * Step 3: Validate required fields and data types
+ * Step 4: Generate unique IDs for customers and pets
+ * Step 5: Link pets to customers via customerId
+ * Step 6: Check for duplicates (email for customers, name+customerId for pets)
+ * Step 7: Format response according to N8NWebhookResponse interface
+ * Step 8: Send webhook response to application
  */
 
-// Step 1: Parse CSV data
-// Step 2: Normalize column names using COMMON_COLUMN_MAPPINGS
-// Step 3: Validate required fields and data types
-// Step 4: Generate unique IDs for customers and pets
-// Step 5: Link pets to customers via customerId
-// Step 6: Check for duplicates (email for customers, name+customerId for pets)
-// Step 7: Format response according to N8NWebhookResponse interface
-// Step 8: Send webhook response to application
-
-// Ensure all interfaces are declared before using them
-const N8NWebhookResponse = "N8NWebhookResponse"
-const ProcessedCustomer = "ProcessedCustomer"
-const ProcessedPet = "ProcessedPet"
-const DataSummary = "DataSummary"
-const ValidationError = "ValidationError"
-
 export default {
-  N8NWebhookResponse,
-  ProcessedCustomer,
-  ProcessedPet,
-  DataSummary,
-  ValidationError,
   COMMON_COLUMN_MAPPINGS,
   VALIDATION_RULES,
   EXAMPLE_OUTPUT,
