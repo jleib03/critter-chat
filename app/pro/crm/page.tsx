@@ -171,10 +171,10 @@ export default function CRMDashboard() {
     ? (() => {
         console.log("[v0] Calculating stats from crmData:", crmData)
 
-        const petCarePlans = crmData.petCarePlans || []
+        const petCarePlans = crmData.petCare || []
         const bookings = crmData.bookings || []
-        const invoices = crmData.invoiceData || []
-        const onboardingData = crmData.onboardingStatus || []
+        const invoices = crmData.invoices?.invoices || []
+        const onboardingData = crmData.onboarding ? [crmData.onboarding] : []
 
         console.log("[v0] Data arrays:", {
           petCarePlans: petCarePlans.length,
@@ -200,12 +200,7 @@ export default function CRMDashboard() {
           return sum + (isNaN(amount) ? 0 : amount)
         }, 0)
 
-        // Calculate onboarding completion rate
-        const completedOnboarding = onboardingData.filter(
-          (item) => item.onboarding_completed === true || item.onboarding_completed === "true",
-        ).length
-        const onboardingRate =
-          onboardingData.length > 0 ? Math.round((completedOnboarding / onboardingData.length) * 100) : 0
+        const onboardingRate = crmData.onboarding?.onboarding_complete ? 100 : 0
 
         return {
           totalCustomers: uniqueCustomers.size,
@@ -358,16 +353,16 @@ export default function CRMDashboard() {
                   <CardTitle className="text-lg header-font">Pet Care Plans</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {crmData.petCarePlans?.slice(0, 3).map((pet, index) => (
+                  {crmData.petCare?.slice(0, 3).map((pet, index) => (
                     <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded">
                       <div>
-                        <p className="text-sm font-medium body-font">{pet.pet_name || "Unnamed Pet"}</p>
+                        <p className="text-sm font-medium body-font">{pet.name || "Unnamed Pet"}</p>
                         <p className="text-xs text-muted-foreground body-font">
-                          {pet.pet_type || "Unknown"} • {pet.customer_email || "No email"}
+                          {pet.pet_type || "Unknown"} • {pet.contacts?.[0]?.email || "No email"}
                         </p>
                       </div>
                       <Badge variant="outline" className="text-xs">
-                        {pet.service_type || "Care"}
+                        Care Plan
                       </Badge>
                     </div>
                   )) || <p className="text-sm text-muted-foreground body-font">No pet care plans found</p>}
