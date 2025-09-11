@@ -40,8 +40,23 @@ export async function initializeCRMData(professionalId: string): Promise<CRMData
       throw new Error(`HTTP ${response.status}: ${response.statusText}`)
     }
 
-    const rawData = await response.json()
-    console.log("📥 Raw CRM response:", JSON.stringify(rawData, null, 2))
+    let rawData
+    try {
+      const responseText = await response.text()
+      console.log("📄 Raw response text:", responseText.substring(0, 200) + "...")
+
+      if (!responseText.trim()) {
+        console.log("⚠️ Empty response from webhook")
+        return null
+      }
+
+      rawData = JSON.parse(responseText)
+      console.log("📥 Raw CRM response:", JSON.stringify(rawData, null, 2))
+    } catch (jsonError) {
+      console.error("💥 JSON parsing error:", jsonError)
+      console.log("⚠️ Using fallback empty data structure")
+      return createEmptyDataStructure(professionalId)
+    }
 
     if (Array.isArray(rawData) && rawData.length > 0) {
       // Separate different data types from the mixed array
@@ -115,11 +130,47 @@ export async function initializeCRMData(professionalId: string): Promise<CRMData
     }
 
     console.log("⚠️ No valid CRM data found in response")
-    return null
+    return createEmptyDataStructure(professionalId)
   } catch (error) {
     console.error("💥 Error initializing CRM data:", error)
-    throw error
+    console.log("[v0] CRM initialization error:", error.message)
+    return createEmptyDataStructure(professionalId)
   }
+}
+
+function createEmptyDataStructure(professionalId: string): CRMData {
+  const emptyData: CRMData = {
+    petCare: [],
+    bookings: [],
+    invoices: { invoices: [], payment_instructions: "" },
+    onboarding: {
+      email: "",
+      user_type: "",
+      onboarding_complete: false,
+      criteria_status: {
+        pets_created: false,
+        policies_signed: false,
+        personal_info_complete: false,
+        emergency_contacts_added: false,
+      },
+      supporting_details: {
+        pets: { count: 0, details: [] },
+        policies: { details: [], total_policies: 0, signed_policies: 0 },
+        personal_info: { email: "", last_name: "", first_name: "" },
+        emergency_contacts: { count: 0, details: [] },
+      },
+    },
+    lastUpdated: new Date().toISOString(),
+    professionalId: professionalId,
+  }
+
+  // Store the empty data structure
+  if (typeof window !== "undefined") {
+    localStorage.setItem("crm_data", JSON.stringify(emptyData))
+    localStorage.setItem("crm_professional_id", professionalId)
+  }
+
+  return emptyData
 }
 
 // Get stored CRM data from localStorage
