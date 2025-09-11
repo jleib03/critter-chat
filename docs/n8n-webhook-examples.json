@@ -1,0 +1,148 @@
+{
+  "successful_processing": {
+    "success": true,
+    "action": "customer_upload_processed",
+    "professionalId": "prof_abc123",
+    "timestamp": "2024-01-15T14:30:00Z",
+    "data": {
+      "customers": [
+        {
+          "id": "cust_001",
+          "firstName": "Sarah",
+          "lastName": "Johnson",
+          "email": "sarah.johnson@email.com",
+          "phone": "555-0199",
+          "address": {
+            "street": "456 Oak Avenue",
+            "city": "Springfield",
+            "state": "IL",
+            "zipCode": "62701"
+          }
+        },
+        {
+          "id": "cust_002",
+          "firstName": "Mike",
+          "lastName": "Davis",
+          "email": "mike.davis@email.com",
+          "phone": "555-0188"
+        }
+      ],
+      "pets": [
+        {
+          "id": "pet_001",
+          "customerId": "cust_001",
+          "name": "Luna",
+          "species": "cat",
+          "breed": "Siamese",
+          "age": 2,
+          "weight": 8.5,
+          "notes": "Indoor cat, shy with strangers"
+        },
+        {
+          "id": "pet_002",
+          "customerId": "cust_001",
+          "name": "Max",
+          "species": "dog",
+          "breed": "Labrador",
+          "age": 5,
+          "weight": 70
+        },
+        {
+          "id": "pet_003",
+          "customerId": "cust_002",
+          "name": "Tweety",
+          "species": "bird",
+          "breed": "Canary",
+          "age": 1,
+          "notes": "Loves to sing in the morning"
+        }
+      ],
+      "summary": {
+        "totalRows": 3,
+        "customersProcessed": 2,
+        "petsProcessed": 3,
+        "duplicatesFound": 0,
+        "errorsCount": 0,
+        "processingTime": 2100
+      }
+    },
+    "errors": []
+  },
+
+  "processing_with_errors": {
+    "success": true,
+    "action": "customer_upload_processed",
+    "professionalId": "prof_abc123",
+    "timestamp": "2024-01-15T14:35:00Z",
+    "data": {
+      "customers": [
+        {
+          "id": "cust_001",
+          "firstName": "Tom",
+          "lastName": "Wilson",
+          "email": "tom.wilson@email.com"
+        }
+      ],
+      "pets": [
+        {
+          "id": "pet_001",
+          "customerId": "cust_001",
+          "name": "Spot",
+          "species": "dog"
+        }
+      ],
+      "summary": {
+        "totalRows": 3,
+        "customersProcessed": 1,
+        "petsProcessed": 1,
+        "duplicatesFound": 1,
+        "errorsCount": 2,
+        "processingTime": 1800
+      }
+    },
+    "errors": [
+      {
+        "row": 2,
+        "field": "email",
+        "value": "invalid-email",
+        "message": "Invalid email format",
+        "severity": "error"
+      },
+      {
+        "row": 3,
+        "field": "pet_species",
+        "value": "hamster",
+        "message": "Species 'hamster' mapped to 'other'",
+        "severity": "warning"
+      }
+    ]
+  },
+
+  "processing_failed": {
+    "success": false,
+    "action": "customer_upload_processed",
+    "professionalId": "prof_abc123",
+    "timestamp": "2024-01-15T14:40:00Z",
+    "data": {
+      "customers": [],
+      "pets": [],
+      "summary": {
+        "totalRows": 0,
+        "customersProcessed": 0,
+        "petsProcessed": 0,
+        "duplicatesFound": 0,
+        "errorsCount": 1,
+        "processingTime": 500
+      }
+    },
+    "errors": [
+      {
+        "row": 0,
+        "field": "file",
+        "value": null,
+        "message": "CSV file could not be parsed - invalid format",
+        "severity": "error"
+      }
+    ]
+  }
+}
