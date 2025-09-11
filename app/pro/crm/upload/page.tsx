@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { getWebhookEndpoint } from "@/types/webhook-endpoints"
 
 type UploadStep = "select" | "upload" | "preview" | "mapping" | "complete"
 
@@ -25,10 +26,12 @@ export default function DataUploadPortal() {
   const [uploadProgress, setUploadProgress] = useState(0)
   const [previewData, setPreviewData] = useState<any[]>([])
   const [fieldMappings, setFieldMappings] = useState<Record<string, string>>({})
+  const [professionalId, setProfessionalId] = useState<string>("")
+  const [csvData, setCsvData] = useState<string>("")
+  const [uploadError, setUploadError] = useState<string>("")
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
-  // If not authenticated, show password protection
   if (!isAuthenticated) {
     return (
       <PasswordProtection
@@ -39,63 +42,133 @@ export default function DataUploadPortal() {
     )
   }
 
+  const parseCSV = (csvText: string): any[] => {
+    const lines = csvText.split("\n").filter((line) => line.trim())
+    if (lines.length < 2) return []
+
+    const headers = lines[0].split(",").map((h) => h.trim().replace(/"/g, ""))
+    const data = []
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(",").map((v) => v.trim().replace(/"/g, ""))
+      if (values.length === headers.length) {
+        const row: any = {}
+        headers.forEach((header, index) => {
+          row[header.toLowerCase().replace(/\s+/g, "_")] = values[index]
+        })
+        data.push(row)
+      }
+    }
+
+    return data
+  }
+
+  const processCSVFile = async (file: File) => {
+    try {
+      const text = await file.text()
+      setCsvData(text)
+      const parsedData = parseCSV(text)
+
+      console.log("[v0] Parsed CSV data:", parsedData)
+
+      if (parsedData.length === 0) {
+        throw new Error("No valid data found in CSV file")
+      }
+
+      setPreviewData(parsedData)
+      setUploadError("")
+    } catch (error) {
+      console.error("[v0] CSV parsing error:", error)
+      setUploadError(error instanceof Error ? error.message : "Failed to parse CSV file")
+      setPreviewData([])
+    }
+  }
+
+  const sendDataToWebhook = async () => {
+    if (!professionalId.trim()) {
+      setUploadError("Professional ID is required")
+      return false
+    }
+
+    if (!csvData) {
+      setUploadError("No CSV data to upload")
+      return false
+    }
+
+    try {
+      console.log("[v0] Sending CSV data to webhook...")
+
+      const webhookUrl = getWebhookEndpoint("CRM_INITIALIZATION")
+
+      const payload = {
+        action: "customer_upload",
+        professionalId: professionalId.trim(),
+        csvData: csvData,
+        fileName: uploadedFile?.name || "upload.csv",
+        recordCount: previewData.length,
+        timestamp: new Date().toISOString(),
+        source: "crm_upload_portal",
+      }
+
+      console.log("[v0] Webhook payload:", { ...payload, csvData: `${csvData.length} characters` })
+
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      console.log("[v0] Webhook response:", result)
+
+      return true
+    } catch (error) {
+      console.error("[v0] Webhook upload error:", error)
+      setUploadError(error instanceof Error ? error.message : "Failed to upload data")
+      return false
+    }
+  }
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
       setUploadedFile(file)
       setCurrentStep("preview")
-      // Simulate file processing
-      simulateFileProcessing(file)
+      processRealFile(file)
     }
   }
 
-  const simulateFileProcessing = (file: File) => {
+  const processRealFile = (file: File) => {
     setIsUploading(true)
     setUploadProgress(0)
+    setUploadError("")
 
-    const interval = setInterval(() => {
+    const progressInterval = setInterval(() => {
       setUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval)
-          setIsUploading(false)
-          // Generate sample preview data
-          setPreviewData([
-            {
-              name: "Sarah Johnson",
-              email: "sarah@email.com",
-              phone: "555-0123",
-              pet_name: "Buddy",
-              pet_type: "Dog",
-              last_visit: "2024-01-15",
-            },
-            {
-              name: "Mike Chen",
-              email: "mike.chen@email.com",
-              phone: "555-0456",
-              pet_name: "Whiskers",
-              pet_type: "Cat",
-              last_visit: "2024-01-20",
-            },
-            {
-              name: "Emily Davis",
-              email: "emily.davis@email.com",
-              phone: "555-0789",
-              pet_name: "Charlie",
-              pet_type: "Dog",
-              last_visit: "2024-01-25",
-            },
-          ])
-          return 100
+        if (prev >= 90) {
+          clearInterval(progressInterval)
+          return 90
         }
-        return prev + 10
+        return prev + 15
       })
     }, 200)
+
+    processCSVFile(file).finally(() => {
+      clearInterval(progressInterval)
+      setUploadProgress(100)
+      setIsUploading(false)
+    })
   }
 
   const handleCritterSync = () => {
     setUploadMethod("critter")
     setCurrentStep("upload")
-    // Simulate Critter data sync
     setTimeout(() => {
       setPreviewData([
         {
@@ -176,7 +249,6 @@ export default function DataUploadPortal() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Critter Integration */}
         <Card
           className="border-border hover:shadow-lg transition-all duration-200 cursor-pointer"
           onClick={handleCritterSync}
@@ -214,7 +286,6 @@ export default function DataUploadPortal() {
           </CardContent>
         </Card>
 
-        {/* File Upload */}
         <Card className="border-border hover:shadow-lg transition-all duration-200">
           <CardHeader>
             <div className="flex items-center space-x-3">
@@ -223,7 +294,7 @@ export default function DataUploadPortal() {
               </div>
               <div>
                 <CardTitle className="header-font">Upload Files</CardTitle>
-                <CardDescription className="body-font">Import from CSV, Excel, or other formats</CardDescription>
+                <CardDescription className="body-font">Import from CSV</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -231,7 +302,7 @@ export default function DataUploadPortal() {
             <div className="space-y-3">
               <div className="flex items-center space-x-2">
                 <Check className="h-4 w-4 text-green-500" />
-                <span className="text-sm body-font">CSV & Excel support</span>
+                <span className="text-sm body-font">CSV support</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Check className="h-4 w-4 text-green-500" />
@@ -257,7 +328,6 @@ export default function DataUploadPortal() {
         </Card>
       </div>
 
-      {/* Manual Entry Option */}
       <Card className="border-border mt-6">
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -310,25 +380,41 @@ export default function DataUploadPortal() {
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold mb-2 header-font">Upload Your Data File</h2>
             <p className="text-muted-foreground body-font">
-              Select a CSV or Excel file containing your customer and pet information.
+              Select a CSV file containing your customer and pet information.
             </p>
           </div>
+
+          <Card className="border-border mb-6">
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="professionalId" className="body-font">
+                    Professional ID *
+                  </Label>
+                  <Input
+                    id="professionalId"
+                    value={professionalId}
+                    onChange={(e) => setProfessionalId(e.target.value)}
+                    placeholder="Enter your Professional ID"
+                    className="mt-1"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1 body-font">
+                    Your Professional ID is required to associate the uploaded data with your account.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {!uploadedFile ? (
             <Card className="border-dashed border-2 border-muted-foreground/25 hover:border-primary/50 transition-colors">
               <CardContent className="p-8">
                 <div className="text-center">
                   <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2 header-font">Drop your file here</h3>
+                  <h3 className="text-lg font-medium mb-2 header-font">Drop your CSV file here</h3>
                   <p className="text-muted-foreground body-font mb-4">or click to browse your computer</p>
                   <Button onClick={() => fileInputRef.current?.click()}>Choose File</Button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".csv,.xlsx,.xls"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
+                  <input ref={fileInputRef} type="file" accept=".csv" onChange={handleFileSelect} className="hidden" />
                 </div>
               </CardContent>
             </Card>
@@ -359,12 +445,19 @@ export default function DataUploadPortal() {
             </Card>
           )}
 
+          {uploadError && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="body-font">{uploadError}</AlertDescription>
+            </Alert>
+          )}
+
           <div className="mt-6">
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription className="body-font">
-                <strong>Supported formats:</strong> CSV, Excel (.xlsx, .xls). Make sure your file includes columns for
-                customer name, email, phone, and pet information.
+                <strong>CSV Format:</strong> Make sure your CSV file includes columns for customer name, email, phone,
+                and pet information. The first row should contain column headers.
               </AlertDescription>
             </Alert>
           </div>
@@ -467,9 +560,7 @@ export default function DataUploadPortal() {
     <div className="max-w-6xl mx-auto">
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold mb-2 header-font">Preview Your Data</h2>
-        <p className="text-muted-foreground body-font">
-          Review the imported data and map fields to ensure everything looks correct.
-        </p>
+        <p className="text-muted-foreground body-font">Review the imported data before sending it for processing.</p>
       </div>
 
       <Card className="border-border mb-6">
@@ -477,7 +568,7 @@ export default function DataUploadPortal() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="header-font">Data Preview</CardTitle>
-              <CardDescription className="body-font">{previewData.length} customers found</CardDescription>
+              <CardDescription className="body-font">{previewData.length} records found</CardDescription>
             </div>
             <div className="flex space-x-2">
               <Button variant="outline" size="sm">
@@ -492,32 +583,41 @@ export default function DataUploadPortal() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-2 header-font">Name</th>
-                  <th className="text-left p-2 header-font">Email</th>
-                  <th className="text-left p-2 header-font">Phone</th>
-                  <th className="text-left p-2 header-font">Pet Name</th>
-                  <th className="text-left p-2 header-font">Pet Type</th>
-                  <th className="text-left p-2 header-font">Last Visit</th>
-                </tr>
-              </thead>
-              <tbody>
-                {previewData.slice(0, 3).map((row, index) => (
-                  <tr key={index} className="border-b">
-                    <td className="p-2 body-font">{row.name}</td>
-                    <td className="p-2 body-font">{row.email}</td>
-                    <td className="p-2 body-font">{row.phone}</td>
-                    <td className="p-2 body-font">{row.pet_name}</td>
-                    <td className="p-2 body-font">{row.pet_type}</td>
-                    <td className="p-2 body-font">{row.last_visit || row.last_booking}</td>
+          {previewData.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    {Object.keys(previewData[0]).map((key) => (
+                      <th key={key} className="text-left p-2 header-font capitalize">
+                        {key.replace(/_/g, " ")}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {previewData.slice(0, 5).map((row, index) => (
+                    <tr key={index} className="border-b">
+                      {Object.values(row).map((value, cellIndex) => (
+                        <td key={cellIndex} className="p-2 body-font">
+                          {String(value)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {previewData.length > 5 && (
+                <p className="text-sm text-muted-foreground mt-2 body-font">
+                  Showing first 5 of {previewData.length} records
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground body-font">No data to preview</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -526,8 +626,16 @@ export default function DataUploadPortal() {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Source Selection
         </Button>
-        <Button onClick={() => setCurrentStep("complete")}>
-          Import {previewData.length} Customers
+        <Button
+          onClick={async () => {
+            const success = await sendDataToWebhook()
+            if (success) {
+              setCurrentStep("complete")
+            }
+          }}
+          disabled={previewData.length === 0 || !professionalId.trim()}
+        >
+          Upload {previewData.length} Records
           <Check className="h-4 w-4 ml-2" />
         </Button>
       </div>
@@ -576,7 +684,6 @@ export default function DataUploadPortal() {
 
       <main className="pt-8 flex-1 flex flex-col">
         <div className="max-w-7xl mx-auto px-4 flex flex-col page-content">
-          {/* Header */}
           <div className="text-center mb-8">
             <Button variant="ghost" onClick={() => router.push("/pro/crm")} className="mb-4">
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -588,10 +695,8 @@ export default function DataUploadPortal() {
             </p>
           </div>
 
-          {/* Step Indicator */}
           {renderStepIndicator()}
 
-          {/* Step Content */}
           <div className="flex-1">
             {currentStep === "select" && renderSelectSource()}
             {currentStep === "upload" && renderUploadStep()}

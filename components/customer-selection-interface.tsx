@@ -1,8 +1,11 @@
 "use client"
 import { useState, useEffect } from "react"
-import { Search } from "lucide-react"
+import { Search, Users, Mail, Check, X } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -339,167 +342,203 @@ export default function CustomerSelectionInterface({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div className="p-6 bg-card/30 rounded-lg border">
-        <h3 className="text-lg font-semibold text-foreground mb-2">Target Audience</h3>
-        <p className="text-muted-foreground mb-6">Choose who will receive this campaign</p>
+      <Card className="border-border">
+        <CardHeader>
+          <CardTitle className="header-font">Target Audience</CardTitle>
+          <CardDescription className="body-font">Choose who will receive this campaign</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {crmLoading ? (
+            <div className="text-center py-4">
+              <p className="text-muted-foreground body-font">Loading customer data...</p>
+              <p className="text-xs text-muted-foreground body-font mt-2">
+                {dataAvailable ? "Processing customer information..." : "Waiting for CRM data..."}
+              </p>
+            </div>
+          ) : !dataAvailable && !crmData ? (
+            <div className="text-center py-4">
+              <p className="text-muted-foreground body-font">No customer data available</p>
+              <p className="text-xs text-muted-foreground body-font mt-2">
+                Please ensure CRM data is loaded before creating campaigns
+              </p>
+            </div>
+          ) : (
+            <>
+              <div>
+                <Label className="body-font">Audience Segment</Label>
+                <Select value={selectedAudience} onValueChange={onAudienceChange}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Customers ({customers.length} people)</SelectItem>
+                    <SelectItem value="inactive-60">Inactive 60+ Days</SelectItem>
+                    <SelectItem value="new-customers">New Customers</SelectItem>
+                    <SelectItem value="repeat-customers">Repeat Customers</SelectItem>
+                    <SelectItem value="dog-owners">Dog Owners</SelectItem>
+                    <SelectItem value="cat-owners">Cat Owners</SelectItem>
+                    <SelectItem value="exotic-pets">Exotic Pet Owners</SelectItem>
+                    <SelectItem value="bird-owners">Bird Owners</SelectItem>
+                    <SelectItem value="fish-owners">Fish Owners</SelectItem>
+                    <SelectItem value="small-pets">Small Pet Owners</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-        {crmLoading ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Loading customer data...</p>
-            <p className="text-xs text-muted-foreground mt-2">
-              {dataAvailable ? "Processing customer information..." : "Waiting for CRM data..."}
-            </p>
-          </div>
-        ) : !dataAvailable && !crmData ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">No customer data available</p>
-            <p className="text-xs text-muted-foreground mt-2">
-              Please ensure CRM data is loaded before creating campaigns
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Audience Segment</label>
-              <Select value={selectedAudience} onValueChange={onAudienceChange}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Customers ({customers.length} people)</SelectItem>
-                  <SelectItem value="inactive-60">Inactive 60+ Days</SelectItem>
-                  <SelectItem value="new-customers">New Customers</SelectItem>
-                  <SelectItem value="repeat-customers">Repeat Customers</SelectItem>
-                  <SelectItem value="dog-owners">Dog Owners</SelectItem>
-                  <SelectItem value="cat-owners">Cat Owners</SelectItem>
-                  <SelectItem value="exotic-pets">Exotic Pet Owners</SelectItem>
-                  <SelectItem value="bird-owners">Bird Owners</SelectItem>
-                  <SelectItem value="fish-owners">Fish Owners</SelectItem>
-                  <SelectItem value="small-pets">Small Pet Owners</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="body-font">Personalize Subject Lines</Label>
+                  <Switch checked={personalizeSubject} onCheckedChange={onPersonalizeChange} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label className="body-font">Track Email Opens</Label>
+                  <Switch checked={trackOpens} onCheckedChange={onTrackOpensChange} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label className="body-font">Track Link Clicks</Label>
+                  <Switch checked={trackClicks} onCheckedChange={onTrackClicksChange} />
+                </div>
+              </div>
+
+              <div className="pt-4 border-t">
+                <Button variant="outline" onClick={() => setShowCustomerList(!showCustomerList)} className="w-full">
+                  <Users className="h-4 w-4 mr-2" />
+                  {showCustomerList ? "Hide" : "View"} Customer List ({getAudienceCount()})
+                </Button>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-border">
+        <CardHeader>
+          <CardTitle className="header-font">Campaign Statistics</CardTitle>
+          <CardDescription className="body-font">Expected performance metrics</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="bg-muted/30 rounded-lg p-4 space-y-4">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-muted-foreground body-font">Total Recipients</p>
+                <p className="font-bold text-2xl header-font">{getAudienceCount()}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground body-font">Expected Opens</p>
+                <p className="font-bold text-2xl header-font">{Math.round(getAudienceCount() * 0.68)}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground body-font">Expected Clicks</p>
+                <p className="font-bold text-2xl header-font">{Math.round(getAudienceCount() * 0.24)}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground body-font">Est. Bookings</p>
+                <p className="font-bold text-2xl header-font">{Math.round(getAudienceCount() * 0.08)}</p>
+              </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-foreground">Personalize Subject Lines</label>
-                <Switch checked={personalizeSubject} onCheckedChange={onPersonalizeChange} />
-              </div>
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-foreground">Track Email Opens</label>
-                <Switch checked={trackOpens} onCheckedChange={onTrackOpensChange} />
-              </div>
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-foreground">Track Link Clicks</label>
-                <Switch checked={trackClicks} onCheckedChange={onTrackClicksChange} />
+            <div className="border-t pt-4">
+              <p className="text-sm font-medium mb-2 body-font">Sample Recipients:</p>
+              <div className="space-y-2 text-sm">
+                {filteredCustomers.slice(0, 3).map((customer, index) => (
+                  <div key={index} className="flex items-center justify-between py-1">
+                    <div className="flex items-center space-x-2">
+                      <Mail className="h-3 w-3 text-muted-foreground" />
+                      <span className="body-font text-xs">{customer.email}</span>
+                    </div>
+                    <Badge variant="secondary" className="text-xs">
+                      {customer.petName || "Pet"}
+                    </Badge>
+                  </div>
+                ))}
+                {getAudienceCount() > 3 && (
+                  <p className="text-xs text-muted-foreground body-font">+ {getAudienceCount() - 3} more recipients</p>
+                )}
               </div>
             </div>
-
-            <Button variant="outline" onClick={() => setShowCustomerList(!showCustomerList)} className="w-full">
-              {showCustomerList ? "Hide" : "View"} Customer List ({getAudienceCount()})
-            </Button>
           </div>
-        )}
-      </div>
-
-      <div className="p-6 bg-card/30 rounded-lg border">
-        <h3 className="text-lg font-semibold text-foreground mb-2">Campaign Statistics</h3>
-        <p className="text-muted-foreground mb-6">Expected performance metrics</p>
-
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="p-4 bg-background rounded border text-center">
-            <p className="text-sm text-muted-foreground">Recipients</p>
-            <p className="text-2xl font-bold text-foreground">{getAudienceCount()}</p>
-          </div>
-          <div className="p-4 bg-background rounded border text-center">
-            <p className="text-sm text-muted-foreground">Expected Opens</p>
-            <p className="text-2xl font-bold text-foreground">{Math.round(getAudienceCount() * 0.68)}</p>
-          </div>
-          <div className="p-4 bg-background rounded border text-center">
-            <p className="text-sm text-muted-foreground">Expected Clicks</p>
-            <p className="text-2xl font-bold text-foreground">{Math.round(getAudienceCount() * 0.24)}</p>
-          </div>
-          <div className="p-4 bg-background rounded border text-center">
-            <p className="text-sm text-muted-foreground">Est. Bookings</p>
-            <p className="text-2xl font-bold text-foreground">{Math.round(getAudienceCount() * 0.08)}</p>
-          </div>
-        </div>
-
-        <div className="p-4 bg-background rounded border">
-          <h4 className="font-medium text-foreground mb-3">Sample Recipients</h4>
-          <div className="space-y-2">
-            {filteredCustomers.slice(0, 3).map((customer, index) => (
-              <div key={index} className="flex items-center justify-between py-1">
-                <span className="text-sm text-foreground">{customer.email}</span>
-                <span className="text-xs text-muted-foreground">{customer.petName || "Pet"}</span>
-              </div>
-            ))}
-            {getAudienceCount() > 3 && (
-              <p className="text-xs text-muted-foreground">+ {getAudienceCount() - 3} more recipients</p>
-            )}
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {showCustomerList && (
-        <div className="lg:col-span-2 p-6 bg-card/30 rounded-lg border">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-lg font-semibold text-foreground">Customer List</h3>
-              <p className="text-muted-foreground">{getAudienceCount()} customers in selected audience</p>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={selectAllCustomers}>
-                Select All
-              </Button>
-              <Button variant="outline" size="sm" onClick={deselectAllCustomers}>
-                Clear
-              </Button>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search customers..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-
-            <div className="max-h-96 overflow-y-auto space-y-2">
-              {filteredCustomers.map((customer) => (
-                <div
-                  key={customer.email}
-                  className="flex items-center justify-between p-3 bg-background rounded border hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <Checkbox
-                      checked={selectedCustomers.has(customer.email)}
-                      onCheckedChange={() => toggleCustomerSelection(customer.email)}
-                    />
-                    <div>
-                      <p className="font-medium text-foreground">{customer.name}</p>
-                      <p className="text-sm text-muted-foreground">{customer.email}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    {customer.petName && <span>{customer.petName}</span>}
-                    {customer.petType && <span>• {customer.petType}</span>}
-                    <span>• {customer.totalBookings || 0} bookings</span>
-                  </div>
+        <div className="lg:col-span-2">
+          <Card className="border-border">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="header-font">Customer List</CardTitle>
+                  <CardDescription className="body-font">
+                    {getAudienceCount()} customers in selected audience
+                  </CardDescription>
                 </div>
-              ))}
-            </div>
-
-            {filteredCustomers.length === 0 && (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">No customers found matching your criteria</p>
+                <div className="flex space-x-2">
+                  <Button variant="outline" size="sm" onClick={selectAllCustomers}>
+                    <Check className="h-4 w-4 mr-1" />
+                    Select All
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={deselectAllCustomers}>
+                    <X className="h-4 w-4 mr-1" />
+                    Clear
+                  </Button>
+                </div>
               </div>
-            )}
-          </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Search className="h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search customers by email, name, or pet name..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="flex-1"
+                  />
+                </div>
+
+                <div className="max-h-96 overflow-y-auto space-y-2">
+                  {filteredCustomers.map((customer) => (
+                    <div
+                      key={customer.email}
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Checkbox
+                          checked={selectedCustomers.has(customer.email)}
+                          onCheckedChange={() => toggleCustomerSelection(customer.email)}
+                        />
+                        <div>
+                          <p className="font-medium body-font">{customer.name}</p>
+                          <p className="text-sm text-muted-foreground body-font">{customer.email}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        {customer.petName && (
+                          <Badge variant="secondary" className="text-xs">
+                            {customer.petName}
+                          </Badge>
+                        )}
+                        {customer.petType && (
+                          <Badge variant="outline" className="text-xs">
+                            {customer.petType}
+                          </Badge>
+                        )}
+                        <span className="text-xs text-muted-foreground body-font">
+                          {customer.totalBookings || 0} bookings
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {filteredCustomers.length === 0 && (
+                  <div className="text-center py-8">
+                    <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground body-font">No customers found matching your criteria</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>
