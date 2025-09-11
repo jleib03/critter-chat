@@ -1,23 +1,9 @@
 "use client"
 import { useState, useEffect } from "react"
-import {
-  Target,
-  Users,
-  Clock,
-  Heart,
-  Star,
-  Plus,
-  Search,
-  Filter,
-  ArrowLeft,
-  Mail,
-  Calendar,
-  TrendingUp,
-} from "lucide-react"
+import { Target, Users, Clock, Heart, Star, Search, Mail, Calendar } from "lucide-react"
 import Header from "../../../../components/header"
 import PasswordProtection from "../../../../components/password-protection"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -204,67 +190,6 @@ export default function CampaignLibrary() {
     }
   }
 
-  const renderTemplateCard = (template: CampaignTemplate) => (
-    <Card
-      key={template.id}
-      className="border-border hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/50 backdrop-blur-sm"
-      onClick={() => setSelectedTemplate(template)}
-    >
-      <CardHeader className="pb-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center justify-center">
-              <template.icon className={`h-6 w-6 ${template.color}`} />
-            </div>
-            <div>
-              <CardTitle className="text-lg header-font text-foreground">{template.name}</CardTitle>
-              <CardDescription className="body-font text-muted-foreground">{template.description}</CardDescription>
-            </div>
-          </div>
-          <Badge className={`${getCategoryColor(template.category)} font-medium`}>{template.category}</Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4 text-sm bg-muted/30 rounded-lg p-3">
-            <div>
-              <p className="text-muted-foreground body-font text-xs uppercase tracking-wide">Estimated Reach</p>
-              <p className="font-semibold header-font text-foreground">{template.estimatedReach} customers</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground body-font text-xs uppercase tracking-wide">Avg. Open Rate</p>
-              <p className="font-semibold header-font text-foreground">{template.avgOpenRate}</p>
-            </div>
-          </div>
-
-          <div>
-            <p className="text-sm text-muted-foreground mb-2 body-font font-medium">Target Audience</p>
-            <p className="text-sm body-font text-foreground/90">{template.targetAudience}</p>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {template.tags.map((tag) => (
-              <Badge key={tag} variant="secondary" className="text-xs bg-secondary/80 text-secondary-foreground border">
-                {tag}
-              </Badge>
-            ))}
-          </div>
-
-          <Button
-            className="w-full mt-4"
-            onClick={(e) => {
-              e.stopPropagation()
-              router.push(`/pro/crm/campaigns/${template.id}/setup`)
-            }}
-          >
-            <Target className="h-4 w-4 mr-2" />
-            Use This Template
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  )
-
   const renderTemplatePreview = () => {
     if (!selectedTemplate) return null
 
@@ -367,40 +292,34 @@ export default function CampaignLibrary() {
       <main className="pt-8 flex-1 flex flex-col">
         <div className="max-w-7xl mx-auto px-4 flex flex-col page-content">
           <div className="mb-8">
-            <Button variant="ghost" onClick={() => router.push("/pro/crm")} className="mb-4">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to CRM Hub
-            </Button>
+            <button
+              onClick={() => router.push("/pro/crm")}
+              className="text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
+            >
+              ← Back to CRM Hub
+            </button>
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl md:text-4xl title-font mb-2 text-foreground">Campaign Library</h1>
-                <p className="text-lg text-muted-foreground body-font">
-                  Choose from pre-built templates or create custom campaigns for your audience
-                </p>
+                <h1 className="text-3xl font-bold text-foreground mb-2">Campaign Library</h1>
+                <p className="text-muted-foreground">Choose from pre-built templates or create custom campaigns</p>
               </div>
-              <Button onClick={() => router.push("/pro/crm/campaigns/create")}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Custom Campaign
-              </Button>
+              <Button onClick={() => router.push("/pro/crm/campaigns/create")}>Create Campaign</Button>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 mb-8">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search campaigns, tags, or descriptions..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+          <div className="flex gap-4 mb-8">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search campaigns..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-full sm:w-48">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Filter by category" />
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
@@ -413,84 +332,103 @@ export default function CampaignLibrary() {
           </div>
 
           <Tabs defaultValue="templates" className="flex-1">
-            <TabsList className="grid w-full grid-cols-2 max-w-md">
-              <TabsTrigger value="templates">Pre-built Templates</TabsTrigger>
-              <TabsTrigger value="custom">My Custom Campaigns</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 max-w-md mb-6">
+              <TabsTrigger value="templates">Templates</TabsTrigger>
+              <TabsTrigger value="custom">Custom Campaigns</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="templates" className="mt-6">
+            <TabsContent value="templates">
               {filteredTemplates.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredTemplates.map(renderTemplateCard)}
+                  {filteredTemplates.map((template) => (
+                    <div
+                      key={template.id}
+                      className="p-6 bg-card/30 rounded-lg border hover:bg-card/50 transition-colors cursor-pointer"
+                      onClick={() => setSelectedTemplate(template)}
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <h3 className="font-semibold text-foreground mb-1">{template.name}</h3>
+                          <p className="text-sm text-muted-foreground">{template.description}</p>
+                        </div>
+                        <span className={`px-2 py-1 text-xs rounded ${getCategoryColor(template.category)}`}>
+                          {template.category}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 mb-4 p-3 bg-background rounded border">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Estimated Reach</p>
+                          <p className="font-medium text-foreground">{template.estimatedReach}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Avg. Open Rate</p>
+                          <p className="font-medium text-foreground">{template.avgOpenRate}</p>
+                        </div>
+                      </div>
+
+                      <div className="mb-4">
+                        <p className="text-xs text-muted-foreground mb-2">Target Audience</p>
+                        <p className="text-sm text-foreground">{template.targetAudience}</p>
+                      </div>
+
+                      <Button
+                        className="w-full"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          router.push(`/pro/crm/campaigns/${template.id}/setup`)
+                        }}
+                      >
+                        Use Template
+                      </Button>
+                    </div>
+                  ))}
                 </div>
               ) : (
-                <Card className="border-border">
-                  <CardContent className="p-8 text-center">
-                    <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-medium mb-2 header-font">No campaigns found</h3>
-                    <p className="text-muted-foreground body-font mb-4">
-                      Try adjusting your search terms or category filter.
-                    </p>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setSearchTerm("")
-                        setSelectedCategory("all")
-                      }}
-                    >
-                      Clear Filters
-                    </Button>
-                  </CardContent>
-                </Card>
+                <div className="text-center py-12">
+                  <h3 className="text-lg font-medium text-foreground mb-2">No campaigns found</h3>
+                  <p className="text-muted-foreground mb-4">Try adjusting your search terms or category filter.</p>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSearchTerm("")
+                      setSelectedCategory("all")
+                    }}
+                  >
+                    Clear Filters
+                  </Button>
+                </div>
               )}
             </TabsContent>
 
-            <TabsContent value="custom" className="mt-6">
-              <Card className="border-border">
-                <CardContent className="p-8 text-center">
-                  <Plus className="h-12 w-12 text-secondary mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2 header-font">No custom campaigns yet</h3>
-                  <p className="text-muted-foreground body-font mb-4">
-                    Create your first custom campaign to target specific customer segments.
-                  </p>
-                  <Button onClick={() => router.push("/pro/crm/campaigns/create")}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Custom Campaign
-                  </Button>
-                </CardContent>
-              </Card>
+            <TabsContent value="custom">
+              <div className="text-center py-12">
+                <h3 className="text-lg font-medium text-foreground mb-2">No custom campaigns yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  Create your first custom campaign to target specific customer segments.
+                </p>
+                <Button onClick={() => router.push("/pro/crm/campaigns/create")}>Create Campaign</Button>
+              </div>
             </TabsContent>
           </Tabs>
 
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-4 gap-6">
-            <Card className="border-border">
-              <CardContent className="p-4 text-center">
-                <TrendingUp className="h-8 w-8 text-primary mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground body-font">Avg. Open Rate</p>
-                <p className="text-xl font-bold header-font">72%</p>
-              </CardContent>
-            </Card>
-            <Card className="border-border">
-              <CardContent className="p-4 text-center">
-                <Users className="h-8 w-8 text-secondary mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground body-font">Total Customers</p>
-                <p className="text-xl font-bold header-font">1,247</p>
-              </CardContent>
-            </Card>
-            <Card className="border-border">
-              <CardContent className="p-4 text-center">
-                <Target className="h-8 w-8 text-accent mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground body-font">Campaigns Sent</p>
-                <p className="text-xl font-bold header-font">23</p>
-              </CardContent>
-            </Card>
-            <Card className="border-border">
-              <CardContent className="p-4 text-center">
-                <Mail className="h-8 w-8 text-chart-4 mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground body-font">Emails Delivered</p>
-                <p className="text-xl font-bold header-font">18,492</p>
-              </CardContent>
-            </Card>
+          <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-4 bg-card/30 rounded border text-center">
+              <p className="text-sm text-muted-foreground">Avg. Open Rate</p>
+              <p className="text-xl font-bold text-foreground">72%</p>
+            </div>
+            <div className="p-4 bg-card/30 rounded border text-center">
+              <p className="text-sm text-muted-foreground">Total Customers</p>
+              <p className="text-xl font-bold text-foreground">1,247</p>
+            </div>
+            <div className="p-4 bg-card/30 rounded border text-center">
+              <p className="text-sm text-muted-foreground">Campaigns Sent</p>
+              <p className="text-xl font-bold text-foreground">23</p>
+            </div>
+            <div className="p-4 bg-card/30 rounded border text-center">
+              <p className="text-sm text-muted-foreground">Emails Delivered</p>
+              <p className="text-xl font-bold text-foreground">18,492</p>
+            </div>
           </div>
         </div>
       </main>

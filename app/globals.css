@@ -31,22 +31,22 @@
 
 :root {
   /* Updated color palette based on the provided image */
-  --primary: #e75837; /* Orange as primary */
-  --primary-dark: #d04e30; /* Darker version of Orange */
-  --primary-light: #f07a5f; /* Lighter version of Orange */
-  --secondary: #745e25; /* Green as secondary */
-  --accent: #94abd6; /* Blue */
-  --accent-light: #b0c1e3; /* Lighter Blue */
-  --accent-dark: #7a90ba; /* Darker Blue */
+  --primary: #164e63; /* Orange as primary */
+  --primary-dark: #0c3446; /* Darker version of Orange */
+  --primary-light: #3a88a9; /* Lighter version of Orange */
+  --secondary: #ecfeff; /* Green as secondary */
+  --accent: #a16207; /* Blue */
+  --accent-light: #f5d08a; /* Lighter Blue */
+  --accent-dark: #7a4505; /* Darker Blue */
   --pink: #f4baea; /* Pink */
   --maroon: #3f001d; /* Maroon */
   --dark-blue: #17000b; /* Dark Blue */
   --gray: #808b92; /* Gray tint 1 */
-  --background: #fbf8f3; /* Beige */
-  --text: #17000b; /* Dark Blue for text */
+  --background: #ffffff; /* Beige */
+  --text: #475569; /* Dark Blue for text */
   --text-light: #3f001d; /* Maroon for light text */
-  --card-bg: #ffffff;
-  --border: #e0e0e0;
+  --card-bg: #ecfeff;
+  --border: #d1d5db;
   --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   --radius: 12px;
 

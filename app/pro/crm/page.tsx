@@ -1,25 +1,11 @@
 "use client"
 import { useState, useEffect } from "react"
-import {
-  Mail,
-  Users,
-  Upload,
-  Target,
-  BarChart3,
-  Plus,
-  Database,
-  Zap,
-  TrendingUp,
-  FileText,
-  AlertCircle,
-  Loader2,
-} from "lucide-react"
+import { Database, AlertCircle, Loader2 } from "lucide-react"
 import Header from "../../../components/header"
 import PasswordProtection from "../../../components/password-protection"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -236,411 +222,226 @@ export default function CRMDashboard() {
       <main className="pt-8 flex-1 flex flex-col">
         <div className="max-w-7xl mx-auto px-4 flex flex-col page-content">
           {/* Hero Section */}
-          <div className="text-center mb-16">
-            <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-8">
-              <Mail className="h-8 w-8 text-primary-foreground" />
+          <div className="mb-12">
+            <h1 className="text-4xl font-bold text-foreground mb-3">CRM Dashboard</h1>
+            <p className="text-lg text-muted-foreground max-w-2xl">
+              Manage customer relationships and grow your pet service business with data-driven insights.
+            </p>
+          </div>
+
+          {/* Status Badge */}
+          <div className="flex items-center justify-between mb-8 p-4 bg-card/50 rounded-lg border">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-primary rounded-full"></div>
+                <span className="text-sm text-foreground">Data loaded: {professionalId}</span>
+              </div>
+              <button
+                onClick={handleInitialization}
+                disabled={isInitializing}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {isInitializing ? "Refreshing..." : "Refresh"}
+              </button>
             </div>
-            <h1 className="text-4xl md:text-5xl title-font mb-6 text-foreground">CRM & Email Marketing Hub</h1>
-            <p className="text-xl text-muted-foreground max-w-4xl mx-auto body-font mb-10">
-              Manage customer relationships, create targeted campaigns, and grow your pet service business with powerful
-              marketing automation tools.
+            <Button variant="outline" size="sm" onClick={() => router.push("/pro/crm/upload")} className="text-sm">
+              Upload Data
+            </Button>
+          </div>
+
+          {/* Quick Stats Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            <div className="p-6 bg-card/30 rounded-lg border">
+              <p className="text-sm text-muted-foreground mb-1">Customers</p>
+              <p className="text-2xl font-bold text-foreground">{stats.totalCustomers.toLocaleString()}</p>
+            </div>
+            <div className="p-6 bg-card/30 rounded-lg border">
+              <p className="text-sm text-muted-foreground mb-1">Bookings</p>
+              <p className="text-2xl font-bold text-foreground">{stats.totalBookings.toLocaleString()}</p>
+            </div>
+            <div className="p-6 bg-card/30 rounded-lg border">
+              <p className="text-sm text-muted-foreground mb-1">Pets</p>
+              <p className="text-2xl font-bold text-foreground">{stats.totalPets.toLocaleString()}</p>
+            </div>
+            <div className="p-6 bg-card/30 rounded-lg border">
+              <p className="text-sm text-muted-foreground mb-1">Revenue</p>
+              <p className="text-2xl font-bold text-foreground">{stats.revenue}</p>
+            </div>
+          </div>
+
+          {/* Main Feature Cards */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+            <div className="p-8 bg-card/30 rounded-lg border">
+              <h3 className="text-xl font-semibold text-foreground mb-2">Email Campaigns</h3>
+              <p className="text-muted-foreground mb-6">Create and manage targeted email campaigns</p>
+
+              <div className="space-y-3 mb-6">
+                <button
+                  onClick={() => router.push("/pro/crm/campaigns")}
+                  className="w-full p-4 text-left bg-background rounded-lg border hover:bg-muted/50 transition-colors"
+                >
+                  <div className="font-medium text-foreground">Browse Templates</div>
+                  <div className="text-sm text-muted-foreground">Pre-built campaigns for common scenarios</div>
+                </button>
+
+                <button
+                  onClick={() => router.push("/pro/crm/campaigns/create")}
+                  className="w-full p-4 text-left bg-background rounded-lg border hover:bg-muted/50 transition-colors"
+                >
+                  <div className="font-medium text-foreground">Create Custom Campaign</div>
+                  <div className="text-sm text-muted-foreground">Build targeted campaigns for your audience</div>
+                </button>
+              </div>
+
+              <div className="p-4 bg-background rounded-lg border">
+                <h4 className="font-medium text-foreground mb-3">Campaign Opportunities</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Exotic Pet Owners</span>
+                    <span className="text-foreground">{stats.exoticPets}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Recent Bookings (30d)</span>
+                    <span className="text-foreground">{stats.recentBookings}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-8 bg-card/30 rounded-lg border">
+              <h3 className="text-xl font-semibold text-foreground mb-2">Email Marketing</h3>
+              <p className="text-muted-foreground mb-6">Compose and track email performance</p>
+
+              <div className="space-y-3 mb-6">
+                <button
+                  onClick={() => router.push("/pro/crm/email/compose")}
+                  className="w-full p-4 text-left bg-background rounded-lg border hover:bg-muted/50 transition-colors"
+                >
+                  <div className="font-medium text-foreground">Compose Email</div>
+                  <div className="text-sm text-muted-foreground">Create and send new campaigns</div>
+                </button>
+
+                <button
+                  onClick={() => router.push("/pro/crm/email/analytics")}
+                  className="w-full p-4 text-left bg-background rounded-lg border hover:bg-muted/50 transition-colors"
+                >
+                  <div className="font-medium text-foreground">View Analytics</div>
+                  <div className="text-sm text-muted-foreground">Track campaign performance</div>
+                </button>
+              </div>
+
+              <div className="p-4 bg-background rounded-lg border">
+                <h4 className="font-medium text-foreground mb-3">Performance Overview</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <div className="text-muted-foreground">Total Customers</div>
+                    <div className="font-medium text-foreground">{stats.totalCustomers}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground">Total Revenue</div>
+                    <div className="font-medium text-foreground">{stats.revenue}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Data Insights */}
+          {crmData && (
+            <div className="p-8 bg-card/30 rounded-lg border mb-8">
+              <h3 className="text-xl font-semibold text-foreground mb-6">Recent Activity</h3>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div>
+                  <h4 className="font-medium text-foreground mb-4">Pet Care Plans</h4>
+                  <div className="space-y-3">
+                    {crmData.petCare?.slice(0, 3).map((pet, index) => (
+                      <div key={index} className="p-3 bg-background rounded border">
+                        <div className="font-medium text-foreground text-sm">{pet.name || "Unnamed Pet"}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {pet.pet_type || "Unknown"} • {pet.contacts?.[0]?.email || "No email"}
+                        </div>
+                      </div>
+                    )) || <p className="text-sm text-muted-foreground">No pet care plans found</p>}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-medium text-foreground mb-4">Recent Bookings</h4>
+                  <div className="space-y-3">
+                    {crmData.bookings?.slice(0, 3).map((booking, index) => (
+                      <div key={index} className="p-3 bg-background rounded border">
+                        <div className="font-medium text-foreground text-sm">{booking.service_type || "Service"}</div>
+                        <div className="text-xs text-muted-foreground">{booking.customer_email || "No email"}</div>
+                      </div>
+                    )) || <p className="text-sm text-muted-foreground">No recent bookings found</p>}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-medium text-foreground mb-4">Key Metrics</h4>
+                  <div className="space-y-3">
+                    <div className="p-3 bg-background rounded border">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Onboarding Complete</span>
+                        <span className="text-sm font-medium text-foreground">{stats.onboardingRate}</span>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-background rounded border">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Exotic Pet Owners</span>
+                        <span className="text-sm font-medium text-foreground">{stats.exoticPets}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Getting Started Section */}
+          <div className="p-8 bg-gradient-to-r from-primary/5 to-accent/5 rounded-lg border">
+            <h3 className="text-xl font-semibold text-foreground mb-2">Getting Started</h3>
+            <p className="text-muted-foreground mb-6">
+              New to email marketing? Follow these steps to set up your first campaign.
             </p>
 
-            {/* Status Badge */}
-            <div className="flex justify-center items-center gap-6 mb-12">
-              <Badge variant="secondary" className="px-6 py-3 text-sm font-medium">
-                <Zap className="h-4 w-4 mr-2" />
-                Professional CRM Tools
-              </Badge>
-              <div className="flex items-center gap-3">
-                <Badge variant="outline" className="px-6 py-3 text-sm font-medium">
-                  <Database className="h-4 w-4 mr-2" />
-                  Data Loaded: {professionalId}
-                </Badge>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleInitialization}
-                  disabled={isInitializing}
-                  className="h-10 w-10 p-0 hover:bg-muted"
-                  title="Refresh CRM Data"
-                >
-                  {isInitializing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
-                </Button>
-              </div>
-              <Button
-                variant="outline"
-                size="default"
-                onClick={() => router.push("/pro/crm/upload")}
-                className="px-6 py-3 text-sm font-medium"
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Upload Data
-              </Button>
-            </div>
-
-            {/* Quick Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-16">
-              <Card className="border-border">
-                <CardContent className="p-8">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground body-font mb-2">Total Customers</p>
-                      <p className="text-3xl font-bold text-foreground header-font">
-                        {stats.totalCustomers.toLocaleString()}
-                      </p>
-                    </div>
-                    <Users className="h-10 w-10 text-primary" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-border">
-                <CardContent className="p-8">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground body-font mb-2">Total Bookings</p>
-                      <p className="text-3xl font-bold text-foreground header-font">
-                        {stats.totalBookings.toLocaleString()}
-                      </p>
-                    </div>
-                    <Target className="h-10 w-10 text-secondary" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-border">
-                <CardContent className="p-8">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground body-font mb-2">Registered Pets</p>
-                      <p className="text-3xl font-bold text-foreground header-font">
-                        {stats.totalPets.toLocaleString()}
-                      </p>
-                    </div>
-                    <TrendingUp className="h-10 w-10 text-accent" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-border">
-                <CardContent className="p-8">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground body-font mb-2">Total Revenue</p>
-                      <p className="text-3xl font-bold text-foreground header-font">{stats.revenue}</p>
-                    </div>
-                    <BarChart3 className="h-10 w-10 text-chart-4" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {crmData && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                <Card className="border-border">
-                  <CardHeader>
-                    <CardTitle className="text-lg header-font">Customer Insights</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm body-font">Onboarding Complete</span>
-                      <Badge variant="secondary">{stats.onboardingRate}</Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm body-font">Recent Bookings (30d)</span>
-                      <span className="font-medium header-font">{stats.recentBookings}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm body-font">Exotic Pet Owners</span>
-                      <span className="font-medium header-font">{stats.exoticPets}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-border">
-                  <CardHeader>
-                    <CardTitle className="text-lg header-font">Pet Care Plans</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {crmData.petCare?.slice(0, 3).map((pet, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded">
-                        <div>
-                          <p className="text-sm font-medium body-font">{pet.name || "Unnamed Pet"}</p>
-                          <p className="text-xs text-muted-foreground body-font">
-                            {pet.pet_type || "Unknown"} • {pet.contacts?.[0]?.email || "No email"}
-                          </p>
-                        </div>
-                        <Badge variant="outline" className="text-xs">
-                          Care Plan
-                        </Badge>
-                      </div>
-                    )) || <p className="text-sm text-muted-foreground body-font">No pet care plans found</p>}
-                  </CardContent>
-                </Card>
-
-                <Card className="border-border">
-                  <CardHeader>
-                    <CardTitle className="text-lg header-font">Recent Activity</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {crmData.bookings?.slice(0, 3).map((booking, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded">
-                        <div>
-                          <p className="text-sm font-medium body-font">{booking.service_type || "Service"}</p>
-                          <p className="text-xs text-muted-foreground body-font">
-                            {booking.customer_email || "No email"}
-                          </p>
-                        </div>
-                        <span className="text-xs text-muted-foreground body-font">
-                          {booking.booking_date ? new Date(booking.booking_date).toLocaleDateString() : "No date"}
-                        </span>
-                      </div>
-                    )) || <p className="text-sm text-muted-foreground body-font">No recent bookings found</p>}
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {/* Main Feature Cards */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-              {/* Campaign Library Section */}
-              <Card className="border-border hover:shadow-lg transition-all duration-200">
-                <CardHeader>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-secondary/10 rounded-lg flex items-center justify-center">
-                      <Target className="h-5 w-5 text-secondary" />
-                    </div>
-                    <div>
-                      <CardTitle className="header-font">Campaign Library</CardTitle>
-                      <CardDescription className="body-font">Pre-built and custom email campaigns</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Button
-                      variant="outline"
-                      className="h-auto p-4 flex flex-col items-start space-y-2 hover:bg-muted bg-transparent"
-                      onClick={() => router.push("/pro/crm/campaigns")}
-                    >
-                      <div className="flex items-center space-x-2">
-                        <FileText className="h-4 w-4" />
-                        <span className="font-medium body-font">Browse Templates</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground text-left body-font">
-                        Ready-made campaigns for common scenarios
-                      </p>
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      className="h-auto p-4 flex flex-col items-start space-y-2 hover:bg-muted bg-transparent"
-                      onClick={() => router.push("/pro/crm/campaigns/create")}
-                    >
-                      <div className="flex items-center space-x-2">
-                        <Plus className="h-4 w-4" />
-                        <span className="font-medium body-font">Create Custom</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground text-left body-font">
-                        Build targeted campaigns for your audience
-                      </p>
-                    </Button>
-                  </div>
-
-                  <div className="bg-muted/50 rounded-lg p-4">
-                    <h4 className="font-medium text-sm mb-3 header-font">Campaign Opportunities</h4>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="body-font">Exotic Pet Owners</span>
-                        <Badge variant="outline" className="text-xs">
-                          {stats.exoticPets} customers
-                        </Badge>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="body-font">Incomplete Onboarding</span>
-                        <Badge variant="outline" className="text-xs">
-                          {stats.totalCustomers -
-                            Math.round((Number.parseInt(stats.onboardingRate) / 100) * stats.totalCustomers)}{" "}
-                          customers
-                        </Badge>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="body-font">Recent Clients (30d)</span>
-                        <Badge variant="outline" className="text-xs">
-                          {stats.recentBookings} bookings
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Email Marketing Section */}
-              <Card className="border-border hover:shadow-lg transition-all duration-200">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
-                        <Mail className="h-5 w-5 text-accent" />
-                      </div>
-                      <div>
-                        <CardTitle className="header-font">Email Marketing Center</CardTitle>
-                        <CardDescription className="body-font">Create, send, and track email campaigns</CardDescription>
-                      </div>
-                    </div>
-                    <Button onClick={() => router.push("/pro/crm/email/compose")} size="sm">
-                      <Plus className="h-4 w-4 mr-2" />
-                      New Campaign
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <h4 className="font-medium header-font">Quick Actions</h4>
-                      <div className="space-y-2">
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start"
-                          onClick={() => router.push("/pro/crm/email/compose")}
-                        >
-                          <Mail className="h-4 w-4 mr-2" />
-                          Compose Email
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start"
-                          onClick={() => router.push("/pro/crm/email/templates")}
-                        >
-                          <FileText className="h-4 w-4 mr-2" />
-                          Email Templates
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start"
-                          onClick={() => router.push("/pro/crm/email/analytics")}
-                        >
-                          <BarChart3 className="h-4 w-4 mr-2" />
-                          Campaign Analytics
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <h4 className="font-medium header-font">Recent Campaigns</h4>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                          <div>
-                            <p className="text-sm font-medium body-font">Holiday Grooming Special</p>
-                            <p className="text-xs text-muted-foreground body-font">Sent 2 days ago</p>
-                          </div>
-                          <Badge variant="secondary">68% open</Badge>
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                          <div>
-                            <p className="text-sm font-medium body-font">New Client Welcome</p>
-                            <p className="text-xs text-muted-foreground body-font">Sent 1 week ago</p>
-                          </div>
-                          <Badge variant="secondary">72% open</Badge>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-muted/50 rounded-lg p-4">
-                    <h4 className="font-medium text-sm mb-3 header-font">Performance Overview</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm body-font">Total Customers</span>
-                        <span className="font-medium header-font">{stats.totalCustomers}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm body-font">Onboarding Rate</span>
-                        <span className="font-medium header-font">{stats.onboardingRate}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm body-font">Total Revenue</span>
-                        <span className="font-medium header-font">{stats.revenue}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm body-font">Active Pets</span>
-                        <span className="font-medium header-font">{stats.totalPets}</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Getting Started Section - Full Width */}
-            <Card className="border-border bg-gradient-to-r from-primary/5 to-accent/5 mb-8">
-              <CardHeader>
-                <CardTitle className="header-font">Getting Started with CRM</CardTitle>
-                <CardDescription className="body-font">
-                  New to email marketing? Follow these steps to set up your first campaign.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  <div className="flex items-start space-x-3">
-                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-sm">
-                      1
-                    </div>
-                    <div>
-                      <h4 className="font-medium mb-2 header-font">Upload Your Data</h4>
-                      <p className="text-sm text-muted-foreground body-font">
-                        Import your customer list or connect your Critter booking data to get started.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start space-x-3">
-                    <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center text-secondary-foreground font-bold text-sm">
-                      2
-                    </div>
-                    <div>
-                      <h4 className="font-medium mb-2 header-font">Choose a Campaign</h4>
-                      <p className="text-sm text-muted-foreground body-font">
-                        Select from our pre-built templates or create a custom campaign for your audience.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start space-x-3">
-                    <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center text-accent-foreground font-bold text-sm">
-                      3
-                    </div>
-                    <div>
-                      <h4 className="font-medium mb-2 header-font">Send & Track</h4>
-                      <p className="text-sm text-muted-foreground body-font">
-                        Launch your campaign and monitor performance with detailed analytics.
-                      </p>
-                    </div>
-                  </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div className="flex gap-3">
+                <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-medium flex-shrink-0 mt-0.5">
+                  1
                 </div>
-
-                <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button onClick={() => router.push("/pro/crm/upload")} size="lg">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Start with Data Upload
-                  </Button>
-                  <Button variant="outline" onClick={() => router.push("/pro/crm/campaigns")} size="lg">
-                    <Target className="h-4 w-4 mr-2" />
-                    Browse Campaign Templates
-                  </Button>
+                <div>
+                  <h4 className="font-medium text-foreground mb-1">Upload Data</h4>
+                  <p className="text-sm text-muted-foreground">Import your customer list or connect booking data</p>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Data Refresh Option */}
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="text-sm text-muted-foreground">CRM data loaded for Professional ID: {professionalId}</p>
               </div>
-              <Button variant="outline" size="sm" onClick={() => router.push("/pro/crm/initialize")}>
-                <Database className="h-4 w-4 mr-2" />
-                Refresh Data
+
+              <div className="flex gap-3">
+                <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-medium flex-shrink-0 mt-0.5">
+                  2
+                </div>
+                <div>
+                  <h4 className="font-medium text-foreground mb-1">Choose Campaign</h4>
+                  <p className="text-sm text-muted-foreground">Select templates or create custom campaigns</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-medium flex-shrink-0 mt-0.5">
+                  3
+                </div>
+                <div>
+                  <h4 className="font-medium text-foreground mb-1">Send & Track</h4>
+                  <p className="text-sm text-muted-foreground">Launch campaigns and monitor performance</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button onClick={() => router.push("/pro/crm/upload")}>Start with Data Upload</Button>
+              <Button variant="outline" onClick={() => router.push("/pro/crm/campaigns")}>
+                Browse Templates
               </Button>
             </div>
           </div>
