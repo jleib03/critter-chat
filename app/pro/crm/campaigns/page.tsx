@@ -67,7 +67,7 @@ export default function CampaignLibrary() {
       estimatedReach: 247,
       avgOpenRate: "72%",
       icon: Clock,
-      color: "text-orange-600",
+      color: "text-blue-600",
       tags: ["Win-back", "Retention", "High-impact"],
       previewSubject: "We miss you and [Pet Name]! Special offer inside",
       callToAction: "Book Now - 20% Off",
@@ -123,7 +123,7 @@ export default function CampaignLibrary() {
       estimatedReach: 892,
       avgOpenRate: "65%",
       icon: Calendar,
-      color: "text-purple-600",
+      color: "text-amber-600",
       tags: ["Seasonal", "Grooming", "High-volume"],
       previewSubject: "Get [Pet Name] holiday-ready with our special packages",
       callToAction: "Book Holiday Grooming",
@@ -158,13 +158,13 @@ export default function CampaignLibrary() {
   const getCategoryColor = (category: string) => {
     switch (category) {
       case "retention":
-        return "bg-orange-100 text-orange-800"
+        return "bg-blue-100 text-blue-800"
       case "acquisition":
         return "bg-green-100 text-green-800"
       case "engagement":
-        return "bg-blue-100 text-blue-800"
-      case "seasonal":
         return "bg-purple-100 text-purple-800"
+      case "seasonal":
+        return "bg-amber-100 text-amber-800"
       default:
         return "bg-gray-100 text-gray-800"
     }
@@ -173,51 +173,51 @@ export default function CampaignLibrary() {
   const renderTemplateCard = (template: CampaignTemplate) => (
     <Card
       key={template.id}
-      className="border-border hover:shadow-lg transition-all duration-200 cursor-pointer"
+      className="border-border hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/50 backdrop-blur-sm"
       onClick={() => setSelectedTemplate(template)}
     >
-      <CardHeader>
+      <CardHeader className="pb-4">
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-3">
-            <div className={`w-10 h-10 bg-muted rounded-lg flex items-center justify-center`}>
+            <div className={`w-10 h-10 bg-muted/80 rounded-lg flex items-center justify-center border`}>
               <template.icon className={`h-5 w-5 ${template.color}`} />
             </div>
             <div>
-              <CardTitle className="text-lg header-font">{template.name}</CardTitle>
-              <CardDescription className="body-font">{template.description}</CardDescription>
+              <CardTitle className="text-lg header-font text-foreground">{template.name}</CardTitle>
+              <CardDescription className="body-font text-muted-foreground">{template.description}</CardDescription>
             </div>
           </div>
-          <Badge className={getCategoryColor(template.category)}>{template.category}</Badge>
+          <Badge className={`${getCategoryColor(template.category)} font-medium`}>{template.category}</Badge>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-0">
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="grid grid-cols-2 gap-4 text-sm bg-muted/30 rounded-lg p-3">
             <div>
-              <p className="text-muted-foreground body-font">Estimated Reach</p>
-              <p className="font-medium header-font">{template.estimatedReach} customers</p>
+              <p className="text-muted-foreground body-font text-xs uppercase tracking-wide">Estimated Reach</p>
+              <p className="font-semibold header-font text-foreground">{template.estimatedReach} customers</p>
             </div>
             <div>
-              <p className="text-muted-foreground body-font">Avg. Open Rate</p>
-              <p className="font-medium header-font">{template.avgOpenRate}</p>
+              <p className="text-muted-foreground body-font text-xs uppercase tracking-wide">Avg. Open Rate</p>
+              <p className="font-semibold header-font text-foreground">{template.avgOpenRate}</p>
             </div>
           </div>
 
           <div>
-            <p className="text-sm text-muted-foreground mb-2 body-font">Target Audience</p>
-            <p className="text-sm body-font">{template.targetAudience}</p>
+            <p className="text-sm text-muted-foreground mb-2 body-font font-medium">Target Audience</p>
+            <p className="text-sm body-font text-foreground/90">{template.targetAudience}</p>
           </div>
 
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-2">
             {template.tags.map((tag) => (
-              <Badge key={tag} variant="secondary" className="text-xs">
+              <Badge key={tag} variant="secondary" className="text-xs bg-secondary/80 text-secondary-foreground border">
                 {tag}
               </Badge>
             ))}
           </div>
 
           <Button
-            className="w-full"
+            className="w-full mt-4"
             onClick={(e) => {
               e.stopPropagation()
               router.push(`/pro/crm/campaigns/${template.id}/setup`)

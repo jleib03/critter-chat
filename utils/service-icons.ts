@@ -79,7 +79,7 @@ export const getServiceColor = (serviceType: string) => {
     case "grooming":
       return "text-[#E75837]" // Orange
     case "boarding":
-      return "text-[#745E25]" // Brown
+      return "text-teal-600"
     case "sitting":
     case "pet sitting":
       return "text-[#94ABD6]" // Blue
