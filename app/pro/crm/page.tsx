@@ -236,24 +236,24 @@ export default function CRMDashboard() {
       <main className="pt-8 flex-1 flex flex-col">
         <div className="max-w-7xl mx-auto px-4 flex flex-col page-content">
           {/* Hero Section */}
-          <div className="text-center mb-12">
-            <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="text-center mb-16">
+            <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-8">
               <Mail className="h-8 w-8 text-primary-foreground" />
             </div>
-            <h1 className="text-4xl md:text-5xl title-font mb-4 text-foreground">CRM & Email Marketing Hub</h1>
-            <p className="text-xl text-muted-foreground max-w-4xl mx-auto body-font">
+            <h1 className="text-4xl md:text-5xl title-font mb-6 text-foreground">CRM & Email Marketing Hub</h1>
+            <p className="text-xl text-muted-foreground max-w-4xl mx-auto body-font mb-10">
               Manage customer relationships, create targeted campaigns, and grow your pet service business with powerful
               marketing automation tools.
             </p>
 
             {/* Status Badge */}
-            <div className="mt-6 flex justify-center gap-4">
-              <Badge variant="secondary" className="px-4 py-2 text-sm">
+            <div className="flex justify-center items-center gap-6 mb-12">
+              <Badge variant="secondary" className="px-6 py-3 text-sm font-medium">
                 <Zap className="h-4 w-4 mr-2" />
                 Professional CRM Tools
               </Badge>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="px-4 py-2 text-sm">
+              <div className="flex items-center gap-3">
+                <Badge variant="outline" className="px-6 py-3 text-sm font-medium">
                   <Database className="h-4 w-4 mr-2" />
                   Data Loaded: {professionalId}
                 </Badge>
@@ -262,7 +262,7 @@ export default function CRMDashboard() {
                   size="sm"
                   onClick={handleInitialization}
                   disabled={isInitializing}
-                  className="h-8 w-8 p-0"
+                  className="h-10 w-10 p-0 hover:bg-muted"
                   title="Refresh CRM Data"
                 >
                   {isInitializing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
@@ -270,9 +270,9 @@ export default function CRMDashboard() {
               </div>
               <Button
                 variant="outline"
-                size="sm"
+                size="default"
                 onClick={() => router.push("/pro/crm/upload")}
-                className="px-4 py-2 text-sm"
+                className="px-6 py-3 text-sm font-medium"
               >
                 <Upload className="h-4 w-4 mr-2" />
                 Upload Data
@@ -280,57 +280,57 @@ export default function CRMDashboard() {
             </div>
 
             {/* Quick Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-16">
               <Card className="border-border">
-                <CardContent className="p-6">
+                <CardContent className="p-8">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground body-font">Total Customers</p>
-                      <p className="text-2xl font-bold text-foreground header-font">
+                      <p className="text-sm text-muted-foreground body-font mb-2">Total Customers</p>
+                      <p className="text-3xl font-bold text-foreground header-font">
                         {stats.totalCustomers.toLocaleString()}
                       </p>
                     </div>
-                    <Users className="h-8 w-8 text-primary" />
+                    <Users className="h-10 w-10 text-primary" />
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="border-border">
-                <CardContent className="p-6">
+                <CardContent className="p-8">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground body-font">Total Bookings</p>
-                      <p className="text-2xl font-bold text-foreground header-font">
+                      <p className="text-sm text-muted-foreground body-font mb-2">Total Bookings</p>
+                      <p className="text-3xl font-bold text-foreground header-font">
                         {stats.totalBookings.toLocaleString()}
                       </p>
                     </div>
-                    <Target className="h-8 w-8 text-secondary" />
+                    <Target className="h-10 w-10 text-secondary" />
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="border-border">
-                <CardContent className="p-6">
+                <CardContent className="p-8">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground body-font">Registered Pets</p>
-                      <p className="text-2xl font-bold text-foreground header-font">
+                      <p className="text-sm text-muted-foreground body-font mb-2">Registered Pets</p>
+                      <p className="text-3xl font-bold text-foreground header-font">
                         {stats.totalPets.toLocaleString()}
                       </p>
                     </div>
-                    <TrendingUp className="h-8 w-8 text-accent" />
+                    <TrendingUp className="h-10 w-10 text-accent" />
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="border-border">
-                <CardContent className="p-6">
+                <CardContent className="p-8">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground body-font">Total Revenue</p>
-                      <p className="text-2xl font-bold text-foreground header-font">{stats.revenue}</p>
+                      <p className="text-sm text-muted-foreground body-font mb-2">Total Revenue</p>
+                      <p className="text-3xl font-bold text-foreground header-font">{stats.revenue}</p>
                     </div>
-                    <BarChart3 className="h-8 w-8 text-chart-4" />
+                    <BarChart3 className="h-10 w-10 text-chart-4" />
                   </div>
                 </CardContent>
               </Card>
