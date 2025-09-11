@@ -58,18 +58,22 @@ export default function CRMDashboard() {
 
     try {
       console.log("[v0] Initializing CRM for professional:", professionalId)
-      const result = await initializeCRMData(professionalId.trim())
+      const crmData = await initializeCRMData(professionalId.trim())
 
-      if (result.success && result.data) {
-        setCrmData(result.data)
+      if (crmData) {
+        setCrmData(crmData)
         setIsDataLoaded(true)
         console.log("[v0] CRM initialization successful")
       } else {
-        setInitError(result.error || "Failed to initialize CRM data")
+        setInitError("No data found for this Professional ID. Please check your ID and try again.")
       }
     } catch (error) {
       console.error("[v0] CRM initialization error:", error)
-      setInitError("An unexpected error occurred. Please try again.")
+      if (error instanceof Error) {
+        setInitError(`Failed to initialize CRM data: ${error.message}`)
+      } else {
+        setInitError("An unexpected error occurred. Please try again.")
+      }
     } finally {
       setIsInitializing(false)
     }
