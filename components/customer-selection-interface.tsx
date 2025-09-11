@@ -21,6 +21,8 @@ interface Customer {
 }
 
 interface CustomerSelectionProps {
+  crmData?: any
+  crmLoading?: boolean
   selectedAudience: string
   onAudienceChange: (audience: string) => void
   onCustomersSelected: (customers: Customer[]) => void
@@ -33,6 +35,8 @@ interface CustomerSelectionProps {
 }
 
 export default function CustomerSelectionInterface({
+  crmData: propCrmData,
+  crmLoading: propCrmLoading = false,
   selectedAudience,
   onAudienceChange,
   onCustomersSelected,
@@ -43,12 +47,15 @@ export default function CustomerSelectionInterface({
   trackClicks,
   onTrackClicksChange,
 }: CustomerSelectionProps) {
-  const [crmData, setCrmData] = useState<any>(null)
+  const [localCrmData, setLocalCrmData] = useState<any>(null)
   const [customers, setCustomers] = useState<Customer[]>([])
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([])
   const [selectedCustomers, setSelectedCustomers] = useState<Set<string>>(new Set())
   const [searchTerm, setSearchTerm] = useState("")
   const [showCustomerList, setShowCustomerList] = useState(false)
+
+  const crmData = propCrmData || localCrmData
+  const crmLoading = propCrmLoading
 
   const getPetTypeFromIds = (pet: any): string => {
     if (pet.type_id === "1" || pet.dog_breed_id) return "Dog"
@@ -65,131 +72,123 @@ export default function CustomerSelectionInterface({
   }
 
   useEffect(() => {
-    console.log("[v0] Checking CRM data:", { data: !!getCRMData(), professionalId: getCRMData()?.professionalId })
+    if (propCrmData) {
+      console.log("[v0] Customer selection: Using prop CRM data")
+      return
+    }
+
+    console.log("[v0] Customer selection: Loading CRM data locally")
     const data = getCRMData()
-    console.log("[v0] Full CRM data structure:", data)
-    console.log("[v0] Data keys:", data ? Object.keys(data) : "No data")
+    console.log("[v0] Customer selection: Local data check:", !!data)
+    setLocalCrmData(data)
+  }, [propCrmData])
 
-    setCrmData(data)
+  useEffect(() => {
+    if (!crmData || crmLoading) {
+      console.log("[v0] Customer selection: No data or still loading")
+      return
+    }
 
-    if (data) {
-      console.log("[v0] Calculating stats from crmData:", JSON.stringify(data).substring(0, 200) + "...")
-      console.log("[v0] Data arrays:", {
-        petCarePlans: data.petCare?.length || 0,
-        bookings: data.bookings?.length || 0,
-        invoices: data.invoices?.invoices?.length || 0,
-        onboardingData: data.onboarding ? 1 : 0,
-      })
+    console.log("[v0] Customer selection: Processing CRM data")
+    console.log("[v0] Data arrays:", {
+      petCarePlans: crmData.petCare?.length || 0,
+      bookings: crmData.bookings?.length || 0,
+      invoices: crmData.invoices?.invoices?.length || 0,
+      onboardingData: crmData.onboarding ? 1 : 0,
+    })
 
-      const customerMap = new Map<string, Customer>()
+    const customerMap = new Map<string, Customer>()
 
-      data.bookings?.forEach((booking: any) => {
-        const email = booking.customer_email
-        if (email) {
-          const customerName =
-            `${booking.customer_first_name || ""} ${booking.customer_last_name || ""}`.trim() ||
-            booking.customer_name ||
-            email.split("@")[0]
+    crmData.bookings?.forEach((booking: any) => {
+      const email = booking.customer_email
+      if (email) {
+        const customerName =
+          `${booking.customer_first_name || ""} ${booking.customer_last_name || ""}`.trim() ||
+          booking.customer_name ||
+          email.split("@")[0]
 
-          if (!customerMap.has(email)) {
-            customerMap.set(email, {
-              email,
-              name: customerName,
-              petName: "",
-              petType: "",
-              lastBooking: booking.booking_date,
-              totalBookings: 1,
-            })
-          } else {
-            const customer = customerMap.get(email)!
-            customer.totalBookings = (customer.totalBookings || 0) + 1
-            // Update with most recent booking info
-            if (booking.booking_date > (customer.lastBooking || "")) {
-              customer.lastBooking = booking.booking_date
-            }
-          }
-        }
-      })
-
-      data.petCare?.forEach((pet: any) => {
-        console.log("[v0] Processing pet:", {
-          name: pet.name,
-          type_id: pet.type_id,
-          breed_ids: {
-            dog: pet.dog_breed_id,
-            cat: pet.cat_breed_id,
-            bird: pet.bird_breed_id,
-            fish: pet.fish_breed_id,
-          },
-        })
-
-        const petType = getPetTypeFromIds(pet)
-
-        // Get customer emails from pet contacts and match with existing customers
-        if (pet.contacts && Array.isArray(pet.contacts)) {
-          pet.contacts.forEach((contact: any) => {
-            if (contact.email) {
-              const existingCustomer = customerMap.get(contact.email)
-              if (existingCustomer) {
-                // Add pet info to existing customer
-                if (pet.name) {
-                  existingCustomer.petName = existingCustomer.petName
-                    ? `${existingCustomer.petName}, ${pet.name}`
-                    : pet.name
-                }
-                if (petType) {
-                  const currentTypes = existingCustomer.petType ? existingCustomer.petType.split(", ") : []
-                  if (!currentTypes.includes(petType)) {
-                    existingCustomer.petType = existingCustomer.petType
-                      ? `${existingCustomer.petType}, ${petType}`
-                      : petType
-                  }
-                }
-              } else {
-                // Create new customer if not found in bookings
-                customerMap.set(contact.email, {
-                  email: contact.email,
-                  name: contact.contact_name || contact.email.split("@")[0],
-                  petName: pet.name,
-                  petType: petType,
-                  totalBookings: 0,
-                })
-              }
-            }
-          })
-        }
-      })
-
-      if (data.onboarding && data.onboarding.email) {
-        const onboardingEmail = data.onboarding.email
-        if (!customerMap.has(onboardingEmail)) {
-          const onboardingName = data.onboarding.supporting_details?.personal_info
-            ? `${data.onboarding.supporting_details.personal_info.first_name || ""} ${data.onboarding.supporting_details.personal_info.last_name || ""}`.trim()
-            : onboardingEmail.split("@")[0]
-
-          customerMap.set(onboardingEmail, {
-            email: onboardingEmail,
-            name: onboardingName,
+        if (!customerMap.has(email)) {
+          customerMap.set(email, {
+            email,
+            name: customerName,
             petName: "",
             petType: "",
-            totalBookings: 0,
+            lastBooking: booking.booking_date,
+            totalBookings: 1,
           })
-
-          // Add pet info from onboarding data
-          if (data.onboarding.supporting_details?.pets?.details) {
-            const petNames = data.onboarding.supporting_details.pets.details.map((p: any) => p.pet_name).join(", ")
-            const customer = customerMap.get(onboardingEmail)!
-            customer.petName = petNames
+        } else {
+          const customer = customerMap.get(email)!
+          customer.totalBookings = (customer.totalBookings || 0) + 1
+          if (booking.booking_date > (customer.lastBooking || "")) {
+            customer.lastBooking = booking.booking_date
           }
         }
       }
+    })
 
-      const allCustomers = Array.from(customerMap.values())
-      console.log("[v0] Final customer list:", allCustomers.length, "customers")
-      console.log("[v0] Sample customers:", allCustomers.slice(0, 3))
-      setCustomers(allCustomers)
+    crmData.petCare?.forEach((pet: any) => {
+      const petType = getPetTypeFromIds(pet)
+
+      if (pet.contacts && Array.isArray(pet.contacts)) {
+        pet.contacts.forEach((contact: any) => {
+          if (contact.email) {
+            const existingCustomer = customerMap.get(contact.email)
+            if (existingCustomer) {
+              if (pet.name) {
+                existingCustomer.petName = existingCustomer.petName
+                  ? `${existingCustomer.petName}, ${pet.name}`
+                  : pet.name
+              }
+              if (petType) {
+                const currentTypes = existingCustomer.petType ? existingCustomer.petType.split(", ") : []
+                if (!currentTypes.includes(petType)) {
+                  existingCustomer.petType = existingCustomer.petType
+                    ? `${existingCustomer.petType}, ${petType}`
+                    : petType
+                }
+              }
+            } else {
+              customerMap.set(contact.email, {
+                email: contact.email,
+                name: contact.contact_name || contact.email.split("@")[0],
+                petName: pet.name,
+                petType: petType,
+                totalBookings: 0,
+              })
+            }
+          }
+        })
+      }
+    })
+
+    if (crmData.onboarding && crmData.onboarding.email) {
+      const onboardingEmail = crmData.onboarding.email
+      if (!customerMap.has(onboardingEmail)) {
+        const onboardingName = crmData.onboarding.supporting_details?.personal_info
+          ? `${crmData.onboarding.supporting_details.personal_info.first_name || ""} ${crmData.onboarding.supporting_details.personal_info.last_name || ""}`.trim()
+          : onboardingEmail.split("@")[0]
+
+        customerMap.set(onboardingEmail, {
+          email: onboardingEmail,
+          name: onboardingName,
+          petName: "",
+          petType: "",
+          totalBookings: 0,
+        })
+
+        if (crmData.onboarding.supporting_details?.pets?.details) {
+          const petNames = crmData.onboarding.supporting_details.pets.details.map((p: any) => p.pet_name).join(", ")
+          const customer = customerMap.get(onboardingEmail)!
+          customer.petName = petNames
+        }
+      }
     }
-  }, [])
+
+    const allCustomers = Array.from(customerMap.values())
+    console.log("[v0] Customer selection: Final customer list:", allCustomers.length, "customers")
+    console.log("[v0] Customer selection: Sample customers:", allCustomers.slice(0, 3))
+    setCustomers(allCustomers)
+  }, [crmData, crmLoading])
 
   useEffect(() => {
     if (!crmData || !customers.length) return
@@ -251,7 +250,6 @@ export default function CustomerSelectionInterface({
         filtered = customers
     }
 
-    // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter(
         (customer) =>
@@ -294,48 +292,56 @@ export default function CustomerSelectionInterface({
           <CardDescription className="body-font">Choose who will receive this campaign</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <Label className="body-font">Audience Segment</Label>
-            <Select value={selectedAudience} onValueChange={onAudienceChange}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Customers ({customers.length} people)</SelectItem>
-                <SelectItem value="inactive-60">Inactive 60+ Days</SelectItem>
-                <SelectItem value="new-customers">New Customers</SelectItem>
-                <SelectItem value="repeat-customers">Repeat Customers</SelectItem>
-                <SelectItem value="dog-owners">Dog Owners</SelectItem>
-                <SelectItem value="cat-owners">Cat Owners</SelectItem>
-                <SelectItem value="exotic-pets">Exotic Pet Owners</SelectItem>
-                <SelectItem value="bird-owners">Bird Owners</SelectItem>
-                <SelectItem value="fish-owners">Fish Owners</SelectItem>
-                <SelectItem value="small-pets">Small Pet Owners</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {crmLoading ? (
+            <div className="text-center py-4">
+              <p className="text-muted-foreground body-font">Loading customer data...</p>
+            </div>
+          ) : (
+            <>
+              <div>
+                <Label className="body-font">Audience Segment</Label>
+                <Select value={selectedAudience} onValueChange={onAudienceChange}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Customers ({customers.length} people)</SelectItem>
+                    <SelectItem value="inactive-60">Inactive 60+ Days</SelectItem>
+                    <SelectItem value="new-customers">New Customers</SelectItem>
+                    <SelectItem value="repeat-customers">Repeat Customers</SelectItem>
+                    <SelectItem value="dog-owners">Dog Owners</SelectItem>
+                    <SelectItem value="cat-owners">Cat Owners</SelectItem>
+                    <SelectItem value="exotic-pets">Exotic Pet Owners</SelectItem>
+                    <SelectItem value="bird-owners">Bird Owners</SelectItem>
+                    <SelectItem value="fish-owners">Fish Owners</SelectItem>
+                    <SelectItem value="small-pets">Small Pet Owners</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="body-font">Personalize Subject Lines</Label>
-              <Switch checked={personalizeSubject} onCheckedChange={onPersonalizeChange} />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label className="body-font">Track Email Opens</Label>
-              <Switch checked={trackOpens} onCheckedChange={onTrackOpensChange} />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label className="body-font">Track Link Clicks</Label>
-              <Switch checked={trackClicks} onCheckedChange={onTrackClicksChange} />
-            </div>
-          </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="body-font">Personalize Subject Lines</Label>
+                  <Switch checked={personalizeSubject} onCheckedChange={onPersonalizeChange} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label className="body-font">Track Email Opens</Label>
+                  <Switch checked={trackOpens} onCheckedChange={onTrackOpensChange} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label className="body-font">Track Link Clicks</Label>
+                  <Switch checked={trackClicks} onCheckedChange={onTrackClicksChange} />
+                </div>
+              </div>
 
-          <div className="pt-4 border-t">
-            <Button variant="outline" onClick={() => setShowCustomerList(!showCustomerList)} className="w-full">
-              <Users className="h-4 w-4 mr-2" />
-              {showCustomerList ? "Hide" : "View"} Customer List ({getAudienceCount()})
-            </Button>
-          </div>
+              <div className="pt-4 border-t">
+                <Button variant="outline" onClick={() => setShowCustomerList(!showCustomerList)} className="w-full">
+                  <Users className="h-4 w-4 mr-2" />
+                  {showCustomerList ? "Hide" : "View"} Customer List ({getAudienceCount()})
+                </Button>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 

@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react"
 import { Mail, Send, Eye, Save, ArrowLeft, Users, Settings, CheckCircle, Plus, Trash2 } from "lucide-react"
 import Header from "../../../../../components/header"
-import PasswordProtection from "../../../../../components/password-protection"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -61,22 +60,30 @@ export default function CreateCampaign() {
 
   const [selectedCustomers, setSelectedCustomers] = useState<any[]>([])
   const [crmData, setCrmData] = useState<any>(null)
+  const [crmLoading, setCrmLoading] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
-    const data = getCRMData()
-    setCrmData(data)
-  }, [])
+    const loadCRMData = async () => {
+      setCrmLoading(true)
+      console.log("[v0] Campaign page: Starting CRM data load")
 
-  if (!isAuthenticated) {
-    return (
-      <PasswordProtection
-        onAuthenticated={() => setIsAuthenticated(true)}
-        title="Campaign Builder Access"
-        description="Enter your professional password to create email campaigns."
-      />
-    )
-  }
+      let data = getCRMData()
+      console.log("[v0] Campaign page: Initial data check:", !!data)
+
+      if (!data) {
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        data = getCRMData()
+        console.log("[v0] Campaign page: After wait, data available:", !!data)
+      }
+
+      setCrmData(data)
+      setCrmLoading(false)
+      console.log("[v0] Campaign page: CRM data set, loading complete")
+    }
+
+    loadCRMData()
+  }, [])
 
   const addEmailToSequence = () => {
     const newEmail: EmailSequenceItem = {
@@ -407,6 +414,8 @@ export default function CreateCampaign() {
   const renderAudienceStep = () => (
     <div className="max-w-6xl mx-auto">
       <CustomerSelectionInterface
+        crmData={crmData}
+        crmLoading={crmLoading}
         selectedAudience={campaignData.audience}
         onAudienceChange={(audience) => setCampaignData({ ...campaignData, audience })}
         onCustomersSelected={setSelectedCustomers}

@@ -207,6 +207,46 @@ export default function TemplateCampaignSetup() {
     const data = getCRMData()
     setCrmData(data)
 
+    if (data && template?.audience) {
+      let initialCustomers: any[] = []
+
+      switch (template.audience) {
+        case "inactive-60":
+          initialCustomers = getInactiveCustomers(data, 60)
+          break
+        case "new-customers":
+          const customerBookingCounts = new Map()
+          data.bookings.forEach((booking: any) => {
+            const count = customerBookingCounts.get(booking.customer_email) || 0
+            customerBookingCounts.set(booking.customer_email, count + 1)
+          })
+          initialCustomers = Array.from(customerBookingCounts.entries())
+            .filter(([email, count]) => count <= 1)
+            .map(([email]) => data.bookings.find((b: any) => b.customer_email === email))
+            .filter(Boolean)
+          break
+        case "repeat-customers":
+          initialCustomers = getRepeatCustomers(data)
+          break
+        case "exotic-pets":
+          initialCustomers = getCustomersByPetType(data, "exotic")
+          break
+        case "dog-owners":
+          initialCustomers = getCustomersByPetType(data, "dog")
+          break
+        case "cat-owners":
+          initialCustomers = getCustomersByPetType(data, "cat")
+          break
+        default:
+          const uniqueEmails = new Set(data.bookings.map((b: any) => b.customer_email))
+          initialCustomers = Array.from(uniqueEmails)
+            .map((email) => data.bookings.find((b: any) => b.customer_email === email))
+            .filter(Boolean)
+      }
+
+      setSelectedCustomers(initialCustomers)
+    }
+
     if (template?.emails) {
       const templateEmails = template.emails.map((email: any, index: number) => ({
         id: (index + 1).toString(),
@@ -555,13 +595,54 @@ export default function TemplateCampaignSetup() {
         <Users className="h-4 w-4" />
         <AlertDescription className="body-font">
           This template is optimized for the <strong>{campaignData.audience.replace("-", " ")}</strong> audience
-          segment.
+          segment. {selectedCustomers.length} customers match this criteria.
         </AlertDescription>
       </Alert>
 
       <CustomerSelectionInterface
         selectedAudience={campaignData.audience}
-        onAudienceChange={(audience) => setCampaignData({ ...campaignData, audience })}
+        onAudienceChange={(audience) => {
+          setCampaignData({ ...campaignData, audience })
+          if (crmData) {
+            let newCustomers: any[] = []
+
+            switch (audience) {
+              case "inactive-60":
+                newCustomers = getInactiveCustomers(crmData, 60)
+                break
+              case "new-customers":
+                const customerBookingCounts = new Map()
+                crmData.bookings.forEach((booking: any) => {
+                  const count = customerBookingCounts.get(booking.customer_email) || 0
+                  customerBookingCounts.set(booking.customer_email, count + 1)
+                })
+                newCustomers = Array.from(customerBookingCounts.entries())
+                  .filter(([email, count]) => count <= 1)
+                  .map(([email]) => crmData.bookings.find((b: any) => b.customer_email === email))
+                  .filter(Boolean)
+                break
+              case "repeat-customers":
+                newCustomers = getRepeatCustomers(crmData)
+                break
+              case "exotic-pets":
+                newCustomers = getCustomersByPetType(crmData, "exotic")
+                break
+              case "dog-owners":
+                newCustomers = getCustomersByPetType(crmData, "dog")
+                break
+              case "cat-owners":
+                newCustomers = getCustomersByPetType(crmData, "cat")
+                break
+              default:
+                const uniqueEmails = new Set(crmData.bookings.map((b: any) => b.customer_email))
+                newCustomers = Array.from(uniqueEmails)
+                  .map((email) => crmData.bookings.find((b: any) => b.customer_email === email))
+                  .filter(Boolean)
+            }
+
+            setSelectedCustomers(newCustomers)
+          }
+        }}
         onCustomersSelected={setSelectedCustomers}
         personalizeSubject={campaignData.personalizeSubject}
         onPersonalizeChange={(personalize) => setCampaignData({ ...campaignData, personalizeSubject: personalize })}
@@ -576,7 +657,9 @@ export default function TemplateCampaignSetup() {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
-        <Button onClick={() => setCurrentStep("preview")}>Next: Preview Campaign</Button>
+        <Button onClick={() => setCurrentStep("preview")} disabled={selectedCustomers.length === 0}>
+          Next: Preview Campaign ({selectedCustomers.length} recipients)
+        </Button>
       </div>
     </div>
   )
