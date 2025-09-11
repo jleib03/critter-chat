@@ -19,6 +19,7 @@ import {
   getInactiveCustomers,
   getCustomersByPetType,
   getRepeatCustomers,
+  getCRMData,
 } from "../../../../../utils/crm-data"
 
 type CampaignStep = "setup" | "sequence" | "audience" | "preview"
@@ -68,9 +69,17 @@ export default function CreateCampaign() {
       setCrmLoading(true)
       console.log("[v0] Campaign page: Starting CRM data load")
 
-      const data = await waitForCRMData(10, 500)
-      console.log("[v0] Campaign page: CRM data loaded:", !!data)
+      // Try to get data immediately first
+      let data = getCRMData()
+      console.log("[v0] Campaign page: Immediate data check:", !!data)
 
+      // If no data, wait for it
+      if (!data) {
+        console.log("[v0] Campaign page: No immediate data, waiting...")
+        data = await waitForCRMData(10, 500)
+      }
+
+      console.log("[v0] Campaign page: Final CRM data loaded:", !!data)
       setCrmData(data)
       setCrmLoading(false)
       console.log("[v0] Campaign page: CRM data set, loading complete")

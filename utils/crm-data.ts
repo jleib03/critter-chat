@@ -2,6 +2,8 @@ import { getWebhookEndpoint, logWebhookUsage } from "../types/webhook-endpoints"
 import type { CRMData, CRMStats } from "../types/crm-types"
 
 // Initialize CRM data by calling the webhook
+let inMemoryCRMData: CRMData | null = null
+
 export async function initializeCRMData(professionalId: string): Promise<CRMData | null> {
   try {
     const webhookUrl = getWebhookEndpoint("CRM_INITIALIZATION")
@@ -119,11 +121,19 @@ export async function initializeCRMData(professionalId: string): Promise<CRMData
         professionalId: professionalId,
       }
 
-      // Store the data in localStorage
       if (typeof window !== "undefined") {
-        localStorage.setItem("crm_data", JSON.stringify(crmData))
-        localStorage.setItem("crm_professional_id", professionalId)
+        try {
+          localStorage.setItem("crm_data", JSON.stringify(crmData))
+          localStorage.setItem("crm_professional_id", professionalId)
+          console.log("[v0] CRM data stored in localStorage successfully")
+        } catch (storageError) {
+          console.error("[v0] Failed to store in localStorage:", storageError)
+        }
       }
+
+      // Always store in memory as backup
+      inMemoryCRMData = crmData
+      console.log("[v0] CRM data stored in memory successfully")
 
       console.log("✅ CRM data initialized and stored successfully")
       return crmData
@@ -164,20 +174,24 @@ function createEmptyDataStructure(professionalId: string): CRMData {
     professionalId: professionalId,
   }
 
-  // Store the empty data structure
   if (typeof window !== "undefined") {
-    localStorage.setItem("crm_data", JSON.stringify(emptyData))
-    localStorage.setItem("crm_professional_id", professionalId)
+    try {
+      localStorage.setItem("crm_data", JSON.stringify(emptyData))
+      localStorage.setItem("crm_professional_id", professionalId)
+    } catch (storageError) {
+      console.error("[v0] Failed to store empty data in localStorage:", storageError)
+    }
   }
+
+  inMemoryCRMData = emptyData
 
   return emptyData
 }
 
 export function getCRMData(): CRMData | null {
-  if (typeof window === "undefined") return null
+  if (typeof window === "undefined") return inMemoryCRMData
 
   try {
-    // Check all localStorage keys for debugging
     const allKeys = Object.keys(localStorage)
     console.log("[v0] getCRMData: All localStorage keys:", allKeys)
 
@@ -185,28 +199,25 @@ export function getCRMData(): CRMData | null {
     console.log("[v0] getCRMData: Raw localStorage data exists:", !!rawData)
     console.log("[v0] getCRMData: Raw data length:", rawData?.length || 0)
 
-    if (!rawData) {
-      console.log("[v0] getCRMData: No data found in localStorage")
-      // Check if there's a professional ID but no data
-      const professionalId = localStorage.getItem("crm_professional_id")
-      if (professionalId) {
-        console.log("[v0] getCRMData: Found professional ID but no data, this indicates a storage issue")
-      }
-      return null
+    if (rawData) {
+      const parsedData = JSON.parse(rawData)
+      console.log("[v0] getCRMData: Successfully parsed data from localStorage")
+      return parsedData
     }
 
-    const parsedData = JSON.parse(rawData)
-    console.log("[v0] getCRMData: Successfully parsed data:", !!parsedData)
-    console.log("[v0] getCRMData: Data structure:", {
-      petCare: parsedData?.petCare?.length || 0,
-      bookings: parsedData?.bookings?.length || 0,
-      professionalId: parsedData?.professionalId,
-      lastUpdated: parsedData?.lastUpdated,
-    })
+    if (inMemoryCRMData) {
+      console.log("[v0] getCRMData: Using in-memory data as fallback")
+      return inMemoryCRMData
+    }
 
-    return parsedData
+    console.log("[v0] getCRMData: No data found in localStorage or memory")
+    return null
   } catch (error) {
     console.error("[v0] getCRMData: Error parsing stored data:", error)
+    if (inMemoryCRMData) {
+      console.log("[v0] getCRMData: Using in-memory data after localStorage error")
+      return inMemoryCRMData
+    }
     return null
   }
 }
@@ -270,34 +281,6 @@ export function isCRMDataAvailable(): boolean {
     return false
   }
 }
-
-// Get stored CRM data from localStorage
-// export function getCRMData(): CRMData | null {
-//   if (typeof window === "undefined") return null
-
-//   try {
-//     const rawData = localStorage.getItem("crm_data")
-//     console.log("[v0] getCRMData: Raw localStorage data exists:", !!rawData)
-
-//     if (!rawData) {
-//       console.log("[v0] getCRMData: No data found in localStorage")
-//       return null
-//     }
-
-//     const parsedData = JSON.parse(rawData)
-//     console.log("[v0] getCRMData: Successfully parsed data:", !!parsedData)
-//     console.log("[v0] getCRMData: Data structure:", {
-//       petCare: parsedData?.petCare?.length || 0,
-//       bookings: parsedData?.bookings?.length || 0,
-//       professionalId: parsedData?.professionalId,
-//     })
-
-//     return parsedData
-//   } catch (error) {
-//     console.error("[v0] getCRMData: Error parsing stored data:", error)
-//     return null
-//   }
-// }
 
 export function calculateCRMStats(data: CRMData): CRMStats {
   const uniqueCustomers = new Set()
@@ -400,4 +383,5 @@ export function clearCRMData(): void {
     localStorage.removeItem("crm_data")
     localStorage.removeItem("crm_professional_id")
   }
+  inMemoryCRMData = null
 }
