@@ -325,62 +325,58 @@ export function BookingTypeSelection({ selectedServices, onBookingTypeSelect, on
                 </p>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3 header-font">
-                  {isDailyMode
-                    ? "How often should daily appointments repeat?*"
-                    : "How often should appointments repeat?*"}
-                </label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {(isDailyMode ? DAILY_FREQUENCY_OPTIONS : FREQUENCY_OPTIONS).map((option) => (
+              {!isDailyMode && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3 header-font">
+                    How often should appointments repeat?*
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {FREQUENCY_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => handleFrequencyChange(option.value)}
+                        className={`p-3 text-sm rounded-lg border transition-all body-font text-left ${
+                          !isCustomFrequency && recurringConfig.frequency === option.value
+                            ? "bg-[#E75837] text-white border-[#E75837]"
+                            : "bg-white text-gray-700 border-gray-300 hover:border-[#E75837] hover:bg-[#fff8f6]"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
                     <button
-                      key={option.value}
                       type="button"
-                      onClick={() =>
-                        isDailyMode ? handleDailyFrequencyChange(option.value) : handleFrequencyChange(option.value)
-                      }
+                      onClick={handleCustomFrequencySelect}
                       className={`p-3 text-sm rounded-lg border transition-all body-font text-left ${
-                        !isCustomFrequency && recurringConfig.frequency === option.value
+                        isCustomFrequency
                           ? "bg-[#E75837] text-white border-[#E75837]"
                           : "bg-white text-gray-700 border-gray-300 hover:border-[#E75837] hover:bg-[#fff8f6]"
                       }`}
                     >
-                      {option.label}
+                      Custom
                     </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={handleCustomFrequencySelect}
-                    className={`p-3 text-sm rounded-lg border transition-all body-font text-left ${
-                      isCustomFrequency
-                        ? "bg-[#E75837] text-white border-[#E75837]"
-                        : "bg-white text-gray-700 border-gray-300 hover:border-[#E75837] hover:bg-[#fff8f6]"
-                    }`}
-                  >
-                    Custom
-                  </button>
-                </div>
-                {isCustomFrequency && (
-                  <div className="mt-3 flex items-center space-x-2">
-                    <span className="text-sm text-gray-700 body-font">Every</span>
-                    <input
-                      type="number"
-                      min="1"
-                      max={isDailyMode ? "30" : "52"}
-                      value={customFrequencyValue}
-                      onChange={(e) => handleCustomFrequencyChange(e.target.value)}
-                      placeholder={isDailyMode ? "2" : "5"}
-                      className="w-20 p-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font text-center"
-                    />
-                    <span className="text-sm text-gray-700 body-font">{isDailyMode ? "days" : "weeks"}</span>
                   </div>
-                )}
-                <p className="text-xs text-gray-500 mt-2 body-font">
-                  {isDailyMode
-                    ? "Choose how frequently your daily appointments should repeat"
-                    : "Choose how frequently your appointments should repeat"}
-                </p>
-              </div>
+                  {isCustomFrequency && (
+                    <div className="mt-3 flex items-center space-x-2">
+                      <span className="text-sm text-gray-700 body-font">Every</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="52"
+                        value={customFrequencyValue}
+                        onChange={(e) => handleCustomFrequencyChange(e.target.value)}
+                        placeholder="5"
+                        className="w-20 p-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font text-center"
+                      />
+                      <span className="text-sm text-gray-700 body-font">weeks</span>
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500 mt-2 body-font">
+                    Choose how frequently your appointments should repeat
+                  </p>
+                </div>
+              )}
 
               {!isDailyMode && (
                 <div>
@@ -437,7 +433,7 @@ export function BookingTypeSelection({ selectedServices, onBookingTypeSelect, on
                 <p className="text-sm text-gray-600 body-font">
                   {isDailyMode ? (
                     <>
-                      Appointments will repeat <span className="font-medium">{getFrequencyLabel()}</span> until{" "}
+                      Appointments will repeat <span className="font-medium">every day</span> until{" "}
                       <span className="font-medium">
                         {new Date(recurringConfig.endDate).toLocaleDateString("en-US", {
                           weekday: "long",
