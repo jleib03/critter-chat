@@ -245,6 +245,8 @@ export type RecurringConfig = {
   daysOfWeek?: string[]
   selectedDays?: string[]
   originalEndDate?: string
+  originalUnit?: "day" | "week" | "month"
+  originalFrequency?: number
 }
 
 export type SelectedServices = Service[]
