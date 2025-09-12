@@ -1388,14 +1388,18 @@ export default function ProfessionalSetupPage() {
                             <div className="flex items-center space-x-2">
                               <Switch
                                 checked={newBlockedTime.is_all_day}
-                                onChange={(checked) => setNewBlockedTime({ ...newBlockedTime, is_all_day: checked })}
+                                onCheckedChange={(checked) =>
+                                  setNewBlockedTime({ ...newBlockedTime, is_all_day: checked })
+                                }
                               />
                               <Label className="body-font">All Day</Label>
                             </div>
                             <div className="flex items-center space-x-2">
                               <Switch
                                 checked={newBlockedTime.is_recurring}
-                                onChange={(checked) => setNewBlockedTime({ ...newBlockedTime, is_recurring: checked })}
+                                onCheckedChange={(checked) =>
+                                  setNewBlockedTime({ ...newBlockedTime, is_recurring: checked })
+                                }
                               />
                               <Label className="body-font">Recurring</Label>
                             </div>
