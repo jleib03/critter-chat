@@ -16,6 +16,8 @@ export type RecurringConfig = {
   daysOfWeek: string[]
   selectedDays: string[]
   originalEndDate: string
+  originalUnit?: "day" | "week"
+  originalFrequency?: number
 }
 
 type BookingTypeSelectionProps = {
@@ -33,10 +35,21 @@ const FREQUENCY_OPTIONS = [
   { value: 4, label: "Every 4 weeks" },
 ]
 
+const DAILY_FREQUENCY_OPTIONS = [
+  { value: 1, label: "Every day" },
+  { value: 2, label: "Every 2 days" },
+  { value: 3, label: "Every 3 days" },
+  { value: 4, label: "Every 4 days" },
+  { value: 5, label: "Every 5 days" },
+  { value: 6, label: "Every 6 days" },
+  { value: 7, label: "Every 7 days" },
+]
+
 export function BookingTypeSelection({ selectedServices, onBookingTypeSelect, onBack }: BookingTypeSelectionProps) {
   const [selectedType, setSelectedType] = useState<BookingType | null>(null)
   const [isCustomFrequency, setIsCustomFrequency] = useState(false)
   const [customFrequencyValue, setCustomFrequencyValue] = useState("")
+  const [isDailyMode, setIsDailyMode] = useState(false)
 
   const [recurringConfig, setRecurringConfig] = useState<RecurringConfig>({
     frequency: 1,
@@ -83,10 +96,24 @@ export function BookingTypeSelection({ selectedServices, onBookingTypeSelect, on
     if (selectedType === "one-time") {
       onBookingTypeSelect("one-time")
     } else if (selectedType === "recurring") {
+      let configForWebhook = { ...recurringConfig }
+
+      if (isDailyMode) {
+        configForWebhook = {
+          ...recurringConfig,
+          unit: "week",
+          frequency: 1,
+          daysOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+          selectedDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+          originalUnit: "day" as any,
+          originalFrequency: recurringConfig.frequency,
+        }
+      }
+
       const configWithOriginals = {
-        ...recurringConfig,
-        selectedDays: recurringConfig.daysOfWeek,
-        originalEndDate: recurringConfig.endDate,
+        ...configForWebhook,
+        selectedDays: configForWebhook.daysOfWeek,
+        originalEndDate: configForWebhook.endDate,
       }
       onBookingTypeSelect("recurring", configWithOriginals)
     }
@@ -95,6 +122,9 @@ export function BookingTypeSelection({ selectedServices, onBookingTypeSelect, on
   const isFormValid = () => {
     if (selectedType === "one-time") return true
     if (selectedType === "recurring") {
+      if (isDailyMode) {
+        return recurringConfig.endDate !== ""
+      }
       return recurringConfig.daysOfWeek.length > 0 && recurringConfig.endDate !== ""
     }
     return false
@@ -118,9 +148,19 @@ export function BookingTypeSelection({ selectedServices, onBookingTypeSelect, on
     }))
   }
 
+  const handleDailyFrequencyChange = (frequency: number) => {
+    setIsCustomFrequency(false)
+    setCustomFrequencyValue("")
+    setRecurringConfig((prev) => ({
+      ...prev,
+      frequency,
+      unit: "day",
+    }))
+  }
+
   const handleCustomFrequencySelect = () => {
     setIsCustomFrequency(true)
-    const customValue = customFrequencyValue ? Number.parseInt(customFrequencyValue) : 5
+    const customValue = customFrequencyValue ? Number.parseInt(customFrequencyValue) : isDailyMode ? 2 : 5
     setRecurringConfig((prev) => ({
       ...prev,
       frequency: customValue,
@@ -141,14 +181,23 @@ export function BookingTypeSelection({ selectedServices, onBookingTypeSelect, on
   const getMinEndDate = () => {
     const today = new Date()
     const minDate = new Date(today)
-    minDate.setDate(today.getDate() + 7)
+    minDate.setDate(today.getDate() + (isDailyMode ? recurringConfig.frequency : 7))
     return minDate.toISOString().split("T")[0]
   }
 
   const getFrequencyLabel = () => {
     if (isCustomFrequency) {
+      if (isDailyMode) {
+        return `every ${recurringConfig.frequency} days`
+      }
       return `every ${recurringConfig.frequency} weeks`
     }
+
+    if (isDailyMode) {
+      const option = DAILY_FREQUENCY_OPTIONS.find((opt) => opt.value === recurringConfig.frequency)
+      return option ? option.label.toLowerCase() : `every ${recurringConfig.frequency} days`
+    }
+
     const option = FREQUENCY_OPTIONS.find((opt) => opt.value === recurringConfig.frequency)
     return option ? option.label.toLowerCase() : `every ${recurringConfig.frequency} weeks`
   }
@@ -238,80 +287,123 @@ export function BookingTypeSelection({ selectedServices, onBookingTypeSelect, on
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3 header-font">
-                  How often should appointments repeat?*
-                </label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {FREQUENCY_OPTIONS.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => handleFrequencyChange(option.value)}
-                      className={`p-3 text-sm rounded-lg border transition-all body-font text-left ${
-                        !isCustomFrequency && recurringConfig.frequency === option.value
-                          ? "bg-[#E75837] text-white border-[#E75837]"
-                          : "bg-white text-gray-700 border-gray-300 hover:border-[#E75837] hover:bg-[#fff8f6]"
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
+                <label className="block text-sm font-medium text-gray-700 mb-3 header-font">Recurrence Type*</label>
+                <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={handleCustomFrequencySelect}
-                    className={`p-3 text-sm rounded-lg border transition-all body-font text-left ${
-                      isCustomFrequency
+                    onClick={() => {
+                      setIsDailyMode(true)
+                      setRecurringConfig((prev) => ({ ...prev, unit: "day", frequency: 1, daysOfWeek: [] }))
+                    }}
+                    className={`p-3 text-sm rounded-lg border transition-all body-font text-center ${
+                      isDailyMode
                         ? "bg-[#E75837] text-white border-[#E75837]"
                         : "bg-white text-gray-700 border-gray-300 hover:border-[#E75837] hover:bg-[#fff8f6]"
                     }`}
                   >
-                    Custom
+                    Daily
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsDailyMode(false)
+                      setRecurringConfig((prev) => ({ ...prev, unit: "week", frequency: 1, daysOfWeek: [] }))
+                    }}
+                    className={`p-3 text-sm rounded-lg border transition-all body-font text-center ${
+                      !isDailyMode
+                        ? "bg-[#E75837] text-white border-[#E75837]"
+                        : "bg-white text-gray-700 border-gray-300 hover:border-[#E75837] hover:bg-[#fff8f6]"
+                    }`}
+                  >
+                    Weekly
                   </button>
                 </div>
-                {isCustomFrequency && (
-                  <div className="mt-3 flex items-center space-x-2">
-                    <span className="text-sm text-gray-700 body-font">Every</span>
-                    <input
-                      type="number"
-                      min="1"
-                      max="52"
-                      value={customFrequencyValue}
-                      onChange={(e) => handleCustomFrequencyChange(e.target.value)}
-                      placeholder="5"
-                      className="w-20 p-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font text-center"
-                    />
-                    <span className="text-sm text-gray-700 body-font">weeks</span>
-                  </div>
-                )}
                 <p className="text-xs text-gray-500 mt-2 body-font">
-                  Choose how frequently your appointments should repeat
+                  {isDailyMode
+                    ? "Daily appointments will run every day during your selected period"
+                    : "Weekly appointments let you choose specific days of the week"}
                 </p>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3 header-font">
-                  Select days of the week*
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {DAYS_OF_WEEK.map((day) => (
+              {!isDailyMode && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3 header-font">
+                    How often should appointments repeat?*
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {FREQUENCY_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => handleFrequencyChange(option.value)}
+                        className={`p-3 text-sm rounded-lg border transition-all body-font text-left ${
+                          !isCustomFrequency && recurringConfig.frequency === option.value
+                            ? "bg-[#E75837] text-white border-[#E75837]"
+                            : "bg-white text-gray-700 border-gray-300 hover:border-[#E75837] hover:bg-[#fff8f6]"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
                     <button
-                      key={day}
                       type="button"
-                      onClick={() => handleDayToggle(day)}
-                      className={`p-3 text-sm rounded-lg border transition-all body-font ${
-                        recurringConfig.daysOfWeek.includes(day)
+                      onClick={handleCustomFrequencySelect}
+                      className={`p-3 text-sm rounded-lg border transition-all body-font text-left ${
+                        isCustomFrequency
                           ? "bg-[#E75837] text-white border-[#E75837]"
                           : "bg-white text-gray-700 border-gray-300 hover:border-[#E75837] hover:bg-[#fff8f6]"
                       }`}
                     >
-                      {day.slice(0, 3)}
+                      Custom
                     </button>
-                  ))}
+                  </div>
+                  {isCustomFrequency && (
+                    <div className="mt-3 flex items-center space-x-2">
+                      <span className="text-sm text-gray-700 body-font">Every</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="52"
+                        value={customFrequencyValue}
+                        onChange={(e) => handleCustomFrequencyChange(e.target.value)}
+                        placeholder="5"
+                        className="w-20 p-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] body-font text-center"
+                      />
+                      <span className="text-sm text-gray-700 body-font">weeks</span>
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500 mt-2 body-font">
+                    Choose how frequently your appointments should repeat
+                  </p>
                 </div>
-                <p className="text-xs text-gray-500 mt-2 body-font">
-                  Select one or more days for your recurring appointments
-                </p>
-              </div>
+              )}
+
+              {!isDailyMode && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3 header-font">
+                    Select days of the week*
+                  </label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {DAYS_OF_WEEK.map((day) => (
+                      <button
+                        key={day}
+                        type="button"
+                        onClick={() => handleDayToggle(day)}
+                        className={`p-3 text-sm rounded-lg border transition-all body-font ${
+                          recurringConfig.daysOfWeek.includes(day)
+                            ? "bg-[#E75837] text-white border-[#E75837]"
+                            : "bg-white text-gray-700 border-gray-300 hover:border-[#E75837] hover:bg-[#fff8f6]"
+                        }`}
+                      >
+                        {day.slice(0, 3)}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2 body-font">
+                    Select one or more days for your recurring appointments
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-2 header-font">
@@ -334,32 +426,51 @@ export function BookingTypeSelection({ selectedServices, onBookingTypeSelect, on
               </div>
             </div>
 
-            {recurringConfig.daysOfWeek.length > 0 && recurringConfig.endDate && (
+            {((isDailyMode && recurringConfig.endDate) ||
+              (!isDailyMode && recurringConfig.daysOfWeek.length > 0 && recurringConfig.endDate)) && (
               <div className="bg-gray-50 rounded-lg p-4">
                 <h4 className="text-sm font-medium text-gray-700 mb-2 header-font">Schedule Preview</h4>
                 <p className="text-sm text-gray-600 body-font">
-                  Appointments will repeat <span className="font-medium">{getFrequencyLabel()}</span> on{" "}
-                  <span className="font-medium">
-                    {recurringConfig.daysOfWeek.length === 1
-                      ? recurringConfig.daysOfWeek[0]
-                      : recurringConfig.daysOfWeek.length === 2
-                        ? `${recurringConfig.daysOfWeek[0]} and ${recurringConfig.daysOfWeek[1]}`
-                        : `${recurringConfig.daysOfWeek.slice(0, -1).join(", ")}, and ${recurringConfig.daysOfWeek.slice(
-                            -1,
-                          )}`}
-                  </span>{" "}
-                  until{" "}
-                  <span className="font-medium">
-                    {new Date(recurringConfig.endDate).toLocaleDateString("en-US", {
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </span>
+                  {isDailyMode ? (
+                    <>
+                      Appointments will repeat <span className="font-medium">every day</span> until{" "}
+                      <span className="font-medium">
+                        {new Date(recurringConfig.endDate).toLocaleDateString("en-US", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      Appointments will repeat <span className="font-medium">{getFrequencyLabel()}</span> on{" "}
+                      <span className="font-medium">
+                        {recurringConfig.daysOfWeek.length === 1
+                          ? recurringConfig.daysOfWeek[0]
+                          : recurringConfig.daysOfWeek.length === 2
+                            ? `${recurringConfig.daysOfWeek[0]} and ${recurringConfig.daysOfWeek[1]}`
+                            : `${recurringConfig.daysOfWeek.slice(0, -1).join(", ")}, and ${recurringConfig.daysOfWeek.slice(
+                                -1,
+                              )}`}
+                      </span>{" "}
+                      until{" "}
+                      <span className="font-medium">
+                        {new Date(recurringConfig.endDate).toLocaleDateString("en-US", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </span>
+                    </>
+                  )}
                 </p>
                 <p className="text-xs text-gray-500 mt-1 body-font">
-                  We'll show you time slots that work for your entire recurring schedule
+                  {isDailyMode
+                    ? "We'll show you time slots available for your daily schedule"
+                    : "We'll show you time slots that work for your entire recurring schedule"}
                 </p>
               </div>
             )}
