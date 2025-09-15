@@ -3279,25 +3279,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Business Name</label>
-                              <input
-                                type="text"
-                                value={onboardingData.emergencyContact.businessName}
-                                onChange={(e) =>
-                                  setOnboardingData({
-                                    ...onboardingData,
-                                    emergencyContact: {
-                                      ...onboardingData.emergencyContact,
-                                      businessName: e.target.value,
-                                    },
-                                  })
-                                }
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                                placeholder="Business or organization"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Address*</label>
                               <input
                                 type="text"
                                 value={onboardingData.emergencyContact.address}
@@ -3312,6 +3294,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                 }
                                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
                                 placeholder="Street address, city, state, zip"
+                                required
                               />
                             </div>
                             <div>
@@ -3334,7 +3317,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Email Address*</label>
                               <input
                                 type="email"
                                 value={onboardingData.emergencyContact.email}
@@ -3349,24 +3332,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                 }
                                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
                                 placeholder="Email address"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Additional Notes</label>
-                              <textarea
-                                value={onboardingData.emergencyContact.notes}
-                                onChange={(e) =>
-                                  setOnboardingData({
-                                    ...onboardingData,
-                                    emergencyContact: {
-                                      ...onboardingData.emergencyContact,
-                                      notes: e.target.value,
-                                    },
-                                  })
-                                }
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                                placeholder="Any important information"
-                                rows={3}
+                                required
                               />
                             </div>
                           </div>
