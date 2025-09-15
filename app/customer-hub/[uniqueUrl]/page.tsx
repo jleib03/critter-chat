@@ -1498,6 +1498,26 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
   }
 
   const handleOnboardingNext = () => {
+    // Special validation for emergency contact step (step 3)
+    if (onboardingStep === 3) {
+      const { contactName, address, phoneNumber, email } = onboardingData.emergencyContact
+
+      // Check if any field has data
+      const hasAnyData = contactName.trim() || address.trim() || phoneNumber.trim() || email.trim()
+
+      // If any field has data, all fields must be filled
+      if (hasAnyData) {
+        const allFieldsFilled = contactName.trim() && address.trim() && phoneNumber.trim() && email.trim()
+
+        if (!allFieldsFilled) {
+          // Prevent proceeding if some but not all fields are filled
+          return
+        }
+      }
+
+      // If no data at all, or all fields are filled, proceed
+    }
+
     if (onboardingStep < 4) {
       setOnboardingStep(onboardingStep + 1)
     }
