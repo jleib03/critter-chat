@@ -1498,6 +1498,26 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
   }
 
   const handleOnboardingNext = () => {
+    // Special validation for emergency contact step (step 3)
+    if (onboardingStep === 3) {
+      const { contactName, address, phoneNumber, email } = onboardingData.emergencyContact
+
+      // Check if any field has data
+      const hasAnyData = contactName.trim() || address.trim() || phoneNumber.trim() || email.trim()
+
+      // If any field has data, all fields must be filled
+      if (hasAnyData) {
+        const allFieldsFilled = contactName.trim() && address.trim() && phoneNumber.trim() && email.trim()
+
+        if (!allFieldsFilled) {
+          // Prevent proceeding if some but not all fields are filled
+          return
+        }
+      }
+
+      // If no data at all, or all fields are filled, proceed
+    }
+
     if (onboardingStep < 4) {
       setOnboardingStep(onboardingStep + 1)
     }
@@ -3279,25 +3299,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Business Name</label>
-                              <input
-                                type="text"
-                                value={onboardingData.emergencyContact.businessName}
-                                onChange={(e) =>
-                                  setOnboardingData({
-                                    ...onboardingData,
-                                    emergencyContact: {
-                                      ...onboardingData.emergencyContact,
-                                      businessName: e.target.value,
-                                    },
-                                  })
-                                }
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                                placeholder="Business or organization"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Address*</label>
                               <input
                                 type="text"
                                 value={onboardingData.emergencyContact.address}
@@ -3312,6 +3314,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                 }
                                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
                                 placeholder="Street address, city, state, zip"
+                                required
                               />
                             </div>
                             <div>
@@ -3334,7 +3337,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Email Address*</label>
                               <input
                                 type="email"
                                 value={onboardingData.emergencyContact.email}
@@ -3349,24 +3352,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                 }
                                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
                                 placeholder="Email address"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Additional Notes</label>
-                              <textarea
-                                value={onboardingData.emergencyContact.notes}
-                                onChange={(e) =>
-                                  setOnboardingData({
-                                    ...onboardingData,
-                                    emergencyContact: {
-                                      ...onboardingData.emergencyContact,
-                                      notes: e.target.value,
-                                    },
-                                  })
-                                }
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E75837] focus:border-transparent"
-                                placeholder="Any important information"
-                                rows={3}
+                                required
                               />
                             </div>
                           </div>
