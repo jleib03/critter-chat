@@ -40,7 +40,6 @@ export const metadata = {
     site: "@critterpet",
   },
 
-  // Additional meta tags
   robots: {
     index: true,
     follow: true,
