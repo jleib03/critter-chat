@@ -19,7 +19,7 @@ export const metadata = {
     siteName: "Critter",
     images: [
       {
-        url: "/images/critter-logo.png",
+        url: "https://booking.critter.pet/images/critter-logo.png",
         alt: "Critter - Professional Pet Care Services",
       },
     ],
@@ -33,7 +33,7 @@ export const metadata = {
     title: "Critter - Professional Pet Care Services",
     description:
       "Book trusted pet care professionals for dog walking, pet sitting, and more. Connect with vetted pet care providers in your area through Critter.",
-    images: ["/images/critter-logo.png"],
+    images: ["https://booking.critter.pet/images/critter-logo.png"],
     creator: "@critterpet",
     site: "@critterpet",
   },
