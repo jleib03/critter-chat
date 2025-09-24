@@ -55,9 +55,9 @@ export const metadata = {
 
   // Favicon and app icons
   icons: {
-    icon: "/images/critter-logo.png",
-    shortcut: "/images/critter-logo.png",
-    apple: "/images/critter-logo.png",
+    icon: "/images/critter-favicon.png",
+    shortcut: "/images/critter-favicon.png",
+    apple: "/images/critter-favicon.png",
   },
 }
 
