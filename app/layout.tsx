@@ -19,8 +19,11 @@ export const metadata = {
     siteName: "Critter",
     images: [
       {
-        url: "https://booking.critter.pet/images/critter-logo.png",
+        url: "https://booking.critter.pet/images/critter-social-preview.jpg",
+        width: 1024,
+        height: 1024,
         alt: "Critter - Professional Pet Care Services",
+        type: "image/jpeg",
       },
     ],
     locale: "en_US",
@@ -29,11 +32,11 @@ export const metadata = {
 
   // Twitter Card tags
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "Critter - Professional Pet Care Services",
     description:
       "Book trusted pet care professionals for dog walking, pet sitting, and more. Connect with vetted pet care providers in your area through Critter.",
-    images: ["https://booking.critter.pet/images/critter-logo.png"],
+    images: ["https://booking.critter.pet/images/critter-social-preview.jpg"],
     creator: "@critterpet",
     site: "@critterpet",
   },
