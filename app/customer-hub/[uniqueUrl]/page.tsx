@@ -367,7 +367,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
       const response = await fetch(webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.JSON.stringify(payload),
+        body: JSON.stringify(payload),
       })
 
       if (!response.ok) {
@@ -422,7 +422,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
       const response = await fetch(webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.JSON.stringify(payload),
+        body: JSON.stringify(payload),
       })
 
       if (!response.ok) {
@@ -1232,7 +1232,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                      d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002 2M9 5a2 2 0 012-2h2a2 2 0 012 2"
                     />
                   </svg>
                 </div>
@@ -1301,7 +1301,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
-                          d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM7 3H5a2 2 0 00-2 2v12a4 4 0 004 4h2a2 2 0 002-2V5a2 2 0 00-2-2z"
+                          d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 004 4h2a2 2 0 002-2V5a2 2 0 00-2-2z"
                         />
                       </svg>
                       Grooming Schedule
@@ -1389,7 +1389,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
       const response = await fetch(webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.JSON.stringify(payload),
+        body: JSON.stringify(payload),
       })
 
       if (response.ok) {
@@ -1887,7 +1887,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
       const response = await fetch(webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.JSON.stringify(payload),
+        body: JSON.stringify(payload),
       })
 
       if (response.ok) {
@@ -1914,7 +1914,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
             const reinitializeResponse = await fetch(webhookUrl, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.JSON.stringify(reinitializePayload),
+              body: JSON.stringify(reinitializePayload),
             })
 
             if (reinitializeResponse.ok) {
@@ -2813,7 +2813,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                           fill="#00F076"
                         />
                         <path
-                          d="M17.0625 15.5859L13.3594 11.8828 V11.5 L17.0625 7.79688 L17.2031 7.88281 L21.6094 10.4062C22.7969 11.0625 22.7969 12.0234 21.6094 12.6797 L17.2031 15.5 L17.0625 15.5859Z"
+                          d="M17.0625 15.5859L13.3594 11.8828 V11.5 L17.0625 7.79688 L17.2031 7.88281 L21.6094 10.4062C22.7969 11.0625 22.7969 12.0234 21.6094 12.6797 L17.2031 15.5 L17.2031 15.5859Z"
                           fill="#FFCF47"
                         />
                         <path
