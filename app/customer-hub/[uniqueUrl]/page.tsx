@@ -158,6 +158,7 @@ interface CustomerData {
     email?: string
     user_type?: string
     emergency_contacts?: Array<any>
+    personal_info?: any // Added for supporting_details.personal_info
   }
   email?: string
   user_type?: string
@@ -1232,7 +1233,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                      d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002 2M9 5a2 2 0 012-2h2a2 2 0 012 2"
                     />
                   </svg>
                 </div>
@@ -1301,7 +1302,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
-                          d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 4 0 01-4 4zM7 3H5a2 2 0 00-2 2v12a4 4 0 004 4h2a2 2 0 002-2V5a2 2 0 00-2-2z"
+                          d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 004 4h2a2 2 0 002-2V5a2 2 0 00-2-2z"
                         />
                       </svg>
                       Grooming Schedule
@@ -1431,7 +1432,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
           pet_type: pet.pet_type,
           breed_name: pet.breed_name,
           sex: pet.pet_sex,
-          weight: pet.weight || "",
+          weight: pet.weight,
           spayed_neutered: pet.spayed_or_neutered,
           birth_date: pet.birthdate,
           chip_id: pet.chip_id,
@@ -1498,6 +1499,22 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
   }
 
   const handleOnboardingNext = () => {
+    // Validate that all new pets have complete birth date information
+    if (onboardingStep === 2) {
+      const incompletePets = onboardingData.pets.filter((pet: any) => {
+        // Skip validation for existing pets (they already have data in the system)
+        if (pet.isExisting) return false
+
+        // Check if all birth date fields are filled for new pets
+        return !pet.birthMonth || !pet.birthDay || !pet.birthYear
+      })
+
+      if (incompletePets.length > 0) {
+        // Prevent proceeding if any new pet is missing birth date information
+        return
+      }
+    }
+
     // Special validation for emergency contact step (step 3)
     if (onboardingStep === 3) {
       const { contactName, address, phoneNumber, email } = onboardingData.emergencyContact
@@ -1605,7 +1622,15 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
       const petAnalysis = () => {
         const changedPets = []
 
+        console.log("[v0] Starting pet analysis, total pets:", onboardingData.pets.length)
+
         for (const currentPet of onboardingData.pets) {
+          console.log("[v0] Processing pet:", {
+            name: currentPet.name,
+            id: currentPet.id,
+            isExisting: currentPet.isExisting,
+          })
+
           // Check if this pet has an existing ID (was loaded from database)
           if (!currentPet.id || !currentPet.isExisting) {
             // This is a new pet created during onboarding (no existing ID)
@@ -1613,6 +1638,8 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
             const breedItem = getBreedsByType(currentPet.pet_type).find(
               (item: any) => item.label === currentPet.breed_name,
             )
+
+            console.log("[v0] Creating new pet:", currentPet.name)
 
             changedPets.push({
               action: "create",
@@ -1716,6 +1743,9 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
             }
           }
         }
+
+        console.log("[v0] Pet analysis complete, changed pets:", changedPets.length)
+        console.log("[v0] Changed pets details:", changedPets)
 
         return changedPets
       }
@@ -2059,7 +2089,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                     value={validationCode}
                     onChange={(e) => setValidationCode(e.target.value)}
                     placeholder="Enter 6-digit code"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent font-body text-center text-lg tracking-widest"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent font-body"
                     required
                     disabled={isLoading}
                     maxLength={6}
@@ -2793,19 +2823,19 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                     <div className="mr-3">
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path
-                          d="M3.60938 2.60156C3.22656 3.01562 3 3.64844 3 4.46875V19.5312C3 20.3516 3.22656 20.9844 3.60938 21.3984L3.72656 21.5156L13.3594 11.8828V11.5L3.72656 1.48438L3.60938 2.60156Z"
+                          d="M3.60938 2.60156C3.22656 3.01562 3 3.64844 3 4.46875V19.5312C3 20.3516 3.22656 20.9844 3.60938 21.3984 L3.72656 21.5156 L13.3594 11.8828 V11.5 L3.72656 1.48438 L3.60938 2.60156Z"
                           fill="#00F076"
                         />
                         <path
-                          d="M17.0625 15.5859L13.3594 11.8828V11.5L17.0625 7.79688L17.2031 7.88281L21.6094 10.4062C22.7969 11.0625 22.7969 12.0234 21.6094 12.6797L17.2031 15.5L17.0625 15.5859Z"
+                          d="M17.0625 15.5859L13.3594 11.8828 V11.5 L17.0625 7.79688 L17.2031 7.88281 L21.6094 10.4062C22.7969 11.0625 22.7969 12.0234 21.6094 12.6797 L17.2031 15.5 L17.2031 15.5859Z"
                           fill="#FFCF47"
                         />
                         <path
-                          d="M17.2031 15.5L13.3594 11.6562L3.60938 21.3984C4.03125 21.8438 4.73438 21.8906 5.53125 21.4453L17.2031 15.5Z"
+                          d="M17.2031 15.5L13.3594 11.6562 V11.5 L3.60938 21.3984C4.03125 21.8438 4.73438 21.8906 5.53125 21.4453 L17.2031 15.5Z"
                           fill="#FF554A"
                         />
                         <path
-                          d="M17.2031 7.88281L5.53125 1.9375C4.73438 1.49219 4.03125 1.53906 3.60938 1.98438L13.3594 11.6562L17.2031 7.88281Z"
+                          d="M17.2031 7.88281 L5.53125 1.9375C4.73438 1.49219 4.03125 1.53906 3.60938 1.98438 L13.3594 11.6562 L17.2031 7.88281Z"
                           fill="#00AAF0"
                         />
                       </svg>
@@ -2946,7 +2976,9 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                   name: "",
                                   pet_type: "",
                                   breed_name: "",
-                                  birthdate: "",
+                                  birthMonth: "", // Initialize new fields
+                                  birthDay: "",
+                                  birthYear: "",
                                   sex: "",
                                   spayed_neutered: "",
                                   weight: "",
@@ -3172,7 +3204,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                         <div>
                                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Birth Date
+                                            Birth Date*
                                           </label>
                                           <div className="grid grid-cols-3 gap-2">
                                             <select
