@@ -158,6 +158,7 @@ interface CustomerData {
     email?: string
     user_type?: string
     emergency_contacts?: Array<any>
+    personal_info?: any // Added for supporting_details.personal_info
   }
   email?: string
   user_type?: string
@@ -1621,7 +1622,15 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
       const petAnalysis = () => {
         const changedPets = []
 
+        console.log("[v0] Starting pet analysis, total pets:", onboardingData.pets.length)
+
         for (const currentPet of onboardingData.pets) {
+          console.log("[v0] Processing pet:", {
+            name: currentPet.name,
+            id: currentPet.id,
+            isExisting: currentPet.isExisting,
+          })
+
           // Check if this pet has an existing ID (was loaded from database)
           if (!currentPet.id || !currentPet.isExisting) {
             // This is a new pet created during onboarding (no existing ID)
@@ -1629,6 +1638,8 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
             const breedItem = getBreedsByType(currentPet.pet_type).find(
               (item: any) => item.label === currentPet.breed_name,
             )
+
+            console.log("[v0] Creating new pet:", currentPet.name)
 
             changedPets.push({
               action: "create",
@@ -1732,6 +1743,9 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
             }
           }
         }
+
+        console.log("[v0] Pet analysis complete, changed pets:", changedPets.length)
+        console.log("[v0] Changed pets details:", changedPets)
 
         return changedPets
       }
@@ -2075,7 +2089,7 @@ export default function CustomerHub({ params }: { params: { uniqueUrl: string } 
                     value={validationCode}
                     onChange={(e) => setValidationCode(e.target.value)}
                     placeholder="Enter 6-digit code"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent font-body text-center text-lg tracking-widest"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E75837] focus:border-transparent font-body"
                     required
                     disabled={isLoading}
                     maxLength={6}
